@@ -1,8 +1,8 @@
 ---
-const password = "admin123"; // Must match login.astro
-const url = new URL(Astro.request.url);
+const PASSWORD = "astro123"; // Must match login.astro
+const cookies = Astro.request.headers.get('cookie');
 
-if (url.searchParams.get('password') !== password) {
+if (!cookies?.includes(`astro_admin=${PASSWORD}`)) {
   return Astro.redirect('/admin/login');
 }
 ---
@@ -10,11 +10,11 @@ if (url.searchParams.get('password') !== password) {
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { 
+    body {
+      padding: 20px;
+      font-family: -apple-system, sans-serif;
       max-width: 800px;
       margin: 0 auto;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     .header {
       display: flex;
@@ -25,10 +25,10 @@ if (url.searchParams.get('password') !== password) {
     .btn {
       background: #4CAF50;
       color: white;
-      padding: 10px 15px;
+      padding: 12px 16px;
+      border-radius: 8px;
       text-decoration: none;
-      border-radius: 4px;
-      display: inline-block;
+      font-size: 16px;
     }
     .posts-list {
       list-style: none;
@@ -36,24 +36,28 @@ if (url.searchParams.get('password') !== password) {
     }
     .post-item {
       padding: 15px;
-      border: 1px solid #ddd;
+      border: 1px solid #eee;
       margin-bottom: 10px;
-      border-radius: 4px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Posts</h1>
-    <a href="/admin/new?password=admin123" class="btn">New Post</a>
+    <a href="/admin/new" class="btn">+ New Post</a>
   </div>
 
   <ul class="posts-list">
-    <!-- We'll populate this dynamically later -->
+    <!-- Dynamic posts will go here later -->
     <li class="post-item">
       <h3>Sample Post</h3>
-      <p>2023-11-15</p>
+      <small>2023-11-15</small>
     </li>
   </ul>
+
+  <div style="margin-top: 30px; text-align: center;">
+    <a href="/admin/logout" style="color: #888; font-size: 14px;">Logout</a>
+  </div>
 </body>
 </html>
