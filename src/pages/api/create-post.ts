@@ -1,32 +1,19 @@
 import { type APIRoute } from "astro";
 
-export const post: APIRoute = async ({ request, cookies }) => {
-  const formData = await request.formData();
-  
-  // 1. Verify auth
-  const authCookie = cookies.get('astro_admin');
-  if (authCookie?.value !== "astro123") {
+export const POST: APIRoute = async ({ request }) => {
+  // 1. Verify password from environment variable
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader !== `Bearer ${import.meta.env.ADMIN_PASSWORD}`) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // 2. Validate form
-  const title = formData.get("title")?.toString() || "Untitled";
-  const content = formData.get("content")?.toString() || "";
+  // 2. Process content
+  const { content } = await request.json();
+  console.log("New post content:", content); // For debugging
 
-  // 3. Prepare markdown
-  const markdownContent = `---
-title: "${title.replace(/"/g, '\\"')}"
-date: "${new Date().toISOString()}"
----
-
-${content}
-`;
-
-  // 4. Log for now (GitHub integration next)
-  console.log("New post:", { title, content: markdownContent });
-
-  return new Response(null, {
-    status: 303,
-    headers: { Location: "/admin" }
+  // 3. Here you would add GitHub saving logic later
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
   });
 };
