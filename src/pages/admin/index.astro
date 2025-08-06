@@ -1,23 +1,35 @@
 ---
-// Simple password check (we'll improve this later)
-const password = Astro.url.searchParams.get('password');
-if (password !== 'your_temp_password') {
-  return Astro.redirect('/');
-}
-
+// TEMPORARY: No password for testing (we'll add proper auth later)
 import { getCollection } from "astro:content";
 const posts = await getCollection("post");
 ---
 <html>
+<head>
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+    li { padding: 0.5rem; border-bottom: 1px solid #eee; }
+  </style>
+</head>
 <body>
-  <h1>Admin Panel</h1>
+  <h1>📝 Admin Panel</h1>
+  <p>Found {posts.length} posts:</p>
+  
   <ul>
     {posts.map(post => (
       <li>
-        {post.data.title} 
-        (Slug: {post.slug})
+        <strong>{post.data.title}</strong>
+        <div style="color: #666; font-size: 0.9rem;">
+          Slug: {post.slug} | Published: {post.data.publishDate.toISOString().split('T')[0]}
+        </div>
       </li>
     ))}
   </ul>
+
+  <div style="margin-top: 2rem;">
+    <a href="/admin/new" style="background: #4CAF50; color: white; padding: 0.5rem 1rem; text-decoration: none;">
+      ➕ New Post
+    </a>
+  </div>
 </body>
 </html>
