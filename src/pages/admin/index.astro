@@ -1,9 +1,9 @@
 ---
-const PASSWORD = "astro123"; // Must match login.astro
-const cookies = Astro.request.headers.get('cookie');
+import { getSession } from "auth-astro";
 
-if (!cookies?.includes(`astro_admin=${PASSWORD}`)) {
-  return Astro.redirect('/admin/login');
+// Redirect if not logged in
+if (!Astro.cookies.get("admin_auth")?.value) {
+  return Astro.redirect("/admin/login");
 }
 ---
 <html>
@@ -12,52 +12,23 @@ if (!cookies?.includes(`astro_admin=${PASSWORD}`)) {
   <style>
     body {
       padding: 20px;
-      font-family: -apple-system, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+      font-family: sans-serif;
     }
     .btn {
+      display: block;
       background: #4CAF50;
       color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
       text-decoration: none;
-      font-size: 16px;
-    }
-    .posts-list {
-      list-style: none;
-      padding: 0;
-    }
-    .post-item {
-      padding: 15px;
-      border: 1px solid #eee;
-      margin-bottom: 10px;
+      margin: 10px 0;
       border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Posts</h1>
-    <a href="/admin/new" class="btn">+ New Post</a>
-  </div>
-
-  <ul class="posts-list">
-    <!-- Dynamic posts will go here later -->
-    <li class="post-item">
-      <h3>Sample Post</h3>
-      <small>2023-11-15</small>
-    </li>
-  </ul>
-
-  <div style="margin-top: 30px; text-align: center;">
-    <a href="/admin/logout" style="color: #888; font-size: 14px;">Logout</a>
-  </div>
+  <h1>Admin Panel</h1>
+  <a href="/admin/new" class="btn">Create New Post</a>
+  <a href="/admin/logout" class="btn" style="background: #f44336;">Logout</a>
 </body>
 </html>
