@@ -1,16 +1,20 @@
 ---
-const PASSWORD = "astro123"; // Same as login
----
+const PASSWORD = "astro123";
+const cookies = Astro.request.headers.get('cookie');
 
+if (!cookies?.includes(`astro_admin=${PASSWORD}`)) {
+  return Astro.redirect('/admin/login');
+}
+---
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Quill CSS (lightweight) -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <style>
     #editor { 
-      height: 60vh !important; /* Taller on mobile */
+      height: 60vh !important;
       border: none !important;
+      font-size: 16px;
     }
     .ql-toolbar {
       position: sticky;
@@ -20,12 +24,15 @@ const PASSWORD = "astro123"; // Same as login
     }
     #post-form {
       padding: 10px;
+      padding-bottom: 70px; /* Space for fixed button */
     }
     input[type="text"] {
       width: 100%;
       padding: 16px;
       font-size: 18px;
       margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
     }
     button[type="submit"] {
       width: 100%;
@@ -37,6 +44,7 @@ const PASSWORD = "astro123"; // Same as login
       position: fixed;
       bottom: 0;
       left: 0;
+      border-radius: 0;
     }
   </style>
 </head>
@@ -55,19 +63,21 @@ const PASSWORD = "astro123"; // Same as login
     <button type="submit">📤 Publish</button>
   </form>
 
-  <!-- Quill JS -->
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
     const quill = new Quill('#editor', {
       theme: 'snow',
-      modules: { toolbar: [
-        ['bold', 'italic'],
-        ['link', 'blockquote'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }]
-      ]}
+      modules: {
+        toolbar: [
+          ['bold', 'italic'],
+          ['link', 'blockquote'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      },
+      placeholder: 'Write your post here...'
     });
     
-    // Handle form submit
     document.getElementById('post-form').onsubmit = function() {
       document.getElementById('content').value = quill.root.innerHTML;
     };
