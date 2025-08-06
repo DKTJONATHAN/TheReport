@@ -3,24 +3,93 @@
 import { getCollection } from "astro:content";
 import PostLayout from "@/layouts/BlogPost.astro";
 import type { GetStaticPaths } from "astro";
+import { collectionDateSort } from "@/utils/date";
 
-// 1. Properly typed getStaticPaths
+// 1. Generate static paths with proper filtering
 export const getStaticPaths = (async () => {
-  const posts = await getCollection("post");
+  const posts = await getCollection("post", ({ data }) => {
+    // Filter out drafts in production
+    return import.meta.env.PROD ? !data.draft : true;
+  });
   
-  return posts.map((post) => ({
-    params: { slug: post.slug },  // Use slug instead of id
-    props: { post },
+  return posts.sort(collectionDateSort).map((post) => ({
+    params: { slug: post.slug },
+    props: { 
+      post,
+      // Add next/previous post navigation
+      nextPost: posts[posts.indexOf(post) + 1] || null,
+      prevPost: posts[posts.indexOf(post) - 1] || null
+    },
   }));
 }) satisfies GetStaticPaths;
 
-// 2. Get the post from props
-const { post } = Astro.props;
+// 2. Type-safe props
+interface Props {
+  post: CollectionEntry<"post">;
+  nextPost: CollectionEntry<"post"> | null;
+  prevPost: CollectionEntry<"post"> | null;
+}
+const { post, nextPost, prevPost } = Astro.props as Props;
 const { Content } = await post.render();
+
+// 3. Enhanced metadata
+const pageTitle = `${post.data.title} | ${siteConfig.title}`;
+const pageDescription = post.data.description || siteConfig.description;
+const pageImage = typeof post.data.image === 'string' 
+  ? post.data.image 
+  : post.data.image?.src;
 ---
 
-<PostLayout post={post}>
-  <article class="prose dark:prose-invert max-w-none">
+<PostLayout 
+  post={post}
+  meta={{
+    title: pageTitle,
+    description: pageDescription,
+    image: pageImage,
+    canonical: `${siteConfig.url}/posts/${post.slug}/`
+  }}
+>
+  <article class="prose dark:prose-invert max-w-none mx-auto">
     <Content />
   </article>
+
+  {/* Post navigation */}
+  <div class="mt-16 grid gap-8 md:grid-cols-2 border-t pt-8">
+    {prevPost && (
+      <a 
+        href={`/posts/${prevPost.slug}/`} 
+        class="group flex flex-col"
+        aria-label="Previous post"
+      >
+        <span class="text-sm text-gray-500 dark:text-gray-400">Previous</span>
+        <span class="text-lg font-medium group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+          {prevPost.data.title}
+        </span>
+      </a>
+    )}
+    {nextPost && (
+      <a 
+        href={`/posts/${nextPost.slug}/`} 
+        class="group flex flex-col md:text-right"
+        aria-label="Next post"
+      >
+        <span class="text-sm text-gray-500 dark:text-gray-400">Next</span>
+        <span class="text-lg font-medium group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+          {nextPost.data.title}
+        </span>
+      </a>
+    )}
+  </div>
 </PostLayout>
+
+<style>
+  /* Custom prose styles */
+  .prose {
+    --tw-prose-headings: theme(colors.gray.900);
+    --tw-prose-links: theme(colors.red.600);
+  }
+  .dark .prose {
+    --tw-prose-headings: theme(colors.white);
+    --tw-prose-links: theme(colors.red.400);
+  }
+</style>
