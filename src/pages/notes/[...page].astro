@@ -1,13 +1,27 @@
 ---
 import { getCollection } from 'astro:content';
 import Note from '@/components/note/Note.astro';
+import BaseLayout from '@/layouts/Base.astro';
 
-const allNotes = await getCollection('note');
-const validNotes = allNotes.filter(note => 
-  note.data.pubDate && !isNaN(new Date(note.data.pubDate).getTime())
-);
+export async function getStaticPaths() {
+  const allNotes = await getCollection('note');
+  const validNotes = allNotes.filter(note => 
+    note.data.pubDate && !isNaN(new Date(note.data.pubDate).getTime())
+  );
+  
+  return [{
+    params: { page: 'index' },
+    props: { notes: validNotes }
+  }];
+}
+
+const { notes } = Astro.props;
 ---
 
-{validNotes.map(note => (
-  <Note note={note} />
-))}
+<BaseLayout>
+  <div class="grid gap-6 md:grid-cols-2">
+    {notes.map(note => (
+      <Note note={note} />
+    ))}
+  </div>
+</BaseLayout>
