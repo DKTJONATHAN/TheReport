@@ -5,7 +5,7 @@ import type { HTMLAttributes } from "astro/types";
 type Props = HTMLAttributes<"time"> & {
   date: Date;
   dateTimeOptions?: Intl.DateTimeFormatOptions;
-  format?: "standard" | "long" | "short" | "relative";
+  format?: "standard" | "long" | "short";
   locale?: string;
 };
 
@@ -18,8 +18,7 @@ const {
   ...attrs 
 } = Astro.props;
 
-// Default formatting options
-const defaultOptions: Record<string, Intl.DateTimeFormatOptions> = {
+const defaultOptions = {
   standard: { year: "numeric", month: "short", day: "numeric" },
   long: { year: "numeric", month: "long", day: "numeric", weekday: "long" },
   short: { year: "2-digit", month: "short", day: "numeric" }
@@ -28,8 +27,6 @@ const defaultOptions: Record<string, Intl.DateTimeFormatOptions> = {
 const formatOptions = dateTimeOptions || defaultOptions[format];
 const postDate = getFormattedDate(date, formatOptions, locale);
 const ISO = date.toISOString();
-
-// Add default styling if no class provided
 const timeClass = className || "text-gray-600 dark:text-gray-400 text-sm font-medium";
 ---
 
@@ -39,24 +36,5 @@ const timeClass = className || "text-gray-600 dark:text-gray-400 text-sm font-me
   class={timeClass}
   {...attrs}
 >
-  {format === "relative" ? (
-    <script>
-      // Client-side relative date calculation
-      document.currentScript.parentElement.textContent = new Intl.RelativeTimeFormat(
-        '{locale}',
-        { numeric: 'auto' }
-      ).format(
-        Math.floor((new Date('{ISO}') - new Date()) / (1000 * 60 * 60 * 24),
-        'day'
-      );
-    </script>
-  ) : (
-    postDate
-  )}
+  {postDate}
 </time>
-
-<style is:global>
-  time {
-    font-variant-numeric: tabular-nums;
-  }
-</style>
