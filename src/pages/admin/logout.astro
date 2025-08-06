@@ -1,7 +1,4 @@
 ---
-Astro.response.headers.set(
-  'Set-Cookie',
-  'astro_admin=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-);
-return Astro.redirect('/admin/login');
+Astro.cookies.delete("admin_auth");
+return Astro.redirect("/admin/login");
 ---
