@@ -1,0 +1,117 @@
+---
+// 1. Environment Variables
+const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD;
+
+// 2. Handle Login
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const passwordAttempt = formData.get("password");
+
+  // Correct password -> Set cookie
+  if (passwordAttempt === ADMIN_PASSWORD) {
+    Astro.response.headers.set(
+      "Set-Cookie",
+      `admin_auth=true; Path=/; Max-Age=2592000; HttpOnly; SameSite=Strict`
+    );
+    return Astro.redirect("/admin");
+  }
+}
+
+// 3. Check Authentication
+const isLoggedIn = Astro.cookies.get("admin_auth")?.value === "true";
+---
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    /* Mobile-optimized styles */
+    body { 
+      font-family: -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    input, button, .ql-editor {
+      font-size: 16px !important; /* Better mobile readability */
+    }
+    #editor { 
+      height: 60vh;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN FORM (Shows when not logged in) -->
+  <form 
+    method="POST" 
+    class={isLoggedIn ? "hidden" : ""}
+    style="margin-top: 40px;"
+  >
+    <h2>Admin Login</h2>
+    <input 
+      type="password" 
+      name="password" 
+      placeholder="Enter admin password" 
+      required
+      style="width: 100%; padding: 12px; margin: 10px 0;"
+    >
+    <button 
+      type="submit"
+      style="width: 100%; padding: 12px; background: #4CAF50; color: white; border: none;"
+    >
+      Login
+    </button>
+  </form>
+
+  <!-- EDITOR (Shows when logged in) -->
+  <div class={!isLoggedIn ? "hidden" : ""}>
+    <div id="editor"></div>
+    <button 
+      onclick="publishPost()"
+      style="width: 100%; padding: 12px; background: #4CAF50; color: white; border: none;"
+    >
+      Publish Post
+    </button>
+    <a 
+      href="/admin?logout=true"
+      style="display: block; text-align: center; margin-top: 20px; color: #f44336;"
+    >
+      Logout
+    </a>
+  </div>
+
+  <!-- Quill Editor JS -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script>
+    // Initialize editor
+    const quill = new Quill('#editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic'],
+          ['link', 'blockquote'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }]
+        ]
+      }
+    });
+
+    // Handle publishing
+    async function publishPost() {
+      const content = quill.root.innerHTML;
+      await fetch("/api/create-post", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + "${ADMIN_PASSWORD}"
+        },
+        body: JSON.stringify({ content })
+      });
+      alert("Post published!");
+    }
+  </script>
+</body>
+</html>
