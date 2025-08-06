@@ -1,0 +1,75 @@
+Here's a template that strictly adheres to your content schema configuration (`src/content/config.ts`):
+
+```markdown
+---
+title: "Your Post Title (40-60 characters)"  # Required (1-60 chars)
+description: "Your post description that is between 20-160 characters long to meet validation requirements."  # Required (20-160 chars)
+publishDate: YYYY-MM-DD  # Required (valid date format)
+updatedDate: YYYY-MM-DD  # Optional
+tags: ["tag1", "tag2", "tag3"]  # Optional (will be deduplicated/lowercased)
+coverImage:  # Optional
+  src: "/images/your-image.jpg"  # Path relative to public folder
+  alt: "Descriptive alt text for accessibility"
+draft: false  # Optional (defaults to false)
+ogImage: "/social/your-og-image.jpg"  # Optional
+---
+
+## Introduction
+
+Your opening content here...
+
+## Main Content
+
+### Section 1
+
+Content with proper markdown formatting:
+
+- Bullet points
+- **Bold text**
+- *Italic text*
+
+> Blockquotes for important statements
+
+```javascript
+// Code blocks when needed
+const example = "properly formatted";
+```
+
+![Inline image alt text](/images/another-image.jpg)
+
+### Section 2
+
+1. Numbered lists
+2. For step-by-step content
+3. When order matters
+
+## Conclusion
+
+Wrap-up your post...
+
+---
+
+*Last updated: {{ updatedDate || publishDate }}*
+```
+
+### Key Validation Requirements:
+
+1. **Frontmatter Fields**:
+   - ✅ `title`: 1-60 characters
+   - ✅ `description`: 20-160 characters
+   - ✅ `publishDate`: Valid date (YYYY-MM-DD recommended)
+   - ✅ `tags`: Array of strings (optional)
+   - ✅ `coverImage`: Object with `src` and `alt` (optional)
+
+2. **Automatic Processing**:
+   - Tags will be deduplicated and lowercased
+   - Dates will be coerced to Date objects
+   - Draft status defaults to false
+
+3. **Best Practices**:
+   - Keep title under 60 chars
+   - Description between 20-160 chars
+   - Use relative paths for images (store in `public/` folder)
+   - Include alt text for all images
+
+This template guarantees compliance with your schema and will prevent build errors while maintaining all the functionality you've configured in your content collections.
