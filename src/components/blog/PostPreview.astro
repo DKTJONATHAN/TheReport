@@ -1,23 +1,22 @@
 ---
-// src/components/PostPreview.astro
+// src/components/blog/PostPreview.astro
 import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
 
-// Safely extract image from your schema
+/**
+ * Flexible image extractor that handles:
+ * - String paths (local/remote)
+ * - Image objects { src, alt }
+ * - Fallback to parsing markdown/HTML
+ */
 const getPostImage = (post: CollectionEntry<"post">): string | null => {
   try {
-    // 1. Check coverImage first (from your schema)
-    if (post.data.coverImage?.src) {
-      return post.data.coverImage.src;
-    }
+    // Handle string or object images from frontmatter
+    if (typeof post.data.image === 'string') return post.data.image;
+    if (post.data.image?.src) return post.data.image.src;
     
-    // 2. Check ogImage (from your schema)
-    if (post.data.ogImage) {
-      return post.data.ogImage;
-    }
-    
-    // 3. Parse body as fallback
+    // Fallback: Parse first image from content body
     if (post.body) {
       const markdownMatch = post.body.match(/!\[.*?\]\((.*?)\)/);
       if (markdownMatch?.[1]) return markdownMatch[1];
@@ -47,6 +46,11 @@ const {
 
 const postImage = getPostImage(post);
 const placeholderImage = "/Jonathan-Mwaniki-logo.png";
+const imageAlt = typeof post.data.image === 'object' 
+  ? post.data.image.alt || post.data.title 
+  : post.data.title;
+// Ensure proper slug handling for URLs
+const postUrl = `/posts/${post.slug}/`;
 ---
 
 <Tag class="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
@@ -54,7 +58,7 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
   <div class="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-800">
     <img
       src={postImage || placeholderImage}
-      alt={post.data.coverImage?.alt || post.data.title}
+      alt={imageAlt}
       width={800}
       height={450}
       loading="lazy"
@@ -70,7 +74,7 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
     <div class="flex items-center gap-3 mb-3">
       <FormattedDate
         class="text-sm font-medium text-gray-500 dark:text-gray-400"
-        date={post.data.publishDate}
+        date={post.data.pubDate}
       />
       {post.data.draft && (
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
@@ -83,7 +87,7 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
       <a 
         class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors after:absolute after:inset-0"
         data-astro-prefetch
-        href={`/posts/${post.slug}/`}
+        href={postUrl}
       >
         {post.data.title}
       </a>
@@ -110,3 +114,12 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
     )}
   </div>
 </Tag>
+
+<style>
+  /* Preserves clickable card behavior */
+  .group h3 a::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+  }
+</style>
