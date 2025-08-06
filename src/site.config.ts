@@ -1,11 +1,10 @@
----
-import type { SiteConfig } from "@/types";
+import type { SiteConfig } from "./types";
 import type { AstroExpressiveCodeOptions } from "astro-expressive-code";
 
 export const siteConfig: SiteConfig = {
-	// Used as both a meta property (src/components/BaseHead.astro L:31 + L:49) & the generated satori png (src/pages/og-image/[slug].png.ts)
+	// Used as both a meta property (BaseHead.astro) & the generated satori png (og-image/[slug].png.ts)
 	author: "Jonathan Mwaniki",
-	// Date.prototype.toLocaleDateString() parameters, found in src/utils/date.ts.
+	// Date.prototype.toLocaleDateString() parameters, found in utils/date.ts.
 	date: {
 		locale: "en-GB",
 		options: {
@@ -16,15 +15,15 @@ export const siteConfig: SiteConfig = {
 	},
 	// Used as the default description meta property and webmanifest description
 	description: "The Mwaniki Reports delivers the latest news and updates from Kenya and beyond.",
-	// HTML lang property, found in src/layouts/Base.astro L:18 & astro.config.ts L:48
+	// HTML lang property, found in layouts/Base.astro & astro.config.ts
 	lang: "en-GB",
-	// Meta property, found in src/components/BaseHead.astro L:42
+	// Meta property, found in components/BaseHead.astro
 	ogLocale: "en_KE",
 	/* 
-		- Used to construct the meta title property found in src/components/BaseHead.astro L:11 
-		- The webmanifest name found in astro.config.ts L:42
-		- The link value found in src/components/layout/Header.astro L:35
-		- In the footer found in src/components/layout/Footer.astro L:12
+		- Used to construct the meta title property found in components/BaseHead.astro
+		- The webmanifest name found in astro.config.ts
+		- The link value found in components/layout/Header.astro
+		- In the footer found in components/layout/Footer.astro
 	*/
 	title: "The Mwaniki Reports",
 	// Your domain for astro.config.ts
