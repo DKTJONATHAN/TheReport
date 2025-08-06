@@ -1,0 +1,23 @@
+---
+// Simple password check (we'll improve this later)
+const password = Astro.url.searchParams.get('password');
+if (password !== 'your_temp_password') {
+  return Astro.redirect('/');
+}
+
+import { getCollection } from "astro:content";
+const posts = await getCollection("post");
+---
+<html>
+<body>
+  <h1>Admin Panel</h1>
+  <ul>
+    {posts.map(post => (
+      <li>
+        {post.data.title} 
+        (Slug: {post.slug})
+      </li>
+    ))}
+  </ul>
+</body>
+</html>
