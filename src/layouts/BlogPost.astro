@@ -1,14 +1,12 @@
 ---
 import { type CollectionEntry, render } from "astro:content";
-
 import Masthead from "@/components/blog/Masthead.astro";
 import TOC from "@/components/blog/TOC.astro";
 import WebMentions from "@/components/blog/webmentions/index.astro";
-
 import BaseLayout from "./Base.astro";
 
 interface Props {
-	post: CollectionEntry<"post">;
+  post: CollectionEntry<"post">;
 }
 
 const { post } = Astro.props;
@@ -20,61 +18,64 @@ const readingTime: string = remarkPluginFrontmatter.readingTime;
 ---
 
 <BaseLayout
-	meta={{
-		articleDate,
-		description,
-		ogImage: socialImage,
-		title,
-	}}
+  meta={{
+    articleDate,
+    description,
+    ogImage: socialImage,
+    title,
+  }}
 >
-	<article class="grow break-words" data-pagefind-body>
-		<div id="blog-hero" class="mb-8"><Masthead content={post} readingTime={readingTime} /></div>
-		<div class="flex flex-col gap-8 lg:flex-row lg:items-start">
-			{!!headings.length && <TOC headings={headings} />}
-			<div
-				class="prose prose-base prose-headings:font-bold prose-headings:text-red-600 prose-a:text-red-600 prose-a:hover:text-red-800 prose-headings:before:absolute prose-headings:before:-ms-4 prose-headings:before:text-gray-500 prose-headings:hover:before:text-red-600 sm:prose-headings:before:content-['#'] sm:prose-th:before:content-none"
-			>
-				<slot />
-				<WebMentions />
-			</div>
-		</div>
-	</article>
-	<button
-		class="hover:border-red-700 fixed end-4 bottom-8 z-90 flex h-10 w-10 translate-y-28 cursor-pointer items-center justify-center rounded-full border-2 border-transparent bg-red-600 text-white opacity-0 transition-all transition-discrete duration-300 data-[show=true]:translate-y-0 data-[show=true]:opacity-100 sm:end-8 sm:h-12 sm:w-12"
-		data-show="false"
-		id="to-top-btn"
-	>
-		<span class="sr-only">Back to top</span>
-		<svg
-			aria-hidden="true"
-			class="h-6 w-6"
-			fill="none"
-			focusable="false"
-			stroke="currentColor"
-			stroke-width="2"
-			viewBox="0 0 24 24"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path d="M4.5 15.75l7.5-7.5 7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
-		</svg>
-	</button>
+  <article class="grow break-words" data-pagefind-body>
+    <div id="blog-hero" class="mb-8">
+      <Masthead content={post} readingTime={readingTime} />
+    </div>
+
+    <div class="flex flex-col gap-8 lg:flex-row lg:items-start">
+      {!!headings.length && (
+        <div class="lg:sticky lg:top-8 lg:shrink-0 lg:basis-64">
+          <TOC headings={headings} />
+        </div>
+      )}
+      
+      <div class="prose prose-base w-full max-w-3xl lg:max-w-none">
+        <slot />
+        <WebMentions class="mt-12" />
+      </div>
+    </div>
+  </article>
+
+  <button
+    class="fixed bottom-8 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-md transition-all duration-300 hover:bg-red-700 data-[show=true]:opacity-100 sm:right-8 sm:h-12 sm:w-12"
+    data-show="false"
+    id="to-top-btn"
+    aria-label="Back to top"
+  >
+    <svg
+      aria-hidden="true"
+      class="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M4.5 15.75l7.5-7.5 7.5 7.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </button>
 </BaseLayout>
 
-<script>
-	const scrollBtn = document.getElementById("to-top-btn") as HTMLButtonElement;
-	const targetHeader = document.getElementById("blog-hero") as HTMLDivElement;
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrollBtn = document.getElementById('to-top-btn');
+    const targetHeader = document.getElementById('blog-hero');
 
-	function callback(entries: IntersectionObserverEntry[]) {
-		entries.forEach((entry) => {
-			// only show the scroll to top button when the heading is out of view
-			scrollBtn.dataset.show = (!entry.isIntersecting).toString();
-		});
-	}
+    const observer = new IntersectionObserver((entries) => {
+      scrollBtn.dataset.show = (!entries[0].isIntersecting).toString();
+    }, { threshold: 0.1 });
 
-	scrollBtn.addEventListener("click", () => {
-		document.documentElement.scrollTo({ behavior: "smooth", top: 0 });
-	});
+    observer.observe(targetHeader);
 
-	const observer = new IntersectionObserver(callback);
-	observer.observe(targetHeader);
+    scrollBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
 </script>
