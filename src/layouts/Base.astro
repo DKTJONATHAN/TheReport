@@ -8,11 +8,19 @@ import { siteConfig } from "@/site.config";
 import type { SiteMeta } from "@/types";
 
 interface Props {
-  meta: SiteMeta;
+  meta: Partial<SiteMeta> & {
+    title: string;
+    articleDate?: string | Date;
+  };
 }
 
 const {
-  meta: { articleDate, description = siteConfig.description, ogImage, title },
+  meta: { 
+    articleDate = new Date().toISOString(),
+    description = siteConfig.description, 
+    ogImage, 
+    title 
+  },
 } = Astro.props;
 ---
 
@@ -20,7 +28,7 @@ const {
 <html class="scroll-smooth" lang={siteConfig.lang}>
   <head>
     <BaseHead 
-      articleDate={articleDate} 
+      articleDate={articleDate instanceof Date ? articleDate.toISOString() : articleDate} 
       description={description} 
       ogImage={ogImage} 
       title={title} 
