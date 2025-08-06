@@ -4,64 +4,65 @@ import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
 
-// 1. Image extraction utility
-const getFirstImage = (post: CollectionEntry<"post">): string | null => {
-  // Priority 1: Frontmatter image
-  if (post.data.image) return post.data.image;
-  
-  // Priority 2: Markdown images ![alt](url)
-  const markdownImgMatch = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1];
-  if (markdownImgMatch) return markdownImgMatch;
-  
-  // Priority 3: HTML <img> tags (for MDX)
-  const htmlImgMatch = post.body.match(/<img[^>]+src=["']([^"']+)["']/)?.[1];
-  return htmlImgMatch || null;
+// Safely extract image from your schema
+const getPostImage = (post: CollectionEntry<"post">): string | null => {
+  try {
+    // 1. Check coverImage first (from your schema)
+    if (post.data.coverImage?.src) {
+      return post.data.coverImage.src;
+    }
+    
+    // 2. Check ogImage (from your schema)
+    if (post.data.ogImage) {
+      return post.data.ogImage;
+    }
+    
+    // 3. Parse body as fallback
+    if (post.body) {
+      const markdownMatch = post.body.match(/!\[.*?\]\((.*?)\)/);
+      if (markdownMatch?.[1]) return markdownMatch[1];
+      
+      const htmlMatch = post.body.match(/<img[^>]+src=["']([^"']+)["']/);
+      return htmlMatch?.[1] || null;
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
 };
 
-// 2. Type-safe props
 type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
   post: CollectionEntry<"post">;
   withDesc?: boolean;
   featured?: boolean;
-  lazy?: boolean;
 };
 
 const { 
   as: Tag = "article",
   post, 
   withDesc = false, 
-  featured = false,
-  lazy = true
+  featured = false
 } = Astro.props;
 
-// 3. Get first image or fallback to logo
-const firstImage = getFirstImage(post);
+const postImage = getPostImage(post);
 const placeholderImage = "/Jonathan-Mwaniki-logo.png";
 ---
 
 <Tag class="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
   <!-- Image Section -->
   <div class="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-800">
-    {firstImage ? (
-      <img
-        src={firstImage}
-        alt={post.data.title}
-        width={800}
-        height={450}
-        loading={lazy ? "lazy" : "eager"}
-        decoding="async"
-        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-    ) : (
-      <img
-        src={placeholderImage}
-        alt="Jonathan Mwaniki logo"
-        width={800}
-        height={450}
-        loading={lazy ? "lazy" : "eager"}
-        class="w-full h-full object-contain p-6 opacity-80 dark:opacity-60"
-      />
-    )}
+    <img
+      src={postImage || placeholderImage}
+      alt={post.data.coverImage?.alt || post.data.title}
+      width={800}
+      height={450}
+      loading="lazy"
+      decoding="async"
+      class={`w-full h-full transition-transform duration-500 group-hover:scale-105 ${
+        postImage ? 'object-cover' : 'object-contain p-6 opacity-80 dark:opacity-60'
+      }`}
+    />
   </div>
 
   <!-- Content Section -->
@@ -82,7 +83,7 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
       <a 
         class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors after:absolute after:inset-0"
         data-astro-prefetch
-        href={`/posts/${post.slug || post.id}/`}
+        href={`/posts/${post.slug}/`}
       >
         {post.data.title}
       </a>
@@ -109,14 +110,3 @@ const placeholderImage = "/Jonathan-Mwaniki-logo.png";
     )}
   </div>
 </Tag>
-
-<style is:global>
-  /* Fallback for older browsers */
-  @supports not (aspect-ratio: 1) {
-    .relative.aspect-video::before {
-      content: "";
-      display: block;
-      padding-bottom: 56.25%;
-    }
-  }
-</style>
