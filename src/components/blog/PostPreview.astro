@@ -3,21 +3,19 @@
 import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
-import { Image } from "astro:assets";
-import placeholderImage from "@/assets/placeholder.jpg";
 
 // 1. Image extraction utility
-const getFirstImage = (post: CollectionEntry<"post">): string | undefined => {
+const getFirstImage = (post: CollectionEntry<"post">): string | null => {
   // Priority 1: Frontmatter image
   if (post.data.image) return post.data.image;
   
-  // Priority 2: Markdown/MDX images
+  // Priority 2: Markdown images ![alt](url)
   const markdownImgMatch = post.body.match(/!\[.*?\]\((.*?)\)/)?.[1];
   if (markdownImgMatch) return markdownImgMatch;
   
-  // Priority 3: HTML img tags (for MDX)
-  const htmlImgMatch = post.body.match(/<img.*?src=["'](.*?)["']/)?.[1];
-  return htmlImgMatch;
+  // Priority 3: HTML <img> tags (for MDX)
+  const htmlImgMatch = post.body.match(/<img[^>]+src=["']([^"']+)["']/)?.[1];
+  return htmlImgMatch || null;
 };
 
 // 2. Type-safe props
@@ -36,34 +34,32 @@ const {
   lazy = true
 } = Astro.props;
 
-// 3. Get image and fallback
+// 3. Get first image or fallback to logo
 const firstImage = getFirstImage(post);
-const imageUrl = firstImage 
-  ? new URL(firstImage, import.meta.url).toString() 
-  : placeholderImage;
+const placeholderImage = "/Jonathan-Mwaniki-logo.png";
 ---
 
 <Tag class="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
   <!-- Image Section -->
-  <div class="relative aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-gray-800">
+  <div class="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-800">
     {firstImage ? (
-      <Image
-        src={imageUrl}
+      <img
+        src={firstImage}
         alt={post.data.title}
         width={800}
         height={450}
         loading={lazy ? "lazy" : "eager"}
         decoding="async"
         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        formats={['avif', 'webp', 'jpg']}
-        quality={80}
       />
     ) : (
       <img
         src={placeholderImage}
-        alt="Default placeholder"
-        class="w-full h-full object-cover opacity-70"
+        alt="Jonathan Mwaniki logo"
+        width={800}
+        height={450}
         loading={lazy ? "lazy" : "eager"}
+        class="w-full h-full object-contain p-6 opacity-80 dark:opacity-60"
       />
     )}
   </div>
@@ -115,13 +111,12 @@ const imageUrl = firstImage
 </Tag>
 
 <style is:global>
-  /* Fix for aspect ratio on older browsers */
-  @supports not (aspect-ratio: 16/9) {
-    .relative.aspect-\\[16\\/9\\]::before {
+  /* Fallback for older browsers */
+  @supports not (aspect-ratio: 1) {
+    .relative.aspect-video::before {
       content: "";
       display: block;
       padding-bottom: 56.25%;
-      float: left;
     }
   }
 </style>
