@@ -5,7 +5,7 @@ const notes = defineCollection({
     pubDate: z.union([
       z.date(),
       z.string().transform(str => new Date(str))
-    ]).refine(date => !isNaN(date.getTime())
+    ]).refine(date => !isNaN(date.getTime()))
   })
 });
 
