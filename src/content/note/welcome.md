@@ -1,9 +1,7 @@
 ---
-title: Hello, Welcome
-description: An introduction to using the note feature in Astro Cactus
-publishDate: "2024-10-14T11:23:00Z"
+title: Breaking News Update
+description: A quick brief on the latest news from Jonathan Mwaniki News, covering key updates in Kenya.
+publishDate: "2025-08-06T12:38:00+03:00"
 ---
 
-Hi, Hello. This is an example note feature included with Astro Cactus.
-
-They're for shorter, concise "post's" that you'd like to share, they generally don't include headings, but hey, that's entirely up to you.
+Jonathan Mwaniki News brings you the latest updates from Kenya and beyond. Today’s brief covers a significant event impacting the region. Stay tuned for detailed reporting in our Top Stories section, and follow us on social media for real-time updates.
