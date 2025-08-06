@@ -1,25 +1,53 @@
 ---
-// No frontmatter needed
+// Password protection
+const password = "admin123"; // Change this to your preferred password
+const url = new URL(Astro.request.url);
+
+if (url.searchParams.get('password') === password) {
+  return Astro.redirect('/admin');
+}
 ---
 <html>
-<body style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;">
-  <h1>Admin Login</h1>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { 
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    input, button { 
+      width: 100%; 
+      padding: 12px; 
+      margin: 8px 0; 
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button { 
+      background: #4CAF50; 
+      color: white; 
+      border: none; 
+      font-weight: bold;
+    }
+    button:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
   <form action="/admin" method="GET">
-    <div style="margin-bottom: 1rem;">
-      <label style="display: block; margin-bottom: 0.5rem;">Password:</label>
-      <input 
-        type="password" 
-        name="password" 
-        required
-        style="width: 100%; padding: 0.5rem;"
-      >
-    </div>
-    <button 
-      type="submit"
-      style="background: #4CAF50; color: white; border: none; padding: 0.5rem 1rem;"
+    <h2>Admin Login</h2>
+    <input 
+      type="password" 
+      name="password" 
+      placeholder="Password" 
+      required
+      autocomplete="current-password"
     >
-      Login
-    </button>
+    <button type="submit">Login</button>
   </form>
 </body>
 </html>
