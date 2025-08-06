@@ -1,53 +1,43 @@
 ---
-// Password protection
-const password = "admin123"; // Change this to your preferred password
-const url = new URL(Astro.request.url);
-
-if (url.searchParams.get('password') === password) {
-  return Astro.redirect('/admin');
-}
+// Password (change this!)
+const PASSWORD = "astro123"; // 8+ chars, easy to type on mobile
 ---
+
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <style>
-    body { 
-      max-width: 500px;
-      margin: 0 auto;
+    body {
       padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 18px; /* Bigger text */
+      -webkit-text-size-adjust: 100%; /* Prevent iOS zoom */
     }
-    input, button { 
-      width: 100%; 
-      padding: 12px; 
-      margin: 8px 0; 
-      box-sizing: border-box;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+    input, button {
+      width: 100%;
+      padding: 16px; /* Thicker pads */
+      margin: 12px 0;
       font-size: 16px;
     }
-    button { 
-      background: #4CAF50; 
-      color: white; 
-      border: none; 
-      font-weight: bold;
-    }
-    button:hover {
-      background: #45a049;
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px; /* Rounded corners */
     }
   </style>
 </head>
 <body>
   <form action="/admin" method="GET">
-    <h2>Admin Login</h2>
+    <h2>📱 Admin Login</h2>
     <input 
       type="password" 
       name="password" 
-      placeholder="Password" 
+      placeholder="Type password..." 
       required
-      autocomplete="current-password"
+      autocapitalize="none" 
+      autocomplete="off"
     >
-    <button type="submit">Login</button>
+    <button type="submit">→ Login</button>
   </form>
 </body>
 </html>
