@@ -1,40 +1,12 @@
 ---
 import { getFormattedDate } from "@/utils/date";
-import type { HTMLAttributes } from "astro/types";
 
-type Props = HTMLAttributes<"time"> & {
-  date: Date;
-  dateTimeOptions?: Intl.DateTimeFormatOptions;
-  format?: "standard" | "long" | "short";
-  locale?: string;
-};
-
-const { 
-  date, 
-  dateTimeOptions, 
-  format = "standard",
-  locale = "en-GB",
-  class: className = "",
-  ...attrs 
-} = Astro.props;
-
-const defaultOptions = {
-  standard: { year: "numeric", month: "short", day: "numeric" },
-  long: { year: "numeric", month: "long", day: "numeric", weekday: "long" },
-  short: { year: "2-digit", month: "short", day: "numeric" }
-};
-
-const formatOptions = dateTimeOptions || defaultOptions[format];
-const postDate = getFormattedDate(date, formatOptions, locale);
-const ISO = date.toISOString();
-const timeClass = className || "text-gray-600 dark:text-gray-400 text-sm font-medium";
+const { date } = Astro.props;
+const formattedDate = getFormattedDate(date);
 ---
 
-<time 
-  datetime={ISO} 
-  title={ISO}
-  class={timeClass}
-  {...attrs}
->
-  {postDate}
-</time>
+{formattedDate && (
+  <time datetime={new Date(date).toISOString()} class={Astro.props.class}>
+    {formattedDate}
+  </time>
+)}
