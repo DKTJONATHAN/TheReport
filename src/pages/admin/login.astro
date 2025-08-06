@@ -1,62 +1,53 @@
 ---
-// Password - Change this to your own!
+// Set your password here (same in all files)
 const PASSWORD = "astro123";
-const url = new URL(Astro.request.url);
 
-// 1. Check URL password param
-if (url.searchParams.get('password') === PASSWORD) {
-  // Set secure cookie
-  Astro.response.headers.set(
-    'Set-Cookie',
-    `astro_admin=${PASSWORD}; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict`
-  );
-  return Astro.redirect('/admin');
-}
-
-// 2. Check existing cookie
-const cookies = Astro.request.headers.get('cookie');
-if (cookies?.includes(`astro_admin=${PASSWORD}`)) {
-  return Astro.redirect('/admin');
+// Handle form submission
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  if (formData.get("password") === PASSWORD) {
+    // Set cookie that lasts 1 day
+    Astro.response.headers.set(
+      "Set-Cookie",
+      `astro_auth=${PASSWORD}; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict`
+    );
+    return Astro.redirect("/admin");
+  }
 }
 ---
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      padding: 20px;
-      font-size: 18px;
-      -webkit-text-size-adjust: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    input, button {
-      width: 100%;
-      padding: 16px;
-      margin: 12px 0;
-      font-size: 16px;
+    /* Mobile-optimized styles */
+    body { padding: 20px; max-width: 500px; margin: 0 auto; }
+    input, button { 
+      width: 100%; 
+      padding: 16px; 
+      margin: 12px 0; 
+      font-size: 16px; 
       border: 1px solid #ddd;
       border-radius: 8px;
     }
-    button {
-      background: #4CAF50;
-      color: white;
-      border: none;
+    button { 
+      background: #4CAF50; 
+      color: white; 
+      border: none; 
     }
   </style>
 </head>
 <body>
-  <form action="/admin" method="GET">
-    <h2>📱 Admin Login</h2>
+  <!-- Changed to POST form -->
+  <form method="POST">
+    <h2>Admin Login</h2>
     <input 
       type="password" 
       name="password" 
-      placeholder="Type password..." 
+      placeholder="Enter password" 
       required
       autocapitalize="none"
-      autocomplete="off"
     >
-    <button type="submit">→ Login</button>
+    <button type="submit">Login</button>
   </form>
 </body>
 </html>
