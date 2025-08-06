@@ -1,58 +1,79 @@
+// src/content/config.ts
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { rssSchema } from "@astrojs/rss";
 
 function removeDupsAndLowerCase(array: string[]) {
-	return [...new Set(array.map((str) => str.toLowerCase()))];
+  return [...new Set(array.map((str) => str.toLowerCase()))];
 }
 
-const titleSchema = z.string().max(60);
+const titleSchema = z.string().min(1).max(60);
 
 const baseSchema = z.object({
-	title: titleSchema,
+  title: titleSchema,
+  // Ensure slug exists either from frontmatter or filename
+  slug: z.string().optional().transform((val, ctx) => {
+    if (val) return val;
+    // Fallback to auto-generated from filename
+    const filename = ctx.path.split('/').pop();
+    if (!filename) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Could not generate slug from filename",
+      });
+      return z.NEVER;
+    }
+    return filename.replace(/\.mdx?$/, '');
+  }),
 });
 
 const post = defineCollection({
-	loader: glob({ base: "./src/content/post", pattern: "**/*.{md,mdx}" }),
-	schema: ({ image }) =>
-		baseSchema.extend({
-			description: z.string(),
-			coverImage: z
-				.object({
-					alt: z.string(),
-					src: image(),
-				})
-				.optional(),
-			draft: z.boolean().default(false),
-			ogImage: z.string().optional(),
-			tags: z.array(z.string()).default([]).transform(removeDupsAndLowerCase),
-			publishDate: z
-				.string()
-				.or(z.date())
-				.transform((val) => new Date(val)),
-			updatedDate: z
-				.string()
-				.optional()
-				.transform((str) => (str ? new Date(str) : undefined)),
-		}),
+  schema: ({ image }) =>
+    baseSchema.extend({
+      description: z.string().min(20).max(160),
+      coverImage: z
+        .object({
+          alt: z.string(),
+          src: image(),
+          credit: z.string().optional(),
+        })
+        .optional(),
+      draft: z.boolean().default(false),
+      ogImage: image().optional(),
+      tags: z.array(z.string().min(1))
+             .default([])
+             .transform(removeDupsAndLowerCase),
+      publishDate: z.coerce.date({ required_error: "Publish date is required" }),
+      updatedDate: z.coerce.date().optional(),
+      // SEO fields
+      canonicalUrl: z.string().url().optional(),
+    }),
 });
 
 const note = defineCollection({
-	loader: glob({ base: "./src/content/note", pattern: "**/*.{md,mdx}" }),
-	schema: baseSchema.extend({
-		description: z.string().optional(),
-		publishDate: z
-			.string()
-			.datetime({ offset: true }) // Ensures ISO 8601 format with offsets allowed (e.g. "2024-01-01T00:00:00Z" and "2024-01-01T00:00:00+02:00")
-			.transform((val) => new Date(val)),
-	}),
+  schema: baseSchema.extend({
+    description: z.string().max(120).optional(),
+    publishDate: z.coerce.date({ required_error: "Publish date is required" }),
+    mood: z.enum(["happy", "neutral", "sad"]).optional(),
+  }),
 });
 
 const tag = defineCollection({
-	loader: glob({ base: "./src/content/tag", pattern: "**/*.{md,mdx}" }),
-	schema: z.object({
-		title: titleSchema.optional(),
-		description: z.string().optional(),
-	}),
+  schema: baseSchema.extend({
+    description: z.string().optional(),
+    featured: z.boolean().default(false),
+  }),
 });
 
-export const collections = { post, note, tag };
+// Content Security
+const security = defineCollection({
+  schema: rssSchema.extend({
+    severity: z.enum(["low", "medium", "high"]),
+  }),
+});
+
+export const collections = {
+  post,
+  note,
+  tag,
+  security,
+};
