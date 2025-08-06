@@ -1,51 +1,36 @@
----
-// Set your password here (same in all files)
-const PASSWORD = "astro123";
-
-// Handle form submission
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-  if (formData.get("password") === PASSWORD) {
-    // Set cookie that lasts 1 day
-    Astro.response.headers.set(
-      "Set-Cookie",
-      `astro_auth=${PASSWORD}; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict`
-    );
-    return Astro.redirect("/admin");
-  }
-}
----
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    /* Mobile-optimized styles */
-    body { padding: 20px; max-width: 500px; margin: 0 auto; }
-    input, button { 
-      width: 100%; 
-      padding: 16px; 
-      margin: 12px 0; 
-      font-size: 16px; 
+    body {
+      padding: 20px;
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      font-size: 16px;
       border: 1px solid #ddd;
       border-radius: 8px;
     }
-    button { 
-      background: #4CAF50; 
-      color: white; 
-      border: none; 
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
     }
   </style>
 </head>
 <body>
-  <!-- Changed to POST form -->
-  <form method="POST">
+  <form action="/api/login" method="POST">
     <h2>Admin Login</h2>
     <input 
       type="password" 
       name="password" 
       placeholder="Enter password" 
       required
-      autocapitalize="none"
     >
     <button type="submit">Login</button>
   </form>
