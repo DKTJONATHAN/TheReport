@@ -1,33 +1,59 @@
 ---
-// Simple mobile admin
-import { getCollection } from "astro:content";
-const posts = await getCollection("post");
+const password = "admin123"; // Must match login.astro
+const url = new URL(Astro.request.url);
+
+if (url.searchParams.get('password') !== password) {
+  return Astro.redirect('/admin/login');
+}
 ---
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; padding: 15px; }
-    .post { padding: 10px; border-bottom: 1px solid #eee; }
-    .btn { display: block; background: #4CAF50; color: white; 
-           text-align: center; padding: 10px; margin: 15px 0; 
-           text-decoration: none; border-radius: 5px; }
+    body { 
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      text-decoration: none;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .posts-list {
+      list-style: none;
+      padding: 0;
+    }
+    .post-item {
+      padding: 15px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h1>📱 Mobile Admin</h1>
-  
-  <a href="/admin/new" class="btn">➕ New Post</a>
-
-  <div>
-    {posts.map(post => (
-      <div class="post">
-        <b>{post.data.title}</b>
-        <div style="color:#666;font-size:0.8em;">
-          {post.slug}
-        </div>
-      </div>
-    ))}
+  <div class="header">
+    <h1>Posts</h1>
+    <a href="/admin/new?password=admin123" class="btn">New Post</a>
   </div>
+
+  <ul class="posts-list">
+    <!-- We'll populate this dynamically later -->
+    <li class="post-item">
+      <h3>Sample Post</h3>
+      <p>2023-11-15</p>
+    </li>
+  </ul>
 </body>
 </html>
