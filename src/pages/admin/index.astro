@@ -1,35 +1,14 @@
 ---
-// TEMPORARY: No password for testing (we'll add proper auth later)
+// COMPLETELY OPEN ACCESS (TEMPORARY)
 import { getCollection } from "astro:content";
 const posts = await getCollection("post");
+
+console.log("Posts found:", posts.length); // Check server logs
 ---
 <html>
-<head>
-  <title>Admin Panel</title>
-  <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
-    li { padding: 0.5rem; border-bottom: 1px solid #eee; }
-  </style>
-</head>
 <body>
-  <h1>📝 Admin Panel</h1>
-  <p>Found {posts.length} posts:</p>
-  
-  <ul>
-    {posts.map(post => (
-      <li>
-        <strong>{post.data.title}</strong>
-        <div style="color: #666; font-size: 0.9rem;">
-          Slug: {post.slug} | Published: {post.data.publishDate.toISOString().split('T')[0]}
-        </div>
-      </li>
-    ))}
-  </ul>
-
-  <div style="margin-top: 2rem;">
-    <a href="/admin/new" style="background: #4CAF50; color: white; padding: 0.5rem 1rem; text-decoration: none;">
-      ➕ New Post
-    </a>
-  </div>
+  <h1>DEBUG MODE: Admin Panel</h1>
+  <p>If you see this, the page loaded successfully.</p>
+  <pre>{JSON.stringify(posts, null, 2)}</pre>
 </body>
 </html>
