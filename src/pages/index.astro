@@ -7,54 +7,56 @@ import { getAllPosts } from "@/data/post";
 import PageLayout from "@/layouts/Base.astro";
 import { collectionDateSort } from "@/utils/date";
 
-// Posts
-const MAX_POSTS = 10;
-const allPosts = await getAllPosts();
-const allPostsByDate = allPosts
-	.sort(collectionDateSort)
-	.slice(0, MAX_POSTS) as CollectionEntry<"post">[];
-
-// Briefs (formerly Notes)
-const MAX_BRIEFS = 5;
-const allBriefs = await getCollection("note");
-const latestBriefs = allBriefs.sort(collectionDateSort).slice(0, MAX_BRIEFS);
+const MAX_POSTS = 6;
+const MAX_BRIEFS = 4;
+const allPosts = (await getAllPosts()).sort(collectionDateSort).slice(0, MAX_POSTS);
+const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slice(0, MAX_BRIEFS);
 ---
 
-<PageLayout meta={{ title: "Jonathan Mwaniki News" }}>
-	<section>
-		<h1 class="title mb-6 text-3xl font-bold tracking-tight">Jonathan Mwaniki News</h1>
-		<p class="mb-4 text-lg">
-			Welcome to Jonathan Mwaniki News, your source for the latest updates and in-depth reporting from Kenya and beyond. 
-			Stay informed with breaking news, insightful articles, and quick briefs. Follow us on social media for real-time updates.
-		</p>
-		<SocialList />
-	</section>
-	<section class="mt-12">
-		<h2 class="title mb-4 text-xl font-semibold text-red-600"><a href="/posts/">Top Stories</a></h2>
-		<ul class="space-y-4" role="list">
-			{
-				allPostsByDate.map((p) => (
-					<li class="grid gap-2 sm:grid-cols-[auto_1fr]">
-						<PostPreview post={p} />
-					</li>
-				))
-			}
-		</ul>
-	</section>
-	{
-		latestBriefs.length > 0 && (
-			<section class="mt-12">
-				<h2 class="title mb-4 text-xl font-semibold text-red-600">
-					<a href="/notes/">Briefs</a>
-				</h2>
-				<ul class="space-y-4" role="list">
-					{latestBriefs.map((brief) => (
-						<li>
-							<Note note={brief} as="h3" isPreview />
-						</li>
-					))}
-				</ul>
-			</section>
-		)
-	}
+<PageLayout meta={{ title: "The Mwaniki Reports" }}>
+  <section class="mb-12">
+    <h1 class="mb-6 text-4xl font-bold tracking-tight">{siteConfig.title}</h1>
+    <p class="mb-6 text-lg text-gray-700 dark:text-gray-300">
+      {siteConfig.description} Stay updated with breaking news and in-depth reporting from Kenya and beyond.
+    </p>
+    <SocialList class="mt-4" />
+  </section>
+
+  <section class="mb-12">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold">
+        <a href="/posts/" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
+          Top Stories
+        </a>
+      </h2>
+      <a href="/posts/" class="text-sm font-medium hover:underline">
+        View All →
+      </a>
+    </div>
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {allPosts.map((post) => (
+        <PostPreview post={post} />
+      ))}
+    </div>
+  </section>
+
+  {latestBriefs.length > 0 && (
+    <section class="mb-12">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold">
+          <a href="/notes/" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
+            Latest Briefs
+          </a>
+        </h2>
+        <a href="/notes/" class="text-sm font-medium hover:underline">
+          View All →
+        </a>
+      </div>
+      <div class="grid gap-6 md:grid-cols-2">
+        {latestBriefs.map((brief) => (
+          <Note note={brief} isPreview />
+        ))}
+      </div>
+    </section>
+  )}
 </PageLayout>
