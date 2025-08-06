@@ -1,93 +1,98 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
 
 export default {
-	plugins: [require("@tailwindcss/typography")],
-	theme: {
-		extend: {
-			typography: () => ({
-				DEFAULT: {
-					css: {
-						a: {
-							textUnderlineOffset: "2px",
-							"&:hover": {
-								"@media (hover: hover)": {
-									textDecorationColor: "var(--color-link)",
-									textDecorationThickness: "2px",
-								},
-							},
-						},
-						blockquote: {
-							borderLeftWidth: "0",
-						},
-						code: {
-							border: "1px dotted #666",
-							borderRadius: "2px",
-						},
-						kbd: {
-							"&:where([data-theme='dark'], [data-theme='dark'] *)": {
-								background: "var(--color-global-text)",
-							},
-						},
-						hr: {
-							borderTopStyle: "dashed",
-						},
-						strong: {
-							fontWeight: "700",
-						},
-						sup: {
-							marginInlineStart: "calc(var(--spacing) * 0.5)",
-							a: {
-								"&:after": {
-									content: "']'",
-								},
-								"&:before": {
-									content: "'['",
-								},
-								"&:hover": {
-									"@media (hover: hover)": {
-										color: "var(--color-link)",
-									},
-								},
-							},
-						},
-						/* Table */
-						"tbody tr": {
-							borderBottomWidth: "none",
-						},
-						tfoot: {
-							borderTop: "1px dashed #666",
-						},
-						thead: {
-							borderBottomWidth: "none",
-						},
-						"thead th": {
-							borderBottom: "1px dashed #666",
-							fontWeight: "700",
-						},
-						'th[align="center"], td[align="center"]': {
-							"text-align": "center",
-						},
-						'th[align="right"], td[align="right"]': {
-							"text-align": "right",
-						},
-						'th[align="left"], td[align="left"]': {
-							"text-align": "left",
-						},
-						".expressive-code, .admonition, .github-card": {
-							marginTop: "calc(var(--spacing)*4)",
-							marginBottom: "calc(var(--spacing)*4)",
-						},
-					},
-				},
-				sm: {
-					css: {
-						code: {
-							fontSize: "var(--text-sm)",
-							fontWeight: "400",
-						},
-					},
-				},
-			}),
-		},
-	},
+  content: [
+    "./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+  ],
+  darkMode: "class",
+  plugins: [require("@tailwindcss/typography")],
+  theme: {
+    extend: {
+      colors: {
+        gray: colors.zinc,
+        red: colors.red,
+        blue: colors.blue,
+      },
+      typography: (theme) => ({
+        DEFAULT: {
+          css: {
+            a: {
+              textUnderlineOffset: "2px",
+              "&:hover": {
+                "@media (hover: hover)": {
+                  textDecorationColor: theme("colors.blue.600"),
+                  textDecorationThickness: "2px",
+                },
+              },
+            },
+            blockquote: {
+              borderLeftWidth: "0",
+            },
+            code: {
+              border: "1px dotted #666",
+              borderRadius: "2px",
+            },
+            kbd: {
+              "&:where([data-theme='dark'], [data-theme='dark'] *)": {
+                background: theme("colors.gray.800"),
+              },
+            },
+            hr: {
+              borderTopStyle: "dashed",
+            },
+            strong: {
+              fontWeight: "700",
+            },
+            sup: {
+              marginInlineStart: "0.125rem",
+              a: {
+                "&:after": {
+                  content: "']'",
+                },
+                "&:before": {
+                  content: "'['",
+                },
+                "&:hover": {
+                  "@media (hover: hover)": {
+                    color: theme("colors.blue.600"),
+                  },
+                },
+              },
+            },
+            "tbody tr": {
+              borderBottomWidth: "none",
+            },
+            tfoot: {
+              borderTop: "1px dashed #666",
+            },
+            thead: {
+              borderBottomWidth: "none",
+            },
+            "thead th": {
+              borderBottom: "1px dashed #666",
+              fontWeight: "700",
+            },
+            'th[align="center"], td[align="center"]': {
+              textAlign: "center",
+            },
+            'th[align="right"], td[align="right"]': {
+              textAlign: "right",
+            },
+            'th[align="left"], td[align="left"]': {
+              textAlign: "left",
+            },
+          },
+        },
+        sm: {
+          css: {
+            code: {
+              fontSize: "0.875rem",
+              fontWeight: "400",
+            },
+          },
+        },
+      }),
+    },
+  },
 } satisfies Config;
