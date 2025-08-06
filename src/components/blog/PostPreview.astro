@@ -3,6 +3,17 @@ import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
 
+// Utility to extract first image from post content
+function getFirstImage(post: CollectionEntry<"post">): string | null {
+  // Case 1: Check frontmatter for explicit image
+  if (post.data.image) return post.data.image;
+
+  // Case 2: Parse Markdown/MDX for first image
+  const imgRegex = /!\[.*?\]\((.*?)\)/; // Matches ![alt](url)
+  const match = post.body.match(imgRegex);
+  return match?.[1] || null; // Return first found image or null
+}
+
 type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
   post: CollectionEntry<"post">;
   withDesc?: boolean;
@@ -10,10 +21,25 @@ type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
 };
 
 const { as: Tag = "div", post, withDesc = false, featured = false } = Astro.props;
+const firstImage = getFirstImage(post);
 ---
 
 <article class="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
+  <!-- Image Section (if found) -->
+  {firstImage && (
+    <div class="h-48 overflow-hidden">
+      <img
+        src={firstImage}
+        alt={post.data.title}
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  )}
+
   <div class="p-6">
+    <!-- Rest of the card (date, title, tags, etc.) -->
     <div class="flex items-center gap-3 mb-3">
       <FormattedDate
         class="text-sm font-medium text-gray-500 dark:text-gray-400"
@@ -56,9 +82,3 @@ const { as: Tag = "div", post, withDesc = false, featured = false } = Astro.prop
     )}
   </div>
 </article>
-
-<style is:global>
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
-</style>
