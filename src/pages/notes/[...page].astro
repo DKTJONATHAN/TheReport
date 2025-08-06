@@ -13,7 +13,11 @@ export async function getStaticPaths() {
     params: { page: 'index' },
     props: { 
       notes: validNotes,
-      articleDate: new Date().toISOString() // Add default date
+      meta: {
+        title: 'Notes',
+        description: 'Collection of notes',
+        articleDate: new Date().toISOString()
+      }
     }
   }];
 }
@@ -21,7 +25,7 @@ export async function getStaticPaths() {
 const { notes } = Astro.props;
 ---
 
-<BaseLayout articleDate={new Date().toISOString()}>
+<BaseLayout meta={Astro.props.meta}>
   <div class="grid gap-6 md:grid-cols-2">
     {notes.map(note => (
       <Note note={note} />
