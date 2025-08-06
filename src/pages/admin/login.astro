@@ -1,28 +1,47 @@
 ---
-// Password (change this!)
-const PASSWORD = "astro123"; // 8+ chars, easy to type on mobile
----
+// Password - Change this to your own!
+const PASSWORD = "astro123";
+const url = new URL(Astro.request.url);
 
+// 1. Check URL password param
+if (url.searchParams.get('password') === PASSWORD) {
+  // Set secure cookie
+  Astro.response.headers.set(
+    'Set-Cookie',
+    `astro_admin=${PASSWORD}; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict`
+  );
+  return Astro.redirect('/admin');
+}
+
+// 2. Check existing cookie
+const cookies = Astro.request.headers.get('cookie');
+if (cookies?.includes(`astro_admin=${PASSWORD}`)) {
+  return Astro.redirect('/admin');
+}
+---
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <style>
     body {
       padding: 20px;
-      font-size: 18px; /* Bigger text */
-      -webkit-text-size-adjust: 100%; /* Prevent iOS zoom */
+      font-size: 18px;
+      -webkit-text-size-adjust: 100%;
+      max-width: 500px;
+      margin: 0 auto;
     }
     input, button {
       width: 100%;
-      padding: 16px; /* Thicker pads */
+      padding: 16px;
       margin: 12px 0;
       font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
     }
     button {
       background: #4CAF50;
       color: white;
       border: none;
-      border-radius: 8px; /* Rounded corners */
     }
   </style>
 </head>
@@ -34,7 +53,7 @@ const PASSWORD = "astro123"; // 8+ chars, easy to type on mobile
       name="password" 
       placeholder="Type password..." 
       required
-      autocapitalize="none" 
+      autocapitalize="none"
       autocomplete="off"
     >
     <button type="submit">→ Login</button>
