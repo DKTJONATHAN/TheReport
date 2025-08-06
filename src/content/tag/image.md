@@ -1,4 +1,5 @@
 ---
+title: Image Handling  <!-- Add this required field -->
 description: Learn about image handling in Astro Cactus
 ---
 
