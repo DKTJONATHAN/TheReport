@@ -1,75 +1,106 @@
-Here's a template that strictly adheres to your content schema configuration (`src/content/config.ts`):
+Here's a **general-purpose Markdown template** for your Astro blog posts with all key sections and frontmatter:
 
 ```markdown
 ---
-title: "Your Post Title (40-60 characters)"  # Required (1-60 chars)
-description: "Your post description that is between 20-160 characters long to meet validation requirements."  # Required (20-160 chars)
-publishDate: YYYY-MM-DD  # Required (valid date format)
-updatedDate: YYYY-MM-DD  # Optional
-tags: ["tag1", "tag2", "tag3"]  # Optional (will be deduplicated/lowercased)
-coverImage:  # Optional
-  src: "/images/your-image.jpg"  # Path relative to public folder
-  alt: "Descriptive alt text for accessibility"
-draft: false  # Optional (defaults to false)
-ogImage: "/social/your-og-image.jpg"  # Optional
+title: "Your Post Title"
+pubDate: YYYY-MM-DD
+description: "1-2 sentence summary of the post"
+author: "Your Name"  # Optional
+tags: ["tag1", "tag2"]  # Max 3-5 tags
+image:
+  src: "/images/your-image.jpg"  # Path from /public
+  alt: "Image description"  # Required for accessibility
+  width: 1200  # Optional dimensions
+  height: 630
+draft: false  # Set to true for unpublished posts
 ---
 
-## Introduction
+# Introduction
 
-Your opening content here...
+Start with an engaging opening paragraph that explains:
+- What this post is about
+- Who it's for
+- Why it matters
 
-## Main Content
+![Decorative image](/images/intro-image.jpg)
 
-### Section 1
+---
 
-Content with proper markdown formatting:
+## Section 1: Core Concept
 
-- Bullet points
-- **Bold text**
-- *Italic text*
+Break your content into logical sections with H2 headers.
 
-> Blockquotes for important statements
+Key points to cover:
+- Bullet point explanations
+- Important terminology
+- Examples or analogies
 
 ```javascript
-// Code blocks when needed
-const example = "properly formatted";
+// Code snippets (specify language)
+function example() {
+  return "Markdown supports syntax highlighting";
+}
 ```
 
-![Inline image alt text](/images/another-image.jpg)
+---
 
-### Section 2
+## Section 2: Practical Implementation
 
-1. Numbered lists
-2. For step-by-step content
-3. When order matters
+### Subsection (H3 for nested topics)
+
+Use numbered steps for tutorials:
+1. Step one
+2. Step two
+3. Step three
+
+> "Quote important concepts or references"  
+> *— Source/Author*
+
+---
+
+## Advanced Tips (Optional)
+
+| Feature | Benefit | Example |
+|---------|---------|---------|
+| Table   | Organize data | `markdown tables` |
+| Footnotes[^1] | Add references | See bottom of post |
+
+[^1]: Footnote details appear here.
+
+---
 
 ## Conclusion
 
-Wrap-up your post...
+Summarize key takeaways:
+- Main point 1
+- Main point 2
+- Final thought or call-to-action
+
+**Further Reading:**
+- [Link Title](https://example.com)
+- [Another Resource](#)
+
+<!-- Add Astro components if needed -->
+<YourComponent prop="value" />
+```
 
 ---
 
-*Last updated: {{ updatedDate || publishDate }}*
-```
+### **Template Features**:
+1. **Frontmatter**  
+   - Matches your `content.config.ts` schema  
+   - SEO-friendly with image meta  
+   - Draft mode for unpublished posts  
 
-### Key Validation Requirements:
+2. **Body Structure**  
+   - Semantic headers (H2, H3)  
+   - Code blocks with syntax highlighting  
+   - Tables, footnotes, and blockquotes  
+   - Responsive image syntax  
 
-1. **Frontmatter Fields**:
-   - ✅ `title`: 1-60 characters
-   - ✅ `description`: 20-160 characters
-   - ✅ `publishDate`: Valid date (YYYY-MM-DD recommended)
-   - ✅ `tags`: Array of strings (optional)
-   - ✅ `coverImage`: Object with `src` and `alt` (optional)
+3. **Best Practices**  
+   - 80-100 characters per line  
+   - Two spaces between sections  
+   - Descriptive alt text for images  
 
-2. **Automatic Processing**:
-   - Tags will be deduplicated and lowercased
-   - Dates will be coerced to Date objects
-   - Draft status defaults to false
-
-3. **Best Practices**:
-   - Keep title under 60 chars
-   - Description between 20-160 chars
-   - Use relative paths for images (store in `public/` folder)
-   - Include alt text for all images
-
-This template guarantees compliance with your schema and will prevent build errors while maintaining all the functionality you've configured in your content collections.
+Save this as `post-template.md` in your project's docs folder for reference when creating new posts.
