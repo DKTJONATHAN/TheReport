@@ -8,27 +8,35 @@ import { siteConfig } from "@/site.config";
 import type { SiteMeta } from "@/types";
 
 interface Props {
-	meta: SiteMeta;
+  meta: SiteMeta;
 }
 
 const {
-	meta: { articleDate, description = siteConfig.description, ogImage, title },
+  meta: { articleDate, description = siteConfig.description, ogImage, title },
 } = Astro.props;
 ---
 
+<!DOCTYPE html>
 <html class="scroll-smooth" lang={siteConfig.lang}>
-	<head>
-		<BaseHead articleDate={articleDate} description={description} ogImage={ogImage} title={title} />
-	</head>
-	<body
-		class="bg-white text-gray-900 mx-auto flex min-h-screen max-w-4xl flex-col px-4 pt-12 font-sans text-base font-normal antialiased sm:px-6"
-	>
-		<ThemeProvider />
-		<SkipLink />
-		<Header />
-		<main id="main">
-			<slot />
-		</main>
-		<Footer />
-	</body>
+  <head>
+    <BaseHead 
+      articleDate={articleDate} 
+      description={description} 
+      ogImage={ogImage} 
+      title={title} 
+    />
+  </head>
+  <body
+    class="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 font-sans text-base antialiased"
+  >
+    <div class="mx-auto flex max-w-4xl flex-col px-4 sm:px-6">
+      <ThemeProvider />
+      <SkipLink />
+      <Header />
+      <main id="main" class="flex-1 py-8">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+  </body>
 </html>
