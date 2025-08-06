@@ -4,80 +4,97 @@ import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 
 interface Props {
-	content: CollectionEntry<"post">;
-	readingTime: string;
+  content: CollectionEntry<"post">;
+  readingTime: string;
 }
 
 const {
-	content: { data },
-	readingTime,
+  content: { data },
+  readingTime,
 } = Astro.props;
 
 const dateTimeOptions: Intl.DateTimeFormatOptions = {
-	month: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric"
 };
 ---
 
-{
-	data.coverImage && (
-		<div class="mb-4 aspect-video">
-			<Image
-				alt={data.coverImage.alt}
-				layout="constrained"
-				width={748}
-				height={420}
-				priority
-				src={data.coverImage.src}
-			/>
-		</div>
-	)
-}
-{data.draft ? <span class="text-base text-red-600 font-semibold">(Unpublished)</span> : null}
-<h1 class="title text-3xl font-bold tracking-tight">
-	{data.title}
-</h1>
-<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-	<p class="font-semibold text-gray-800">
-		<FormattedDate date={data.publishDate} dateTimeOptions={dateTimeOptions} /> /{" "}
-		{readingTime}
-	</p>
-	{
-		data.updatedDate && (
-			<span class="bg-gray-100 text-gray-700 rounded-lg px-2 py-1">
-				Updated:
-				<FormattedDate class="ms-1" date={data.updatedDate} dateTimeOptions={dateTimeOptions} />
-			</span>
-		)
-	}
-</div>
-{
-	!!data.tags?.length && (
-		<div class="mt-2">
-			<svg
-				aria-hidden="true"
-				class="inline-block h-5 w-5 text-red-600"
-				fill="none"
-				focusable="false"
-				stroke="currentColor"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="1.5"
-				viewBox="0 0 24 24"
-				xmlns="http://www.w3.org/2000/svg"
-			>
-				<path d="M0 0h24v24H0z" fill="none" stroke="none" />
-				<path d="M7.859 6h-2.834a2.025 2.025 0 0 0 -2.025 2.025v2.834c0 .537 .213 1.052 .593 1.432l6.116 6.116a2.025 2.025 0 0 0 2.864 0l2.834 -2.834a2.025 2.025 0 0 0 0 -2.864l-6.117 -6.116a2.025 2.025 0 0 0 -1.431 -.593z" />
-				<path d="M17.573 18.407l2.834 -2.834a2.025 2.025 0 0 0 0 -2.864l-7.117 -7.116" />
-				<path d="M6 9h-.01" />
-			</svg>
-			{data.tags.map((tag, i) => (
-				<>
-					<span class="contents">
-						<a class="inline-block text-red-600 hover:text-red-800 font-semibold before:content-['#']" data-pagefind-filter={`tag:${tag}`} href={`/tags/${tag}/`}><span class="sr-only">View more articles with the tag&nbsp;</span>{tag}
-						</a>{i < data.tags.length - 1 && ", "}
-					</span>
-				</>
-			))}
-		</div>
-	)
-}
+<article class="max-w-4xl mx-auto px-4">
+  {data.draft && (
+    <div class="mb-4 bg-red-100 text-red-800 px-4 py-2 rounded-lg inline-block">
+      <span class="font-bold">DRAFT:</span> This article is unpublished
+    </div>
+  )}
+
+  {/* Article Metadata */}
+  <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+        <FormattedDate date={data.publishDate} dateTimeOptions={dateTimeOptions} />
+      </span>
+      {data.updatedDate && (
+        <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
+          Updated: <FormattedDate date={data.updatedDate} dateTimeOptions={dateTimeOptions} />
+        </span>
+      )}
+    </div>
+    <div class="text-gray-600 dark:text-gray-400 font-medium">
+      {readingTime} read
+    </div>
+  </div>
+
+  {/* Article Title */}
+  <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-tight">
+    {data.title}
+  </h1>
+
+  {/* Cover Image */}
+  {data.coverImage && (
+    <figure class="mb-8 rounded-xl overflow-hidden shadow-lg">
+      <Image
+        alt={data.coverImage.alt}
+        class="w-full h-auto"
+        layout="constrained"
+        width={1200}
+        height={675}
+        priority
+        src={data.coverImage.src}
+      />
+      {data.coverImage.caption && (
+        <figcaption class="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+          {data.coverImage.caption}
+        </figcaption>
+      )}
+    </figure>
+  )}
+
+  {/* Tags */}
+  {!!data.tags?.length && (
+    <div class="mb-8 flex flex-wrap gap-2 items-center">
+      <svg
+        aria-hidden="true"
+        class="h-5 w-5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+      >
+        <path d="M7.859 6h-2.834a2.025 2.025 0 0 0 -2.025 2.025v2.834c0 .537 .213 1.052 .593 1.432l6.116 6.116a2.025 2.025 0 0 0 2.864 0l2.834 -2.834a2.025 2.025 0 0 0 0 -2.864l-6.117 -6.116a2.025 2.025 0 0 0 -1.431 -.593z" />
+        <path d="M17.573 18.407l2.834 -2.834a2.025 2.025 0 0 0 0 -2.864l-7.117 -7.116" />
+        <path d="M6 9h-.01" />
+      </svg>
+      {data.tags.map((tag) => (
+        <a 
+          href={`/tags/${tag}/`}
+          class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          data-pagefind-filter={`tag:${tag}`}
+        >
+          #{tag}
+        </a>
+      ))}
+    </div>
+  )}
+</article>
