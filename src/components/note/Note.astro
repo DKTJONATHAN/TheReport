@@ -4,8 +4,8 @@ import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
 
 type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
-	note: CollectionEntry<"note">;
-	isPreview?: boolean | undefined;
+  note: CollectionEntry<"note">;
+  isPreview?: boolean;
 };
 
 const { as: Tag = "div", note, isPreview = false } = Astro.props;
@@ -13,34 +13,35 @@ const { Content } = await render(note);
 ---
 
 <article
-	class:list={[isPreview && "bg-global-text/5 inline-grid rounded-md px-4 py-3"]}
-	data-pagefind-body={isPreview ? false : true}
+  class={`${isPreview ? 'bg-gray-100 dark:bg-gray-800 rounded-lg p-4 hover:shadow transition-shadow' : ''}`}
+  data-pagefind-body={!isPreview}
 >
-	<Tag class="title" class:list={{ "text-base": isPreview }}>
-		{
-			isPreview ? (
-				<a class="cactus-link" href={`/notes/${note.id}/`}>
-					{note.data.title}
-				</a>
-			) : (
-				<>{note.data.title}</>
-			)
-		}
-	</Tag>
-	<FormattedDate
-		dateTimeOptions={{
-			hour: "2-digit",
-			minute: "2-digit",
-			year: "2-digit",
-			month: "2-digit",
-			day: "2-digit",
-		}}
-		date={note.data.publishDate}
-	/>
-	<div
-		class="prose prose-sm prose-cactus mt-4 max-w-none [&>p:last-of-type]:mb-0"
-		class:list={{ "line-clamp-6": isPreview }}
-	>
-		<Content />
-	</div>
+  <Tag class={`font-medium ${isPreview ? 'text-base' : 'text-lg'}`}>
+    {isPreview ? (
+      <a 
+        href={`/notes/${note.id}/`}
+        class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+      >
+        {note.data.title}
+      </a>
+    ) : (
+      <h1>{note.data.title}</h1>
+    )}
+  </Tag>
+  
+  <FormattedDate
+    date={note.data.publishDate}
+    class="text-sm text-gray-500 dark:text-gray-400 mt-1"
+    dateTimeOptions={{
+      hour: "2-digit",
+      minute: "2-digit",
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }}
+  />
+
+  <div class={`prose dark:prose-invert mt-3 max-w-none ${isPreview ? 'line-clamp-3' : ''}`}>
+    <Content />
+  </div>
 </article>
