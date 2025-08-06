@@ -6,15 +6,22 @@ import Note from "@/components/note/Note.astro";
 import { getAllPosts } from "@/data/post";
 import PageLayout from "@/layouts/Base.astro";
 import { collectionDateSort } from "@/utils/date";
-import { siteConfig } from "@/site.config"; // <-- Add this import
+import { siteConfig } from "@/site.config";
 
+// Configurable display limits
 const MAX_POSTS = 6;
 const MAX_BRIEFS = 4;
+
+// Fetch and sort content
 const allPosts = (await getAllPosts()).sort(collectionDateSort).slice(0, MAX_POSTS);
-const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slice(0, MAX_BRIEFS);
+const latestBriefs = (await getCollection("note"))
+  .sort(collectionDateSort)
+  .slice(0, MAX_BRIEFS)
+  .filter(note => !note.data.draft); // Optional: Filter out drafts
 ---
 
-<PageLayout meta={{ title: "The Mwaniki Reports" }}>
+<PageLayout meta={{ title: siteConfig.title, description: siteConfig.description }}>
+  <!-- Hero Section -->
   <section class="mb-12">
     <h1 class="mb-6 text-4xl font-bold tracking-tight">{siteConfig.title}</h1>
     <p class="mb-6 text-lg text-gray-700 dark:text-gray-300">
@@ -23,6 +30,7 @@ const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slic
     <SocialList class="mt-4" />
   </section>
 
+  <!-- Top Stories Section -->
   <section class="mb-12">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold">
@@ -30,17 +38,18 @@ const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slic
           Top Stories
         </a>
       </h2>
-      <a href="/posts/" class="text-sm font-medium hover:underline">
+      <a href="/posts/" class="text-sm font-medium hover:underline" aria-label="View all posts">
         View All →
       </a>
     </div>
     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {allPosts.map((post) => (
-        <PostPreview post={post} />
+        <PostPreview post={post} featured={post.data.featured} />
       ))}
     </div>
   </section>
 
+  <!-- Latest Briefs Section -->
   {latestBriefs.length > 0 && (
     <section class="mb-12">
       <div class="flex items-center justify-between mb-6">
@@ -49,7 +58,7 @@ const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slic
             Latest Briefs
           </a>
         </h2>
-        <a href="/notes/" class="text-sm font-medium hover:underline">
+        <a href="/notes/" class="text-sm font-medium hover:underline" aria-label="View all notes">
           View All →
         </a>
       </div>
@@ -61,3 +70,10 @@ const latestBriefs = (await getCollection("note")).sort(collectionDateSort).slic
     </section>
   )}
 </PageLayout>
+
+<style>
+  /* Smooth hover transitions for all interactive elements */
+  a {
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+</style>
