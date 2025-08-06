@@ -4,21 +4,61 @@ import FormattedDate from "@/components/FormattedDate.astro";
 import type { HTMLTag, Polymorphic } from "astro/types";
 
 type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
-	post: CollectionEntry<"post">;
-	withDesc?: boolean;
+  post: CollectionEntry<"post">;
+  withDesc?: boolean;
+  featured?: boolean;
 };
 
-const { as: Tag = "div", post, withDesc = false } = Astro.props;
+const { as: Tag = "div", post, withDesc = false, featured = false } = Astro.props;
 ---
 
-<FormattedDate
-	class="min-w-30 font-semibold text-gray-600 dark:text-gray-400"
-	date={post.data.publishDate}
-/>
-<Tag>
-	{post.data.draft && <span class="text-red-500">(Draft) </span>}
-	<a class="cactus-link" data-astro-prefetch href={`/posts/${post.id}/`}>
-		{post.data.title}
-	</a>
-</Tag>
-{withDesc && <q class="line-clamp-3 italic">{post.data.description}</q>}
+<article class="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
+  <div class="p-6">
+    <div class="flex items-center gap-3 mb-3">
+      <FormattedDate
+        class="text-sm font-medium text-gray-500 dark:text-gray-400"
+        date={post.data.publishDate}
+      />
+      {post.data.draft && (
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          Draft
+        </span>
+      )}
+    </div>
+
+    <Tag class={`${featured ? 'text-2xl' : 'text-xl'} font-bold text-gray-900 dark:text-white mb-3 leading-tight`}>
+      <a 
+        class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors" 
+        data-astro-prefetch 
+        href={`/posts/${post.id}/`}
+      >
+        {post.data.title}
+      </a>
+    </Tag>
+
+    {withDesc && (
+      <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+        {post.data.description}
+      </p>
+    )}
+
+    {post.data.tags?.length > 0 && (
+      <div class="flex flex-wrap gap-2 mt-4">
+        {post.data.tags.map((tag) => (
+          <a
+            href={`/tags/${tag}/`}
+            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            #{tag}
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</article>
+
+<style is:global>
+  .cactus-link {
+    @apply text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors;
+  }
+</style>
