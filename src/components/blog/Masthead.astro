@@ -20,7 +20,7 @@ const dateTimeOptions: Intl.DateTimeFormatOptions = {
 
 {
 	data.coverImage && (
-		<div class="mb-6 aspect-video">
+		<div class="mb-4 aspect-video">
 			<Image
 				alt={data.coverImage.alt}
 				layout="constrained"
@@ -32,18 +32,18 @@ const dateTimeOptions: Intl.DateTimeFormatOptions = {
 		</div>
 	)
 }
-{data.draft ? <span class="text-base text-red-500">(Draft)</span> : null}
-<h1 class="title">
+{data.draft ? <span class="text-base text-red-600 font-semibold">(Unpublished)</span> : null}
+<h1 class="title text-3xl font-bold tracking-tight">
 	{data.title}
 </h1>
 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-	<p class="font-semibold">
+	<p class="font-semibold text-gray-800">
 		<FormattedDate date={data.publishDate} dateTimeOptions={dateTimeOptions} /> /{" "}
 		{readingTime}
 	</p>
 	{
 		data.updatedDate && (
-			<span class="bg-quote/5 text-quote rounded-lg px-2 py-1">
+			<span class="bg-gray-100 text-gray-700 rounded-lg px-2 py-1">
 				Updated:
 				<FormattedDate class="ms-1" date={data.updatedDate} dateTimeOptions={dateTimeOptions} />
 			</span>
@@ -55,7 +55,7 @@ const dateTimeOptions: Intl.DateTimeFormatOptions = {
 		<div class="mt-2">
 			<svg
 				aria-hidden="true"
-				class="inline-block h-6 w-6"
+				class="inline-block h-5 w-5 text-red-600"
 				fill="none"
 				focusable="false"
 				stroke="currentColor"
@@ -72,9 +72,8 @@ const dateTimeOptions: Intl.DateTimeFormatOptions = {
 			</svg>
 			{data.tags.map((tag, i) => (
 				<>
-					{/* prettier-ignore */}
 					<span class="contents">
-						<a class="cactus-link inline-block before:content-['#']" data-pagefind-filter={`tag:${tag}`} href={`/tags/${tag}/`}><span class="sr-only">View more blogs with the tag&nbsp;</span>{tag}
+						<a class="inline-block text-red-600 hover:text-red-800 font-semibold before:content-['#']" data-pagefind-filter={`tag:${tag}`} href={`/tags/${tag}/`}><span class="sr-only">View more articles with the tag&nbsp;</span>{tag}
 						</a>{i < data.tags.length - 1 && ", "}
 					</span>
 				</>
