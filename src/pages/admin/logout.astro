@@ -1,6 +1,7 @@
 ---
-// No frontmatter needed
+Astro.response.headers.set(
+  'Set-Cookie',
+  'astro_admin=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+);
+return Astro.redirect('/admin/login');
 ---
-<script>
-  window.location.href = '/admin/login';
-</script>
