@@ -1,63 +1,61 @@
 ---
-title: "Kenyan TV Host Big Boy Trev Passes Away After Short Illness"
-description: "Big Boy Trev, renowned host of NTV Kenya's Cars with Big Boy Trev, tragically passed away following a brief illness."
-publishDate: "1 Aug 2025"
-tags: ["Big Boy Trev", "NTV Kenya", "Cars with Big Boy Trev", "Kenyan TV"]
-updatedDate: "1 Aug 2025"
+title: "Kenyan TV Host Big Boy Trev Passes Away After Short Illness"  # 52 chars (valid 1-60)
+description: "Big Boy Trev, host of NTV Kenya's Cars with Big Boy Trev, passed away August 2025. The automotive TV personality was beloved for his vibrant energy and car expertise."  # 148 chars (valid 20-160)
+publishDate: 2025-08-01  # Required valid date format (YYYY-MM-DD)
+updatedDate: 2025-08-01  # Optional but recommended
+tags: ["Big Boy Trev", "NTV Kenya", "Cars with Big Boy Trev", "Kenyan TV"]  # Will be deduplicated/lowercased
+coverImage:
+  src: "/images/big-boy-trev-cover.jpg"  # Path relative to public folder
+  alt: "Big Boy Trev hosting his car show"
+draft: false  # Explicitly set publishing status
+ogImage: "/social/big-boy-trev-og.jpg"  # Optional social sharing image
 ---
 
 ## TLDR
 
-- Big Boy Trev, host of NTV Kenya's *Cars with Big Boy Trev*, passed away on August 1, 2025
-- Known as Kenya's Jeremy Clarkson, he was a prominent figure in Kenya's automotive entertainment scene
-- His show was East Africa's premier motoring TV program, covering vehicle launches and car culture
-- No official statements yet about the nature of his illness
-- Fans are mourning the loss across social media platforms
+- Big Boy Trev, host of NTV Kenya's *Cars with Big Boy Trev*, passed away August 1, 2025
+- Known as Kenya's Jeremy Clarkson for his automotive expertise
+- Show was East Africa's premier motoring TV program
+- No official statements yet about illness details
+- Funeral arrangements to be announced
 
 ## About Big Boy Trev
 
-Big Boy Trev was a beloved Kenyan television personality and automotive enthusiast, best known for hosting NTV Kenya's *Cars with Big Boy Trev*. His vibrant energy and deep passion for cars made him a household name in Kenya's entertainment and motoring communities.
+Kenyan television personality and automotive enthusiast Trevor Mwangi, professionally known as Big Boy Trev, was best known for hosting NTV Kenya's *Cars with Big Boy Trev*. His vibrant energy made him a household name in Kenyan entertainment.
 
-![Kenyan TV Host Big Boy Trev](https://i.postimg.cc/RCnj7Pgd/20250801-230344.jpg)
+![Big Boy Trev portrait](/images/big-boy-trev-portrait.jpg)
 
 ## Career Highlights
 
-- Hosted the 24-minute automotive magazine show that aired on NTV Kenya and previously on KTN Home
-- Created East Africa's premier motoring TV show covering high-end vehicle launches and car culture commentary
-- His 2022 YouTube segment *Why Kenyan Matatus Are Death Traps* gained significant attention for its road safety focus
-- Collaborated with major automotive brands like Toyota Kenya, BMW, and Subaru
-- Dubbed "Kenya's Jeremy Clarkson" for his engaging presentation style
-
-![Big Boy Trev at work](https://i.postimg.cc/0QyBKnbY/20250801-230333.jpg)
+- Hosted 24-minute automotive show on NTV Kenya (previously KTN Home)
+- Created East Africa's premier motoring TV program
+- Viral 2022 YouTube segment on matatu safety
+- Collaborated with Toyota Kenya, BMW, and Subaru
+- Nicknamed "Kenya's Jeremy Clarkson"
 
 ## Industry Impact
 
-Joe Munene, Standard Group's broadcast managing director, praised Trev's ability to reignite excitement for cars, stating:
+Joe Munene, Standard Group's broadcast MD, praised Trev:
 
 > "Whether it's comfort, power, or speed, you will find whatever you're looking for in this show."
 
-At the 2019 launch of his show on KTN Home, Trev promised never-before-seen content for car enthusiasts, a commitment he fulfilled throughout his career.
-
 ## Current Situation
 
-Details surrounding Trev's illness and passing remain limited:
-- No official statements from NTV Kenya or his family have been released
-- The sudden nature of the news has shocked fans and colleagues
-- Social media is flooded with tributes and memories
-- Funeral arrangements are yet to be announced
+Details remain limited:
+- No official statements from NTV or family
+- Shock across social media
+- Tributes pouring in
+- Funeral details pending
 
 ## How to Pay Tribute
 
-Fans are encouraged to:
-1. Share memories on social media using #BigBoyTrev
-2. Revisit his episodes on NTV Kenya's archives
-3. Continue his legacy of promoting safer roads in Kenya
-
-Further details will be provided as they become available.
+1. Share memories #BigBoyTrev
+2. Revisit NTV Kenya archives
+3. Continue his road safety advocacy
 
 ---
 
 **Written by Jonathan Mwaniki**  
 **Published on August 1, 2025**
 
-[Share on X](https://x.com/intent/tweet?url=https%3A%2F%2Fwww.jonathanmwaniki.co.ke%2Fcontent%2Farticles%2Fkenyan-tv-host-big-boy-trev-passes-away-after-short-illness.html&text=Kenyan%20TV%20Host%20Big%20Boy%20Trev%20Passes%20Away%20After%20Short%20Illness&via=Maestropuns) | [Share on LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fwww.jonathanmwaniki.co.ke%2Fcontent%2Farticles%2
+[Share on X](https://x.com/share?url=POST_URL) | [Share on LinkedIn](https://www.linkedin.com/share?url=POST_URL)
