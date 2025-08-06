@@ -1,44 +1,30 @@
-{/* Inlined to avoid FOUC. This is a parser blocking script. */}
 <script is:inline>
-	const lightModePref = window.matchMedia("(prefers-color-scheme: light)");
-
-	function getUserPref() {
-		const storedTheme = typeof localStorage !== "undefined" && localStorage.getItem("theme");
-		return storedTheme || (lightModePref.matches ? "light" : "dark");
+	const themePref = window.matchMedia("(prefers-color-scheme: light)");
+	
+	function getTheme() {
+		const saved = typeof localStorage !== "undefined" && localStorage.getItem("theme");
+		return saved || (themePref.matches ? "light" : "dark");
 	}
 
-	function setTheme(newTheme) {
-		if (newTheme !== "light" && newTheme !== "dark") {
-			return console.warn(
-				`Invalid theme value '${newTheme}' received. Expected 'light' or 'dark'.`,
-			);
-		}
-
+	function applyTheme(theme) {
+		if (!["light", "dark"].includes(theme)) return;
+		
 		const root = document.documentElement;
-
-		// root already set to newTheme, exit early
-		if (newTheme === root.getAttribute("data-theme")) {
-			return;
-		}
-
-		root.setAttribute("data-theme", newTheme);
-
-		if (typeof localStorage !== "undefined") {
-			localStorage.setItem("theme", newTheme);
-		}
+		if (theme === root.dataset.theme) return;
+		
+		root.dataset.theme = theme;
+		localStorage?.setItem("theme", theme);
 	}
 
-	// initial setup
-	setTheme(getUserPref());
+	// Initial load
+	applyTheme(getTheme());
 
-	// View Transitions hook to restore theme
-	document.addEventListener("astro:after-swap", () => setTheme(getUserPref()));
+	// View Transitions support
+	document.addEventListener("astro:after-swap", () => applyTheme(getTheme()));
 
-	// listen for theme-change custom event, fired in src/components/ThemeToggle.astro
-	document.addEventListener("theme-change", (e) => {
-		setTheme(e.detail.theme);
-	});
+	// Theme toggle event
+	document.addEventListener("theme-change", (e) => applyTheme(e.detail.theme));
 
-	// listen for prefers-color-scheme change.
-	lightModePref.addEventListener("change", (e) => setTheme(e.matches ? "light" : "dark"));
+	// System preference changes
+	themePref.addEventListener("change", (e) => applyTheme(e.matches ? "light" : "dark"));
 </script>
