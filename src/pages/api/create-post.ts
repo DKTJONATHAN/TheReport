@@ -1,35 +1,32 @@
 import { type APIRoute } from "astro";
 
-export const post: APIRoute = async ({ request }) => {
-  // Verify password
+export const post: APIRoute = async ({ request, cookies }) => {
   const formData = await request.formData();
-  if (formData.get("password") !== "admin123") {
+  
+  // 1. Verify auth
+  const authCookie = cookies.get('astro_admin');
+  if (authCookie?.value !== "astro123") {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // Create slug from title
-  const title = formData.get("title")?.toString() || "untitled";
-  const slug = title
-    .toLowerCase()
-    .replace(/[^\w\s]/g, "")
-    .replace(/\s+/g, "-");
+  // 2. Validate form
+  const title = formData.get("title")?.toString() || "Untitled";
+  const content = formData.get("content")?.toString() || "";
 
-  // Format as markdown
-  const content = `---
-title: "${title}"
-publishDate: "${new Date().toISOString()}"
-draft: false
-tags: []
+  // 3. Prepare markdown
+  const markdownContent = `---
+title: "${title.replace(/"/g, '\\"')}"
+date: "${new Date().toISOString()}"
 ---
 
-${formData.get("content")}
+${content}
 `;
 
-  // Save to GitHub (we'll implement this in Step 4)
-  console.log("Would save:", { slug, content });
+  // 4. Log for now (GitHub integration next)
+  console.log("New post:", { title, content: markdownContent });
 
   return new Response(null, {
     status: 303,
-    headers: { Location: `/admin?password=admin123` }
+    headers: { Location: "/admin" }
   });
 };
