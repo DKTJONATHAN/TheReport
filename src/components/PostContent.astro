@@ -1,7 +1,6 @@
 ---
 // src/components/PostContent.astro
-import { Markdown } from 'astro:components';
-import { sanitize } from 'isomorphic-dompurify';
+import { Markdown } from 'astro:content';
 
 interface Props {
   content: string;
@@ -11,11 +10,7 @@ const { content } = Astro.props;
 ---
 
 <div class="astro-content">
-  <Markdown 
-    content={sanitize(content)} 
-    allowHTML={true}
-    is:raw
-  />
+  <Markdown content={content} />
 </div>
 
 <style is:global>
@@ -23,6 +18,7 @@ const { content } = Astro.props;
   .astro-content {
     line-height: 1.7;
     color: #374151;
+    font-size: 1.125rem;
   }
   
   /* Headings */
@@ -41,7 +37,7 @@ const { content } = Astro.props;
     margin: 2rem 0 1rem;
   }
 
-  /* Paragraphs and text */
+  /* Paragraphs */
   .astro-content p {
     margin-bottom: 1.5rem;
   }
@@ -51,14 +47,6 @@ const { content } = Astro.props;
   .astro-content ol {
     margin-bottom: 1.5rem;
     padding-left: 1.75rem;
-  }
-  
-  .astro-content ul {
-    list-style-type: disc;
-  }
-  
-  .astro-content ol {
-    list-style-type: decimal;
   }
   
   .astro-content li {
@@ -81,14 +69,6 @@ const { content } = Astro.props;
     margin: 2rem 0;
     border-collapse: collapse;
     font-size: 0.95rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  }
-  
-  .astro-content th,
-  .astro-content td {
-    padding: 0.75rem 1rem;
-    border: 1px solid #e5e7eb;
-    text-align: left;
   }
   
   .astro-content th {
@@ -105,11 +85,6 @@ const { content } = Astro.props;
     margin: 1.5rem 0;
     overflow-x: auto;
   }
-  
-  .astro-content code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.9em;
-  }
 
   /* Blockquotes */
   .astro-content blockquote {
@@ -125,9 +100,5 @@ const { content } = Astro.props;
     color: #3b82f6;
     text-decoration: underline;
     text-underline-offset: 0.25em;
-  }
-  
-  .astro-content a:hover {
-    color: #2563eb;
   }
 </style>
