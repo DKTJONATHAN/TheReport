@@ -1,9 +1,8 @@
 ---
 // src/pages/[slug].astro
-import Layout from '../../components/Layout.astro';
+import Layout from '../components/Layout.astro';
 import { getCollection } from 'astro:content';
-import { Image } from 'astro:assets';
-import PostContent from '../../components/PostContent.astro';
+import PostContent from '../components/PostContent.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
@@ -16,7 +15,7 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { title, description, publishDate, author, category, tags } = post.data;
 
-// Calculate reading time (approx 200 words per minute)
+// Calculate reading time
 const wordCount = post.body.split(/\s+/).length;
 const readingTime = Math.ceil(wordCount / 200);
 ---
@@ -92,7 +91,6 @@ const readingTime = Math.ceil(wordCount / 200);
 </Layout>
 
 <style is:global>
-  /* Article content styling */
   .astro-content {
     line-height: 1.6;
   }
