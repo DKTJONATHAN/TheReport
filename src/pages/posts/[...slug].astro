@@ -1,26 +1,129 @@
 ---
-// src/pages/posts/[slug].astro
-import { getCollection } from "astro:content";
-import PostLayout from "@/layouts/BlogPost.astro";
-import type { GetStaticPaths } from "astro";
+// /src/pages/posts/[...slug].astro
+import { type CollectionEntry, getCollection } from "astro:content";
+import { getAllPosts, getRelatedPosts } from "@/data/post";
+import PostPreview from "@/components/blog/PostPreview.astro";
+import PageLayout from "@/layouts/Base.astro";
+import { formatDate } from "@/utils/date";
 
-// 1. Properly typed getStaticPaths
-export const getStaticPaths = (async () => {
-  const posts = await getCollection("post");
-  
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
   return posts.map((post) => ({
-    params: { slug: post.slug },  // Use slug instead of id
+    params: { slug: post.slug },
     props: { post },
   }));
-}) satisfies GetStaticPaths;
+}
 
-// 2. Get the post from props
+interface Props {
+  post: CollectionEntry<"posts">;
+}
+
 const { post } = Astro.props;
 const { Content } = await post.render();
+const relatedPosts = await getRelatedPosts(post, 3);
+
+const { title, description, publishDate, updatedDate, author, category, image, tags } = post.data;
+
+// SEO meta
+const meta = {
+  title,
+  description: description || `Read ${title} by ${author}`,
+  canonical: `${Astro.site}posts/${post.slug}/`,
+  image: image?.src,
+};
 ---
 
-<PostLayout post={post}>
-  <article class="prose dark:prose-invert max-w-none">
-    <Content />
+<PageLayout {meta}>
+  <article class="mx-auto max-w-4xl">
+    <!-- Article Header -->
+    <header class="mb-8">
+      {category && (
+        <div class="mb-4">
+          <span class="inline-block rounded-full bg-red-100 px-4 py-2 text-sm font-medium text-red-800 dark:bg-red-900/30 dark:text-red-200">
+            {category}
+          </span>
+        </div>
+      )}
+      
+      <h1 class="mb-4 text-4xl font-bold leading-tight md:text-5xl">
+        {title}
+      </h1>
+      
+      {description && (
+        <p class="mb-6 text-xl text-gray-600 dark:text-gray-300">
+          {description}
+        </p>
+      )}
+      
+      <!-- Article Meta -->
+      <div class="flex flex-col gap-4 border-b pb-6 text-sm text-gray-600 dark:text-gray-400 md:flex-row md:items-center md:justify-between">
+        <div class="flex items-center gap-4">
+          <span>By <strong class="text-gray-900 dark:text-gray-100">{author}</strong></span>
+          <time datetime={publishDate.toISOString()}>
+            {formatDate(publishDate)}
+          </time>
+          {updatedDate && (
+            <span class="text-xs">
+              Updated: <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time>
+            </span>
+          )}
+        </div>
+        
+        {tags && tags.length > 0 && (
+          <div class="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <span class="rounded-full bg-gray-100 px-3 py-1 text-xs dark:bg-gray-800">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </header>
+
+    <!-- Featured Image -->
+    {image && (
+      <div class="mb-8 overflow-hidden rounded-lg">
+        <img
+          src={image.src}
+          alt={image.alt}
+          class="h-auto w-full"
+          width="1200"
+          height="630"
+        />
+      </div>
+    )}
+
+    <!-- Article Content -->
+    <div class="prose prose-lg mx-auto dark:prose-invert prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-a:text-red-600 hover:prose-a:text-red-700 dark:prose-a:text-red-400 dark:hover:prose-a:text-red-300">
+      <Content />
+    </div>
   </article>
-</PostLayout>
+
+  <!-- Related Posts -->
+  {relatedPosts.length > 0 && (
+    <section class="mt-16">
+      <h2 class="mb-8 text-2xl font-bold">Related Stories</h2>
+      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {relatedPosts.map((relatedPost) => (
+          <PostPreview post={relatedPost} />
+        ))}
+      </div>
+    </section>
+  )}
+</PageLayout>
+
+<style>
+  /* Custom prose styles for news content */
+  .prose {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+  
+  .prose h2 {
+    @apply border-b border-gray-200 pb-2 dark:border-gray-700;
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-red-500 bg-gray-50 dark:bg-gray-800/50;
+  }
+</style>
