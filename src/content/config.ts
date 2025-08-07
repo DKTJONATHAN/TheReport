@@ -1,41 +1,36 @@
-// /src/content/config.ts
 import { defineCollection, z } from 'astro:content';
 
 const posts = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
-    description: z.string().optional(),
-    publishDate: z.coerce.date(),
+    description: z.string(),
+    pubDate: z.coerce.date(), // Changed from publishDate to pubDate
     updatedDate: z.coerce.date().optional(),
-    author: z.string().default('Anonymous'),
-    category: z.string().optional(),
+    author: z.string().default('Jonathan Mwaniki'),
     tags: z.array(z.string()).default([]),
-    featured: z.boolean().default(false),
     draft: z.boolean().default(false),
     image: z.object({
       src: z.string(),
       alt: z.string(),
+      width: z.number().optional(),
+      height: z.number().optional()
     }).optional(),
-    // SEO fields
-    canonical: z.string().url().optional(),
-    noindex: z.boolean().default(false),
-  }),
+    featured: z.boolean().default(false)
+  })
 });
 
-const note = defineCollection({
+const notes = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
-    publishDate: z.coerce.date(),
-    updatedDate: z.coerce.date().optional(),
+    pubDate: z.coerce.date(),
     draft: z.boolean().default(false),
-    tags: z.array(z.string()).default([]),
-    brief: z.boolean().default(true), // Distinguishes notes from full posts
-  }),
+    tags: z.array(z.string()).default([])
+  })
 });
 
 export const collections = {
   posts,
-  note,
+  notes
 };
