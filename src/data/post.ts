@@ -81,3 +81,31 @@ export async function getRelatedPosts(currentPost: Post, limit: number = 3): Pro
     .slice(0, limit)
     .map(item => item.post);
 }
+
+/**
+ * Get all unique tags from posts
+ */
+export async function getUniqueTags(): Promise<string[]> {
+  const allPosts = await getAllPosts();
+  const allTags = allPosts.flatMap(post => post.data.tags || []);
+  const uniqueTags = [...new Set(allTags)].sort();
+  return uniqueTags;
+}
+
+/**
+ * Group posts by year
+ */
+export async function groupPostsByYear(): Promise<Record<number, Post[]>> {
+  const allPosts = await getAllPosts();
+  const postsByYear: Record<number, Post[]> = {};
+  
+  allPosts.forEach(post => {
+    const year = new Date(post.data.publishDate).getFullYear();
+    if (!postsByYear[year]) {
+      postsByYear[year] = [];
+    }
+    postsByYear[year].push(post);
+  });
+  
+  return postsByYear;
+}
