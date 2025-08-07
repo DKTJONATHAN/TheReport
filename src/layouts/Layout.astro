@@ -1,4 +1,3 @@
----
 // src/layouts/Layout.astro
 export interface Props {
   title: string;
@@ -7,7 +6,6 @@ export interface Props {
 
 const { title, description = "Professional news and insights from The Mwaniki's Report" } = Astro.props;
 ---
-
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
   <head>
@@ -17,30 +15,106 @@ const { title, description = "Professional news and insights from The Mwaniki's 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="/src/styles/global.css" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://jonathanmwaniki.co.ke/" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://jonathanmwaniki.co.ke/" />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:creator" content="@maestropuns" />
+    <!-- Remove external CSS link -->
+    <!-- <link rel="stylesheet" href="/styles/global.css" /> -->
+    <style is:global>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+      @layer base {
+        html { scroll-behavior: smooth; }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #111827;
+          background-color: #ffffff;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        h1, h2, h3, h4, h5, h6 {
+          font-weight: 700;
+          line-height: 1.2;
+          letter-spacing: -0.025em;
+          color: #111827;
+        }
+        h1 { font-size: 2.25rem; font-weight: 800; }
+        h2 { font-size: 1.875rem; font-weight: 700; }
+        h3 { font-size: 1.5rem; font-weight: 600; }
+        a { color: #dc2626; text-decoration: none; transition: color 0.2s ease; }
+        a:hover { color: #b91c1c; }
+        button:focus, a:focus, input:focus, textarea:focus, select:focus {
+          outline: 2px solid #dc2626;
+          outline-offset: 2px;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      }
+
+      @layer components {
+        .btn { @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2; }
+        .btn-primary { @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
+        .btn-secondary { @apply bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500; }
+        .btn-outline { @apply border border-red-600 text-red-600 hover:bg-red-600 hover:text-white focus:ring-red-500; }
+        .card { @apply bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300; }
+        .card-header { @apply p-6 border-b border-gray-200; }
+        .card-body { @apply p-6; }
+        .card-footer { @apply p-6 border-t border-gray-200 bg-gray-50; }
+        .form-input { @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors; }
+        .form-textarea { @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors resize-vertical; }
+        .form-select { @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors; }
+        .form-label { @apply block text-sm font-medium text-gray-700 mb-2; }
+        .nav-link { @apply text-gray-700 hover:text-red-600 font-medium transition-colors duration-200; }
+        .nav-link-active { @apply text-red-600 font-semibold; }
+        .post-meta { @apply text-sm text-gray-500 flex items-center space-x-4; }
+        .post-category { @apply inline-block bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full; }
+        .post-tag { @apply inline-block bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full; }
+        .text-gradient { @apply bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent; }
+        .section-title { @apply text-3xl font-bold text-gray-900 mb-8; }
+        .section-subtitle { @apply text-xl text-gray-600 mb-6; }
+        .skeleton { @apply animate-pulse bg-gray-300 rounded; }
+        .social-icon { @apply w-5 h-5 text-gray-500 hover:text-red-600 transition-colors; }
+        .newsletter-input { @apply flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-red-500 focus:border-transparent; }
+        .newsletter-button { @apply px-6 py-2 bg-red-600 text-white font-medium rounded-r-lg hover:bg-red-700 transition-colors; }
+      }
+
+      @layer utilities {
+        .text-balance { text-wrap: balance; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        .animate-slide-up { animation: slideUp 0.6s ease-out; }
+        .animate-scale-in { animation: scaleIn 0.3s ease-out; }
+        .grid-auto-fit { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .aspect-video { aspect-ratio: 16 / 9; }
+        .aspect-square { aspect-ratio: 1 / 1; }
+        .shadow-soft { box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04); }
+        .shadow-glow { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.05), 0 1px 3px 0 rgba(220, 38, 38, 0.1), 0 1px 2px 0 rgba(220, 38, 38, 0.06); }
+      }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+      @media (prefers-color-scheme: dark) {
+        .dark-mode { @apply bg-gray-900 text-gray-100; }
+      }
+
+      @media print {
+        .no-print { display: none !important; }
+        body { font-size: 12pt; line-height: 1.4; }
+        h1, h2, h3 { page-break-after: avoid; }
+        img { max-width: 100% !important; }
+      }
+    </style>
   </head>
   <body class="bg-white text-gray-900 antialiased">
     <div class="min-h-screen flex flex-col">
-      <!-- Header -->
-      <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <header class="card bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center h-16">
-            <!-- Logo and Title -->
             <div class="flex items-center space-x-3">
               <img src="/Jonathan-Mwaniki-logo.png" alt="Jonathan Mwaniki Logo" class="h-10 w-auto" />
               <div>
@@ -48,58 +122,31 @@ const { title, description = "Professional news and insights from The Mwaniki's 
                 <p class="text-xs text-gray-600 hidden sm:block">Professional News & Insights</p>
               </div>
             </div>
-            
-            <!-- Navigation -->
             <nav class="hidden md:flex items-center space-x-8">
-              <a href="/" class="text-gray-700 hover:text-red-600 font-medium transition-colors">Home</a>
-              <a href="/about" class="text-gray-700 hover:text-red-600 font-medium transition-colors">About</a>
-              <a href="/contact" class="text-gray-700 hover:text-red-600 font-medium transition-colors">Contact</a>
-              <a href="https://twitter.com/maestropuns" target="_blank" rel="noopener noreferrer" 
-                 class="text-gray-700 hover:text-red-600 transition-colors">
+              <a href="/" class="nav-link">Home</a>
+              <a href="/about" class="nav-link">About</a>
+              <a href="/contact" class="nav-link">Contact</a>
+              <a href="https://twitter.com/maestropuns" target="_blank" rel="noopener noreferrer" class="social-icon">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
                 </svg>
               </a>
             </nav>
-            
-            <!-- Mobile menu button -->
             <div class="md:hidden">
-              <button type="button" data-mobile-menu-button class="text-gray-700 hover:text-red-600 focus:outline-none">
+              <button type="button" data-mobile-menu-button class="text-gray-700 hover:text-red-600 focus:ring-red-500">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             </div>
           </div>
-          
-          <!-- Mobile Navigation -->
-          <div id="mobile-menu" class="hidden md:hidden">
+          <div id="mobile-menu" class="hidden md:hidden animate-slide-up">
             <div class="px-4 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
-              <a 
-                href="/" 
-                class="block px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-md font-medium transition-colors"
-              >
-                Home
-              </a>
-              <a 
-                href="/about" 
-                class="block px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-md font-medium transition-colors"
-              >
-                About
-              </a>
-              <a 
-                href="/contact" 
-                class="block px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-md font-medium transition-colors"
-              >
-                Contact
-              </a>
-              <a 
-                href="https://twitter.com/maestropuns" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                class="flex items-center px-3 py-2 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-md font-medium transition-colors"
-              >
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <a href="/" class="nav-link block px-3 py-2">Home</a>
+              <a href="/about" class="nav-link block px-3 py-2">About</a>
+              <a href="/contact" class="nav-link block px-3 py-2">Contact</a>
+              <a href="https://twitter.com/maestropuns" target="_blank" rel="noopener noreferrer" class="nav-link flex items-center px-3 py-2">
+                <svg class="social-icon mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
                 </svg>
                 Twitter
@@ -108,14 +155,10 @@ const { title, description = "Professional news and insights from The Mwaniki's 
           </div>
         </div>
       </header>
-
-      <!-- Main Content -->
       <main class="flex-1">
         <slot />
       </main>
-
-      <!-- Footer -->
-      <footer class="bg-gray-50 border-t border-gray-200 mt-16">
+      <footer class="card-footer mt-16">
         <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="space-y-4">
@@ -127,21 +170,18 @@ const { title, description = "Professional news and insights from The Mwaniki's 
                 Professional news and insights delivered with clarity and integrity.
               </p>
             </div>
-            
             <div>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">Quick Links</h4>
               <ul class="space-y-2 text-sm">
-                <li><a href="/" class="text-gray-600 hover:text-red-600 transition-colors">Home</a></li>
-                <li><a href="/about" class="text-gray-600 hover:text-red-600 transition-colors">About</a></li>
-                <li><a href="/contact" class="text-gray-600 hover:text-red-600 transition-colors">Contact</a></li>
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/about" class="nav-link">About</a></li>
+                <li><a href="/contact" class="nav-link">Contact</a></li>
               </ul>
             </div>
-            
             <div>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">Connect</h4>
               <div class="flex space-x-4">
-                <a href="https://twitter.com/maestropuns" target="_blank" rel="noopener noreferrer"
-                   class="text-gray-600 hover:text-red-600 transition-colors">
+                <a href="https://twitter.com/maestropuns" target="_blank" rel="noopener noreferrer" class="social-icon">
                   <span class="sr-only">Twitter</span>
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
@@ -150,7 +190,6 @@ const { title, description = "Professional news and insights from The Mwaniki's 
               </div>
             </div>
           </div>
-          
           <div class="mt-8 pt-8 border-t border-gray-200">
             <p class="text-center text-xs text-gray-500">
               &copy; {new Date().getFullYear()} The Mwaniki's Report. All rights reserved.
