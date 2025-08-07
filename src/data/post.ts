@@ -129,3 +129,10 @@ export async function getTagMeta(): Promise<Array<{ name: string; count: number 
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 }
+
+/**
+ * Get unique tags with post count (alias for getTagMeta)
+ */
+export async function getUniqueTagsWithCount(): Promise<Array<{ name: string; count: number }>> {
+  return getTagMeta();
+}
