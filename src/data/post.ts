@@ -87,7 +87,16 @@ export async function getRelatedPosts(currentPost: Post, limit: number = 3): Pro
  */
 export async function getUniqueTags(): Promise<string[]> {
   const allPosts = await getAllPosts();
-  const allTags = allPosts.flatMap(post => post.data.tags || []);
+  
+  // Handle case where there are no posts
+  if (!allPosts || allPosts.length === 0) {
+    return [];
+  }
+  
+  const allTags = allPosts
+    .filter(post => post.data.tags && Array.isArray(post.data.tags)) // Ensure tags exist and is array
+    .flatMap(post => post.data.tags || []); // Get all tags
+    
   const uniqueTags = [...new Set(allTags)].sort();
   return uniqueTags;
 }
