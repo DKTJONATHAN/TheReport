@@ -4,11 +4,7 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
-  integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
-  ],
+  integrations: [tailwind()],
   markdown: {
     shikiConfig: {
       theme: 'github-light',
