@@ -1,64 +1,38 @@
 ---
-title: "From Kibaki to Maraga: Can Kenya’s Economy Rise Again?"
-pubDate: 2025-07-31
-description: "Economics Meets Governance. Kibaki and Maraga both hate corruption, but their toolkits couldn’t be more different."
-author: "Jonathan Mwaniki"
-tags: ["Maraga", "Kibaki", "Ruto"]
-image:
-  src: "https://i.postimg.cc/J7SZYKH0/20250731-220340.jpg"
-  alt: "From Kibaki to Maraga: Can Kenya’s Economy Rise Again?"
-  width: 1200
-  height: 630
+title: "Breaking: New Infrastructure Project Announced in Nairobi"
+description: "Government unveils ambitious plan for modern transport network connecting major business districts"
+publishDate: 2024-08-07
+author: "Jane Doe"
+category: "Infrastructure"
+tags: ["nairobi", "transport", "development", "government"]
+featured: true
 draft: false
+image: 
+  src: "/images/nairobi-infrastructure.jpg"
+  alt: "Construction site in Nairobi showing new infrastructure development"
 ---
 
-# From Kibaki to Maraga: Can Kenya’s Economy Rise Again?
+The Kenyan government today announced a major infrastructure initiative that will transform transportation across Nairobi's central business district.
 
-As Kenya approaches the **2027 elections**, the nation finds itself at a pivotal moment. Under President **William Ruto**, economic struggles - high taxes, inflation, and public unrest - have fueled widespread discontent. Into this fray steps **David Maraga**, the former Chief Justice, campaigning to **"Reset, Restore, Rebuild"** Kenya. His candidacy invites comparisons to **Mwai Kibaki**, the economist turned president who rescued Kenya’s economy after decades of mismanagement under **Daniel arap Moi**.
+## Key Highlights
 
-![Former Chief Justice David Maraga](https://i.postimg.cc/PJ1xRW0v/Former-Chief-Justice-David-Maraga.jpg)
+The new project includes:
 
-## Kibaki’s Economic Turnaround: A Lesson in "Kibakinomics"
+- Modern Bus Rapid Transit (BRT) system
+- Dedicated cycling lanes throughout the city
+- Smart traffic management systems
+- Integration with existing railway networks
 
-When Mwai Kibaki became president in December 2002, Kenya was on its knees. Economic growth had stalled at 0.6%, corruption was bleeding the country dry, and international donors had turned their backs. Kibaki rolled out a strategy dubbed "Kibakinomics":
+## Timeline and Budget
 
-1. **Tightened the Purse Strings**: Cut wasteful government spending and boosted tax collection
-2. **Privatization Push**: Sold off state-owned companies
-3. **Cracking Down on Corruption**: Fired 400 procurement officers
-4. **Vision 2030**: Long-term plan prioritizing infrastructure and jobs
-5. **Smart Balance**: Mixed free market ideas with strategic government moves
+According to Transport Cabinet Secretary, the project is expected to:
 
-The results were stunning - GDP growth hit 7.1% by the end of his first term.
+- Begin construction in Q1 2025
+- Complete Phase 1 by end of 2026
+- Total budget allocation of KSh 50 billion
 
-## Today’s Economic Mess Under Ruto
+## Impact on Residents
 
-Kenya in 2025 faces:
-- Tax Hikes and Inflation (50.5% say life's worse - Afrobarometer 2024)
-- Street Anger (100+ dead in protests - BBC July 2025)
-- Debt Trouble (4.3% fiscal deficit)
+This development promises to significantly reduce travel time for daily commuters and improve air quality through reduced vehicle emissions.
 
-![Economic comparison](https://i.postimg.cc/J7SZYKH0/20250731-220340.jpg)
-
-## Kibaki vs. Maraga: Economics Meets Governance
-
-**Kibaki's Strengths:**
-- Economic know-how
-- Measurable results (0.6% → 7.1% GDP growth)
-- Team player with experts
-
-**Maraga's Approach:**
-- Governance first (strong institutions)
-- Corruption fighter
-- Needs economic advisors
-
-## Maraga’s Potential Playbook
-
-If elected in 2027, Maraga might:
-1. Strengthen institutions to attract investors
-2. Clean up corruption to recover funds
-3. Provide tax relief
-4. Focus on inclusive growth
-
-## The Bottom Line
-
-Kenya needs both Kibaki's economic savvy and Maraga's moral compass. Whether Maraga can blend these will determine if Kenya's economy rises again.
+The project aligns with Kenya's Vision 2030 goals for sustainable urban development and positions Nairobi as a leading smart city in East Africa.
