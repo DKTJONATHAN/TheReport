@@ -1,62 +1,128 @@
 ---
 // src/pages/index.astro
-import Layout from '../components/Layout.astro';
+import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-const allPosts = await getCollection('posts', ({ data }) => {
-  return !data.draft;
-}).then(posts => posts.sort((a, b) => 
-  new Date(b.data.publishDate) - new Date(a.data.publishDate)
-));
-
-function getFirstImage(post) {
-  if (post.data.image?.src) return post.data.image.src;
-  const imgRegex = /!\[.*?\]\((.*?)\)/;
-  const match = post.body.match(imgRegex);
-  return match ? match[1] : '/Jonathan-Mwaniki-logo.png';
-}
+const posts = await getCollection('posts');
+const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const featuredPost = sortedPosts[0];
+const recentPosts = sortedPosts.slice(1, 7);
 ---
 
-<Layout title="Latest News">
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8 border-b pb-2">Breaking News</h1>
+<Layout title="The Mwaniki's Report - Professional News & Insights">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
-    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-      {allPosts.map(post => (
-        <a 
-          href={`/${post.slug}`} 
-          class="group block overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-        >
-          <div class="h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
-            <img 
-              src={getFirstImage(post)} 
-              alt={post.data.image?.alt || post.data.title}
-              class={`w-full h-full ${getFirstImage(post).includes('Jonathan-Mwaniki-logo') ? 'object-contain p-8' : 'object-cover'} group-hover:scale-105 transition-transform duration-300`}
-              loading="lazy"
-            />
-          </div>
-          <div class="p-4">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-sm text-gray-500">
-                {new Date(post.data.publishDate).toLocaleDateString('en-US', {
+    <!-- Hero Section with Featured Post -->
+    {featuredPost && (
+      <section class="mb-12">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-lg overflow-hidden shadow-xl">
+          <div class="p-8 text-white">
+            <div class="max-w-3xl">
+              <span class="inline-block bg-white bg-opacity-20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                FEATURED STORY
+              </span>
+              <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+                <a href={`/posts/${featuredPost.slug}`} class="hover:text-red-100 transition-colors">
+                  {featuredPost.data.title}
+                </a>
+              </h1>
+              <p class="text-xl text-red-100 mb-6 leading-relaxed">
+                {featuredPost.data.description}
+              </p>
+              <div class="flex items-center space-x-4 text-red-100">
+                <span class="text-sm">{new Date(featuredPost.data.date).toLocaleDateString('en-US', {
                   year: 'numeric',
-                  month: 'short',
+                  month: 'long',
                   day: 'numeric'
-                })}
-              </span>
-              <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                {post.data.category}
-              </span>
+                })}</span>
+                <span class="text-sm">•</span>
+                <span class="text-sm">{featuredPost.data.author || 'Jonathan Mwaniki'}</span>
+              </div>
             </div>
-            <h2 class="text-xl font-bold mb-2 group-hover:text-blue-600">
-              {post.data.title}
-            </h2>
-            <p class="text-gray-600 line-clamp-2">
-              {post.data.description}
-            </p>
           </div>
-        </a>
-      ))}
-    </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Latest News Grid -->
+    <section>
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-900">Latest News</h2>
+        <div class="w-24 h-1 bg-red-600 rounded"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {recentPosts.map((post) => (
+          <article class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group">
+            {post.data.image && (
+              <div class="aspect-video overflow-hidden">
+                <img 
+                  src={post.data.image} 
+                  alt={post.data.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            )}
+            
+            <div class="p-6">
+              {post.data.category && (
+                <span class="inline-block bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  {post.data.category}
+                </span>
+              )}
+              
+              <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
+                <a href={`/posts/${post.slug}`} class="block">
+                  {post.data.title}
+                </a>
+              </h3>
+              
+              <p class="text-gray-600 mb-4 leading-relaxed">
+                {post.data.description}
+              </p>
+              
+              <div class="flex items-center justify-between text-sm text-gray-500">
+                <span>{new Date(post.data.date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}</span>
+                <a 
+                  href={`/posts/${post.slug}`}
+                  class="text-red-600 hover:text-red-700 font-medium flex items-center space-x-1 transition-colors"
+                >
+                  <span>Read More</span>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- Newsletter Signup -->
+    <section class="mt-16 bg-gray-50 rounded-lg p-8 text-center">
+      <h3 class="text-2xl font-bold text-gray-900 mb-4">Stay Informed</h3>
+      <p class="text-gray-600 mb-6 max-w-2xl mx-auto">
+        Get the latest news and insights delivered straight to your inbox. Join our community of informed readers.
+      </p>
+      <form class="max-w-md mx-auto flex gap-4">
+        <input 
+          type="email" 
+          placeholder="Enter your email"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          required
+        />
+        <button 
+          type="submit"
+          class="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Subscribe
+        </button>
+      </form>
+    </section>
   </div>
 </Layout>
