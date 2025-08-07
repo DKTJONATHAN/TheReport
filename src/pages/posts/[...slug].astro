@@ -1,12 +1,10 @@
 ---
 import { getCollection } from "astro:content";
-import PostPreview from "@/components/blog/PostPreview.astro";
 import PageLayout from "@/layouts/Base.astro";
-import { formatDate } from "@/utils/date";
 
 export async function getStaticPaths() {
-  const posts = await getCollection('posts');
-  return posts.map((post) => ({
+  const posts = await getCollection("posts");
+  return posts.map(post => ({
     params: { slug: post.slug },
     props: { post },
   }));
@@ -15,19 +13,9 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// Get related posts (same tags)
-const relatedPosts = (await getCollection('posts'))
-  .filter(p => 
-    p.slug !== post.slug && 
-    p.data.tags.some(tag => post.data.tags.includes(tag))
-  )
-  .slice(0, 3);
-
 const meta = {
   title: post.data.title,
-  description: post.data.description,
-  image: post.data.image?.src,
-  pubDate: post.data.pubDate ? post.data.pubDate : null // Ensure pubDate is defined
+  description: post.data.description ?? "Read this blog post",
 };
 ---
 
@@ -35,34 +23,22 @@ const meta = {
   <article class="max-w-4xl mx-auto py-8 px-4">
     <header class="mb-8">
       <h1 class="text-4xl font-bold mb-4">{post.data.title}</h1>
-      
       <div class="flex flex-wrap gap-4 items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
         <span>By {post.data.author}</span>
-        {post.data.pubDate && (
-          <time datetime={post.data.pubDate.toISOString()}>
-            {formatDate(post.data.pubDate)}
-          </time>
-        )}
-        {post.data.updatedDate && (
-          <span class="text-xs">
-            (Updated: <time datetime={post.data.updatedDate.toISOString()}>
-              {formatDate(post.data.updatedDate)}
-            </time>)
-          </span>
-        )}
+        <time datetime={post.data.publishDate.toISOString()}>
+          {new Date(post.data.publishDate).toLocaleDateString()}
+        </time>
       </div>
-
       {post.data.tags.length > 0 && (
         <div class="flex flex-wrap gap-2 mb-6">
-          {post.data.tags.map((tag) => (
+          {post.data.tags.map(tag => (
             <a href={`/tags/${tag}/`} class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-sm">
               #{tag}
             </a>
           ))}
         </div>
       )}
-
-      {post.data.image && (
+      {post.data.image?.src && (
         <img
           src={post.data.image.src}
           alt={post.data.image.alt}
@@ -72,20 +48,8 @@ const meta = {
         />
       )}
     </header>
-
     <div class="prose dark:prose-invert max-w-none">
       <Content />
     </div>
-
-    {relatedPosts.length > 0 && (
-      <section class="mt-16">
-        <h2 class="text-2xl font-bold mb-8">Related Stories</h2>
-        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {relatedPosts.map((post) => (
-            <PostPreview post={post} />
-          ))}
-        </div>
-      </section>
-    )}
   </article>
 </PageLayout>
