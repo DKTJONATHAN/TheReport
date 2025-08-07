@@ -1,0 +1,129 @@
+---
+// src/pages/about.astro
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="About - The Mwaniki's Report" description="Learn more about The Mwaniki's Report and our commitment to delivering professional news and insights.">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    
+    <!-- Hero Section -->
+    <div class="text-center mb-16">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About The Mwaniki's Report</h1>
+      <div class="w-24 h-1 bg-red-600 mx-auto mb-6"></div>
+      <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+        Delivering professional news and insights with clarity, integrity, and a commitment to truth.
+      </p>
+    </div>
+
+    <!-- Mission Section -->
+    <section class="mb-16">
+      <div class="bg-gray-50 rounded-lg p-8 md:p-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Our Mission</h2>
+        <p class="text-lg text-gray-700 leading-relaxed text-center max-w-3xl mx-auto">
+          The Mwaniki's Report is dedicated to providing comprehensive, accurate, and timely news coverage 
+          that empowers our readers to make informed decisions. We believe in the power of journalism to 
+          foster understanding, promote transparency, and contribute to a more informed society.
+        </p>
+      </div>
+    </section>
+
+    <!-- About Jonathan -->
+    <section class="mb-16">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <img 
+            src="/Jonathan-Mwaniki-logo.png" 
+            alt="Jonathan Mwaniki"
+            class="w-48 h-48 mx-auto md:mx-0 rounded-full object-cover shadow-lg"
+          />
+        </div>
+        <div>
+          <h2 class="text-3xl font-bold text-gray-900 mb-6">Jonathan Mwaniki</h2>
+          <p class="text-gray-700 mb-4 leading-relaxed">
+            A seasoned journalist and media professional with extensive experience in news reporting, 
+            analysis, and digital media. Jonathan brings a unique perspective to contemporary issues, 
+            combining thorough research with accessible storytelling.
+          </p>
+          <p class="text-gray-700 mb-6 leading-relaxed">
+            With a commitment to ethical journalism and factual reporting, Jonathan has established 
+            The Mwaniki's Report as a trusted source for news and insights across various sectors 
+            including business, technology, politics, and social issues.
+          </p>
+          <div class="flex space-x-4">
+            <a 
+              href="https://twitter.com/maestropuns" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
+              </svg>
+              Follow on Twitter
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Values Section -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-12 text-center">Our Values</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Accuracy</h3>
+          <p class="text-gray-600">
+            We are committed to factual reporting and rigorous fact-checking to ensure the highest standards of accuracy.
+          </p>
+        </div>
+        
+        <div class="text-center">
+          <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Transparency</h3>
+          <p class="text-gray-600">
+            We believe in open journalism, clearly identifying sources and maintaining transparency in our reporting process.
+          </p>
+        </div>
+        
+        <div class="text-center">
+          <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Community</h3>
+          <p class="text-gray-600">
+            We serve our community by providing news and insights that matter to people's daily lives and decisions.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="text-center bg-red-50 rounded-lg p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Get in Touch</h2>
+      <p class="text-gray-600 mb-6 max-w-2xl mx-auto">
+        Have a story tip, feedback, or questions? We'd love to hear from you.
+      </p>
+      <a 
+        href="/contact"
+        class="inline-flex items-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+      >
+        Contact Us
+        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+    </section>
+  </div>
+</Layout>
