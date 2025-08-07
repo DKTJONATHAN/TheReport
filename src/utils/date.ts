@@ -5,6 +5,12 @@ import type { CollectionEntry } from "astro:content";
  * Format date for display
  */
 export function formatDate(date: Date, options?: Intl.DateTimeFormatOptions): string {
+  // Handle invalid dates
+  if (!date || isNaN(date.getTime())) {
+    console.warn('Invalid date provided to formatDate:', date);
+    return 'Invalid Date';
+  }
+  
   const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'long',
