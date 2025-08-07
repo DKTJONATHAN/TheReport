@@ -15,6 +15,13 @@ export function formatDate(date: Date, options?: Intl.DateTimeFormatOptions): st
 }
 
 /**
+ * Get formatted date (alias for formatDate to match existing component)
+ */
+export function getFormattedDate(date: Date, options?: Intl.DateTimeFormatOptions): string {
+  return formatDate(date, options);
+}
+
+/**
  * Format date for machine reading (ISO string)
  */
 export function formatMachineDate(date: Date): string {
