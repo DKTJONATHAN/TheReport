@@ -31,11 +31,21 @@ const note = defineCollection({
     updatedDate: z.coerce.date().optional(),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
-    brief: z.boolean().default(true), // Distinguishes notes from full posts
+    brief: z.boolean().default(true),
+  }),
+});
+
+// Also define the tag collection that's being auto-generated
+const tag = defineCollection({
+  type: 'content',
+  schema: z.object({
+    name: z.string(),
+    description: z.string().optional(),
   }),
 });
 
 export const collections = {
   posts,
   note,
+  tag,
 };
