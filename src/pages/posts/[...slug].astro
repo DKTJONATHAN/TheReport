@@ -1,311 +1,89 @@
 ---
-// /src/pages/posts/[...slug].astro - Tailwind v4 Compatible
-import { type CollectionEntry, getCollection } from "astro:content";
-import { getAllPosts, getRelatedPosts } from "@/data/post";
+import { getCollection } from "astro:content";
 import PostPreview from "@/components/blog/PostPreview.astro";
 import PageLayout from "@/layouts/Base.astro";
 import { formatDate } from "@/utils/date";
 
 export async function getStaticPaths() {
-  const posts = await getAllPosts();
+  const posts = await getCollection('posts');
   return posts.map((post) => ({
     params: { slug: post.slug },
     props: { post },
   }));
 }
 
-interface Props {
-  post: CollectionEntry<"posts">;
-}
-
 const { post } = Astro.props;
 const { Content } = await post.render();
-const relatedPosts = await getRelatedPosts(post, 3);
 
-const { title, description, publishDate, updatedDate, author, category, image, tags } = post.data;
+// Get related posts (same tags)
+const relatedPosts = (await getCollection('posts'))
+  .filter(p => 
+    p.slug !== post.slug && 
+    p.data.tags.some(tag => post.data.tags.includes(tag))
+  )
+  .slice(0, 3);
 
-// SEO meta
 const meta = {
-  title,
-  description: description || `Read ${title} by ${author}`,
-  canonical: `${Astro.site}posts/${post.slug}/`,
-  image: image?.src,
+  title: post.data.title,
+  description: post.data.description,
+  image: post.data.image?.src,
+  pubDate: post.data.pubDate
 };
 ---
 
-<PageLayout {meta}>
-  <article class="article-container">
-    <!-- Article Header -->
-    <header class="article-header">
-      {category && (
-        <div class="category-container">
-          <span class="category-badge">
-            {category}
+<PageLayout meta={meta}>
+  <article class="max-w-4xl mx-auto py-8 px-4">
+    <header class="mb-8">
+      <h1 class="text-4xl font-bold mb-4">{post.data.title}</h1>
+      
+      <div class="flex flex-wrap gap-4 items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <span>By {post.data.author}</span>
+        <time datetime={post.data.pubDate.toISOString()}>
+          {formatDate(post.data.pubDate)}
+        </time>
+        {post.data.updatedDate && (
+          <span class="text-xs">
+            (Updated: <time datetime={post.data.updatedDate.toISOString()}>
+              {formatDate(post.data.updatedDate)}
+            </time>)
           </span>
-        </div>
-      )}
-      
-      <h1 class="article-title">
-        {title}
-      </h1>
-      
-      {description && (
-        <p class="article-description">
-          {description}
-        </p>
-      )}
-      
-      <!-- Article Meta -->
-      <div class="article-meta">
-        <div class="meta-primary">
-          <span>By <strong>{author}</strong></span>
-          <time datetime={publishDate.toISOString()}>
-            {formatDate(publishDate)}
-          </time>
-          {updatedDate && (
-            <span class="updated-date">
-              Updated: <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time>
-            </span>
-          )}
-        </div>
-        
-        {tags && tags.length > 0 && (
-          <div class="tags-container">
-            {tags.map((tag) => (
-              <span class="tag">
-                #{tag}
-              </span>
-            ))}
-          </div>
         )}
       </div>
-    </header>
 
-    <!-- Featured Image -->
-    {image && (
-      <div class="featured-image">
+      {post.data.tags.length > 0 && (
+        <div class="flex flex-wrap gap-2 mb-6">
+          {post.data.tags.map((tag) => (
+            <a href={`/tags/${tag}/`} class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-sm">
+              #{tag}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {post.data.image && (
         <img
-          src={image.src}
-          alt={image.alt}
+          src={post.data.image.src}
+          alt={post.data.image.alt}
+          class="w-full rounded-lg mb-6"
           width="1200"
           height="630"
         />
-      </div>
-    )}
+      )}
+    </header>
 
-    <!-- Article Content -->
-    <div class="article-content">
+    <div class="prose dark:prose-invert max-w-none">
       <Content />
     </div>
+
+    {relatedPosts.length > 0 && (
+      <section class="mt-16">
+        <h2 class="text-2xl font-bold mb-8">Related Stories</h2>
+        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {relatedPosts.map((post) => (
+            <PostPreview post={post} />
+          ))}
+        </div>
+      </section>
+    )}
   </article>
-
-  <!-- Related Posts -->
-  {relatedPosts.length > 0 && (
-    <section class="related-posts">
-      <h2 class="related-title">Related Stories</h2>
-      <div class="related-grid">
-        {relatedPosts.map((relatedPost) => (
-          <PostPreview post={relatedPost} />
-        ))}
-      </div>
-    </section>
-  )}
 </PageLayout>
-
-<style>
-  .article-container {
-    max-width: 64rem;
-    margin: 0 auto;
-  }
-
-  .article-header {
-    margin-bottom: 2rem;
-  }
-
-  .category-container {
-    margin-bottom: 1rem;
-  }
-
-  .category-badge {
-    display: inline-block;
-    background-color: #fee2e2;
-    color: #991b1b;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .article-title {
-    margin-bottom: 1rem;
-    font-size: 2.5rem;
-    font-weight: bold;
-    line-height: 1.2;
-  }
-
-  .article-description {
-    margin-bottom: 1.5rem;
-    font-size: 1.25rem;
-    color: #6b7280;
-  }
-
-  .article-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .meta-primary {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .updated-date {
-    font-size: 0.75rem;
-  }
-
-  .tags-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tag {
-    background-color: #f3f4f6;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-  }
-
-  .featured-image {
-    margin-bottom: 2rem;
-    overflow: hidden;
-    border-radius: 0.5rem;
-  }
-
-  .featured-image img {
-    width: 100%;
-    height: auto;
-  }
-
-  .article-content {
-    max-width: 65ch;
-    margin: 0 auto;
-    font-size: 1.125rem;
-    line-height: 1.7;
-    color: #374151;
-  }
-
-  .related-posts {
-    margin-top: 4rem;
-  }
-
-  .related-title {
-    margin-bottom: 2rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-
-  .related-grid {
-    display: grid;
-    gap: 2rem;
-    grid-template-columns: 1fr;
-  }
-
-  /* Dark mode styles */
-  @media (prefers-color-scheme: dark) {
-    .category-badge {
-      background-color: rgba(153, 27, 27, 0.3);
-      color: #fca5a5;
-    }
-
-    .article-description {
-      color: #d1d5db;
-    }
-
-    .article-meta {
-      border-bottom-color: #374151;
-      color: #9ca3af;
-    }
-
-    .tag {
-      background-color: #1f2937;
-    }
-
-    .article-content {
-      color: #d1d5db;
-    }
-  }
-
-  /* Responsive design */
-  @media (min-width: 768px) {
-    .article-title {
-      font-size: 3rem;
-    }
-
-    .article-meta {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .related-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .related-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  /* Content styling */
-  .article-content :global(h2) {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.5rem;
-  }
-
-  .article-content :global(h3) {
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: bold;
-  }
-
-  .article-content :global(p) {
-    margin-bottom: 1rem;
-  }
-
-  .article-content :global(ul, ol) {
-    margin-bottom: 1rem;
-    padding-left: 1.5rem;
-  }
-
-  .article-content :global(blockquote) {
-    margin: 1.5rem 0;
-    padding: 1rem;
-    border-left: 4px solid #ef4444;
-    background-color: #f9fafb;
-    font-style: italic;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .article-content :global(h2) {
-      border-bottom-color: #374151;
-    }
-
-    .article-content :global(blockquote) {
-      background-color: rgba(31, 41, 55, 0.5);
-    }
-  }
-</style>
