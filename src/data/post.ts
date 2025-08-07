@@ -109,3 +109,23 @@ export async function groupPostsByYear(): Promise<Record<number, Post[]>> {
   
   return postsByYear;
 }
+
+/**
+ * Get tag metadata including post count
+ */
+export async function getTagMeta(): Promise<Array<{ name: string; count: number }>> {
+  const allPosts = await getAllPosts();
+  const tagCounts: Record<string, number> = {};
+  
+  // Count posts for each tag
+  allPosts.forEach(post => {
+    post.data.tags?.forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+  
+  // Convert to array and sort by count (descending)
+  return Object.entries(tagCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
