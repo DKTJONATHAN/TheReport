@@ -15,8 +15,6 @@ const { title, description = "Professional news and insights from The Mwaniki's 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <!-- Remove external CSS link -->
-    <!-- <link rel="stylesheet" href="/styles/global.css" /> -->
     <style is:global>
       @tailwind base;
       @tailwind components;
@@ -198,5 +196,10 @@ const { title, description = "Professional news and insights from The Mwaniki's 
         </div>
       </footer>
     </div>
+    <script>
+      document.querySelector('[data-mobile-menu-button]').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+      });
+    </script>
   </body>
 </html>
