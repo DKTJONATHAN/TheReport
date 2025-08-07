@@ -1,65 +1,63 @@
 ---
-import { getCollection } from "astro:content";
-import PostPreview from "@/components/blog/PostPreview.astro";
-import Note from "@/components/note/Note.astro";
-import PageLayout from "@/layouts/Base.astro";
-import { siteConfig } from "@/site.config";
+// src/pages/index.astro
+import Layout from '../components/Layout.astro';
+import { getCollection } from 'astro:content';
 
-const MAX_POSTS = 6;
-const MAX_NOTES = 4;
+// Fetch all posts sorted by date (newest first)
+const allPosts = await getCollection('posts', ({ data }) => {
+  return !data.draft;
+}).then(posts => posts.sort((a, b) => 
+  new Date(b.data.publishDate) - new Date(a.data.publishDate)
+));
 
-const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
-  .slice(0, MAX_POSTS);
-
-const latestNotes = (await getCollection('notes', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
-  .slice(0, MAX_NOTES);
+// Extract first image from post content
+function getFirstImage(post) {
+  const imgRegex = /!\[.*?\]\((.*?)\)/;
+  const match = post.body.match(imgRegex);
+  return match ? match[1] : post.data.image?.src || '/images/default-news.jpg';
+}
 ---
 
-<PageLayout meta={{ title: siteConfig.title, description: siteConfig.description }}>
-  <section class="mb-12">
-    <h1 class="mb-6 text-4xl font-bold tracking-tight">{siteConfig.title}</h1>
-    <p class="mb-6 text-lg text-gray-700 dark:text-gray-300">
-      {siteConfig.description}
-    </p>
-  </section>
-
-  <section class="mb-12">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold">
-        <a href="/posts/" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
-          Top Stories
-        </a>
-      </h2>
-      <a href="/posts/" class="text-sm font-medium hover:underline">
-        View All →
-      </a>
-    </div>
+<Layout title="Latest News">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 border-b pb-2">Breaking News</h1>
+    
     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-      {allPosts.map((post) => (
-        <PostPreview post={post} />
+      {allPosts.map(post => (
+        <a 
+          href={`/${post.slug}`} 
+          class="group block overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+        >
+          <div class="h-48 overflow-hidden">
+            <img 
+              src={getFirstImage(post)} 
+              alt={post.data.image?.alt || post.data.title}
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm text-gray-500">
+                {new Date(post.data.publishDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </span>
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                {post.data.category}
+              </span>
+            </div>
+            <h2 class="text-xl font-bold mb-2 group-hover:text-blue-600">
+              {post.data.title}
+            </h2>
+            <p class="text-gray-600 line-clamp-2">
+              {post.data.description}
+            </p>
+          </div>
+        </a>
       ))}
     </div>
-  </section>
-
-  {latestNotes.length > 0 && (
-    <section class="mb-12">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold">
-          <a href="/notes/" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
-            Latest Notes
-          </a>
-        </h2>
-        <a href="/notes/" class="text-sm font-medium hover:underline">
-          View All →
-        </a>
-      </div>
-      <div class="grid gap-6 md:grid-cols-2">
-        {latestNotes.map((note) => (
-          <Note note={note} isPreview />
-        ))}
-      </div>
-    </section>
-  )}
-</PageLayout>
+  </div>
+</Layout>
