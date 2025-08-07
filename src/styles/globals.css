@@ -1,0 +1,14 @@
+/* src/styles/global.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
