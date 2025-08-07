@@ -4,9 +4,18 @@ import type { CollectionEntry } from "astro:content";
 /**
  * Format date for display
  */
-export function formatDate(date: Date, options?: Intl.DateTimeFormatOptions): string {
+export function formatDate(date: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
+  // Convert to Date object if needed
+  let dateObj: Date;
+  
+  if (date instanceof Date) {
+    dateObj = date;
+  } else {
+    dateObj = new Date(date);
+  }
+  
   // Handle invalid dates
-  if (!date || isNaN(date.getTime())) {
+  if (!dateObj || isNaN(dateObj.getTime())) {
     console.warn('Invalid date provided to formatDate:', date);
     return 'Invalid Date';
   }
@@ -17,13 +26,13 @@ export function formatDate(date: Date, options?: Intl.DateTimeFormatOptions): st
     day: 'numeric',
   };
   
-  return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(date);
+  return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(dateObj);
 }
 
 /**
  * Get formatted date (alias for formatDate to match existing component)
  */
-export function getFormattedDate(date: Date, options?: Intl.DateTimeFormatOptions): string {
+export function getFormattedDate(date: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
   return formatDate(date, options);
 }
 
