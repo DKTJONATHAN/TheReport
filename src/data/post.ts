@@ -85,8 +85,8 @@ export async function getRelatedPosts(currentPost: Post, limit: number = 3): Pro
 /**
  * Get all unique tags from posts
  */
-export async function getUniqueTags(): Promise<string[]> {
-  const allPosts = await getAllPosts();
+export async function getUniqueTags(posts?: Post[]): Promise<string[]> {
+  const allPosts = posts || (await getAllPosts());
   
   // Handle case where there are no posts
   if (!allPosts || allPosts.length === 0) {
