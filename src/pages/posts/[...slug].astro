@@ -27,7 +27,7 @@ const meta = {
   title: post.data.title,
   description: post.data.description,
   image: post.data.image?.src,
-  pubDate: post.data.pubDate
+  pubDate: post.data.pubDate ? post.data.pubDate : null // Ensure pubDate is defined
 };
 ---
 
@@ -38,9 +38,11 @@ const meta = {
       
       <div class="flex flex-wrap gap-4 items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
         <span>By {post.data.author}</span>
-        <time datetime={post.data.pubDate.toISOString()}>
-          {formatDate(post.data.pubDate)}
-        </time>
+        {post.data.pubDate && (
+          <time datetime={post.data.pubDate.toISOString()}>
+            {formatDate(post.data.pubDate)}
+          </time>
+        )}
         {post.data.updatedDate && (
           <span class="text-xs">
             (Updated: <time datetime={post.data.updatedDate.toISOString()}>
