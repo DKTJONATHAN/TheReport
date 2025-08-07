@@ -12,14 +12,16 @@ export const getStaticPaths = (async ({ paginate }) => {
   try {
     const allPosts = await getAllPosts();
     const sortedPosts = allPosts.sort(collectionDateSort);
-    const uniqueTags = getUniqueTags(sortedPosts);
+    let uniqueTags = await getUniqueTags(sortedPosts); // Ensure Promise is resolved
 
     // Debug logging (remove in production)
     console.log('[DEBUG] Total posts:', sortedPosts.length);
     console.log('[DEBUG] Unique tags:', uniqueTags);
 
+    // Ensure uniqueTags is an array; fallback to empty array if not
     if (!Array.isArray(uniqueTags)) {
-      throw new Error(`Expected array but got ${typeof uniqueTags}: ${JSON.stringify(uniqueTags)}`);
+      console.warn(`[WARNING] getUniqueTags returned non-array: ${JSON.stringify(uniqueTags)}. Falling back to empty array.`);
+      uniqueTags = [];
     }
 
     return uniqueTags.flatMap((tag) => {
