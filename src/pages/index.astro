@@ -10,14 +10,13 @@ const recentPosts = sortedPosts.slice(1, 7);
 ---
 
 <Layout title="The Mwaniki's Report - Professional News & Insights">
-  <div class="container">
-    
+  <div class="page-container">
     <!-- Hero Section with Featured Post -->
     {featuredPost && (
       <section class="hero-section">
         <span class="hero-badge">FEATURED STORY</span>
         <h1 class="hero-title">
-          <a href={`/posts/${featuredPost.slug}`} style="color: inherit; text-decoration: none;">
+          <a href={`/posts/${featuredPost.slug}`} class="hero-title-link">
             {featuredPost.data.title}
           </a>
         </h1>
@@ -30,7 +29,7 @@ const recentPosts = sortedPosts.slice(1, 7);
             month: 'long',
             day: 'numeric'
           })}</span>
-          <span>•</span>
+          <span class="meta-separator">•</span>
           <span>{featuredPost.data.author || 'Jonathan Mwaniki'}</span>
         </div>
       </section>
@@ -59,7 +58,7 @@ const recentPosts = sortedPosts.slice(1, 7);
               )}
               
               <h3 class="article-title">
-                <a href={`/posts/${post.slug}`} style="color: inherit; text-decoration: none;">
+                <a href={`/posts/${post.slug}`} class="article-title-link">
                   {post.data.title}
                 </a>
               </h3>
@@ -69,17 +68,14 @@ const recentPosts = sortedPosts.slice(1, 7);
               </p>
               
               <div class="article-footer">
-                <span>{new Date(post.data.date).toLocaleDateString('en-US', {
+                <span class="article-date">{new Date(post.data.date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'
                 })}</span>
-                <a 
-                  href={`/posts/${post.slug}`}
-                  class="read-more"
-                >
+                <a href={`/posts/${post.slug}`} class="read-more">
                   <span>Read More</span>
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="read-more-icon" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                   </svg>
                 </a>
@@ -103,13 +99,271 @@ const recentPosts = sortedPosts.slice(1, 7);
           class="newsletter-input"
           required
         />
-        <button 
-          type="submit"
-          class="newsletter-btn"
-        >
+        <button type="submit" class="newsletter-btn">
           Subscribe
         </button>
       </form>
     </section>
   </div>
+
+  <style>
+    /* Page Container */
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      border-radius: 8px;
+      padding: 3rem 2rem;
+      color: white;
+      margin-bottom: 3rem;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .hero-title-link {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .hero-description {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+      opacity: 0.8;
+    }
+
+    .meta-separator {
+      opacity: 0.6;
+    }
+
+    /* Articles Section */
+    .articles-section {
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-title::after {
+      content: '';
+      width: 60px;
+      height: 4px;
+      background: #dc2626;
+      border-radius: 2px;
+    }
+
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+
+    .article-card {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .article-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .article-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      transition: all 0.3s ease;
+    }
+
+    .article-card:hover .article-image {
+      transform: scale(1.05);
+    }
+
+    .article-content {
+      padding: 1.5rem;
+    }
+
+    .article-category {
+      display: inline-block;
+      background: #fef2f2;
+      color: #dc2626;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 0.75rem;
+    }
+
+    .article-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #111827;
+      line-height: 1.4;
+      transition: all 0.3s ease;
+    }
+
+    .article-title-link {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .article-card:hover .article-title {
+      color: #dc2626;
+    }
+
+    .article-description {
+      color: #6b7280;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .article-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      color: #9ca3af;
+    }
+
+    .read-more {
+      color: #dc2626;
+      text-decoration: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .read-more:hover {
+      color: #b91c1c;
+    }
+
+    .read-more-icon {
+      width: 16px;
+      height: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .read-more:hover .read-more-icon {
+      transform: translateX(2px);
+    }
+
+    /* Newsletter Section */
+    .newsletter-section {
+      background: #f9fafb;
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 3rem;
+    }
+
+    .newsletter-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .newsletter-description {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .newsletter-form {
+      display: flex;
+      max-width: 400px;
+      margin: 0 auto;
+      gap: 0.5rem;
+    }
+
+    .newsletter-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+
+    .newsletter-input:focus {
+      outline: none;
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .newsletter-btn {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .newsletter-btn:hover {
+      background: #b91c1c;
+    }
+
+    /* Responsive Design */
+    @media (min-width: 768px) {
+      .articles-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .articles-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      
+      .page-container {
+        padding: 0 2rem;
+      }
+    }
+  </style>
 </Layout>
