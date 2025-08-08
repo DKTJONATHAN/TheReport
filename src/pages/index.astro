@@ -133,3 +133,15 @@ const regularPosts = posts.filter(post => !post.data.featured);
                 <img
                     src={post.data.image}
                     alt={post.data.imageAlt || post.data.title}
+                    class="post-card-image"
+                    loading="lazy"
+                />
+                <div class="post-card-content">
+                    <span class="category-tag">{post.data.category}</span>
+                    <h3 class="post-card-title">{post.data.title}</h3>
+                    <p class="post-description">{post.data.description}</p>
+                </div>
+            </a>
+        ))}
+    </div>
+</Layout>
