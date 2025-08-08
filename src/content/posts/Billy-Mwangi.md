@@ -8,7 +8,7 @@ imageCaption: "Billy Mwangi at a political rally in Embu"
 imageAlt: "Billy Mwangi addressing supporters"
 category: "Politics"
 tags: ["Billy Mwangi", "Politics", "Embu", "Senate", "Kenya"]
-featured: true
+featured: false
 draft: false
 ---
 
