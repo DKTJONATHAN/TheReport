@@ -13,96 +13,158 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
+
+const formattedDate = new Date(post.data.date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
 ---
 
 <Layout 
-  title={`${post.data.title} | ${Config.siteTitle}`} 
+  title={`${post.data.title} | ${Config.siteTitle}`}
   description={post.data.description}
-  image={post.data.image} // Pass image to layout for meta tags
+  image={post.data.image}
 >
-  <style>
-    /* Article header image (metadata image) */
-    .article-header img {
-      width: 100%;
-      max-height: 500px;
-      object-fit: cover;
-      border-radius: var(--radius);
-      margin: 2rem 0;
-      box-shadow: var(--shadow);
-    }
+    <style>
+        /* Article header styles */
+        .article-header {
+            margin-bottom: 3rem;
+        }
+        
+        .article-title {
+            font-size: 2.5rem;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        
+        .article-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Header image (metadata image) */
+        .article-header-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+        
+        /* Article content styles */
+        .article-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        .article-content > * + * {
+            margin-top: 1.5rem;
+        }
+        
+        /* Content images */
+        .article-content img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius);
+            margin: 2rem auto;
+            box-shadow: var(--shadow);
+            display: block;
+        }
+        
+        /* Image captions */
+        .article-content img + em,
+        .image-caption {
+            display: block;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: -1.5rem;
+            margin-bottom: 2rem;
+            font-style: normal;
+        }
+        
+        /* Full-width images */
+        .article-content img.full-width {
+            width: 100vw;
+            max-width: none;
+            margin-left: 50%;
+            transform: translateX(-50%);
+            border-radius: 0;
+        }
+        
+        /* Floated images */
+        .article-content img.float-left {
+            float: left;
+            margin: 1rem 1rem 1rem 0;
+            max-width: 50%;
+        }
+        
+        .article-content img.float-right {
+            float: right;
+            margin: 1rem 0 1rem 1rem;
+            max-width: 50%;
+        }
+        
+        /* Clear floats */
+        .article-content .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .article-title {
+                font-size: 2rem;
+            }
+            
+            .article-header-image {
+                max-height: 300px;
+            }
+            
+            .article-content img.float-left,
+            .article-content img.float-right {
+                float: none;
+                max-width: 100%;
+                margin: 1rem auto;
+            }
+            
+            .article-content {
+                font-size: 1rem;
+            }
+        }
+    </style>
 
-    /* Content images (from markdown/mdx) */
-    .article-content img {
-      width: 100%;
-      height: auto;
-      border-radius: var(--radius);
-      margin: 2rem auto;
-      box-shadow: var(--shadow);
-      display: block;
-    }
+    <article>
+        <header class="article-header">
+            <h1 class="article-title">{post.data.title}</h1>
+            <div class="article-meta">
+                <span>By {post.data.author || 'Staff Writer'}</span>
+                <span>•</span>
+                <span>{formattedDate}</span>
+            </div>
+            {post.data.image && (
+                <figure>
+                    <img
+                        src={post.data.image}
+                        alt={post.data.imageAlt || post.data.title}
+                        class="article-header-image"
+                        loading="lazy"
+                    />
+                    {post.data.imageCaption && (
+                        <figcaption class="image-caption">{post.data.imageCaption}</figcaption>
+                    )}
+                </figure>
+            )}
+        </header>
 
-    /* Caption styling */
-    .article-content img + em,
-    .image-caption {
-      display: block;
-      text-align: center;
-      font-size: 0.9rem;
-      color: var(--text-light);
-      margin-top: -1.5rem;
-      margin-bottom: 2rem;
-      font-style: normal;
-    }
-
-    /* Full-width images */
-    .article-content img.full-width {
-      width: 100vw;
-      max-width: none;
-      margin-left: 50%;
-      transform: translateX(-50%);
-      border-radius: 0;
-    }
-
-    /* Small floated images */
-    .article-content img.float-left {
-      float: left;
-      margin: 1rem 1rem 1rem 0;
-      max-width: 50%;
-    }
-
-    .article-content img.float-right {
-      float: right;
-      margin: 1rem 0 1rem 1rem;
-      max-width: 50%;
-    }
-
-    @media (max-width: 768px) {
-      .article-header img {
-        max-height: 300px;
-      }
-      
-      .article-content img.float-left,
-      .article-content img.float-right {
-        float: none;
-        max-width: 100%;
-        margin: 1rem auto;
-      }
-    }
-  </style>
-
-  <article>
-    <header class="article-header">
-      <h1>{post.data.title}</h1>
-      {post.data.image && (
-        <img
-          src={post.data.image}
-          alt={post.data.imageAlt || post.data.title}
-          loading="lazy"
-        />
-      )}
-    </header>
-
-    <div class="article-content">
-      <Content />
-    </div>
-  </article>
+        <div class="article-content">
+            <Content />
+        </div>
+    </article>
 </Layout>
