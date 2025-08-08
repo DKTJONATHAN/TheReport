@@ -1,72 +1,19 @@
 ---
+// src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
-import Config from '../utils/config';
 import { getCollection } from 'astro:content';
 
-// Get ALL posts including drafts, sorted by date (newest first)
+// Get ALL posts sorted by date (newest first), ignoring featured status
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
-
-// Get featured posts and pick the newest one if multiple exist
-const featuredPosts = allPosts.filter(post => post.data.featured);
-const featuredPost = featuredPosts.length > 0 
-  ? featuredPosts[0] // Already sorted by date, so [0] is newest
-  : null;
-
-// Regular posts are all non-featured OR all posts if no featured exists
-const regularPosts = featuredPost
-  ? allPosts.filter(post => !post.data.featured)
-  : [...allPosts]; // Show all posts if no featured exists
 ---
 
-<Layout title={Config.siteTitle} description="Latest news and articles">
+<Layout title="Latest News | Jonathan Mwaniki" description="The latest news and articles from Jonathan Mwaniki">
     <style>
-        .hero-article {
-            margin-bottom: 3rem;
-        }
-        
-        .hero-image {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            border-radius: var(--radius);
-            margin-bottom: 1rem;
-            box-shadow: var(--shadow);
-        }
-        
-        .category-tag {
-            display: inline-block;
-            background: var(--primary-light);
-            color: var(--primary-dark);
-            padding: 0.25rem 0.75rem;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-        
-        .post-title {
-            font-size: 2rem;
-            line-height: 1.2;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-        
-        .post-description {
-            color: var(--text-light);
-            margin-bottom: 1.5rem;
-        }
-        
-        .read-more {
-            display: inline-flex;
-            align-items: center;
-            font-weight: 600;
-        }
-        
-        .read-more svg {
-            margin-left: 0.5rem;
-            width: 1rem;
-            height: 1rem;
+        .posts-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
         }
         
         .posts-grid {
@@ -76,91 +23,131 @@ const regularPosts = featuredPost
         }
         
         .post-card {
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
             overflow: hidden;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         
         .post-card:hover {
             transform: translateY(-4px);
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
-        .post-card-image {
+        .post-image {
             width: 100%;
             height: 200px;
             object-fit: cover;
         }
         
-        .post-card-content {
+        .post-content {
             padding: 1.25rem;
         }
         
-        .post-card-title {
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
+        
+        .post-category {
+            background: #f0f4f8;
+            color: #2b6cb0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .post-date {
+            color: #718096;
+        }
+        
+        .post-title {
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
+            color: #1a365d;
         }
-
+        
+        .post-excerpt {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+        
+        .read-more {
+            color: #2b6cb0;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .read-more svg {
+            margin-left: 0.25rem;
+            width: 1rem;
+            height: 1rem;
+        }
+        
         .draft-badge {
             background: #f0f0f0;
             color: #666;
             padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            border-radius: 0.25rem;
             font-size: 0.75rem;
             margin-left: 0.5rem;
         }
         
         @media (max-width: 768px) {
-            .hero-image {
-                height: 250px;
+            .posts-container {
+                padding: 1rem;
             }
             
-            .post-title {
-                font-size: 1.5rem;
+            .posts-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 
-    {featuredPost && (
-        <article class="hero-article">
-            <img
-                src={featuredPost.data.image}
-                alt={featuredPost.data.imageAlt || featuredPost.data.title}
-                class="hero-image"
-                loading="lazy"
-            />
-            <div>
-                <span class="category-tag">{featuredPost.data.category}</span>
-                {featuredPost.data.draft && <span class="draft-badge">DRAFT</span>}
-                <h2 class="post-title">{featuredPost.data.title}</h2>
-                <p class="post-description">{featuredPost.data.description}</p>
-                <a href={`/posts/${featuredPost.slug}`} class="read-more">
-                    Read full story
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+    <div class="posts-container">
+        <h1>Latest News</h1>
+        <div class="posts-grid">
+            {allPosts.map(post => (
+                <a 
+                    href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
+                    class="post-card"
+                >
+                    <img
+                        src={post.data.image}
+                        alt={post.data.imageAlt || post.data.title}
+                        class="post-image"
+                        loading="lazy"
+                        width="400"
+                        height="225"
+                    />
+                    <div class="post-content">
+                        <div class="post-meta">
+                            <span class="post-category">{post.data.category}</span>
+                            <span class="post-date">
+                                {new Date(post.data.date).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })}
+                            </span>
+                        </div>
+                        <h3 class="post-title">{post.data.title}</h3>
+                        <p class="post-excerpt">{post.data.description}</p>
+                        <span class="read-more">
+                            Read more
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                        {post.data.draft && <span class="draft-badge">DRAFT</span>}
+                    </div>
                 </a>
-            </div>
-        </article>
-    )}
-
-    <div class="posts-grid">
-        {regularPosts.map(post => (
-            <a href={`/posts/${post.slug}`} class="post-card">
-                <img
-                    src={post.data.image}
-                    alt={post.data.imageAlt || post.data.title}
-                    class="post-card-image"
-                    loading="lazy"
-                />
-                <div class="post-card-content">
-                    <span class="category-tag">{post.data.category}</span>
-                    {post.data.draft && <span class="draft-badge">DRAFT</span>}
-                    <h3 class="post-card-title">{post.data.title}</h3>
-                    <p class="post-description">{post.data.description}</p>
-                </div>
-            </a>
-        ))}
+            ))}
+        </div>
     </div>
 </Layout>
