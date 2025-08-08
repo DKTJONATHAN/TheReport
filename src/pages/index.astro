@@ -1,4 +1,3 @@
----
 // src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
@@ -14,23 +13,34 @@ const recentPosts = sortedPosts.slice(1, 7);
     <!-- Hero Section with Featured Post -->
     {featuredPost && (
       <section class="hero-section">
-        <span class="hero-badge">FEATURED STORY</span>
-        <h1 class="hero-title">
-          <a href={`/posts/${featuredPost.slug}`} class="hero-title-link">
-            {featuredPost.data.title}
-          </a>
-        </h1>
-        <p class="hero-description">
-          {featuredPost.data.description}
-        </p>
-        <div class="hero-meta">
-          <span>{new Date(featuredPost.data.date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}</span>
-          <span class="meta-separator">•</span>
-          <span>{featuredPost.data.author || 'Jonathan Mwaniki'}</span>
+        <div class="hero-image-container">
+          <img
+            src={featuredPost.data.image || '/Jonathan-Mwaniki-logo.png'}
+            alt={featuredPost.data.title}
+            class="hero-image"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="hero-content">
+          <span class="hero-badge">FEATURED STORY</span>
+          <h1 class="hero-title">
+            <a href={`/posts/${featuredPost.slug}`} class="hero-title-link">
+              {featuredPost.data.title}
+            </a>
+          </h1>
+          <p class="hero-description">
+            {featuredPost.data.description}
+          </p>
+          <div class="hero-meta">
+            <span>{new Date(featuredPost.data.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</span>
+            <span class="meta-separator">•</span>
+            <span>{featuredPost.data.author || 'Jonathan Mwaniki'}</span>
+          </div>
         </div>
       </section>
     )}
@@ -42,31 +52,29 @@ const recentPosts = sortedPosts.slice(1, 7);
       <div class="articles-grid">
         {recentPosts.map((post) => (
           <article class="article-card">
-            {post.data.image && (
-              <img 
-                src={post.data.image} 
+            <div class="article-image-container">
+              <img
+                src={post.data.image || '/Jonathan-Mwaniki-logo.png'}
                 alt={post.data.title}
                 class="article-image"
+                loading="lazy"
+                decoding="async"
               />
-            )}
-            
+            </div>
             <div class="article-content">
               {post.data.category && (
                 <span class="article-category">
                   {post.data.category}
                 </span>
               )}
-              
               <h3 class="article-title">
                 <a href={`/posts/${post.slug}`} class="article-title-link">
                   {post.data.title}
                 </a>
               </h3>
-              
               <p class="article-description">
                 {post.data.description}
               </p>
-              
               <div class="article-footer">
                 <span class="article-date">{new Date(post.data.date).toLocaleDateString('en-US', {
                   month: 'short',
@@ -93,8 +101,8 @@ const recentPosts = sortedPosts.slice(1, 7);
         Get the latest news and insights delivered straight to your inbox. Join our community of informed readers.
       </p>
       <form class="newsletter-form">
-        <input 
-          type="email" 
+        <input
+          type="email"
           placeholder="Enter your email"
           class="newsletter-input"
           required
@@ -116,12 +124,34 @@ const recentPosts = sortedPosts.slice(1, 7);
 
     /* Hero Section */
     .hero-section {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      position: relative;
       border-radius: 8px;
-      padding: 3rem 2rem;
-      color: white;
       margin-bottom: 3rem;
+      overflow: hidden;
       box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .hero-image-container {
+      position: relative;
+      padding-top: 56.25%; /* 16:9 aspect ratio */
+    }
+
+    .hero-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    .hero-content {
+      position: relative;
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.9) 0%, rgba(185, 28, 28, 0.9) 100%);
+      padding: 2rem;
+      color: white;
     }
 
     .hero-badge {
@@ -208,10 +238,21 @@ const recentPosts = sortedPosts.slice(1, 7);
       box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     }
 
+    .article-image-container {
+      position: relative;
+      padding-top: 56.25%; /* 16:9 aspect ratio */
+    }
+
     .article-image {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      height: 200px;
+      height: 100%;
       object-fit: cover;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       transition: all 0.3s ease;
     }
 
@@ -354,13 +395,28 @@ const recentPosts = sortedPosts.slice(1, 7);
       .articles-grid {
         grid-template-columns: repeat(2, 1fr);
       }
+
+      .hero-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      .hero-image-container {
+        padding-top: 0;
+        height: 400px;
+      }
+
+      .hero-image {
+        height: 100%;
+      }
     }
 
     @media (min-width: 1024px) {
       .articles-grid {
         grid-template-columns: repeat(3, 1fr);
       }
-      
+
       .page-container {
         padding: 0 2rem;
       }
