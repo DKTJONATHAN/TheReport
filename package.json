@@ -1,5 +1,5 @@
 {
-  "name": "the-mwaniks-report",
+  "name": "the-mwanikis-report",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -10,11 +10,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/tailwind": "^5.0.0",
-    "astro": "^4.0.0",
-    "tailwindcss": "^3.0.0"
+    "astro": "^4.15.0"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.10"
+    "@astrojs/check": "^0.9.0",
+    "typescript": "^5.0.0"
   }
 }
