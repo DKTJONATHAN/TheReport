@@ -5,6 +5,13 @@ import remarkGfm from 'remark-gfm';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeSlug from 'rehype-slug';
 
+// Explicitly configure remark-gfm to avoid table parsing issues
+const gfm = remarkGfm({
+  singleTilde: false,
+  tablePipeAlign: true,
+  tableCellPadding: true
+});
+
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
   output: 'static',
@@ -20,7 +27,7 @@ export default defineConfig({
       langs: ['bash', 'json', 'javascript', 'typescript', 'html', 'css']
     },
     remarkPlugins: [
-      remarkGfm
+      [gfm]  // Use the configured version
     ],
     rehypePlugins: [
       rehypeSlug,
@@ -28,15 +35,47 @@ export default defineConfig({
         behavior: 'append',
         properties: {
           class: 'heading-anchor',
-          ariaHidden: true
+          ariaHidden: true,
+          tabIndex: -1
+        },
+        content: {
+          type: 'element',
+          tagName: 'span',
+          properties: {
+            ariaHidden: true
+          },
+          children: [{
+            type: 'text',
+            value: '#'
+          }]
         }
       }]
     ],
     syntaxHighlight: 'shiki',
-    gfm: true
+    gfm: true,
+    // Add these to prevent markdown parsing errors
+    remarkRehype: {
+      allowDangerousHtml: true,
+      handlers: {
+        // Custom table handler to prevent 'this.setData' errors
+        table: (h, node) => {
+          return h(node, 'table', { className: ['table-auto'] }, node.children);
+        }
+      }
+    }
   },
   integrations: [
     mdx(),
     sitemap()
-  ]
+  ],
+  vite: {
+    optimizeDeps: {
+      include: [
+        'remark-gfm',
+        'rehype-autolink-headings',
+        'rehype-slug'
+      ],
+      exclude: ['@astrojs/mdx']
+    }
+  }
 });
