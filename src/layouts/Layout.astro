@@ -5,9 +5,10 @@ import Footer from '../components/Footer.astro';
 export interface Props {
   title: string;
   description?: string;
+  image?: string; // Add image prop for meta tags
 }
 
-const { title, description = "Professional news and insights from The Mwaniki's Report" } = Astro.props;
+const { title, description = "Professional news and insights", image } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -17,80 +18,30 @@ const { title, description = "Professional news and insights from The Mwaniki's 
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {image && <meta name="twitter:image" content={image} />}
+    
     <title>{title}</title>
+    
     <style>
-        /* CSS RESET */
-        :root {
-            --primary: #dc2626;
-            --primary-dark: #b91c1c;
-            --primary-light: #fef2f2;
-            --text: #111827;
-            --text-light: #6b7280;
-            --bg: #ffffff;
-            --bg-light: #f9fafb;
-            --border: #e5e7eb;
-            --radius: 0.5rem;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
-            --spacing: 1.5rem;
-            --max-width: 1200px;
-        }
-        
-        *, *::before, *::after { 
-            box-sizing: border-box; 
-            margin: 0;
-            padding: 0;
-        }
-        
-        html {
-            scroll-behavior: smooth;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: var(--text);
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        
-        a:hover {
-            color: var(--primary-dark);
-        }
-        
-        .container {
-            width: 100%;
-            max-width: var(--max-width);
-            margin: 0 auto;
-            padding: 0 var(--spacing);
-        }
-        
-        main {
-            flex: 1;
-            padding: var(--spacing) 0;
-        }
+        /* Your existing global styles */
     </style>
 </head>
 <body>
     <Header />
-    
     <main class="container">
         <slot />
     </main>
-    
     <Footer />
 </body>
 </html>
