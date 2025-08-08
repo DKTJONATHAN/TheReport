@@ -21,38 +21,104 @@ const formattedDate = new Date(post.data.date).toLocaleDateString('en-US', {
 });
 ---
 
-<Layout 
-  title={`${post.data.title} | ${Config.siteTitle}`}
-  description={post.data.description}
-  canonical={`https://jonathanmwaniki.co.ke/posts/${post.slug}`}
->
-  <article>
-    <header class="mb-8">
-      <h1 class="text-3xl md:text-4xl font-bold mb-4">{post.data.title}</h1>
-      <div class="flex items-center space-x-4 text-gray-500 mb-6">
-        <span>By {post.data.author || 'Staff Writer'}</span>
-        <span>•</span>
-        <span>{formattedDate}</span>
-      </div>
-      {post.data.image && (
-        <figure>
-          <img
-            src={post.data.image}
-            alt={post.data.imageAlt || post.data.title}
-            class="w-full h-auto rounded-lg"
-            loading="lazy"
-          />
-          {post.data.imageCaption && (
-            <figcaption class="mt-2 text-sm text-gray-500 text-center">
-              {post.data.imageCaption}
-            </figcaption>
-          )}
-        </figure>
-      )}
-    </header>
+<Layout title={`${post.data.title} | ${Config.siteTitle}`} description={post.data.description}>
+    <style>
+        .article-header {
+            margin-bottom: 3rem;
+        }
+        
+        .article-title {
+            font-size: 2.5rem;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        
+        .article-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .article-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .article-content {
+            line-height: 1.8;
+        }
+        
+        .article-content > * + * {
+            margin-top: 1.5rem;
+        }
+        
+        .article-content img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius);
+            margin: 2rem auto;
+            box-shadow: var(--shadow);
+        }
+        
+        .article-content p {
+            color: var(--text);
+        }
+        
+        .article-content a {
+            text-decoration: underline;
+            text-underline-offset: 0.25em;
+        }
+        
+        .image-caption {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: -1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .article-title {
+                font-size: 2rem;
+            }
+            
+            .article-image {
+                max-height: 300px;
+            }
+        }
+    </style>
 
-    <div class="prose max-w-none">
-      <Content />
-    </div>
-  </article>
+    <article>
+        <header class="article-header">
+            <h1 class="article-title">{post.data.title}</h1>
+            <div class="article-meta">
+                <span>By {post.data.author || 'Staff Writer'}</span>
+                <span>•</span>
+                <span>{formattedDate}</span>
+            </div>
+            {post.data.image && (
+                <figure>
+                    <img
+                        src={post.data.image}
+                        alt={post.data.imageAlt || post.data.title}
+                        class="article-image"
+                        loading="lazy"
+                    />
+                    {post.data.imageCaption && (
+                        <figcaption class="image-caption">{post.data.imageCaption}</figcaption>
+                    )}
+                </figure>
+            )}
+        </header>
+
+        <div class="article-content">
+            <Content />
+        </div>
+    </article>
 </Layout>
