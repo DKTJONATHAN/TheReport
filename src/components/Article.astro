@@ -96,7 +96,7 @@ const { content } = Astro.props;
   }
   
   /* Enhanced Image Styles for All Content Images */
-  .article-content img {
+  .article-content img:not(.content-image img) {
     max-width: 100%;
     height: auto;
     border-radius: var(--radius-lg);
@@ -110,7 +110,7 @@ const { content } = Astro.props;
     filter: brightness(0.98);
   }
   
-  .article-content img:hover {
+  .article-content img:not(.content-image img):hover {
     transform: scale(1.03) translateY(-6px);
     box-shadow: var(--shadow-xl);
     border-color: var(--primary);
@@ -189,7 +189,6 @@ const { content } = Astro.props;
     box-shadow: var(--shadow-xl);
     transform: scale(1.02) translateY(-6px);
     border-color: var(--primary-light);
-    filter: brightness(1) contrast(1.1);
   }
   
   .article-content .content-image::after {
@@ -226,11 +225,28 @@ const { content } = Astro.props;
     border: 3px solid var(--border-light);
     background: var(--bg-tertiary);
     transition: transform var(--transition-slow), filter var(--transition-normal);
+    filter: brightness(0.95) contrast(1.05);
   }
   
   .article-content .content-image:hover img {
     transform: scale(1.02);
     filter: brightness(1) contrast(1.1);
+  }
+  
+  .article-content .content-image .image-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0.1) 100%
+    );
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+  
+  .article-content .content-image:hover .image-overlay {
+    opacity: 1;
   }
   
   .article-content .content-image figcaption {
@@ -532,7 +548,8 @@ const { content } = Astro.props;
       box-shadow: none !important;
     }
     
-    .article-content .content-image::after {
+    .article-content .content-image::after,
+    .article-content .content-image .image-overlay {
       display: none !important;
     }
   }
@@ -542,7 +559,10 @@ const { content } = Astro.props;
     .article-content img,
     .article-content figure,
     .article-content .featured-image,
-    .article-content .content-image {
+    .article-content .content-image,
+    .article-content .content-image img,
+    .article-content .content-image::after,
+    .article-content .content-image .image-overlay {
       transition: none;
     }
   }
