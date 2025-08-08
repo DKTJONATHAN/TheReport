@@ -1,3 +1,4 @@
+---
 // src/pages/posts/[...slug].astro
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
@@ -13,6 +14,14 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<'posts'>;
 const post = Astro.props;
 const { Content } = await post.render();
+
+// Image optimization function
+const optimizeImage = (url, width = 1200) => {
+  if (url.includes('postimg.cc') {
+    return url.replace('/raw/', '/').replace(/\.[^/.]+$/, `/${width}x0/`) + '.jpg';
+  }
+  return url;
+};
 ---
 
 <Layout 
@@ -67,19 +76,41 @@ const { Content } = await post.render();
     </header>
 
     <!-- Featured Image -->
-    <div class="image-container">
-      <img 
-        src={post.data.image || '/Jonathan-Mwaniki-logo.png'} 
-        alt={post.data.title}
-        class="post-image"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
+    {post.data.image && (
+      <div class="featured-image-container">
+        <img 
+          src={optimizeImage(post.data.image)} 
+          alt={`Featured image for ${post.data.title}`}
+          class="featured-image"
+          loading="lazy"
+          decoding="async"
+          width="1200"
+          height="630"
+        />
+        {post.data.imageCaption && (
+          <p class="image-caption">{post.data.imageCaption}</p>
+        )}
+      </div>
+    )}
 
     <!-- Article Content -->
     <div class="post-content">
-      <Content />
+      <Content components={{
+        img: ({ src, alt }) => (
+          <figure class="content-image-container">
+            <img
+              src={optimizeImage(src, 800)}
+              alt={alt || 'Content image'}
+              loading="lazy"
+              decoding="async"
+              class="content-image"
+              width="800"
+              height="450"
+            />
+            {alt && <figcaption class="content-image-caption">{alt}</figcaption>}
+          </figure>
+        )
+      }} />
     </div>
 
     <!-- Tags -->
@@ -198,52 +229,49 @@ const { Content } = await post.render();
       stroke: currentColor;
     }
 
-    /* Image Styles (Unified for all images) */
-    .image-container {
-      margin-bottom: 2rem;
+    /* Featured Image */
+    .featured-image-container {
+      margin: 0 auto 2.5rem;
+      max-width: 100%;
     }
 
-    .post-image,
-    .post-content img {
-      max-width: 100% !important;
-      height: auto !important;
-      display: block !important;
-      margin: 2rem auto !important;
-      border-radius: 8px !important;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-      object-fit: cover !important;
-      max-height: 500px !important;
+    .featured-image {
+      width: 100%;
+      max-height: 500px;
+      object-fit: cover;
+      object-position: center;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     }
 
-    /* Responsive image sizes */
-    @media (min-width: 768px) {
-      .post-image,
-      .post-content img {
-        max-width: 80% !important;
-      }
+    .image-caption {
+      text-align: center;
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.75rem;
+      font-style: italic;
     }
 
-    /* Caption styling */
-    .post-content img + em {
-      display: block !important;
-      text-align: center !important;
-      font-size: 0.875rem !important;
-      color: #6b7280 !important;
-      margin-top: -1.5rem !important;
-      margin-bottom: 2rem !important;
+    /* Content Images */
+    .content-image-container {
+      margin: 2rem auto;
+      max-width: 100%;
     }
 
-    /* Ensure images in any wrapper are styled */
-    .post-content figure img,
-    .post-content picture img {
-      max-width: 100% !important;
-      height: auto !important;
-      display: block !important;
-      margin: 2rem auto !important;
-      border-radius: 8px !important;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-      object-fit: cover !important;
-      max-height: 500px !important;
+    .content-image {
+      width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      display: block;
+    }
+
+    .content-image-caption {
+      text-align: center;
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      font-style: italic;
     }
 
     /* Content Styles */
@@ -390,11 +418,33 @@ const { Content } = await post.render();
       .post-container {
         padding: 2rem;
       }
+      
+      .featured-image-container {
+        max-width: 90%;
+      }
+      
+      .content-image-container {
+        max-width: 90%;
+      }
     }
 
     @media (min-width: 768px) {
       .post-title {
         font-size: 3rem;
+      }
+      
+      .featured-image-container {
+        max-width: 800px;
+      }
+      
+      .content-image-container {
+        max-width: 700px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .content-image-container {
+        max-width: 800px;
       }
     }
   </style>
