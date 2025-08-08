@@ -3,12 +3,20 @@ import Layout from '../layouts/Layout.astro';
 import Config from '../utils/config';
 import { getCollection } from 'astro:content';
 
-const posts = (await getCollection('posts'))
-  .filter(post => !post.data.draft)
+// Get ALL posts including drafts, sorted by date (newest first)
+const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
 
-const featuredPost = posts.find(post => post.data.featured);
-const regularPosts = posts.filter(post => !post.data.featured);
+// Get featured posts and pick the newest one if multiple exist
+const featuredPosts = allPosts.filter(post => post.data.featured);
+const featuredPost = featuredPosts.length > 0 
+  ? featuredPosts[0] // Already sorted by date, so [0] is newest
+  : null;
+
+// Regular posts are all non-featured OR all posts if no featured exists
+const regularPosts = featuredPost
+  ? allPosts.filter(post => !post.data.featured)
+  : [...allPosts]; // Show all posts if no featured exists
 ---
 
 <Layout title={Config.siteTitle} description="Latest news and articles">
@@ -93,6 +101,15 @@ const regularPosts = posts.filter(post => !post.data.featured);
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
         }
+
+        .draft-badge {
+            background: #f0f0f0;
+            color: #666;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
         
         @media (max-width: 768px) {
             .hero-image {
@@ -115,6 +132,7 @@ const regularPosts = posts.filter(post => !post.data.featured);
             />
             <div>
                 <span class="category-tag">{featuredPost.data.category}</span>
+                {featuredPost.data.draft && <span class="draft-badge">DRAFT</span>}
                 <h2 class="post-title">{featuredPost.data.title}</h2>
                 <p class="post-description">{featuredPost.data.description}</p>
                 <a href={`/posts/${featuredPost.slug}`} class="read-more">
@@ -138,6 +156,7 @@ const regularPosts = posts.filter(post => !post.data.featured);
                 />
                 <div class="post-card-content">
                     <span class="category-tag">{post.data.category}</span>
+                    {post.data.draft && <span class="draft-badge">DRAFT</span>}
                     <h3 class="post-card-title">{post.data.title}</h3>
                     <p class="post-description">{post.data.description}</p>
                 </div>
