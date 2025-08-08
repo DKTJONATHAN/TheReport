@@ -245,7 +245,7 @@ const fullImage = image ? new URL(image, Astro.site).href : '';
     }
     
     /* Image Enhancements */
-    img {
+    img:not(.content-image img) {
       max-width: 100%;
       height: auto;
       border-radius: var(--radius-md);
@@ -253,7 +253,7 @@ const fullImage = image ? new URL(image, Astro.site).href : '';
       transition: all var(--transition-normal);
     }
     
-    img:hover {
+    img:not(.content-image img):hover {
       transform: scale(1.02);
       box-shadow: var(--shadow-lg);
     }
