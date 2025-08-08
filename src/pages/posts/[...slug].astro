@@ -16,8 +16,8 @@ const post = Astro.props;
 const { Content } = await post.render();
 
 // Image optimization function
-const optimizeImage = (url, width = 1200) => {
-  if (url.includes('postimg.cc') {
+const optimizeImage = (url: string, width = 1200) => {
+  if (url.includes('postimg.cc')) {
     return url.replace('/raw/', '/').replace(/\.[^/.]+$/, `/${width}x0/`) + '.jpg';
   }
   return url;
@@ -27,6 +27,7 @@ const optimizeImage = (url, width = 1200) => {
 <Layout 
   title={`${post.data.title} - The Mwaniki's Report`}
   description={post.data.description}
+  image={post.data.image}
 >
   <article class="post-container">
     <!-- Article Header -->
@@ -72,15 +73,28 @@ const optimizeImage = (url, width = 1200) => {
             day: 'numeric'
           })}</span>
         </div>
+        
+        {post.data.tags && post.data.tags.length > 0 && (
+          <div class="meta-item">
+            <svg class="meta-icon" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            <div class="tags-list">
+              {post.data.tags.slice(0, 3).map((tag) => (
+                <span class="tag-item">#{tag}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </header>
 
     <!-- Featured Image -->
     {post.data.image && (
-      <div class="featured-image-container">
+      <figure class="featured-image-container">
         <img 
           src={optimizeImage(post.data.image)} 
-          alt={`Featured image for ${post.data.title}`}
+          alt={post.data.imageAlt || `Featured image for ${post.data.title}`}
           class="featured-image"
           loading="lazy"
           decoding="async"
@@ -88,9 +102,9 @@ const optimizeImage = (url, width = 1200) => {
           height="630"
         />
         {post.data.imageCaption && (
-          <p class="image-caption">{post.data.imageCaption}</p>
+          <figcaption class="image-caption">{post.data.imageCaption}</figcaption>
         )}
-      </div>
+      </figure>
     )}
 
     <!-- Article Content -->
@@ -113,15 +127,15 @@ const optimizeImage = (url, width = 1200) => {
       }} />
     </div>
 
-    <!-- Tags -->
+    <!-- Tags Section -->
     {post.data.tags && post.data.tags.length > 0 && (
       <div class="tags-section">
         <h4 class="tags-title">Tagged with:</h4>
         <div class="tags-list">
           {post.data.tags.map((tag) => (
-            <span class="tag-item">
+            <a href={`/tags/${tag.toLowerCase()}`} class="tag-item">
               #{tag}
-            </span>
+            </a>
           ))}
         </div>
       </div>
@@ -132,7 +146,7 @@ const optimizeImage = (url, width = 1200) => {
       <h4 class="share-title">Share this article</h4>
       <div class="share-buttons">
         <a 
-          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent('https://jonathanmwaniki.co.ke/posts/' + post.slug)}&via=maestropuns`}
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(Astro.url.href)}&via=maestropuns`}
           target="_blank"
           rel="noopener noreferrer"
           class="twitter-share-button"
@@ -142,16 +156,43 @@ const optimizeImage = (url, width = 1200) => {
           </svg>
           Tweet
         </a>
+        <a
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(Astro.url.href)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="facebook-share-button"
+        >
+          <svg class="facebook-share-icon" viewBox="0 0 20 20">
+            <path d="M18.896 0H1.104C.494 0 0 .494 0 1.104v17.793C0 19.506.494 20 1.104 20h9.58v-7.745H8.076V9.237h2.606V7.01c0-2.583 1.578-3.99 3.883-3.99 1.104 0 2.052.082 2.329.119v2.7h-1.598c-1.254 0-1.496.597-1.496 1.47v1.928h2.989l-.39 3.018h-2.6V20h5.098c.608 0 1.102-.494 1.102-1.104V1.104C20 .494 19.506 0 18.896 0z"></path>
+          </svg>
+          Share
+        </a>
+      </div>
+    </div>
+
+    <!-- Related Articles -->
+    <div class="related-section">
+      <h4 class="related-title">More {post.data.category} News</h4>
+      <div class="related-articles">
+        {/* You would implement logic to fetch related articles here */}
+        <div class="related-article">
+          <a href="#" class="related-article-link">
+            <img src="https://via.placeholder.com/300x200" alt="Related article" class="related-article-image" />
+            <h5 class="related-article-title">Related article title would appear here</h5>
+          </a>
+        </div>
       </div>
     </div>
   </article>
 
-  <style>
+  <style is:global>
     /* Base Styles */
     .post-container {
       max-width: 56rem;
       margin: 0 auto;
       padding: 2rem 1rem;
+      color: #374151;
+      line-height: 1.75;
     }
 
     /* Header Styles */
@@ -170,6 +211,7 @@ const optimizeImage = (url, width = 1200) => {
       font-size: 0.875rem;
       font-weight: 500;
       transition: color 0.3s ease;
+      text-decoration: none;
     }
 
     .back-link:hover {
@@ -192,6 +234,7 @@ const optimizeImage = (url, width = 1200) => {
       padding: 0.25rem 1rem;
       border-radius: 9999px;
       margin-bottom: 1rem;
+      text-transform: uppercase;
     }
 
     .post-title {
@@ -207,26 +250,35 @@ const optimizeImage = (url, width = 1200) => {
       color: #6b7280;
       margin-bottom: 1.5rem;
       line-height: 1.6;
+      font-weight: 500;
     }
 
     .post-meta {
       display: flex;
+      flex-wrap: wrap;
       gap: 1.5rem;
       color: #6b7280;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid #e5e7eb;
+      align-items: center;
     }
 
     .meta-item {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 0.875rem;
     }
 
     .meta-icon {
       width: 1.25rem;
       height: 1.25rem;
       stroke: currentColor;
+    }
+
+    .tags-list {
+      display: flex;
+      gap: 0.5rem;
     }
 
     /* Featured Image */
@@ -276,8 +328,6 @@ const optimizeImage = (url, width = 1200) => {
 
     /* Content Styles */
     .post-content {
-      color: #374151;
-      line-height: 1.75;
       font-size: 1.125rem;
     }
 
@@ -289,56 +339,74 @@ const optimizeImage = (url, width = 1200) => {
     .post-content h6 {
       color: #111827;
       font-weight: 700;
-    }
-
-    .post-content h2 {
-      font-size: 1.5rem;
       margin-top: 2rem;
       margin-bottom: 1rem;
     }
 
+    .post-content h2 {
+      font-size: 1.75rem;
+    }
+
     .post-content h3 {
-      font-size: 1.25rem;
-      margin-top: 1.5rem;
-      margin-bottom: 0.75rem;
+      font-size: 1.5rem;
     }
 
     .post-content p {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     .post-content a {
       color: #dc2626;
       font-weight: 500;
+      text-decoration: none;
       transition: color 0.3s ease;
     }
 
     .post-content a:hover {
       color: #b91c1c;
+      text-decoration: underline;
     }
 
     .post-content blockquote {
-      border-left: 4px solid #fecaca;
-      padding-left: 1rem;
+      border-left: 4px solid #dc2626;
+      padding: 0.5rem 1rem;
+      margin: 1.5rem 0;
+      background-color: #fef2f2;
       font-style: italic;
       color: #4b5563;
     }
 
     .post-content code {
       background-color: #f3f4f6;
-      padding: 0.125rem 0.25rem;
+      padding: 0.2rem 0.4rem;
       border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-family: monospace;
+    }
+
+    .post-content pre {
+      background-color: #1e293b;
+      color: #f8fafc;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    .post-content pre code {
+      background-color: transparent;
+      padding: 0;
       font-size: 0.875rem;
     }
 
     .post-content ul,
     .post-content ol {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       padding-left: 1.5rem;
     }
 
     .post-content li {
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.5rem;
     }
 
     /* Tags Section */
@@ -349,7 +417,7 @@ const optimizeImage = (url, width = 1200) => {
     }
 
     .tags-title {
-      font-size: 0.875rem;
+      font-size: 1rem;
       font-weight: 600;
       color: #111827;
       margin-bottom: 1rem;
@@ -368,6 +436,13 @@ const optimizeImage = (url, width = 1200) => {
       font-size: 0.875rem;
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .tag-item:hover {
+      background-color: #e5e7eb;
+      color: #111827;
     }
 
     /* Share Section */
@@ -382,7 +457,7 @@ const optimizeImage = (url, width = 1200) => {
       font-size: 1.125rem;
       font-weight: 600;
       color: #111827;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     .share-buttons {
@@ -391,26 +466,92 @@ const optimizeImage = (url, width = 1200) => {
       gap: 1rem;
     }
 
-    .twitter-share-button {
+    .twitter-share-button,
+    .facebook-share-button {
       display: inline-flex;
       align-items: center;
-      background-color: #1da1f2;
-      color: white;
       padding: 0.5rem 1rem;
       border-radius: 0.5rem;
       font-weight: 500;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .twitter-share-button {
+      background-color: #1da1f2;
+      color: white;
     }
 
     .twitter-share-button:hover {
       background-color: #1991db;
     }
 
-    .twitter-share-icon {
+    .facebook-share-button {
+      background-color: #1877f2;
+      color: white;
+    }
+
+    .facebook-share-button:hover {
+      background-color: #166fe5;
+    }
+
+    .twitter-share-icon,
+    .facebook-share-icon {
       width: 1rem;
       height: 1rem;
       margin-right: 0.5rem;
       fill: currentColor;
+    }
+
+    /* Related Articles */
+    .related-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .related-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 1.5rem;
+    }
+
+    .related-articles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .related-article {
+      border-radius: 0.5rem;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .related-article:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .related-article-link {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .related-article-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    .related-article-title {
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0;
     }
 
     /* Responsive Design */
@@ -439,6 +580,10 @@ const optimizeImage = (url, width = 1200) => {
       
       .content-image-container {
         max-width: 700px;
+      }
+
+      .related-articles {
+        grid-template-columns: repeat(3, 1fr);
       }
     }
 
