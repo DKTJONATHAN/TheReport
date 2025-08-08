@@ -1,11 +1,12 @@
+---
 // src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
 const posts = await getCollection('posts');
 const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
-const featuredPost = sortedPosts[0];
-const recentPosts = sortedPosts.slice(1, 7);
+const featuredPost = sortedPosts.find(post => post.data.featured) || sortedPosts[0];
+const recentPosts = sortedPosts.filter(post => post.slug !== featuredPost.slug).slice(0, 6);
 ---
 
 <Layout title="The Mwaniki's Report - Professional News & Insights">
@@ -14,16 +15,22 @@ const recentPosts = sortedPosts.slice(1, 7);
     {featuredPost && (
       <section class="hero-section">
         <div class="hero-image-container">
-          <img
-            src={featuredPost.data.image || '/Jonathan-Mwaniki-logo.png'}
-            alt={featuredPost.data.title}
+          <img 
+            src={featuredPost.data.image} 
+            alt={featuredPost.data.imageAlt || featuredPost.data.title}
             class="hero-image"
-            loading="lazy"
-            decoding="async"
           />
+          <div class="hero-image-caption">
+            {featuredPost.data.imageCaption}
+          </div>
+          <span class="hero-badge">FEATURED STORY</span>
+          {featuredPost.data.category && (
+            <span class="hero-category">
+              {featuredPost.data.category}
+            </span>
+          )}
         </div>
         <div class="hero-content">
-          <span class="hero-badge">FEATURED STORY</span>
           <h1 class="hero-title">
             <a href={`/posts/${featuredPost.slug}`} class="hero-title-link">
               {featuredPost.data.title}
@@ -40,6 +47,16 @@ const recentPosts = sortedPosts.slice(1, 7);
             })}</span>
             <span class="meta-separator">•</span>
             <span>{featuredPost.data.author || 'Jonathan Mwaniki'}</span>
+            {featuredPost.data.tags && featuredPost.data.tags.length > 0 && (
+              <>
+                <span class="meta-separator">•</span>
+                <div class="tags-container">
+                  {featuredPost.data.tags.map(tag => (
+                    <span class="tag">{tag}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -53,40 +70,57 @@ const recentPosts = sortedPosts.slice(1, 7);
         {recentPosts.map((post) => (
           <article class="article-card">
             <div class="article-image-container">
-              <img
-                src={post.data.image || '/Jonathan-Mwaniki-logo.png'}
-                alt={post.data.title}
+              <img 
+                src={post.data.image} 
+                alt={post.data.imageAlt || post.data.title}
                 class="article-image"
                 loading="lazy"
-                decoding="async"
               />
+              {post.data.imageCaption && (
+                <div class="article-image-caption">
+                  {post.data.imageCaption}
+                </div>
+              )}
             </div>
+            
             <div class="article-content">
               {post.data.category && (
                 <span class="article-category">
                   {post.data.category}
                 </span>
               )}
+              
               <h3 class="article-title">
                 <a href={`/posts/${post.slug}`} class="article-title-link">
                   {post.data.title}
                 </a>
               </h3>
+              
               <p class="article-description">
                 {post.data.description}
               </p>
+              
               <div class="article-footer">
                 <span class="article-date">{new Date(post.data.date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'
                 })}</span>
-                <a href={`/posts/${post.slug}`} class="read-more">
-                  <span>Read More</span>
-                  <svg class="read-more-icon" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </a>
+                <div class="article-meta-right">
+                  {post.data.tags && post.data.tags.length > 0 && (
+                    <div class="tags-container">
+                      {post.data.tags.slice(0, 1).map(tag => (
+                        <span class="tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <a href={`/posts/${post.slug}`} class="read-more">
+                    <span>Read More</span>
+                    <svg class="read-more-icon" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  </a>
+                </div>
               </div>
             </div>
           </article>
@@ -101,8 +135,8 @@ const recentPosts = sortedPosts.slice(1, 7);
         Get the latest news and insights delivered straight to your inbox. Join our community of informed readers.
       </p>
       <form class="newsletter-form">
-        <input
-          type="email"
+        <input 
+          type="email" 
           placeholder="Enter your email"
           class="newsletter-input"
           required
@@ -124,52 +158,79 @@ const recentPosts = sortedPosts.slice(1, 7);
 
     /* Hero Section */
     .hero-section {
-      position: relative;
+      background: #ffffff;
       border-radius: 8px;
-      margin-bottom: 3rem;
       overflow: hidden;
+      margin-bottom: 3rem;
       box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
     }
 
     .hero-image-container {
       position: relative;
-      padding-top: 56.25%; /* 16:9 aspect ratio */
+      height: 400px;
+      overflow: hidden;
     }
 
     .hero-image {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      transition: transform 0.3s ease;
     }
 
-    .hero-content {
-      position: relative;
-      background: linear-gradient(135deg, rgba(220, 38, 38, 0.9) 0%, rgba(185, 28, 28, 0.9) 100%);
-      padding: 2rem;
+    .hero-image-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
       color: white;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .hero-section:hover .hero-image {
+      transform: scale(1.02);
     }
 
     .hero-badge {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.2);
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(220, 38, 38, 0.9);
+      color: white;
       padding: 0.25rem 0.75rem;
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 600;
-      margin-bottom: 1rem;
-      backdrop-filter: blur(10px);
+      z-index: 1;
+    }
+
+    .hero-category {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: #dc2626;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      z-index: 1;
+    }
+
+    .hero-content {
+      padding: 2rem;
     }
 
     .hero-title {
-      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-size: clamp(2rem, 5vw, 3rem);
       font-weight: 700;
       line-height: 1.2;
       margin-bottom: 1rem;
+      color: #111827;
     }
 
     .hero-title-link {
@@ -180,7 +241,7 @@ const recentPosts = sortedPosts.slice(1, 7);
     .hero-description {
       font-size: 1.25rem;
       margin-bottom: 1.5rem;
-      opacity: 0.9;
+      color: #4b5563;
       line-height: 1.6;
     }
 
@@ -188,11 +249,27 @@ const recentPosts = sortedPosts.slice(1, 7);
       display: flex;
       gap: 1rem;
       font-size: 0.875rem;
-      opacity: 0.8;
+      color: #6b7280;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     .meta-separator {
       opacity: 0.6;
+    }
+
+    .tags-container {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      background: #f3f4f6;
+      color: #4b5563;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
     }
 
     /* Articles Section */
@@ -231,6 +308,8 @@ const recentPosts = sortedPosts.slice(1, 7);
       overflow: hidden;
       transition: all 0.3s ease;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
     }
 
     .article-card:hover {
@@ -239,21 +318,27 @@ const recentPosts = sortedPosts.slice(1, 7);
     }
 
     .article-image-container {
+      height: 200px;
+      overflow: hidden;
       position: relative;
-      padding-top: 56.25%; /* 16:9 aspect ratio */
     }
 
     .article-image {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-top-left-radius: 8px;
-      border-top-right-radius: 8px;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      transition: all 0.3s ease;
+      transition: transform 0.3s ease;
+    }
+
+    .article-image-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
     }
 
     .article-card:hover .article-image {
@@ -262,6 +347,9 @@ const recentPosts = sortedPosts.slice(1, 7);
 
     .article-content {
       padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .article-category {
@@ -273,6 +361,7 @@ const recentPosts = sortedPosts.slice(1, 7);
       padding: 0.25rem 0.75rem;
       border-radius: 20px;
       margin-bottom: 0.75rem;
+      align-self: flex-start;
     }
 
     .article-title {
@@ -297,6 +386,7 @@ const recentPosts = sortedPosts.slice(1, 7);
       color: #6b7280;
       margin-bottom: 1rem;
       line-height: 1.6;
+      flex: 1;
     }
 
     .article-footer {
@@ -305,6 +395,12 @@ const recentPosts = sortedPosts.slice(1, 7);
       align-items: center;
       font-size: 0.875rem;
       color: #9ca3af;
+    }
+
+    .article-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .read-more {
@@ -397,18 +493,17 @@ const recentPosts = sortedPosts.slice(1, 7);
       }
 
       .hero-section {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
+        flex-direction: row;
       }
 
       .hero-image-container {
-        padding-top: 0;
-        height: 400px;
+        flex: 1;
+        height: auto;
       }
 
-      .hero-image {
-        height: 100%;
+      .hero-content {
+        flex: 1;
+        padding: 3rem;
       }
     }
 
@@ -416,7 +511,7 @@ const recentPosts = sortedPosts.slice(1, 7);
       .articles-grid {
         grid-template-columns: repeat(3, 1fr);
       }
-
+      
       .page-container {
         padding: 0 2rem;
       }
