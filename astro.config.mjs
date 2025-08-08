@@ -1,20 +1,18 @@
-// astro.config.mjs
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
+  integrations: [
+    mdx(),
+    sitemap()
+  ],
   markdown: {
-    // Minimal markdown config that only affects frontmatter
-    frontmatter: {
-      // Ensure all frontmatter keys are preserved
-      strict: false,
-      // Allow any custom frontmatter fields
-      schema: {}
-    },
-    // Disable all content transformations
+    // Disable all transformations
     remarkPlugins: [],
     rehypePlugins: [],
-    syntaxHighlight: false,
-    gfm: false
+    // Basic syntax highlighting
+    syntaxHighlight: 'prism'
   }
 });
