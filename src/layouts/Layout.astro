@@ -1,36 +1,55 @@
 ---
-// src/layouts/Layout.astro
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import '../styles/global.css';
 
 export interface Props {
   title: string;
   description?: string;
+  image?: string;
+  canonical?: string;
 }
-const { title, description } = Astro.props;
+
+const { title, description = "Professional news and insights", image, canonical } = Astro.props;
+const fullImage = image ? new URL(image, Astro.site).href : '';
 ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  <meta name="description" content={description} />
+  <meta name="description" content={description}>
+  
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  {fullImage && <meta property="og:image" content={fullImage}>}
+  <meta property="og:url" content={canonical || Astro.url.href}>
+  <meta property="og:type" content="website">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  {fullImage && <meta name="twitter:image" content={fullImage}>}
+  
   <style>
     :root {
       --primary: #dc2626;
       --primary-dark: #b91c1c;
-      --primary-light: #fef2f2;
       --text: #111827;
       --text-light: #6b7280;
       --bg: #ffffff;
-      --bg-light: #f9fafb;
-      --border: #e5e7eb;
-      --radius: 0.5rem;
-      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --border: #e2e8f0;
+      --radius: 8px;
+      --shadow: 0 2px 4px rgba(0,0,0,0.1);
       --spacing: 1.5rem;
-      --max-width: 1200px;
     }
     
     body {
@@ -39,13 +58,27 @@ const { title, description } = Astro.props;
       color: var(--text);
       background: var(--bg);
       margin: 0;
-      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     main {
+      flex: 1;
       padding: var(--spacing);
-      max-width: var(--max-width);
+      max-width: 1200px;
       margin: 0 auto;
+      width: 100%;
+    }
+    
+    a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    a:hover {
+      color: var(--primary-dark);
     }
   </style>
 </head>
