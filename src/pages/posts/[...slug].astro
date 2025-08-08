@@ -1,9 +1,13 @@
 ---
+// src/pages/posts/[...slug].astro
 import { getCollection } from 'astro:content';
-import Config from '../../config.ts';
+import Config from '../../utils/config';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('posts');
+  const posts = await getCollection('posts', ({ data }) => {
+    return !data.draft;
+  });
+  
   return posts.map(post => ({
     params: { slug: post.slug },
     props: { post },
@@ -12,6 +16,13 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
+
+// Format date
+const formattedDate = new Date(post.data.date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -23,37 +34,73 @@ const { Content } = await post.render();
     :root {
       --max-width: 800px;
       --spacing: 1.5rem;
+      --primary: #2563eb;
+      --gray-800: #1f2937;
     }
+    
     body {
-      font-family: system-ui, sans-serif;
-      line-height: 1.6;
-      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.8;
+      color: var(--gray-800);
       padding: 0;
+      margin: 0;
     }
+    
     .container {
       max-width: var(--max-width);
       margin: 0 auto;
       padding: 0 var(--spacing);
     }
+    
     .article-header {
-      margin-bottom: var(--spacing);
-    }
-    .article-image {
-      width: 100%;
-      height: auto;
-      border-radius: 8px;
       margin: var(--spacing) 0;
     }
+    
+    .article-image {
+      width: 100%;
+      max-height: 500px;
+      object-fit: cover;
+      border-radius: 0.5rem;
+      margin: var(--spacing) 0;
+    }
+    
+    .article-meta {
+      display: flex;
+      gap: 1rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    
+    .article-content {
+      margin: var(--spacing) 0;
+    }
+    
     .article-content img {
       max-width: 100%;
       height: auto;
-      display: block;
+      border-radius: 0.5rem;
       margin: var(--spacing) auto;
     }
-    .article-meta {
-      color: #666;
-      font-size: 0.9rem;
-      margin: var(--spacing) 0;
+    
+    .article-content p {
+      margin-bottom: 1.5rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .article-image {
+        max-height: 300px;
+      }
     }
   </style>
 </head>
@@ -63,16 +110,22 @@ const { Content } = await post.render();
       <header class="article-header">
         <h1>{post.data.title}</h1>
         <div class="article-meta">
-          <span>By {post.data.author}</span> • 
-          <span>{new Date(post.data.date).toLocaleDateString()}</span>
+          <span>By {post.data.author || 'Staff'}</span>
+          <span>•</span>
+          <span>{formattedDate}</span>
         </div>
         {post.data.image && (
           <img
             src={post.data.image}
-            alt={post.data.imageAlt || ''}
+            alt={post.data.imageAlt || post.data.title}
             class="article-image"
             loading="lazy"
+            width="800"
+            height="450"
           />
+        )}
+        {post.data.imageCaption && (
+          <figcaption class="image-caption">{post.data.imageCaption}</figcaption>
         )}
       </header>
 
