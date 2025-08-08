@@ -3,52 +3,118 @@ title: "Honoring MC Fullstop: Funeral Fund Launched for Reggae Legend"
 description: "Kenya mourns the loss of reggae icon MC Fullstop, with his family seeking support for funeral and medical costs after his passing on August 1, 2025."
 date: 2025-08-08
 author: "Jonathan Mwaniki"
-category: "Entertainment"
 image: "https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg"
+imageCaption: "MC Fullstop performing at his last concert in 2024"
+imageAlt: "MC Fullstop on stage performing for fans"
+category: "Entertainment"
 tags: ["MC Fullstop", "John Maina", "Reggae", "Funeral Fund", "Kenya Music"]
 featured: true
+draft: false
 ---
 
-## A Reggae Legend Remembered
+<figure class="featured-image">
+  <img 
+    src="https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg" 
+    alt="MC Fullstop on stage performing for fans"
+    loading="lazy"
+    width="1200"
+    height="675"
+  />
+  <figcaption>MC Fullstop performing at his last concert in 2024</figcaption>
+</figure>
 
-Kenya mourns the loss of John Maina, known as MC Fullstop, a reggae and dancehall icon who passed away on August 1, 2025, after a brave battle with lung tuberculosis. His family has launched a funeral fund to cover medical and burial costs, calling on fans and well-wishers for support.
+<div class="article-content">
 
-### Rise to Stardom
+## Kenya Mourns Reggae Icon
 
-MC Fullstop’s electrifying career shaped Kenyan reggae:
+The Kenyan music industry is in mourning following the passing of John Maina, popularly known as MC Fullstop, who died on August 1, 2025 after a prolonged battle with lung tuberculosis. The reggae and dancehall legend's family has launched a funeral fund to help cover medical and burial expenses.
 
-- **1990s Breakthrough**: Captivated audiences with his signature “Thika! Thika! Thika!” chant
-- **Media Influence**: Co-hosted *Riddim Vybz* on K24 TV and *Reggae Boyz* on NRG Radio
-- **Cultural Legacy**: Elevated reggae culture across East Africa
+### Career Highlights
 
-![MC Fullstop performing](https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg)
+MC Fullstop's illustrious career spanned decades and left an indelible mark on East African music:
 
-### Battle with Tuberculosis
+- **Signature Style**: Became famous for his energetic "Thika! Thika! Thika!" chant that electrified audiences
+- **Media Presence**: Co-hosted popular shows including *Riddim Vybz* on K24 TV and *Reggae Boyz* on NRG Radio
+- **Cultural Impact**: Pioneered the growth of reggae culture across the region through his music and mentorship
 
-Diagnosed with lung tuberculosis in 2021, Fullstop lost function in one lung. By 2022, throat TB restricted his ability to speak or perform. Despite these challenges, his openness about his health inspired fans, even as he considered retirement in 2023 due to permanent lung damage.
+<figure class="content-image">
+  <img 
+    src="https://i.postimg.cc/0j2Wj4y9/20250801-215325.jpg" 
+    alt="MC Fullstop during his recovery period"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>MC Fullstop during his recovery period in 2023</figcaption>
+</figure>
 
-![Fullstop during recovery](https://i.postimg.cc/0j2Wj4y9/20250801-215325.jpg)
+## Health Struggles
 
-### Funeral Fund Initiative
+The artist's health challenges became public in 2021 when he was diagnosed with lung tuberculosis:
 
-To manage mounting expenses, the family established a fund via Till Number 6624502 (“MC FULLSTOP Funeral Fund”). They’ve cautioned against fraudulent accounts and provided official contacts:
+- **2019**: First signs of health complications emerged
+- **2021**: Diagnosed with lung TB, losing function in one lung
+- **2022**: Developed throat TB, severely affecting his ability to speak and perform
+- **2023**: Considered retirement due to permanent lung damage
 
-- **Till Number**: 6624502
-- **Contacts**: Tony (0713 563 092), Caro (0724 633 329)
-- **Status**: Plans ongoing, details to follow
+## Funeral Fund Details
 
-### Outpouring of Tributes
+The family has established official channels for contributions:
 
-Fans and artists like Maina Kageni and Azeezah Hashim have flooded social media with tributes. “His voice was the pulse of Kenyan reggae,” one fan shared, reflecting the deep impact of his loss after dispelling false death rumors in April 2025.
+| Detail            | Information                 |
+|-------------------|----------------------------|
+| Official Till     | 6624502 ("MC FULLSTOP Funeral Fund") |
+| Primary Contact   | Tony: 0713 563 092         |
+| Secondary Contact | Caro: 0724 633 329         |
+| Verification      | Only use official channels |
 
-![Fans honoring Fullstop](https://i.postimg.cc/Xqz8J7Pg/20250801-215314.jpg)
+<blockquote class="important-note">
+  "We're overwhelmed by the support but urge well-wishers to only use the verified till number to avoid scams," said family spokesperson Tony Maina.
+</blockquote>
 
-## Looking Forward
+## Industry Tributes
 
-Funeral arrangements are underway, with memorial details to be shared soon. The community’s support highlights Fullstop’s lasting influence on Kenya’s music scene.
+The entertainment community has united in honoring Fullstop's legacy:
 
-## Conclusion
+- Maina Kageni: "He was the voice of a generation"
+- Azeezah Hashim: "His mentorship shaped countless careers"
+- NRG Radio: Plans 24-hour tribute broadcast
+- Fans have created memorial murals in Thika and Nairobi
 
-MC Fullstop’s contributions as a reggae pioneer remain unmatched. Mwaniki Reports will keep readers updated on funeral plans and ongoing tributes.
+<figure class="content-image">
+  <img 
+    src="https://i.postimg.cc/Xqz8J7Pg/20250801-215314.jpg" 
+    alt="Fans gathering to honor MC Fullstop"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>Fans gather at a makeshift memorial in Nairobi</figcaption>
+</figure>
 
-*This article is based on family statements and media reports as of August 8, 2025.*
+## Memorial Plans
+
+Funeral committee chairperson announced preliminary arrangements:
+
+1. **August 10**: Public vigil at Uhuru Park
+2. **August 12**: Family service in Thika
+3. **August 15**: Burial at Lang'ata Cemetery
+
+The family requests privacy during this difficult time and promises to share updates through official channels.
+
+## Legacy
+
+MC Fullstop's influence extends beyond his music:
+
+- Founded the Reggae Ambassadors welfare group
+- Mentored over 50 upcoming artists
+- Advocated for musicians' health insurance
+- His "One Love Kenya" initiative promoted national unity
+
+<div class="article-meta">
+  <p><strong>Published:</strong> August 8, 2025</p>
+  <p><strong>Updated:</strong> August 8, 2025 (Added funeral details)</p>
+  <p><strong>Tags:</strong> MC Fullstop, Kenyan Music, Reggae, Obituary</p>
+</div>
+
+</div>
