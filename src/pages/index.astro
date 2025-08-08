@@ -1,196 +1,66 @@
 ---
-// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
 import Config from '../utils/config';
 import { getCollection } from 'astro:content';
 
-// Get all published posts sorted by date
-const allPosts = await getCollection('posts');
-const posts = allPosts
+const posts = (await getCollection('posts'))
   .filter(post => !post.data.draft)
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
 
-// Separate featured post
 const featuredPost = posts.find(post => post.data.featured);
 const regularPosts = posts.filter(post => !post.data.featured);
 ---
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{Config.siteTitle}</title>
-  <style>
-    :root {
-      --max-width: 1200px;
-      --spacing: 1.5rem;
-      --primary: #2563eb;
-      --gray-800: #1f2937;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      line-height: 1.6;
-      color: var(--gray-800);
-    }
-    
-    .container {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding: 0 var(--spacing);
-    }
-    
-    header {
-      padding: var(--spacing) 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .hero {
-      background: #f8fafc;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      margin: var(--spacing) 0;
-    }
-    
-    .hero-content {
-      padding: var(--spacing);
-    }
-    
-    .hero-image {
-      width: 100%;
-      height: 400px;
-      object-fit: cover;
-    }
-    
-    .posts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: var(--spacing);
-      margin: var(--spacing) 0;
-    }
-    
-    .post-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      transition: transform 0.2s;
-    }
-    
-    .post-card:hover {
-      transform: translateY(-4px);
-    }
-    
-    .post-image {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
-    
-    .post-content {
-      padding: 1rem;
-    }
-    
-    .category-tag {
-      display: inline-block;
-      background: var(--primary);
-      color: white;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-    }
-    
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    h2 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    h3 {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    p {
-      margin-bottom: 1rem;
-      color: #4b5563;
-    }
-    
-    a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    
-    a:hover {
-      text-decoration: underline;
-    }
-    
-    @media (max-width: 768px) {
-      .hero-image {
-        height: 250px;
-      }
-      
-      .hero-content {
-        padding: 1rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>{Config.siteTitle}</h1>
-    </header>
 
-    {featuredPost && (
-      <article class="hero">
-        <img
-          src={featuredPost.data.image}
-          alt={featuredPost.data.imageAlt || featuredPost.data.title}
-          class="hero-image"
-          loading="lazy"
-          width="1200"
-          height="400"
-        />
-        <div class="hero-content">
-          <span class="category-tag">{featuredPost.data.category}</span>
-          <h2>{featuredPost.data.title}</h2>
-          <p>{featuredPost.data.description}</p>
-          <a href={`/posts/${featuredPost.slug}`}>Read full story →</a>
-        </div>
-      </article>
-    )}
-
-    <section class="posts-grid">
-      {regularPosts.map(post => (
-        <a href={`/posts/${post.slug}`} class="post-card">
-          <img
-            src={post.data.image}
-            alt={post.data.imageAlt || post.data.title}
-            class="post-image"
-            loading="lazy"
-            width="600"
-            height="300"
-          />
-          <div class="post-content">
-            <span class="category-tag">{post.data.category}</span>
-            <h3>{post.data.title}</h3>
-            <p>{post.data.description}</p>
-          </div>
+<Layout 
+  title={Config.siteTitle} 
+  description="Latest news and articles from The Mwaniki's Report"
+>
+  {featuredPost && (
+    <article class="mb-12">
+      <img
+        src={featuredPost.data.image}
+        alt={featuredPost.data.imageAlt || featuredPost.data.title}
+        class="w-full h-96 object-cover rounded-lg"
+        loading="lazy"
+      />
+      <div class="mt-6">
+        <span class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mb-3">
+          {featuredPost.data.category}
+        </span>
+        <h2 class="text-3xl font-bold mb-3">{featuredPost.data.title}</h2>
+        <p class="text-gray-600 mb-4">{featuredPost.data.description}</p>
+        <a 
+          href={`/posts/${featuredPost.slug}`} 
+          class="inline-flex items-center text-red-600 font-medium hover:underline"
+        >
+          Read full story
+          <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
         </a>
-      ))}
-    </section>
+      </div>
+    </article>
+  )}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    {regularPosts.map(post => (
+      <a href={`/posts/${post.slug}`} class="group block hover:shadow-lg transition rounded-lg overflow-hidden">
+        <img
+          src={post.data.image}
+          alt={post.data.imageAlt || post.data.title}
+          class="w-full h-48 object-cover"
+          loading="lazy"
+        />
+        <div class="p-6">
+          <span class="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium mb-2">
+            {post.data.category}
+          </span>
+          <h3 class="text-xl font-bold mb-2 group-hover:text-red-600 transition">
+            {post.data.title}
+          </h3>
+          <p class="text-gray-600">{post.data.description}</p>
+        </div>
+      </a>
+    ))}
   </div>
-</body>
-</html>
+</Layout>
