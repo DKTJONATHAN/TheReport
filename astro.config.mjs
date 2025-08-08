@@ -35,17 +35,6 @@ export default defineConfig({
     syntaxHighlight: 'shiki',
     gfm: true
   },
-  vite: {
-    css: {
-      transformer: 'postcss',
-      devSourcemap: true
-    },
-    build: {
-      cssMinify: true,
-      minify: 'terser',
-      chunkSizeWarningLimit: 1600
-    }
-  },
   integrations: [
     mdx(),
     sitemap()
