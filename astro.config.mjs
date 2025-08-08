@@ -1,17 +1,18 @@
-// astro.config.mjs
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import remarkGfm from 'remark-gfm';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeSlug from 'rehype-slug';
+
+// Make sure this path is correct
 import { remarkReadingTime } from './src/utils/remark-reading-time.mjs';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
   output: 'static',
   build: {
-    assets: '_assets',  // Better for cache busting
+    assets: '_assets',
     inlineStylesheets: 'auto',
     format: 'file'
   },
@@ -22,12 +23,12 @@ export default defineConfig({
       langs: ['bash', 'json', 'javascript', 'typescript', 'html', 'css']
     },
     remarkPlugins: [
-      remarkGfm,  // GitHub Flavored Markdown support
-      remarkReadingTime  // Custom plugin for reading time estimates
+      remarkGfm,
+      remarkReadingTime
     ],
     rehypePlugins: [
-      rehypeSlug,  // Adds IDs to headings
-      [rehypeAutolinkHeadings, {  // Adds anchor links to headings
+      rehypeSlug,
+      [rehypeAutolinkHeadings, {
         behavior: 'append',
         properties: {
           class: 'heading-anchor',
@@ -47,9 +48,6 @@ export default defineConfig({
       cssMinify: true,
       minify: 'terser',
       chunkSizeWarningLimit: 1600
-    },
-    optimizeDeps: {
-      include: ['@astrojs/mdx']
     }
   },
   image: {
@@ -61,11 +59,7 @@ export default defineConfig({
     }
   },
   integrations: [
-    mdx(),  // MDX support
-    sitemap()  // Automatic sitemap generation
-  ],
-  experimental: {
-    assets: true,  // Opt-in to the new assets handling
-    inlineStylesheets: 'auto'
-  }
+    mdx(),
+    sitemap()
+  ]
 });
