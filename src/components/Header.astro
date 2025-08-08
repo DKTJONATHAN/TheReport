@@ -6,56 +6,144 @@ const navItems = [
 ];
 ---
 
-<header class="bg-white shadow-sm">
-    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-        <a href="/" class="text-2xl font-bold text-red-600">The Mwaniki's Report</a>
+<header>
+    <style>
+        header {
+            background: var(--bg);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
         
-        <!-- Desktop Navigation -->
-        <nav class="hidden md:block">
-            <ul class="flex space-x-8">
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem var(--spacing);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .desktop-nav {
+            display: none;
+        }
+        
+        .desktop-nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .desktop-nav a {
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .desktop-nav a:hover {
+            color: var(--primary);
+        }
+        
+        .mobile-menu-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: var(--text);
+        }
+        
+        .mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+        }
+        
+        .mobile-menu.active {
+            max-height: 300px;
+        }
+        
+        .mobile-nav ul {
+            list-style: none;
+            padding: 1rem var(--spacing);
+        }
+        
+        .mobile-nav li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .mobile-nav li:last-child {
+            border-bottom: none;
+        }
+        
+        .mobile-nav a {
+            display: block;
+            width: 100%;
+            color: var(--text);
+            font-weight: 500;
+        }
+        
+        @media (min-width: 768px) {
+            .desktop-nav {
+                display: block;
+            }
+            
+            .mobile-menu-button {
+                display: none;
+            }
+            
+            .mobile-menu {
+                display: none;
+            }
+        }
+    </style>
+
+    <div class="header-container">
+        <a href="/" class="logo">The Mwaniki's Report</a>
+        
+        <nav class="desktop-nav">
+            <ul>
                 {navItems.map(item => (
                     <li>
-                        <a href={item.href} class="text-gray-800 hover:text-red-600 transition">
-                            {item.text}
-                        </a>
+                        <a href={item.href}>{item.text}</a>
                     </li>
                 ))}
             </ul>
         </nav>
         
-        <!-- Mobile Menu Button -->
-        <button 
-            data-mobile-menu-button
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-            class="md:hidden p-2 rounded-md text-gray-800 hover:text-red-600 focus:outline-none"
-        >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="mobile-menu-button" id="mobileMenuButton" aria-label="Toggle menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
     </div>
     
-    <!-- Mobile Navigation -->
-    <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
-        <div class="container mx-auto px-4 py-2">
-            <ul class="space-y-2">
+    <div class="mobile-menu" id="mobileMenu">
+        <nav class="mobile-nav">
+            <ul>
                 {navItems.map(item => (
                     <li>
-                        <a href={item.href} class="block py-2 text-gray-800 hover:text-red-600">
-                            {item.text}
-                        </a>
+                        <a href={item.href}>{item.text}</a>
                     </li>
                 ))}
             </ul>
-        </div>
+        </nav>
     </div>
-</header>
 
-<style>
-    .container {
-        max-width: var(--max-width);
-        margin: 0 auto;
-        padding: 0 var(--spacing);
-    }
-</style>
+    <script is:inline>
+        document.getElementById('mobileMenuButton').addEventListener('click', function() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+            this.setAttribute('aria-expanded', menu.classList.contains('active'));
+        });
+    </script>
+</header>
