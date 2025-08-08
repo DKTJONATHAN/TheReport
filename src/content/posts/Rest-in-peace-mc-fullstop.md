@@ -1,177 +1,120 @@
 ---
 title: "Honoring MC Fullstop: Funeral Fund Launched for Reggae Legend"
-description: "Kenya mourns reggae icon MC Fullstop (John Maina) who passed August 1, 2025. Family seeks support for funeral and medical costs through verified channels."
+description: "Kenya mourns the loss of reggae icon MC Fullstop, with his family seeking support for funeral and medical costs after his passing on August 1, 2025."
 date: 2025-08-08
 author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg"
-imageCaption: "MC Fullstop performing his final concert in 2024 at Carnivore Gardens"
-imageAlt: "MC Fullstop on stage in red dashiki, microphone in hand, performing for cheering fans"
+imageCaption: "MC Fullstop performing at his last concert in 2024"
+imageAlt: "MC Fullstop on stage performing for fans"
 category: "Entertainment"
-tags: ["MC Fullstop", "John Maina", "Reggae", "Kenyan Music", "Obituary"]
+tags: ["MC Fullstop", "John Maina", "Reggae", "Funeral Fund", "Kenya Music"]
 featured: true
 draft: false
 ---
 
-<article class="post-article">
-  <header class="article-header">
-    <figure class="featured-image" aria-labelledby="featured-image-caption">
-      <img 
-        src="https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg" 
-        alt="MC Fullstop on stage in red dashiki, microphone in hand, performing for cheering fans"
-        loading="lazy"
-        width="1200" 
-        height="675"
-        decoding="async"
-      />
-      <figcaption id="featured-image-caption">MC Fullstop performing at his final concert at Carnivore Gardens, Nairobi in December 2024</figcaption>
-    </figure>
-    
-    <div class="article-meta">
-      <span class="category-tag">Entertainment</span>
-      <time datetime="2025-08-08">August 8, 2025</time>
-      <span class="reading-time">4 min read</span>
-    </div>
-  </header>
+<figure class="featured-image">
+  <img 
+    src="https://i.postimg.cc/zXy7QKL2/20250801-215027.jpg" 
+    alt="MC Fullstop on stage performing for fans"
+    loading="lazy"
+    width="1200"
+    height="675"
+  />
+  <figcaption>MC Fullstop performing at his last concert in 2024</figcaption>
+</figure>
 
-  <div class="article-body">
-    <section class="intro-section">
-      <p class="lead-paragraph">Kenya's music fraternity is mourning the loss of reggae legend John Maina, popularly known as MC Fullstop, who passed away on August 1, 2025 after a four-year battle with tuberculosis. The family has established a verified funeral fund to offset mounting medical and burial expenses.</p>
-    </section>
+<div class="article-content">
 
-    <section class="career-highlights">
-      <h2>The Voice of a Generation</h2>
-      <p>MC Fullstop's career spanned three decades, leaving an indelible mark on East Africa's music scene:</p>
-      
-      <ul class="timeline-list">
-        <li>
-          <strong>1998:</strong> Debuted with breakout hit "Thika Town" featuring his signature chant
-        </li>
-        <li>
-          <strong>2005-2015:</strong> Co-hosted <em>Riddim Vybz</em> (K24) and <em>Reggae Boyz</em> (NRG Radio)
-        </li>
-        <li>
-          <strong>2018:</strong> Founded Reggae Ambassadors welfare group
-        </li>
-      </ul>
+## Kenya Mourns Reggae Icon
 
-      <figure class="inline-image" aria-labelledby="recovery-caption">
-        <img 
-          src="https://i.postimg.cc/0j2Wj4y9/20250801-215325.jpg" 
-          alt="MC Fullstop smiling during hospital recovery in 2023"
-          loading="lazy"
-          width="800"
-          height="450"
-          decoding="async"
-        />
-        <figcaption id="recovery-caption">MC Fullstop during treatment at Nairobi Hospital in March 2023</figcaption>
-      </figure>
-    </section>
+The Kenyan music industry is in mourning following the passing of John Maina, popularly known as MC Fullstop, who died on August 1, 2025 after a prolonged battle with lung tuberculosis. The reggae and dancehall legend's family has launched a funeral fund to help cover medical and burial expenses.
 
-    <section class="health-journey">
-      <h2>Health Battle Timeline</h2>
-      <div class="timeline-grid">
-        <div class="timeline-item">
-          <h3>2019</h3>
-          <p>First reported breathing difficulties during performances</p>
-        </div>
-        <div class="timeline-item">
-          <h3>2021</h3>
-          <p>Diagnosed with lung tuberculosis, lost 30% lung capacity</p>
-        </div>
-        <div class="timeline-item">
-          <h3>2023</h3>
-          <p>Announced indefinite hiatus due to throat TB complications</p>
-        </div>
-      </div>
-    </section>
+### Career Highlights
 
-    <section class="donation-info">
-      <h2>How to Support</h2>
-      <div class="donation-card">
-        <h3>Official MC Fullstop Funeral Fund</h3>
-        <div class="donation-methods">
-          <div class="method">
-            <h4>Safaricom M-Pesa</h4>
-            <p><strong>Till Number:</strong> 6624502</p>
-            <p><strong>Account Name:</strong> MC FULLSTOP FUND</p>
-          </div>
-          <div class="method">
-            <h4>Bank Transfer</h4>
-            <p><strong>Bank:</strong> Equity Bank</p>
-            <p><strong>Account:</strong> 1440267893000</p>
-          </div>
-        </div>
-        <div class="verification-note">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-          <p>Verified by Kenya Musicians Union</p>
-        </div>
-      </div>
-    </section>
+MC Fullstop's illustrious career spanned decades and left an indelible mark on East African music:
 
-    <section class="memorial-details">
-      <h2>Memorial Events</h2>
-      <table class="event-schedule">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Event</th>
-            <th>Location</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Aug 10</td>
-            <td>Public Vigil</td>
-            <td>Uhuru Park, Nairobi</td>
-          </tr>
-          <tr>
-            <td>Aug 12</td>
-            <td>Family Service</td>
-            <td>Thika Boys High School</td>
-          </tr>
-          <tr>
-            <td>Aug 15</td>
-            <td>Burial</td>
-            <td>Lang'ata Cemetery</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+- **Signature Style**: Became famous for his energetic "Thika! Thika! Thika!" chant that electrified audiences
+- **Media Presence**: Co-hosted popular shows including *Riddim Vybz* on K24 TV and *Reggae Boyz* on NRG Radio
+- **Cultural Impact**: Pioneered the growth of reggae culture across the region through his music and mentorship
 
-    <section class="tributes">
-      <h2>Industry Tributes</h2>
-      <blockquote class="tribute-quote">
-        <p>"He wasn't just an artist - he was the bridge between Kenyan reggae and the world. His 'One Love Kenya' initiative united us all."</p>
-        <footer>- Maina Kageni, Classic 105</footer>
-      </blockquote>
+<figure class="content-image">
+  <img 
+    src="https://i.postimg.cc/0j2Wj4y9/20250801-215325.jpg" 
+    alt="MC Fullstop during his recovery period"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>MC Fullstop during his recovery period in 2023</figcaption>
+</figure>
 
-      <div class="tribute-gallery">
-        <figure>
-          <img 
-            src="https://i.postimg.cc/Xqz8J7Pg/20250801-215314.jpg" 
-            alt="Fans lighting candles at a Nairobi mural"
-            loading="lazy"
-            width="400"
-            height="225"
-            decoding="async"
-          />
-          <figcaption>Fans gather at MC Fullstop mural along Moi Avenue</figcaption>
-        </figure>
-      </div>
-    </section>
-  </div>
+## Health Struggles
 
-  <footer class="article-footer">
-    <div class="tags-container">
-      <span class="visually-hidden">Tags:</span>
-      <ul class="tags-list">
-        <li><a href="/tag/mc-fullstop" rel="tag">MC Fullstop</a></li>
-        <li><a href="/tag/kenyan-music" rel="tag">Kenyan Music</a></li>
-        <li><a href="/tag/obituaries" rel="tag">Obituaries</a></li>
-      </ul>
-    </div>
-    <div class="updates-note">
-      <p><strong>Last Updated:</strong> August 8, 2025 at 14:30 EAT</p>
-    </div>
-  </footer>
-</article>
+The artist's health challenges became public in 2021 when he was diagnosed with lung tuberculosis:
+
+- **2019**: First signs of health complications emerged
+- **2021**: Diagnosed with lung TB, losing function in one lung
+- **2022**: Developed throat TB, severely affecting his ability to speak and perform
+- **2023**: Considered retirement due to permanent lung damage
+
+## Funeral Fund Details
+
+The family has established official channels for contributions:
+
+| Detail            | Information                 |
+|-------------------|----------------------------|
+| Official Till     | 6624502 ("MC FULLSTOP Funeral Fund") |
+| Primary Contact   | Tony: 0713 563 092         |
+| Secondary Contact | Caro: 0724 633 329         |
+| Verification      | Only use official channels |
+
+<blockquote class="important-note">
+  "We're overwhelmed by the support but urge well-wishers to only use the verified till number to avoid scams," said family spokesperson Tony Maina.
+</blockquote>
+
+## Industry Tributes
+
+The entertainment community has united in honoring Fullstop's legacy:
+
+- Maina Kageni: "He was the voice of a generation"
+- Azeezah Hashim: "His mentorship shaped countless careers"
+- NRG Radio: Plans 24-hour tribute broadcast
+- Fans have created memorial murals in Thika and Nairobi
+
+<figure class="content-image">
+  <img 
+    src="https://i.postimg.cc/Xqz8J7Pg/20250801-215314.jpg" 
+    alt="Fans gathering to honor MC Fullstop"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>Fans gather at a makeshift memorial in Nairobi</figcaption>
+</figure>
+
+## Memorial Plans
+
+Funeral committee chairperson announced preliminary arrangements:
+
+1. **August 10**: Public vigil at Uhuru Park
+2. **August 12**: Family service in Thika
+3. **August 15**: Burial at Lang'ata Cemetery
+
+The family requests privacy during this difficult time and promises to share updates through official channels.
+
+## Legacy
+
+MC Fullstop's influence extends beyond his music:
+
+- Founded the Reggae Ambassadors welfare group
+- Mentored over 50 upcoming artists
+- Advocated for musicians' health insurance
+- His "One Love Kenya" initiative promoted national unity
+
+<div class="article-meta">
+  <p><strong>Published:</strong> August 8, 2025</p>
+  <p><strong>Updated:</strong> August 8, 2025 (Added funeral details)</p>
+  <p><strong>Tags:</strong> MC Fullstop, Kenyan Music, Reggae, Obituary</p>
+</div>
+
+</div>
