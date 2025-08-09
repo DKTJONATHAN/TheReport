@@ -10,7 +10,7 @@ export interface Props {
 }
 
 const { title, description = "Professional news and insights", image, canonical } = Astro.props;
-const fullImage = image && image.startsWith('http') ? image : (image ? new URL(image, Astro.site).href : '');
+const fullImage = image && image.startsWith('http') ? image : (image ? new URL(image, Astro.site).href : '';
 
 // Determine image type from URL
 function getImageType(url) {
@@ -41,6 +41,18 @@ const imageType = getImageType(fullImage);
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  <!-- Google Analytics -->
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-W3FVP4FRPT');
+  </script>
+  <script 
+    is:inline 
+    src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"
+  />
   
   <!-- Open Graph -->
   <meta property="og:title" content={title}>
