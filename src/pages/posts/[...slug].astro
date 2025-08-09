@@ -254,19 +254,19 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     }
   </script>
 
-  <!-- Top Ad Container -->
-  <div class="ad-container top-ad">
-    <script type="text/javascript">
-      atOptions = {
-        'key': '1610960d9ced232cc76d8f5510ee4608',
-        'format': 'iframe',
-        'height': 60,
-        'width': 468,
-        'params': {}
-      };
-    </script>
-    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-  </div>
+  <!-- Top Ad -->
+      <div class="ad-container">
+        <script type="text/javascript">
+          atOptions = {
+            'key': '1610960d9ced232cc76d8f5510ee4608',
+            'format': 'iframe',
+            'height': 60,
+            'width': 468,
+            'params': {}
+          };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+      </div>
 
   <div class="reading-progress">
     <div class="reading-progress-bar" id="progress-bar"></div>
@@ -339,8 +339,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         </div>
       )}
       
-      <!-- Middle Ad Container (After Featured Image) -->
-      <div class="ad-container middle-ad">
+      <!-- Middle Ad (After Featured Image) -->
+      <div class="ad-container">
         <script type="text/javascript">
           atOptions = {
             'key': '1610960d9ced232cc76d8f5510ee4608',
@@ -393,8 +393,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       </div>
     </div>
     
-    <!-- Bottom Ad Container -->
-    <div class="ad-container bottom-ad">
+    <!-- Bottom Ad (Before Footer) -->
+    <div class="ad-container">
       <script type="text/javascript">
         atOptions = {
           'key': '1610960d9ced232cc76d8f5510ee4608',
@@ -561,7 +561,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       }
     }
 
-    /* Reading Progress Bar */
+    /* Existing styles maintained */
     .reading-progress {
       position: fixed;
       top: 0;
@@ -571,3 +571,440 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       background: rgba(220, 38, 38, 0.2);
       z-index: 100;
     }
+
+    .reading-progress-bar {
+      height: 100%;
+      background: #dc2626;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    /* Author info styles */
+    .author-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #dc2626;
+    }
+
+    .author-title {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .reading-time {
+      color: #666;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Ad container styling */
+    .ad-container {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* BBC-Inspired Button Styles */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #BB1919;
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #BB1919;
+      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+      margin: 1rem 0;
+    }
+
+    .back-link:hover {
+      background: #BB1919;
+      color: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .back-link:focus {
+      outline: 2px solid #BB1919;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
+    .share-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #E0E0E0;
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #141414;
+      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .share-button:hover {
+      background: #F6F6F6;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .share-button:focus {
+      outline: 2px solid #BB1919;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .share-button svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .share-button.x:hover {
+      color: #000000;
+      border-color: #000000;
+    }
+
+    .share-button.linkedin:hover {
+      color: #0A66C2;
+      border-color: #0A66C2;
+    }
+
+    .share-button.facebook:hover {
+      color: #1877F2;
+      border-color: #1877F2;
+    }
+
+    .share-button.whatsapp:hover {
+      color: #25D366;
+      border-color: #25D366;
+    }
+
+    /* Breadcrumb Styling */
+    .breadcrumb {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0;
+      font-size: 0.875rem;
+      background: #f8f9fa;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .breadcrumb li {
+      display: inline;
+    }
+
+    .breadcrumb li + li:before {
+      content: " › ";
+      padding: 0 0.5rem;
+      color: #666;
+    }
+
+    .breadcrumb a {
+      text-decoration: none;
+      color: #BB1919;
+      font-weight: 500;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Post meta styling */
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .post-category {
+      background: #dc2626;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .post-category a {
+      color: white;
+      text-decoration: none;
+    }
+
+    .post-date {
+      color: #666;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    /* Draft notice */
+    .draft-notice {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      font-weight: 500;
+    }
+
+    /* Post footer */
+    .post-footer {
+      margin-top: 4rem;
+      padding: 2rem 0;
+      border-top: 2px solid #e2e8f0;
+    }
+
+    .post-footer-content {
+      text-align: center;
+    }
+
+    .post-footer h3 {
+      color: #1a202c;
+      margin-bottom: 0.5rem;
+      font-size: 1.5rem;
+    }
+
+    .post-footer p {
+      color: #4a5568;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Related Articles Enhanced Styling */
+    .related-articles {
+      margin-top: 3rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      border: 1px solid #dee2e6;
+    }
+
+    .related-articles h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      color: #1a202c;
+      text-align: center;
+      position: relative;
+      padding-bottom: 1rem;
+    }
+
+    .related-articles h2::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: #dc2626;
+    }
+
+    .related-articles ul {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .related-articles li {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .related-articles li:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #dc2626;
+    }
+
+    .related-articles a {
+      text-decoration: none;
+      color: #2d3748;
+      font-weight: 600;
+      display: block;
+      transition: color 0.3s ease;
+    }
+
+    .related-articles a:hover {
+      color: #dc2626;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .post-container {
+        padding: 1rem;
+      }
+
+      .post-title {
+        font-size: 1.75rem;
+      }
+
+      .post-description {
+        font-size: 1rem;
+      }
+
+      .post-meta {
+        justify-content: flex-start;
+        gap: 0.75rem;
+      }
+
+      .social-share {
+        justify-content: center;
+      }
+
+      .newsletter-signup {
+        padding: 1.5rem 1rem;
+      }
+
+      .newsletter-signup div {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .author-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .related-articles ul {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .back-link,
+      .share-button,
+      .related-articles li {
+        transition: none;
+      }
+    }
+
+    /* Print styles for SEO */
+    @media print {
+      .reading-progress,
+      .back-link,
+      .social-share,
+      .ad-container,
+      .newsletter-signup {
+        display: none !important;
+      }
+      
+      .post-container {
+        max-width: none;
+        padding: 0;
+      }
+    }
+
+    /* Focus styles for accessibility */
+    .breadcrumb a:focus,
+    .back-link:focus,
+    .share-button:focus,
+    .related-articles a:focus {
+      outline: 2px solid #dc2626;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  </style>
+
+  <script>
+    // Enhanced reading progress bar
+    function updateReadingProgress() {
+      const article = document.querySelector('article');
+      const progressBar = document.getElementById('progress-bar');
+      
+      if (!article || !progressBar) return;
+      
+      const articleTop = article.offsetTop;
+      const articleHeight = article.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const scrollTop = window.scrollY;
+      
+      const articleStart = articleTop - windowHeight;
+      const articleEnd = articleTop + articleHeight;
+      
+      if (scrollTop < articleStart) {
+        progressBar.style.width = '0%';
+      } else if (scrollTop > articleEnd) {
+        progressBar.style.width = '100%';
+      } else {
+        const progress = (scrollTop - articleStart) / (articleEnd - articleStart);
+        progressBar.style.width = Math.min(100, Math.max(0, progress * 100)) + '%';
+      }
+    }
+    
+    // Newsletter signup functionality
+    function handleNewsletterSignup() {
+      const button = document.querySelector('.newsletter-signup button');
+      const input = document.querySelector('.newsletter-signup input');
+      
+      if (button && input) {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const email = input.value.trim();
+          if (email && email.includes('@')) {
+            button.textContent = 'Subscribed!';
+            button.style.background = '#10b981';
+            input.value = '';
+            setTimeout(() => {
+              button.textContent = 'Subscribe';
+              button.style.background = 'white';
+            }, 3000);
+          } else {
+            button.textContent = 'Invalid Email';
+            button.style.background = '#ef4444';
+            setTimeout(() => {
+              button.textContent = 'Subscribe';
+              button.style.background = 'white';
+            }, 2000);
+          }
+        });
+      }
+    }
+    
+    // Initialize all functionality
+    window.addEventListener('scroll', updateReadingProgress);
+    window.addEventListener('resize', updateReadingProgress);
+    window.addEventListener('load', () => {
+      updateReadingProgress();
+      handleNewsletterSignup();
+    });
+  </script>
+</Layout>
