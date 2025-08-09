@@ -1,26 +1,51 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import '../styles/global.css';
 
 export interface Props {
   title: string;
   description?: string;
+  image?: string;
+  canonical?: string;
 }
-const { title, description } = Astro.props;
+
+const { title, description = "Professional news and insights", image, canonical } = Astro.props;
+const fullImage = image ? new URL(image, Astro.site).href : '';
 ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  <meta name="description" content={description} />
+  <meta name="description" content={description}>
+  
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  {fullImage && <meta property="og:image" content={fullImage}>}
+  <meta property="og:url" content={canonical || Astro.url.href}>
+  <meta property="og:type" content="website">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  {fullImage && <meta name="twitter:image" content={fullImage}>}
+  
+  <!-- Global CSS -->
+  <link rel="stylesheet" href="/styles/global.css">
 </head>
 <body>
   <Header />
   <main>
-    <slot /> <!-- Your content goes here -->
+    <slot />
   </main>
   <Footer />
 </body>
