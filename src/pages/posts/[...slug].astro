@@ -14,13 +14,36 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
+
+// Ensure the image URL is absolute for social media previews
+const absoluteImageUrl = post.data.image
+  ? `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
+  : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg'; // Fallback image
 ---
 
 <Layout 
   title={post.data.title} 
   description={post.data.description}
-  image={post.data.image}
+  image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
+  // Add Open Graph and Twitter Card meta tags
+  meta={[
+    // Open Graph meta tags
+    { name: 'og:title', content: post.data.title },
+    { name: 'og:description', content: post.data.description },
+    { name: 'og:type', content: 'article' },
+    { name: 'og:url', content: `https://www.jonathanmwaniki.co.ke/posts/${post.slug}` },
+    { name: 'og:image', content: absoluteImageUrl },
+    { name: 'og:image:alt', content: post.data.imageAlt || post.data.title },
+    { name: 'og:site_name', content: "The Mwaniki's Report" },
+    // Twitter Card meta tags
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: post.data.title },
+    { name: 'twitter:description', content: post.data.description },
+    { name: 'twitter:image', content: absoluteImageUrl },
+    { name: 'twitter:image:alt', content: post.data.imageAlt || post.data.title },
+    { name: 'twitter:site', content: '@jonathanmwaniki' }, // Replace with your Twitter handle
+  ]}
 >
   <div class="reading-progress">
     <div class="reading-progress-bar" id="progress-bar"></div>
