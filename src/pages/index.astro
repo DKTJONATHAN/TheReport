@@ -3,23 +3,13 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
+// Get ALL posts sorted by date (newest first), ignoring featured status
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
-
-const categories = ['All', ...new Set(allPosts.map(post => post.data.category))];
-
-// Font Awesome category mapping
-const categoryIcons = {
-  'All': 'fa-solid fa-border-all',
-  'Tech': 'fa-solid fa-microchip',
-  'Business': 'fa-solid fa-briefcase',
-  'Design': 'fa-solid fa-paintbrush',
-  'Marketing': 'fa-solid fa-bullhorn'
-};
 ---
 
-<Layout title="Latest News | Jonathan Mwaniki">
-    <!-- Single Top Ad (Exactly as provided) -->
+<Layout title="Latest News | Jonathan Mwaniki" description="The latest news and articles from Jonathan Mwaniki">
+    <!-- Your exact ad code placed at the top -->
     <script type="text/javascript">
         atOptions = {
             'key' : '1610960d9ced232cc76d8f5510ee4608',
@@ -31,42 +21,35 @@ const categoryIcons = {
     </script>
     <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
-    <main class="container">
-        <!-- Font Awesome Icon Filter Bar -->
-        <nav class="category-filter-bar">
-            {categories.map(category => (
-                <button 
-                    class="filter-button ${category === 'All' ? 'active' : ''}"
-                    onclick=`filterPosts('${category}')`
-                    aria-label={`Show ${category} posts`}
-                    data-category="${category}"
-                >
-                    <i class="${categoryIcons[category] || 'fa-solid fa-tag'}"></i>
-                    <span class="tooltip">{category}</span>
-                </button>
-            ))}
-        </nav>
-
-        <!-- Posts Grid -->
-        <div class="posts-grid">
-            {allPosts.map(post => (
-                <article class="post-card" data-category={post.data.category}>
-                    <a href={`/posts/${post.slug}`} class="post-link">
+    <div class="posts-container">
+        <header class="page-header">
+            <h1 class="page-title">Latest News</h1>
+            <p class="page-subtitle">Stay updated with the latest insights, articles, and professional content from Jonathan Mwaniki</p>
+        </header>
+        
+        {allPosts.length > 0 ? (
+            <div class="posts-grid">
+                {allPosts.map(post => (
+                    <a 
+                        href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
+                        class="post-card"
+                        aria-label={`Read article: ${post.data.title}`}
+                    >
                         <div class="post-image-container">
                             <img
                                 src={post.data.image}
                                 alt={post.data.imageAlt || post.data.title}
+                                class="post-image"
+                                loading="lazy"
                                 width="400"
                                 height="240"
-                                loading="lazy"
-                                class="post-image"
                             />
                             <div class="post-image-overlay"></div>
                         </div>
                         <div class="post-content">
                             <div class="post-meta">
                                 <span class="post-category">{post.data.category}</span>
-                                <time datetime={post.data.date}>
+                                <time class="post-date" datetime={post.data.date}>
                                     {new Date(post.data.date).toLocaleDateString('en-US', {
                                         year: 'numeric',
                                         month: 'short',
@@ -76,165 +59,67 @@ const categoryIcons = {
                             </div>
                             <h3 class="post-title">{post.data.title}</h3>
                             <p class="post-excerpt">{post.data.description}</p>
-                            <span class="read-more">Read Article</span>
+                            <div class="post-footer">
+                                <span class="read-more">
+                                    Read more
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </span>
+                                {post.data.draft && <span class="draft-badge">Draft</span>}
+                            </div>
                         </div>
                     </a>
-                </article>
-            ))}
-        </div>
-    </main>
+                ))}
+            </div>
+        ) : (
+            <div class="empty-state">
+                <h2>No posts available</h2>
+                <p>Check back soon for new content!</p>
+            </div>
+        )}
+    </div>
 
-    <!-- Font Awesome CSS (ES Modules) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      /* BBC-Inspired Button Styles for Read More */
+      .read-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #BB1919; /* BBC Red */
+        border-radius: 4px;
+        background: #BB1919;
+        color: #FFFFFF;
+        font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
 
-    <style is:global>
-        /* Font Awesome Filter Buttons */
-        .category-filter-bar {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            margin: 2rem 0 3rem;
-            padding: 0 1rem;
-            flex-wrap: wrap;
-        }
-        .filter-button {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: #f0f0f0;
-            color: #333;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: grid;
-            place-items: center;
-        }
-        .filter-button.active {
-            background: #BB1919;
-            color: white;
-            transform: scale(1.1);
-        }
-        .filter-button:hover {
-            transform: scale(1.1);
-        }
-        .filter-button .tooltip {
-            position: absolute;
-            top: 120%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-        .filter-button:hover .tooltip {
-            opacity: 1;
-            visibility: visible;
-            top: 110%;
-        }
+      .read-more:hover {
+        background: #8B0000; /* Darker BBC Red */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
 
-        /* Ad Styling */
-        script[src*="highperformanceformat"] {
-            display: block;
-            margin: 0 auto;
-            text-align: center;
-            padding: 1rem 0;
-        }
+      .read-more:focus {
+        outline: 2px solid #BB1919;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
 
-        /* Posts Grid (Your original styles) */
-        .posts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
-            padding: 0 1rem;
-        }
-        .post-card {
-            border-radius: 8px;
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease;
-        }
-        .post-card:hover {
-            transform: translateY(-5px);
-        }
-        .post-image-container {
-            position: relative;
-            aspect-ratio: 16/9;
-        }
-        .post-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .post-image-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent 40%);
-        }
-        .post-content {
-            padding: 1.25rem;
-        }
-        .post-meta {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-            font-size: 0.875rem;
-            color: #666;
-        }
-        .post-category {
-            font-weight: 600;
-            color: #BB1919;
-        }
-        .post-title {
-            font-size: 1.25rem;
-            margin: 0.5rem 0;
-            line-height: 1.4;
-        }
-        .post-excerpt {
-            color: #555;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
+      .read-more svg {
+        width: 16px;
+        height: 16px;
+        stroke: #FFFFFF;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
         .read-more {
-            font-weight: 600;
-            color: #BB1919;
-            display: inline-block;
-            margin-top: 0.5rem;
+          transition: none;
         }
+      }
     </style>
-
-    <script is:inline>
-        // Category Filter Function
-        function filterPosts(category) {
-            const posts = document.querySelectorAll('.post-card');
-            const buttons = document.querySelectorAll('.filter-button');
-            
-            // Update active button
-            buttons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.category === category);
-            });
-
-            // Filter posts
-            posts.forEach(post => {
-                post.style.display = (category === 'All' || post.dataset.category === category) 
-                    ? 'block' 
-                    : 'none';
-            });
-        }
-
-        // Initialize to show all posts
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelector('.filter-button[data-category="All"]').click();
-        });
-    </script>
 </Layout>
