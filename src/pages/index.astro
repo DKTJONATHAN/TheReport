@@ -13,7 +13,7 @@ const remainingPosts = allPosts.slice(1);
 ---
 
 <Layout 
-  title="Trending News Kenya Today | Latest Updates & Headlines | Jonathan Mwaniki" 
+  title="Breaking News Kenya Today | Latest Updates & Headlines | Jonathan Mwaniki" 
   description="Get the latest breaking news from Kenya today. Politics, entertainment, sports, business updates. Your trusted source for Kenyan news, celebrity gossip, and trending stories."
 >
     <!-- SEO Meta Tags -->
@@ -59,7 +59,7 @@ const remainingPosts = allPosts.slice(1);
         <!-- Professional Header -->
         <header class="hero-section">
             <div class="hero-content">
-                <h1 class="hero-title">Breaking News Kenya</h1>
+                <h1 class="hero-title">Trending News Kenya</h1>
                 <p class="hero-subtitle">Your trusted source for the latest Kenyan news, politics, entertainment, and trending stories</p>
                 <div class="breaking-ticker">
                     <span class="ticker-label">TRENDING NOW</span>
@@ -71,7 +71,7 @@ const remainingPosts = allPosts.slice(1);
         <!-- Featured Post (Most Recent) -->
         {featuredPost && (
             <section class="featured-section" aria-label="Featured Story">
-                <h2 class="section-title">Latest Breaking News</h2>
+                <h2 class="section-title">Top Story</h2>
                 <article class="featured-post">
                     <a 
                         href={`https://www.jonathanmwaniki.co.ke/posts/${featuredPost.slug}`} 
@@ -87,7 +87,7 @@ const remainingPosts = allPosts.slice(1);
                                 width="800"
                                 height="450"
                             />
-                            <div class="breaking-badge">TRENDING</div>
+                            <div class="breaking-badge">TOP STORY</div>
                         </div>
                         <div class="featured-content">
                             <div class="featured-meta">
@@ -192,24 +192,12 @@ const remainingPosts = allPosts.slice(1);
 
         /* Hero Section */
         .hero-section {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: #dc2626;
             color: white;
             padding: 3rem 2rem;
             margin: -1rem -1rem 2rem -1rem;
             text-align: center;
             position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
         }
 
         .hero-content {
