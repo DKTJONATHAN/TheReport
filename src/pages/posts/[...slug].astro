@@ -1,4 +1,5 @@
 ---
+// src/pages/[slug].astro
 import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
@@ -124,6 +125,98 @@ const { Content } = await post.render();
       </div>
     </footer>
   </div>
+
+  <style>
+    /* BBC-Inspired Button Styles */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #BB1919; /* BBC Red */
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #BB1919;
+      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .back-link:hover {
+      background: #BB1919;
+      color: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .back-link:focus {
+      outline: 2px solid #BB1919;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
+    .share-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #E0E0E0; /* BBC's light gray */
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #141414; /* BBC's primary text */
+      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .share-button:hover {
+      background: #F6F6F6; /* BBC's secondary background */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .share-button:focus {
+      outline: 2px solid #BB1919;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .share-button svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Platform-specific hover colors */
+    .share-button.twitter:hover {
+      color: #1DA1F2; /* Twitter blue */
+    }
+
+    .share-button.linkedin:hover {
+      color: #0077B5; /* LinkedIn blue */
+    }
+
+    .share-button.facebook:hover {
+      color: #1877F2; /* Facebook blue */
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .back-link,
+      .share-button {
+        transition: none;
+      }
+    }
+  </style>
 
   <script>
     // Reading progress bar
