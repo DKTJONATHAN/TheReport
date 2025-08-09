@@ -10,17 +10,24 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
 ---
 
 <Layout title="Latest News | Jonathan Mwaniki">
-    <!-- Ad 1: Top Banner -->
-    <div class="ad-container">
-        <script type="text/javascript">
-            atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
-        </script>
-        <script src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
+    <!-- Ad 1: Top of Page (No Container) -->
+    <script type="text/javascript">
+        atOptions = {
+            'key' : '1610960d9ced232cc76d8f5510ee4608',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
+        };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
     <div class="posts-container">
         <header class="page-header">
             <h1>Latest News</h1>
+            <p>Stay updated with the latest insights</p>
+            
+            <!-- Styled Category Buttons -->
             <div class="category-tabs">
                 {categories.map(category => (
                     <button 
@@ -35,69 +42,92 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
 
         <!-- Posts Grid -->
         <div class="posts-grid">
-            <!-- First 2 Posts -->
-            {allPosts.slice(0, 2).map(post => (
+            {allPosts.map(post => (
                 <article class="post-card" data-category={post.data.category}>
-                    <!-- Your post content here -->
+                    <a href={`/posts/${post.slug}`}>
+                        <div class="post-image-container">
+                            <img
+                                src={post.data.image}
+                                alt={post.data.imageAlt || post.data.title}
+                                loading="lazy"
+                                width="400"
+                                height="240"
+                                class="post-image"
+                            />
+                            <div class="post-image-overlay"></div>
+                        </div>
+                        <div class="post-content">
+                            <span class="post-category">{post.data.category}</span>
+                            <h3>{post.data.title}</h3>
+                            <p>{post.data.description}</p>
+                            <span class="read-more">Read more →</span>
+                        </div>
+                    </a>
                 </article>
             ))}
-
-            <!-- Ad 2: Middle Banner -->
-            <div class="ad-container ad-middle">
-                <script type="text/javascript">
-                    atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
-                </script>
-                <script src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-            </div>
-
-            <!-- Remaining Posts -->
-            {allPosts.slice(2).map(post => (
-                <article class="post-card" data-category={post.data.category}>
-                    <!-- Your post content here -->
-                </article>
-            ))}
-        </div>
-
-        <!-- Ad 3: Bottom Banner -->
-        <div class="ad-container">
-            <script type="text/javascript">
-                atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
-            </script>
-            <script src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
         </div>
     </div>
 
     <style>
-        /* Ad Containers */
-        .ad-container {
-            margin: 2rem auto;
-            text-align: center;
-            background: #f8f8f8;
-            padding: 1rem;
+        /* BBC-Inspired Button Styling */
+        .tab {
+            padding: 8px 16px;
+            margin-right: 8px;
+            border: none;
             border-radius: 4px;
+            background: #f0f0f0;
+            color: #333;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .ad-middle {
-            grid-column: 1 / -1; /* Forces full-width in grid */
+        .tab.active, .tab:hover {
+            background: #BB1919; /* BBC Red */
+            color: white;
         }
 
-        /* Posts Grid Fix */
+        /* Ad Script (No Container Styling) */
+        script[src*="highperformanceformat"] {
+            display: block;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        /* Your Original Image Styles */
+        .post-image-container {
+            position: relative;
+        }
+        .post-image {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .post-image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Grid Layout */
         .posts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2rem;
-        }
-        .post-card {
-            display: block !important; /* Overrides filter's display:none */
+            margin-top: 1rem;
         }
     </style>
 
+    <!-- Filter Functionality -->
     <script is:inline>
         function filterPosts(category) {
             const cards = document.querySelectorAll('.post-card');
             const tabs = document.querySelectorAll('.tab');
             
             tabs.forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab:contains('${category}')`).classList.add('active');
+            event.target.classList.add('active');
 
             cards.forEach(card => {
                 card.style.display = (category === 'All' || card.dataset.category === category) 
