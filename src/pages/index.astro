@@ -10,105 +10,217 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
 ---
 
 <Layout title="Latest News | Jonathan Mwaniki">
-    <!-- 1. Top Ad (Raw Script) -->
+    <!-- 1. Top Ad (No container) -->
     <script type="text/javascript">
-        atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
+        atOptions = {
+            'key': '1610960d9ced232cc76d8f5510ee4608',
+            'format': 'iframe',
+            'height': 60,
+            'width': 468,
+            'params': {}
+        };
     </script>
     <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
-    <main class="content-area">
+    <div class="content-wrapper">
         <header class="page-header">
-            <h1>Latest News</h1>
-            <p>Stay updated with the latest insights</p>
+            <h1 class="page-title">Latest News</h1>
+            <p class="page-subtitle">Stay updated with the latest insights</p>
             
+            <!-- Category Tabs -->
             <div class="category-tabs">
                 {categories.map(category => (
-                    <button class="tab ${category === 'All' ? 'active' : ''}" onclick=`filterPosts('${category}')`>
+                    <button 
+                        class="tab ${category === 'All' ? 'active' : ''}" 
+                        onclick="filterPosts('${category}')"
+                    >
                         {category}
                     </button>
                 ))}
             </div>
         </header>
 
-        <!-- 2. Second Ad (After Header) -->
+        <!-- 2. Middle Ad (No container) -->
         <script type="text/javascript">
-            atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
+            atOptions = {
+                'key': '1610960d9ced232cc76d8f5510ee4608',
+                'format': 'iframe',
+                'height': 60,
+                'width': 468,
+                'params': {}
+            };
         </script>
         <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
+        <!-- Posts Grid -->
         <div class="posts-grid">
-            {allPosts.map((post, index) => {
-                const postElement = (
-                    <article class="post-card" data-category={post.data.category}>
-                        <!-- Your post content -->
-                    </article>
-                );
-
-                return (
-                    <>
-                        {postElement}
-                        <!-- 3. Dynamic Ads (After every 2nd post) -->
-                        {(index + 1) % 2 === 0 && (
-                            <>
-                                <script type="text/javascript">
-                                    atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
-                                </script>
-                                <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-                            </>
-                        )}
-                    </>
-                );
-            })}
+            {allPosts.map((post, index) => (
+                <article 
+                    class="post-card" 
+                    data-category={post.data.category}
+                >
+                    <a href={`/posts/${post.slug}`}>
+                        <div class="post-image-container">
+                            <img
+                                src={post.data.image}
+                                alt={post.data.imageAlt || post.data.title}
+                                loading="lazy"
+                                width="400"
+                                height="240"
+                                class="post-image"
+                            />
+                            <div class="post-image-overlay"></div>
+                        </div>
+                        <div class="post-content">
+                            <span class="post-category">{post.data.category}</span>
+                            <h3 class="post-title">{post.data.title}</h3>
+                            <p class="post-excerpt">{post.data.description}</p>
+                            <span class="read-more">Read more →</span>
+                        </div>
+                    </a>
+                </article>
+            ))}
         </div>
 
-        <!-- 4. Bottom Ad -->
+        <!-- 3. Bottom Ad (No container) -->
         <script type="text/javascript">
-            atOptions = { 'key': '1610960d9ced232cc76d8f5510ee4608', 'format': 'iframe', 'height': 60, 'width': 468, 'params': {} };
+            atOptions = {
+                'key': '1610960d9ced232cc76d8f5510ee4608',
+                'format': 'iframe',
+                'height': 60,
+                'width': 468,
+                'params': {}
+            };
         </script>
         <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </main>
+    </div>
 
-    <style>
-        /* Natural Ad Spacing */
+    <style is:global>
+        /* Ad Styling (No containers) */
         script[src*="highperformanceformat"] {
             display: block;
             margin: 2rem auto;
             text-align: center;
+            background: transparent;
         }
 
-        /* Content Protection */
-        .content-area {
+        /* Content Layout */
+        .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
 
-        /* Post Grid */
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .tab.active {
+            background: #BB1919;
+            color: white;
+        }
+
+        /* Posts Grid */
         .posts-grid {
-            margin: 2rem 0;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2rem;
+            margin: 2rem 0;
+        }
+        .post-card {
+            transition: transform 0.2s ease;
+        }
+        .post-card:hover {
+            transform: translateY(-5px);
         }
 
-        /* Your existing styles */
-        .post-card { /* ... */ }
-        .category-tabs { /* ... */ }
+        /* Post Image */
+        .post-image-container {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+        }
+        .post-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .post-card:hover .post-image {
+            transform: scale(1.03);
+        }
+        .post-image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Post Content */
+        .post-content {
+            padding: 1rem 0;
+        }
+        .post-category {
+            display: inline-block;
+            background: #BB1919;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .post-title {
+            font-size: 1.25rem;
+            margin: 0.5rem 0;
+            line-height: 1.4;
+        }
+        .post-excerpt {
+            color: #555;
+            margin: 0.5rem 0 1rem;
+        }
+        .read-more {
+            font-weight: 600;
+            color: #BB1919;
+        }
     </style>
 
     <script is:inline>
+        // Category Filtering
         function filterPosts(category) {
             const cards = document.querySelectorAll('.post-card');
             const tabs = document.querySelectorAll('.tab');
             
+            // Update active tab
             tabs.forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
+            // Filter posts
             cards.forEach(card => {
                 card.style.display = (category === 'All' || card.dataset.category === category) 
                     ? 'block' 
                     : 'none';
             });
         }
+
+        // Initialize display
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.tab').click(); // Activate "All" by default
+        });
     </script>
 </Layout>
