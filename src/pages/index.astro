@@ -7,160 +7,171 @@ const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
 
 const categories = ['All', ...new Set(allPosts.map(post => post.data.category))];
+
+// Font Awesome category mapping
+const categoryIcons = {
+  'All': 'fa-solid fa-border-all',
+  'Tech': 'fa-solid fa-microchip',
+  'Business': 'fa-solid fa-briefcase',
+  'Design': 'fa-solid fa-paintbrush',
+  'Marketing': 'fa-solid fa-bullhorn'
+};
 ---
 
 <Layout title="Latest News | Jonathan Mwaniki">
-    <!-- 1. Top Ad (No container) -->
+    <!-- Single Top Ad (Exactly as provided) -->
     <script type="text/javascript">
         atOptions = {
-            'key': '1610960d9ced232cc76d8f5510ee4608',
-            'format': 'iframe',
-            'height': 60,
-            'width': 468,
-            'params': {}
+            'key' : '1610960d9ced232cc76d8f5510ee4608',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
         };
     </script>
     <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
-    <div class="content-wrapper">
-        <header class="page-header">
-            <h1 class="page-title">Latest News</h1>
-            <p class="page-subtitle">Stay updated with the latest insights</p>
-            
-            <!-- Category Tabs -->
-            <div class="category-tabs">
-                {categories.map(category => (
-                    <button 
-                        class="tab ${category === 'All' ? 'active' : ''}" 
-                        onclick="filterPosts('${category}')"
-                    >
-                        {category}
-                    </button>
-                ))}
-            </div>
-        </header>
-
-        <!-- 2. Middle Ad (No container) -->
-        <script type="text/javascript">
-            atOptions = {
-                'key': '1610960d9ced232cc76d8f5510ee4608',
-                'format': 'iframe',
-                'height': 60,
-                'width': 468,
-                'params': {}
-            };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    <main class="container">
+        <!-- Font Awesome Icon Filter Bar -->
+        <nav class="category-filter-bar">
+            {categories.map(category => (
+                <button 
+                    class="filter-button ${category === 'All' ? 'active' : ''}"
+                    onclick=`filterPosts('${category}')`
+                    aria-label={`Show ${category} posts`}
+                    data-category="${category}"
+                >
+                    <i class="${categoryIcons[category] || 'fa-solid fa-tag'}"></i>
+                    <span class="tooltip">{category}</span>
+                </button>
+            ))}
+        </nav>
 
         <!-- Posts Grid -->
         <div class="posts-grid">
-            {allPosts.map((post, index) => (
-                <article 
-                    class="post-card" 
-                    data-category={post.data.category}
-                >
-                    <a href={`/posts/${post.slug}`}>
+            {allPosts.map(post => (
+                <article class="post-card" data-category={post.data.category}>
+                    <a href={`/posts/${post.slug}`} class="post-link">
                         <div class="post-image-container">
                             <img
                                 src={post.data.image}
                                 alt={post.data.imageAlt || post.data.title}
-                                loading="lazy"
                                 width="400"
                                 height="240"
+                                loading="lazy"
                                 class="post-image"
                             />
                             <div class="post-image-overlay"></div>
                         </div>
                         <div class="post-content">
-                            <span class="post-category">{post.data.category}</span>
+                            <div class="post-meta">
+                                <span class="post-category">{post.data.category}</span>
+                                <time datetime={post.data.date}>
+                                    {new Date(post.data.date).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    })}
+                                </time>
+                            </div>
                             <h3 class="post-title">{post.data.title}</h3>
                             <p class="post-excerpt">{post.data.description}</p>
-                            <span class="read-more">Read more →</span>
+                            <span class="read-more">Read Article</span>
                         </div>
                     </a>
                 </article>
             ))}
         </div>
+    </main>
 
-        <!-- 3. Bottom Ad (No container) -->
-        <script type="text/javascript">
-            atOptions = {
-                'key': '1610960d9ced232cc76d8f5510ee4608',
-                'format': 'iframe',
-                'height': 60,
-                'width': 468,
-                'params': {}
-            };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
+    <!-- Font Awesome CSS (ES Modules) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style is:global>
-        /* Ad Styling (No containers) */
-        script[src*="highperformanceformat"] {
-            display: block;
-            margin: 2rem auto;
-            text-align: center;
-            background: transparent;
-        }
-
-        /* Content Layout */
-        .content-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Category Tabs */
-        .category-tabs {
+        /* Font Awesome Filter Buttons */
+        .category-filter-bar {
             display: flex;
-            gap: 10px;
-            margin: 20px 0;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 2rem 0 3rem;
+            padding: 0 1rem;
             flex-wrap: wrap;
         }
-        .tab {
-            padding: 8px 16px;
-            background: #f0f0f0;
+        .filter-button {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             border: none;
-            border-radius: 4px;
+            background: #f0f0f0;
+            color: #333;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            display: grid;
+            place-items: center;
         }
-        .tab.active {
+        .filter-button.active {
             background: #BB1919;
             color: white;
+            transform: scale(1.1);
+        }
+        .filter-button:hover {
+            transform: scale(1.1);
+        }
+        .filter-button .tooltip {
+            position: absolute;
+            top: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .filter-button:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            top: 110%;
         }
 
-        /* Posts Grid */
+        /* Ad Styling */
+        script[src*="highperformanceformat"] {
+            display: block;
+            margin: 0 auto;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        /* Posts Grid (Your original styles) */
         .posts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2rem;
-            margin: 2rem 0;
+            padding: 0 1rem;
         }
         .post-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s ease;
         }
         .post-card:hover {
             transform: translateY(-5px);
         }
-
-        /* Post Image */
         .post-image-container {
             position: relative;
-            border-radius: 8px;
-            overflow: hidden;
             aspect-ratio: 16/9;
         }
         .post-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        .post-card:hover .post-image {
-            transform: scale(1.03);
         }
         .post-image-overlay {
             position: absolute;
@@ -168,22 +179,21 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent 40%);
         }
-
-        /* Post Content */
         .post-content {
-            padding: 1rem 0;
+            padding: 1.25rem;
+        }
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: #666;
         }
         .post-category {
-            display: inline-block;
-            background: #BB1919;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
+            color: #BB1919;
         }
         .post-title {
             font-size: 1.25rem;
@@ -192,35 +202,39 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
         }
         .post-excerpt {
             color: #555;
-            margin: 0.5rem 0 1rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
         }
         .read-more {
             font-weight: 600;
             color: #BB1919;
+            display: inline-block;
+            margin-top: 0.5rem;
         }
     </style>
 
     <script is:inline>
-        // Category Filtering
+        // Category Filter Function
         function filterPosts(category) {
-            const cards = document.querySelectorAll('.post-card');
-            const tabs = document.querySelectorAll('.tab');
+            const posts = document.querySelectorAll('.post-card');
+            const buttons = document.querySelectorAll('.filter-button');
             
-            // Update active tab
-            tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            // Update active button
+            buttons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
 
             // Filter posts
-            cards.forEach(card => {
-                card.style.display = (category === 'All' || card.dataset.category === category) 
+            posts.forEach(post => {
+                post.style.display = (category === 'All' || post.dataset.category === category) 
                     ? 'block' 
                     : 'none';
             });
         }
 
-        // Initialize display
+        // Initialize to show all posts
         document.addEventListener('DOMContentLoaded', () => {
-            document.querySelector('.tab').click(); // Activate "All" by default
+            document.querySelector('.filter-button[data-category="All"]').click();
         });
     </script>
 </Layout>
