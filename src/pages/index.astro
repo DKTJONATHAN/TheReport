@@ -43,17 +43,19 @@ const remainingPosts = allPosts.slice(1);
     }
     </script>
 
-    <!-- Your exact ad code placed at the top -->
-    <script type="text/javascript">
-        atOptions = {
-            'key' : '1610960d9ced232cc76d8f5510ee4608',
-            'format' : 'iframe',
-            'height' : 60,
-            'width' : 468,
-            'params' : {}
-        };
-    </script>
-    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    <!-- Top Ad Container -->
+    <div class="ad-container top-ad">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : '1610960d9ced232cc76d8f5510ee4608',
+                'format' : 'iframe',
+                'height' : 60,
+                'width' : 468,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    </div>
 
     <main class="main-container">
         <!-- Professional Header -->
@@ -67,6 +69,20 @@ const remainingPosts = allPosts.slice(1);
                 </div>
             </div>
         </header>
+
+        <!-- Post-Hero Ad Container -->
+        <div class="ad-container post-hero-ad">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '1610960d9ced232cc76d8f5510ee4608',
+                    'format' : 'iframe',
+                    'height' : 60,
+                    'width' : 468,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+        </div>
 
         <!-- Featured Post (Most Recent) -->
         {featuredPost && (
@@ -211,6 +227,7 @@ const remainingPosts = allPosts.slice(1);
             margin: 0 0 1rem 0;
             letter-spacing: -0.02em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color: white;
         }
 
         .hero-subtitle {
@@ -227,11 +244,13 @@ const remainingPosts = allPosts.slice(1);
             display: inline-flex;
             align-items: center;
             background: #dc2626;
+            border: 2px solid rgba(255, 255, 255, 0.8);
             border-radius: 25px;
             padding: 0.5rem 1.5rem;
             font-size: 0.9rem;
             font-weight: 600;
             animation: pulse 2s infinite;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .ticker-label {
@@ -246,9 +265,38 @@ const remainingPosts = allPosts.slice(1);
             opacity: 0.95;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        /* Ad Container Styles */
+        .ad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1.5rem auto;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .top-ad {
+            margin-top: 0;
+            margin-bottom: 2rem;
+        }
+
+        .post-hero-ad {
+            margin: 2rem auto;
+        }
+
+        /* Constrain ad content to prevent overflow */
+        .ad-container iframe {
+            max-width: 468px;
+            max-height: 60px;
+        }
+
+        .ad-container script {
+            display: block;
+            max-width: 468px;
         }
 
         /* Section Titles */
