@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jonathanmwaniki.co.ke/sitemap-index.xml
