@@ -19,37 +19,84 @@ const absoluteImageUrl = post.data.image
     ? post.data.image 
     : `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
   : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg';
+
+// Define keywords for SEO competitiveness
+const keywords = [
+  'Kenya news',
+  'Nairobi gossip',
+  'Kenyan entertainment',
+  'latest Kenyan politics',
+  'lifestyle Kenya',
+  'celebrity news Kenya',
+  'trending stories Kenya',
+  post.data.category.toLowerCase(),
+  ...post.data.tags || [],
+].join(', ');
 ---
 
 <Layout 
-  title={post.data.title} 
-  description={post.data.description}
+  title={`${post.data.title} | The Mwaniki's Report - Kenya News & Gossip`}
+  description={`${post.data.description} Discover the latest in Kenyan entertainment, politics, and lifestyle at The Mwaniki's Report.`}
   image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
   meta={[
-    { name: 'og:title', content: post.data.title },
-    { name: 'og:description', content: post.data.description },
+    { name: 'og:title', content: `${post.data.title} - Kenya News & Gossip` },
+    { name: 'og:description', content: `${post.data.description} Stay updated with trending Kenyan stories.` },
     { name: 'og:type', content: 'article' },
     { name: 'og:url', content: `https://www.jonathanmwaniki.co.ke/posts/${post.slug}` },
     { name: 'og:image', content: absoluteImageUrl },
     { name: 'og:image:alt', content: post.data.imageAlt || post.data.title },
     { name: 'og:site_name', content: "The Mwaniki's Report" },
+    { name: 'og:locale', content: 'en_KE' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: post.data.title },
-    { name: 'twitter:description', content: post.data.description },
+    { name: 'twitter:title', content: `${post.data.title} - Kenya News & Gossip` },
+    { name: 'twitter:description', content: `${post.data.description} Explore trending stories in Kenya.` },
     { name: 'twitter:image', content: absoluteImageUrl },
     { name: 'twitter:image:alt', content: post.data.imageAlt || post.data.title },
     { name: 'twitter:site', content: '@maestropuns' },
+    { name: 'keywords', content: keywords },
+    { name: 'robots', content: 'index, follow' },
+    { name: 'author', content: post.data.author || 'Jonathan Mwaniki' },
   ]}
 >
+  <!-- Structured Data for Article -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      "headline": "${post.data.title}",
+      "image": ["${absoluteImageUrl}"],
+      "datePublished": "${post.data.date}",
+      "dateModified": "${post.data.updatedDate || post.data.date}",
+      "author": {
+        "@type": "Person",
+        "name": "${post.data.author || 'Jonathan Mwaniki'}"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "The Mwaniki's Report",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.jonathanmwaniki.co.ke/logo.png"
+        }
+      },
+      "description": "${post.data.description}",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
+      },
+      "keywords": "${keywords}"
+    }
+  </script>
+
   <!-- Top Ad -->
   <script type="text/javascript">
     atOptions = {
-      'key' : '1610960d9ced232cc76d8f5510ee4608',
-      'format' : 'iframe',
-      'height' : 60,
-      'width' : 468,
-      'params' : {}
+      'key': '1610960d9ced232cc76d8f5510ee4608',
+      'format': 'iframe',
+      'height': 60,
+      'width': 468,
+      'params': {}
     };
   </script>
   <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
@@ -59,11 +106,19 @@ const absoluteImageUrl = post.data.image
   </div>
 
   <div class="post-container">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/category/${post.data.category.toLowerCase()}">${post.data.category}</a></li>
+        <li aria-current="page">${post.data.title}</li>
+      </ol>
+    </nav>
+
     <a href="/" class="back-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
       </svg>
-      Back to all posts
+      Back to Kenya News
     </a>
     
     {post.data.draft && (
@@ -75,7 +130,7 @@ const absoluteImageUrl = post.data.image
     <article>
       <header class="post-header">
         <div class="post-meta">
-          <span class="post-category">{post.data.category}</span>
+          <span class="post-category"><a href="/category/${post.data.category.toLowerCase()}">${post.data.category}</a></span>
           <time class="post-date" datetime={post.data.date}>
             {new Date(post.data.date).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -96,8 +151,9 @@ const absoluteImageUrl = post.data.image
         <div class="post-image-container">
           <img 
             src={post.data.image}
-            alt={post.data.imageAlt || post.data.title}
+            alt={post.data.imageAlt || `${post.data.title} - Kenya News`}
             class="post-featured-image"
+            loading="lazy"
           />
           <div class="post-image-overlay"></div>
         </div>
@@ -106,11 +162,11 @@ const absoluteImageUrl = post.data.image
       <!-- Middle Ad (After Featured Image) -->
       <script type="text/javascript">
         atOptions = {
-          'key' : '1610960d9ced232cc76d8f5510ee4608',
-          'format' : 'iframe',
-          'height' : 60,
-          'width' : 468,
-          'params' : {}
+          'key': '1610960d9ced232cc76d8f5510ee4608',
+          'format': 'iframe',
+          'height': 60,
+          'width': 468,
+          'params': {}
         };
       </script>
       <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
@@ -120,28 +176,38 @@ const absoluteImageUrl = post.data.image
           <Content />
         </Article>
       </div>
+
+      <!-- Related Articles Section -->
+      <section class="related-articles">
+        <h2>Related Kenyan News & Gossip</h2>
+        <ul>
+          <!-- Placeholder for dynamic related articles -->
+          <li><a href="#">Latest Nairobi Entertainment News</a></li>
+          <li><a href="#">Trending Kenyan Politics Stories</a></li>
+          <li><a href="#">Celebrity Gossip Kenya</a></li>
+        </ul>
+      </section>
     </article>
     
     <!-- Bottom Ad (Before Footer) -->
     <script type="text/javascript">
       atOptions = {
-        'key' : '1610960d9ced232cc76d8f5510ee4608',
-        'format' : 'iframe',
-        'height' : 60,
-        'width' : 468,
-        'params' : {}
+        'key': '1610960d9ced232cc76d8f5510ee4608',
+        'format': 'iframe',
+        'height': 60,
+        'width': 468,
+        'params': {}
       };
     </script>
     <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
     
     <footer class="post-footer">
       <div class="post-footer-content">
-        <h3>Share this article</h3>
-        <p>Found this article helpful? Share it with your network!</p>
+        <h3>Share This Kenya News Story</h3>
+        <p>Enjoyed this article? Share it with your friends on social media!</p>
         <div class="social-share">
-          <!-- X (Twitter) Button -->
           <a 
-            href={`https://x.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}`}
+            href={`https://x.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}&hashtags=KenyaNews,NairobiGossip`}
             target="_blank"
             rel="noopener noreferrer"
             class="share-button x"
@@ -153,7 +219,6 @@ const absoluteImageUrl = post.data.image
             X
           </a>
           
-          <!-- LinkedIn Button -->
           <a 
             href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}`}
             target="_blank"
@@ -167,7 +232,6 @@ const absoluteImageUrl = post.data.image
             LinkedIn
           </a>
           
-          <!-- Facebook Button -->
           <a 
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}`}
             target="_blank"
@@ -266,6 +330,60 @@ const absoluteImageUrl = post.data.image
 
     .share-button.facebook:hover {
       color: #1877F2;
+    }
+
+    /* Breadcrumb Styling */
+    .breadcrumb {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0;
+      font-size: 0.875rem;
+    }
+
+    .breadcrumb li {
+      display: inline;
+    }
+
+    .breadcrumb li + li:before {
+      content: " / ";
+      padding: 0 0.5rem;
+    }
+
+    .breadcrumb a {
+      text-decoration: none;
+      color: #BB1919;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Related Articles Styling */
+    .related-articles {
+      margin-top: 2rem;
+    }
+
+    .related-articles h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .related-articles ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .related-articles li {
+      margin-bottom: 0.5rem;
+    }
+
+    .related-articles a {
+      text-decoration: none;
+      color: #BB1919;
+    }
+
+    .related-articles a:hover {
+      text-decoration: underline;
     }
 
     /* Ad Styling */
