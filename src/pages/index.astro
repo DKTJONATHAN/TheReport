@@ -10,111 +10,93 @@ const categories = ['All', ...new Set(allPosts.map(post => post.data.category))]
 ---
 
 <Layout title="Latest News | Jonathan Mwaniki">
+    <!-- Ad 1: Top of page (below header) -->
+    <div class="ad-container ad-top">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : '1610960d9ced232cc76d8f5510ee4608',
+                'format' : 'iframe',
+                'height' : 60,
+                'width' : 468,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    </div>
+
     <div class="posts-container">
         <header class="page-header">
             <h1>Latest News</h1>
             <p>Stay updated with the latest insights</p>
             
-            <!-- Working Category Filter -->
             <div class="category-tabs">
                 {categories.map(category => (
-                    <button 
-                        class="tab ${category === 'All' ? 'active' : ''}"
-                        onclick={`filterPosts('${category}')`}
-                    >
+                    <button class="tab" onclick={`filterPosts('${category}')`}>
                         {category}
                     </button>
                 ))}
             </div>
         </header>
 
-        <!-- Posts Grid (Your original image styling) -->
+        <!-- Ad 2: After first 2 posts -->
         <div class="posts-grid">
-            {allPosts.map(post => (
-                <article class="post-card" data-category={post.data.category}>
-                    <a href={`/posts/${post.slug}`}>
-                        <div class="post-image-container">
-                            <img
-                                src={post.data.image}
-                                alt={post.data.imageAlt || post.data.title}
-                                loading="lazy"
-                                width="400"
-                                height="240"
-                                class="post-image"
-                            />
-                            <div class="post-image-overlay"></div>
+            {allPosts.map((post, index) => (
+                <>
+                    <article class="post-card" data-category={post.data.category}>
+                        <!-- Your post content -->
+                    </article>
+
+                    {index === 1 && (
+                        <div class="ad-container ad-middle">
+                            <script type="text/javascript">
+                                atOptions = {
+                                    'key' : '1610960d9ced232cc76d8f5510ee4608',
+                                    'format' : 'iframe',
+                                    'height' : 60,
+                                    'width' : 468,
+                                    'params' : {}
+                                };
+                            </script>
+                            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
                         </div>
-                        <div class="post-content">
-                            <span class="post-category">{post.data.category}</span>
-                            <h3>{post.data.title}</h3>
-                            <p>{post.data.description}</p>
-                            <span class="read-more">Read more →</span>
-                        </div>
-                    </a>
-                </article>
+                    )}
+                </>
             ))}
+        </div>
+
+        <!-- Ad 3: Bottom of page -->
+        <div class="ad-container ad-bottom">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '1610960d9ced232cc76d8f5510ee4608',
+                    'format' : 'iframe',
+                    'height' : 60,
+                    'width' : 468,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
         </div>
     </div>
 
     <style>
-        /* Your original image styles (unchanged) */
-        .post-image-container {
-            position: relative;
-        }
-        .post-image {
-            width: 100%;
-            height: auto;
+        /* Ad styling (professional, non-intrusive) */
+        .ad-container {
+            margin: 2rem auto;
+            text-align: center;
+            padding: 1rem;
+            background: #f8f8f8;
             border-radius: 4px;
         }
-        .post-image-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        /* Working category filter UI */
-        .category-tabs {
-            display: flex;
-            gap: 8px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        .tab {
-            padding: 6px 12px;
-            background: #f0f0f0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .tab.active {
-            background: #BB1919;
-            color: white;
-        }
-
-        /* Required for filtering */
-        .post-card { display: block; }
+        .ad-top { margin-top: 0; }
+        .ad-middle { grid-column: 1 / -1; } /* Full width in grid */
+        
+        /* Your existing styles */
+        .posts-grid { /* ... */ }
+        .post-card { /* ... */ }
     </style>
 
-    <!-- Guaranteed working script -->
     <script is:inline>
-        function filterPosts(category) {
-            const cards = document.querySelectorAll('.post-card');
-            const tabs = document.querySelectorAll('.tab');
-            
-            // Update active tab
-            tabs.forEach(tab => {
-                tab.classList.toggle('active', tab.textContent === category);
-            });
-
-            // Filter posts
-            cards.forEach(card => {
-                card.style.display = (category === 'All' || card.dataset.category === category) 
-                    ? 'block' 
-                    : 'none';
-            });
-        }
+        // Your existing filterPosts() function
     </script>
 </Layout>
