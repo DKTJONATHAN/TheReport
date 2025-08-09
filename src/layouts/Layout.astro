@@ -10,7 +10,23 @@ export interface Props {
 }
 
 const { title, description = "Professional news and insights", image, canonical } = Astro.props;
-const fullImage = image ? new URL(image, Astro.site).href : '';
+const fullImage = image && image.startsWith('http') ? image : (image ? new URL(image, Astro.site).href : '');
+
+// Determine image type from URL
+function getImageType(url) {
+  if (!url) return 'image/jpeg'; // default
+  const extension = url.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'png': return 'image/png';
+    case 'gif': return 'image/gif';
+    case 'webp': return 'image/webp';
+    case 'jpg':
+    case 'jpeg':
+    default: return 'image/jpeg';
+  }
+}
+
+const imageType = getImageType(fullImage);
 ---
 
 <!DOCTYPE html>
@@ -29,15 +45,26 @@ const fullImage = image ? new URL(image, Astro.site).href : '';
   <!-- Open Graph -->
   <meta property="og:title" content={title}>
   <meta property="og:description" content={description}>
-  {fullImage && <meta property="og:image" content={fullImage}>}
+  <meta property="og:type" content="article">
   <meta property="og:url" content={canonical || Astro.url.href}>
-  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="The Mwaniki's Report">
+  {fullImage && <meta property="og:image" content={fullImage}>}
+  {fullImage && <meta property="og:image:width" content="1200">}
+  {fullImage && <meta property="og:image:height" content="675">}
+  {fullImage && <meta property="og:image:type" content={imageType}>}
+  {fullImage && <meta property="og:image:alt" content={title}>}
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@jonathanmwaniki">
+  <meta name="twitter:creator" content="@jonathanmwaniki">
   <meta name="twitter:title" content={title}>
   <meta name="twitter:description" content={description}>
   {fullImage && <meta name="twitter:image" content={fullImage}>}
+  {fullImage && <meta name="twitter:image:alt" content={title}>}
+  
+  <!-- LinkedIn -->
+  {fullImage && <meta property="linkedin:owner" content="The Mwaniki's Report">}
   
   <!-- Global CSS -->
   <link rel="stylesheet" href="/styles/global.css">
