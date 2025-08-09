@@ -14,7 +14,6 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// Use the frontmatter image directly if it's an absolute URL; otherwise, prepend domain
 const absoluteImageUrl = post.data.image
   ? post.data.image.startsWith('http') 
     ? post.data.image 
@@ -28,7 +27,6 @@ const absoluteImageUrl = post.data.image
   image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
   meta={[
-    // Open Graph meta tags
     { name: 'og:title', content: post.data.title },
     { name: 'og:description', content: post.data.description },
     { name: 'og:type', content: 'article' },
@@ -36,7 +34,6 @@ const absoluteImageUrl = post.data.image
     { name: 'og:image', content: absoluteImageUrl },
     { name: 'og:image:alt', content: post.data.imageAlt || post.data.title },
     { name: 'og:site_name', content: "The Mwaniki's Report" },
-    // Twitter Card meta tags
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: post.data.title },
     { name: 'twitter:description', content: post.data.description },
@@ -45,6 +42,18 @@ const absoluteImageUrl = post.data.image
     { name: 'twitter:site', content: '@jonathanmwaniki' },
   ]}
 >
+  <!-- Top Ad -->
+  <script type="text/javascript">
+    atOptions = {
+      'key' : '1610960d9ced232cc76d8f5510ee4608',
+      'format' : 'iframe',
+      'height' : 60,
+      'width' : 468,
+      'params' : {}
+    };
+  </script>
+  <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+
   <div class="reading-progress">
     <div class="reading-progress-bar" id="progress-bar"></div>
   </div>
@@ -94,12 +103,36 @@ const absoluteImageUrl = post.data.image
         </div>
       )}
       
+      <!-- Middle Ad (After Featured Image) -->
+      <script type="text/javascript">
+        atOptions = {
+          'key' : '1610960d9ced232cc76d8f5510ee4608',
+          'format' : 'iframe',
+          'height' : 60,
+          'width' : 468,
+          'params' : {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+      
       <div class="article-wrapper">
         <Article>
           <Content />
         </Article>
       </div>
     </article>
+    
+    <!-- Bottom Ad (Before Footer) -->
+    <script type="text/javascript">
+      atOptions = {
+        'key' : '1610960d9ced232cc76d8f5510ee4608',
+        'format' : 'iframe',
+        'height' : 60,
+        'width' : 468,
+        'params' : {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
     
     <footer class="post-footer">
       <div class="post-footer-content">
@@ -228,6 +261,14 @@ const absoluteImageUrl = post.data.image
 
     .share-button.facebook:hover {
       color: #1877F2;
+    }
+
+    /* Ad Styling */
+    script[src*="highperformanceformat"] {
+      display: block;
+      margin: 2rem auto;
+      text-align: center;
+      background: transparent;
     }
 
     @media (prefers-reduced-motion: reduce) {
