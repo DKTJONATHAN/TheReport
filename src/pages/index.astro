@@ -3,111 +3,306 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// Get ALL posts sorted by date (newest first), ignoring featured status
+// Get ALL posts sorted by date (newest first)
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
+
+// Extract unique categories
+const categories = [...new Set(allPosts.map(post => post.data.category))];
 ---
 
-<Layout title="Latest News | Jonathan Mwaniki" description="The latest news and articles from Jonathan Mwaniki">
-    <div class="posts-container">
-        <header class="page-header">
-            <h1 class="page-title">Latest News</h1>
-            <p class="page-subtitle">Stay updated with the latest insights, articles, and professional content from Jonathan Mwaniki</p>
+<Layout title="Latest News | Jonathan Mwaniki" description="Stay updated with professional insights and articles from Jonathan Mwaniki">
+    <div class="container">
+        <!-- Hero Header -->
+        <header class="hero-header">
+            <h1 class="hero-title">Latest News</h1>
+            <p class="hero-subtitle">Professional insights, analysis, and updates</p>
+            
+            <!-- Category Filter (BBC-style horizontal nav) -->
+            <nav class="category-nav">
+                <ul>
+                    <li><a href="#all" class="category-link active" data-category="all">All</a></li>
+                    {categories.map(category => (
+                        <li>
+                            <a href={`#${category.toLowerCase()}`} class="category-link" data-category={category.toLowerCase()}>
+                                {category}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
         </header>
-        
-        {allPosts.length > 0 ? (
-            <div class="posts-grid">
-                {allPosts.map(post => (
-                    <a 
-                        href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
-                        class="post-card"
-                        aria-label={`Read article: ${post.data.title}`}
+
+        <!-- Posts Grid -->
+        <div class="posts-grid">
+            {allPosts.length > 0 ? (
+                allPosts.map(post => (
+                    <article 
+                        class="post-card" 
+                        data-category={post.data.category.toLowerCase()}
+                        aria-labelledby={`post-${post.slug}`}
                     >
-                        <div class="post-image-container">
-                            <img
-                                src={post.data.image}
-                                alt={post.data.imageAlt || post.data.title}
-                                class="post-image"
-                                loading="lazy"
-                                width="400"
-                                height="240"
-                            />
-                            <div class="post-image-overlay"></div>
-                        </div>
-                        <div class="post-content">
-                            <div class="post-meta">
-                                <span class="post-category">{post.data.category}</span>
-                                <time class="post-date" datetime={post.data.date}>
-                                    {new Date(post.data.date).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric'
-                                    })}
-                                </time>
+                        <a href={`/posts/${post.slug}`} class="post-link">
+                            <div class="post-image-container">
+                                <img
+                                    src={post.data.image}
+                                    alt={post.data.imageAlt || post.data.title}
+                                    width={400}
+                                    height={240}
+                                    loading="lazy"
+                                    class="post-image"
+                                />
+                                <div class="post-category-tag">{post.data.category}</div>
                             </div>
-                            <h3 class="post-title">{post.data.title}</h3>
-                            <p class="post-excerpt">{post.data.description}</p>
-                            <div class="post-footer">
-                                <span class="read-more">
-                                    Read more
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                    </svg>
-                                </span>
-                                {post.data.draft && <span class="draft-badge">Draft</span>}
+                            <div class="post-content">
+                                <div class="post-meta">
+                                    <time datetime={post.data.date}>
+                                        {new Date(post.data.date).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}
+                                    </time>
+                                    <span>· {post.data.readTime || '5 min read'}</span>
+                                </div>
+                                <h2 id={`post-${post.slug}`} class="post-title">{post.data.title}</h2>
+                                <p class="post-excerpt">{post.data.description}</p>
+                                <div class="post-footer">
+                                    <span class="read-more">
+                                        Read more
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </span>
+                                    {post.data.draft && <span class="draft-badge">Draft</span>}
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                ))}
-            </div>
-        ) : (
-            <div class="empty-state">
-                <h2>No posts available</h2>
-                <p>Check back soon for new content!</p>
-            </div>
-        )}
+                        </a>
+                    </article>
+                ))
+            ) : (
+                <div class="empty-state">
+                    <h2>No posts available</h2>
+                    <p>New content coming soon.</p>
+                </div>
+            )}
+        </div>
     </div>
 
-    <style>
-      /* BBC-Inspired Button Styles for Read More */
-      .read-more {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #BB1919; /* BBC Red */
-        border-radius: 4px;
-        background: #BB1919;
-        color: #FFFFFF;
-        font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.3s ease, box-shadow 0.3s ease;
-      }
-
-      .read-more:hover {
-        background: #8B0000; /* Darker BBC Red */
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      }
-
-      .read-more:focus {
-        outline: 2px solid #BB1919;
-        outline-offset: 2px;
-        border-radius: 4px;
-      }
-
-      .read-more svg {
-        width: 16px;
-        height: 16px;
-        stroke: #FFFFFF;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .read-more {
-          transition: none;
+    <style is:global>
+        /* BBC-Inspired Base Styles */
+        :root {
+            --bbc-red: #BB1919;
+            --bbc-dark: #222222;
+            --bbc-light: #F6F6F6;
+            --bbc-gray: #E5E5E5;
         }
-      }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--bbc-dark);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Hero Header */
+        .hero-header {
+            text-align: center;
+            margin: 3rem 0 2rem;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--bbc-dark);
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        /* Category Navigation */
+        .category-nav ul {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 0;
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .category-link {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            background: var(--bbc-gray);
+            color: var(--bbc-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .category-link:hover,
+        .category-link.active {
+            background: var(--bbc-red);
+            color: white;
+        }
+
+        /* Posts Grid */
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .post-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .post-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .post-image-container {
+            position: relative;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+        }
+
+        .post-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .post-card:hover .post-image {
+            transform: scale(1.03);
+        }
+
+        .post-category-tag {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--bbc-red);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .post-content {
+            padding: 1.5rem;
+        }
+
+        .post-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .post-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 0.75rem;
+            color: var(--bbc-dark);
+        }
+
+        .post-excerpt {
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Read More Button (BBC Style) */
+        .read-more {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bbc-red);
+            color: white;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .read-more:hover {
+            background: #8B0000;
+        }
+
+        .read-more svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Draft Badge */
+        .draft-badge {
+            background: #FFD700;
+            color: #333;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            grid-column: 1 / -1;
+            padding: 3rem 0;
+        }
+
+        /* Category Filtering (JavaScript) */
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const categoryLinks = document.querySelectorAll('.category-link');
+                const postCards = document.querySelectorAll('.post-card');
+
+                categoryLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const category = link.dataset.category;
+
+                        // Update active state
+                        categoryLinks.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+
+                        // Filter posts
+                        postCards.forEach(card => {
+                            if (category === 'all' || card.dataset.category === category) {
+                                card.style.display = 'block';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
     </style>
 </Layout>
