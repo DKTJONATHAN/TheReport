@@ -6,9 +6,43 @@ import { getCollection } from 'astro:content';
 // Get ALL posts sorted by date (newest first), ignoring featured status
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
+
+// Get the most recent post for featured display
+const featuredPost = allPosts[0];
+const remainingPosts = allPosts.slice(1);
 ---
 
-<Layout title="Latest News | Jonathan Mwaniki" description="The latest news and articles from Jonathan Mwaniki">
+<Layout 
+  title="Breaking News Kenya Today | Latest Updates & Headlines | Jonathan Mwaniki" 
+  description="Get the latest breaking news from Kenya today. Politics, entertainment, sports, business updates. Your trusted source for Kenyan news, celebrity gossip, and trending stories."
+>
+    <!-- SEO Meta Tags -->
+    <meta name="keywords" content="kenya news today, breaking news kenya, latest kenyan news, kenya politics, kenyan celebrities, entertainment news kenya, business news kenya, sports news kenya, trending kenya, nairobi news, jonathan mwaniki news" />
+    <meta name="author" content="Jonathan Mwaniki" />
+    <meta property="og:title" content="Breaking News Kenya Today | Latest Headlines | Jonathan Mwaniki" />
+    <meta property="og:description" content="Stay updated with breaking news from Kenya. Politics, entertainment, sports & business. Your go-to source for trending Kenyan stories." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.jonathanmwaniki.co.ke" />
+    <meta property="og:site_name" content="Jonathan Mwaniki News" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Breaking News Kenya Today | Jonathan Mwaniki" />
+    <meta name="twitter:description" content="Latest breaking news from Kenya. Politics, entertainment, sports & trending stories." />
+    
+    <!-- Structured Data for News Articles -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "NewsMediaOrganization",
+      "name": "Jonathan Mwaniki News",
+      "url": "https://www.jonathanmwaniki.co.ke",
+      "description": "Kenya's premier source for breaking news, politics, entertainment, and trending stories",
+      "sameAs": [
+        "https://twitter.com/jonathanmwaniki",
+        "https://facebook.com/jonathanmwaniki"
+      ]
+    }
+    </script>
+
     <!-- Your exact ad code placed at the top -->
     <script type="text/javascript">
         atOptions = {
@@ -21,105 +55,589 @@ const allPosts = (await getCollection('posts'))
     </script>
     <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
 
-    <div class="posts-container">
-        <header class="page-header">
-            <h1 class="page-title">Latest News</h1>
-            <p class="page-subtitle">Stay updated with the latest insights, articles, and professional content from Jonathan Mwaniki</p>
+    <main class="main-container">
+        <!-- Professional Header -->
+        <header class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">Breaking News Kenya</h1>
+                <p class="hero-subtitle">Your trusted source for the latest Kenyan news, politics, entertainment, and trending stories</p>
+                <div class="breaking-ticker">
+                    <span class="ticker-label">TRENDING NOW</span>
+                    <div class="ticker-content">Latest updates from Kenya • Politics • Entertainment • Business</div>
+                </div>
+            </div>
         </header>
-        
-        {allPosts.length > 0 ? (
-            <div class="posts-grid">
-                {allPosts.map(post => (
+
+        <!-- Featured Post (Most Recent) -->
+        {featuredPost && (
+            <section class="featured-section" aria-label="Featured Story">
+                <h2 class="section-title">Latest Breaking News</h2>
+                <article class="featured-post">
                     <a 
-                        href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
-                        class="post-card"
-                        aria-label={`Read article: ${post.data.title}`}
+                        href={`https://www.jonathanmwaniki.co.ke/posts/${featuredPost.slug}`} 
+                        class="featured-link"
+                        aria-label={`Read breaking story: ${featuredPost.data.title}`}
                     >
-                        <div class="post-image-container">
+                        <div class="featured-image-container">
                             <img
-                                src={post.data.image}
-                                alt={post.data.imageAlt || post.data.title}
-                                class="post-image"
-                                loading="lazy"
-                                width="400"
-                                height="240"
+                                src={featuredPost.data.image}
+                                alt={featuredPost.data.imageAlt || featuredPost.data.title}
+                                class="featured-image"
+                                loading="eager"
+                                width="800"
+                                height="450"
                             />
-                            <div class="post-image-overlay"></div>
+                            <div class="breaking-badge">BREAKING</div>
                         </div>
-                        <div class="post-content">
-                            <div class="post-meta">
-                                <span class="post-category">{post.data.category}</span>
-                                <time class="post-date" datetime={post.data.date}>
-                                    {new Date(post.data.date).toLocaleDateString('en-US', {
+                        <div class="featured-content">
+                            <div class="featured-meta">
+                                <span class="featured-category">{featuredPost.data.category}</span>
+                                <time class="featured-date" datetime={featuredPost.data.date}>
+                                    {new Date(featuredPost.data.date).toLocaleDateString('en-US', {
                                         year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric'
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
                                     })}
                                 </time>
                             </div>
-                            <h3 class="post-title">{post.data.title}</h3>
-                            <p class="post-excerpt">{post.data.description}</p>
-                            <div class="post-footer">
-                                <span class="read-more">
-                                    Read more
+                            <h3 class="featured-title">{featuredPost.data.title}</h3>
+                            <p class="featured-excerpt">{featuredPost.data.description}</p>
+                            <div class="featured-footer">
+                                <span class="read-more-featured">
+                                    Read Full Story
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
                                 </span>
-                                {post.data.draft && <span class="draft-badge">Draft</span>}
                             </div>
                         </div>
                     </a>
-                ))}
-            </div>
-        ) : (
+                </article>
+            </section>
+        )}
+        
+        <!-- Other Posts Grid -->
+        {remainingPosts.length > 0 && (
+            <section class="posts-section" aria-label="More News Stories">
+                <h2 class="section-title">More News & Updates</h2>
+                <div class="posts-grid">
+                    {remainingPosts.map(post => (
+                        <article class="post-card">
+                            <a 
+                                href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
+                                class="post-link"
+                                aria-label={`Read article: ${post.data.title}`}
+                            >
+                                <div class="post-image-container">
+                                    <img
+                                        src={post.data.image}
+                                        alt={post.data.imageAlt || post.data.title}
+                                        class="post-image"
+                                        loading="lazy"
+                                        width="400"
+                                        height="240"
+                                    />
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-meta">
+                                        <span class="post-category">{post.data.category}</span>
+                                        <time class="post-date" datetime={post.data.date}>
+                                            {new Date(post.data.date).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </time>
+                                    </div>
+                                    <h3 class="post-title">{post.data.title}</h3>
+                                    <p class="post-excerpt">{post.data.description}</p>
+                                    <div class="post-footer">
+                                        <span class="read-more">
+                                            Read Article
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    ))}
+                </div>
+            </section>
+        )}
+
+        {allPosts.length === 0 && (
             <div class="empty-state">
-                <h2>No posts available</h2>
-                <p>Check back soon for new content!</p>
+                <h2>No news available</h2>
+                <p>Check back soon for the latest Kenyan news and updates!</p>
             </div>
         )}
-    </div>
+    </main>
 
     <style>
-      /* BBC-Inspired Button Styles for Read More */
-      .read-more {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #BB1919; /* BBC Red */
-        border-radius: 4px;
-        background: #BB1919;
-        color: #FFFFFF;
-        font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.3s ease, box-shadow 0.3s ease;
-      }
-
-      .read-more:hover {
-        background: #8B0000; /* Darker BBC Red */
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      }
-
-      .read-more:focus {
-        outline: 2px solid #BB1919;
-        outline-offset: 2px;
-        border-radius: 4px;
-      }
-
-      .read-more svg {
-        width: 16px;
-        height: 16px;
-        stroke: #FFFFFF;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .read-more {
-          transition: none;
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
         }
-      }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            padding: 3rem 2rem;
+            margin: -1rem -1rem 2rem -1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            margin: 0 0 1rem 0;
+            letter-spacing: -0.02em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+            opacity: 0.9;
+            margin: 0 0 2rem 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+        }
+
+        .breaking-ticker {
+            display: inline-flex;
+            align-items: center;
+            background: #dc2626;
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        .ticker-label {
+            color: white;
+            margin-right: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .ticker-content {
+            color: white;
+            opacity: 0.95;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 3rem 0 1.5rem 0;
+            color: #1a1a1a;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: #dc2626;
+        }
+
+        /* Featured Post Styles */
+        .featured-section {
+            margin: 2rem 0 4rem 0;
+        }
+
+        .featured-post {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 3px solid #dc2626;
+            position: relative;
+        }
+
+        .featured-post:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(220, 38, 38, 0.15);
+        }
+
+        .featured-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .featured-image-container {
+            position: relative;
+            height: 450px;
+            overflow: hidden;
+        }
+
+        .featured-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .featured-post:hover .featured-image {
+            transform: scale(1.05);
+        }
+
+        .breaking-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: #dc2626;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-radius: 4px;
+            animation: flash 1.5s infinite;
+            z-index: 2;
+        }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .featured-content {
+            padding: 2rem;
+        }
+
+        .featured-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .featured-category {
+            background: #dc2626;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .featured-date {
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .featured-title {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            line-height: 1.2;
+            color: #1a1a1a;
+        }
+
+        .featured-excerpt {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #4a5568;
+            margin: 0 0 2rem 0;
+        }
+
+        .featured-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .read-more-featured {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #dc2626;
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .read-more-featured:hover {
+            background: #b91c1c;
+            transform: translateX(5px);
+        }
+
+        .read-more-featured svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .read-more-featured:hover svg {
+            transform: translateX(3px);
+        }
+
+        /* Posts Grid */
+        .posts-section {
+            margin: 4rem 0;
+        }
+
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .post-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            border-color: #dc2626;
+        }
+
+        .post-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            height: 100%;
+        }
+
+        .post-image-container {
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .post-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .post-card:hover .post-image {
+            transform: scale(1.05);
+        }
+
+        .post-content {
+            padding: 1.5rem;
+            height: calc(100% - 200px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .post-category {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 0.25rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .post-date {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .post-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            line-height: 1.3;
+            color: #1a202c;
+        }
+
+        .post-excerpt {
+            color: #4a5568;
+            line-height: 1.5;
+            margin: 0 0 1.5rem 0;
+            flex-grow: 1;
+            font-size: 0.95rem;
+        }
+
+        .post-footer {
+            margin-top: auto;
+        }
+
+        .read-more {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f8fafc;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .read-more:hover {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+
+        .read-more svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #64748b;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 0.75rem;
+            }
+
+            .hero-section {
+                padding: 2rem 1rem;
+                margin: -0.75rem -0.75rem 1.5rem -0.75rem;
+            }
+
+            .featured-content {
+                padding: 1.5rem;
+            }
+
+            .featured-meta {
+                gap: 0.75rem;
+            }
+
+            .posts-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.75rem;
+                margin: 2rem 0 1rem 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .featured-image-container {
+                height: 250px;
+            }
+            
+            .post-image-container {
+                height: 180px;
+            }
+
+            .breaking-ticker {
+                font-size: 0.8rem;
+                padding: 0.4rem 1rem;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus styles for keyboard navigation */
+        .featured-link:focus,
+        .post-link:focus {
+            outline: 2px solid #dc2626;
+            outline-offset: 2px;
+        }
+
+        /* Print styles */
+        @media print {
+            .hero-section {
+                background: white !important;
+                color: black !important;
+            }
+            
+            .featured-post,
+            .post-card {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+            }
+        }
     </style>
 </Layout>
