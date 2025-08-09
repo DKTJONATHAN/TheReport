@@ -1,4 +1,4 @@
-/* Modern CSS Reset & Base Styles - BBC Inspired */
+/* BBC-Inspired CSS Reset & Base Styles */
 *,
 *::before,
 *::after {
@@ -6,38 +6,48 @@
 }
 
 :root {
-  /* BBC Color Palette */
-  --primary: #BB1919;       /* BBC Red */
-  --primary-dark: #990000;  /* Darker BBC Red */
-  --primary-light: #E31919; /* Lighter BBC Red */
-  --primary-bg: #FFF5F5;    /* Very light red bg */
+  /* Primary Color Palette (BBC Red and variations) */
+  --primary: #BB1919; /* BBC Red */
+  --primary-dark: #8B0000;
+  --primary-light: #CC3333;
+  --primary-bg: #FFF1F1;
   
-  /* Neutral Colors */
-  --text-primary: #121212;  /* BBC Black */
-  --text-secondary: #333333;/* Dark Gray */
-  --text-muted: #767676;    /* BBC Gray */
-  --text-light: #B3B3B3;    /* Light Gray */
+  /* Neutral Colors (BBC's grayscale palette) */
+  --text-primary: #141414;
+  --text-secondary: #4A4A4A;
+  --text-muted: #6D6D6D;
+  --text-light: #A1A1A1;
   
   /* Background Colors */
-  --bg-primary: #FFFFFF;    /* Pure White */
-  --bg-secondary: #F6F6F6;  /* Light Gray */
-  --bg-tertiary: #EDEDED;   /* Medium Gray */
-  --bg-dark: #222222;       /* Dark BG */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F6F6F6;
+  --bg-tertiary: #EDEDED;
+  --bg-dark: #2C2C2C;
   
-  /* Border Colors */
-  --border-light: #E6E6E6;  /* BBC Light Gray */
-  --border-medium: #CCCCCC; /* Medium Gray */
-  --border-dark: #999999;   /* Dark Gray */
-
-  /* Keep your existing layout properties */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 25px rgba(0,0,0,0.12);
-  --shadow-xl: 0 12px 40px rgba(0,0,0,0.15);
+  /* Border & Divider Colors */
+  --border-light: #E0E0E0;
+  --border-medium: #C7C7C7;
+  --border-dark: #A1A1A1;
+  
+  /* Status Colors */
+  --success: #00703C; /* BBC Green */
+  --warning: #FF9900; /* BBC Orange */
+  --error: #BB1919; /* BBC Red */
+  --info: #0052A4; /* BBC Blue */
+  
+  /* Layout Properties */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 6px 20px rgba(0, 0, 0, 0.25);
+  
+  /* Spacing System */
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
   --space-md: 1rem;
@@ -45,18 +55,25 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 4rem;
-  --font-family: 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'Courier New', monospace;
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
-  --transition-slow: 0.35s ease;
+  
+  /* Typography */
+  --font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif; /* BBC's primary font */
+  --font-mono: 'ReithMono', 'Courier New', monospace;
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.4s ease;
 }
 
-/* Body Styles with BBC Colors */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-family);
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--text-primary);
   background: var(--bg-primary);
   margin: 0;
@@ -66,90 +83,489 @@ body {
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* BBC Header Style */
-header {
-  background: var(--primary);
-  color: white;
-  padding: var(--space-md) 0;
-  box-shadow: var(--shadow-md);
-}
-
-/* Main Content Area */
 main {
   flex: 1;
   padding: var(--space-xl) var(--space-lg);
-  background: var(--bg-primary);
+  max-width: 1280px; /* BBC's typical content width */
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
 }
 
-/* BBC Footer Style */
-footer {
-  background: var(--primary);
-  color: white;
-  padding: var(--space-lg) 0;
-  border-top: 1px solid var(--primary-dark);
-}
-
-/* Typography with BBC Colors */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--text-primary);
-}
-
-h1 {
-  border-bottom: 2px solid var(--primary);
-  padding-bottom: var(--space-sm);
-}
-
-/* Links with BBC Red */
+/* Enhanced Link Styles */
 a {
   color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+  font-weight: 500;
 }
 
 a:hover {
   color: var(--primary-dark);
 }
 
-/* Images with BBC Style */
+a:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Enhanced Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin: 0 0 var(--space-lg) 0;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xl);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: var(--space-lg);
+}
+
+h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  margin-bottom: var(--space-md);
+}
+
+p {
+  margin: 0 0 var(--space-lg) 0;
+  color: var(--text-secondary);
+}
+
+/* Universal Image Styling */
 img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
+  margin: var(--space-lg) 0;
+  display: block;
+  transition: all var(--transition-normal);
+}
+
+img:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Figure Elements */
+figure {
+  margin: var(--space-lg) 0;
+  text-align: center;
+  background: var(--bg-primary);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+  max-width: 100%;
+  position: relative;
+}
+
+figure::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+}
+
+figure::after {
+  content: '';
+  display: none; /* BBC avoids decorative icons */
+}
+
+figure:hover {
+  box-shadow: var(--shadow-md);
+}
+
+figure img {
+  margin: 0;
+  border-radius: var(--radius-sm);
+  border: none;
+}
+
+figcaption {
+  margin-top: var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 400;
+  padding: var(--space-sm);
+}
+
+/* Special styling for different figure classes */
+.featured-image {
+  margin: 0 0 var(--space-lg);
+  border: 1px solid var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.featured-image::before {
+  height: 4px;
+  background: var(--primary);
+}
+
+.featured-image::after {
+  display: none;
+}
+
+.content-image {
   background: var(--bg-secondary);
 }
 
-/* Cards with BBC Inspired Design */
-.card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
+.content-image::after {
+  display: none;
 }
 
-/* Tables with BBC Style */
+/* Button Styles */
+button, 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+button:hover,
+.btn:hover {
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Form Elements */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+  width: 100%;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(187, 25, 25, 0.2);
+}
+
+/* Card Components */
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+}
+
+/* Table Styling */
 table {
+  width: 100%;
+  margin: var(--space-lg) 0;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
 }
 
 th {
-  background: var(--primary);
-  color: white;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* Blockquotes with BBC Style */
-blockquote {
-  border-left: 4px solid var(--primary);
+td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+tr:hover {
   background: var(--bg-secondary);
 }
 
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Blockquote Styling */
+blockquote {
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+blockquote::before {
+  content: '';
+  display: none; /* BBC avoids decorative quotes */
+}
+
+/* List Styling */
+ul, ol {
+  margin: var(--space-lg) 0;
+  padding-left: var(--space-lg);
+}
+
+li {
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+}
+
+ul li {
+  list-style: disc;
+  position: relative;
+}
+
+ul li::before {
+  content: '';
+  display: none; /* BBC uses standard list styles */
+}
+
+ol li {
+  font-weight: 400;
+}
+
+strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* Code Styling */
+code {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  border: 1px solid var(--border-light);
+}
+
+pre {
+  background: var(--bg-dark);
+  color: #E0E0E0;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: var(--space-lg) 0;
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+  font-size: 0.9rem;
+}
+
+/* Dividers */
+hr {
+  border: none;
+  height: 1px;
+  background: var(--border-light);
+  margin: var(--space-lg) 0;
+}
+
 /* Utility Classes */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.flex {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.text-center {
+  text-align: center;
+}
+
 .text-muted {
   color: var(--text-muted);
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.loading {
+  animation: pulse 1.5s infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  main {
+    padding: var(--space-lg) var(--space-md);
+  }
+  
+  .container {
+    padding: 0 var(--space-md);
+  }
+  
+  img {
+    margin: var(--space-md) 0;
+  }
+  
+  figure {
+    margin: var(--space-md) 0;
+    padding: var(--space-sm);
+  }
+  
+  blockquote {
+    padding: var(--space-md);
+    font-size: 0.95rem;
+  }
+  
+  table {
+    font-size: 0.85rem;
+  }
+  
+  th, td {
+    padding: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --space-lg: 1rem;
+    --space-xl: 1.5rem;
+  }
+  
+  main {
+    padding: var(--space-md);
+  }
+  
+  ul, ol {
+    padding-left: var(--space-md);
+  }
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text-primary: #FFFFFF;
-    --text-secondary: #E6E6E6;
-    --bg-primary: #121212;
-    --bg-secondary: #1A1A1A;
-    --border-light: #333333;
+    --text-primary: #F5F5F5;
+    --text-secondary: #D1D1D1;
+    --text-muted: #A1A1A1;
+    --bg-primary: #1A1A1A;
+    --bg-secondary: #2C2C2C;
+    --bg-tertiary: #3D3D3D;
+    --border-light: #4A4A4A;
+    --border-medium: #5E5E5E;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.6);
+  }
+  
+  body {
+    background: var(--bg-primary);
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .card,
+  img,
+  figure {
+    box-shadow: none !important;
+  }
+  
+  figure::after {
+    display: none !important;
   }
 }
