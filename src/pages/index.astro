@@ -67,4 +67,47 @@ const allPosts = (await getCollection('posts'))
             </div>
         )}
     </div>
+
+    <style>
+      /* BBC-Inspired Button Styles for Read More */
+      .read-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #BB1919; /* BBC Red */
+        border-radius: 4px;
+        background: #BB1919;
+        color: #FFFFFF;
+        font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .read-more:hover {
+        background: #8B0000; /* Darker BBC Red */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .read-more:focus {
+        outline: 2px solid #BB1919;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      .read-more svg {
+        width: 16px;
+        height: 16px;
+        stroke: #FFFFFF;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .read-more {
+          transition: none;
+        }
+      }
+    </style>
 </Layout>
