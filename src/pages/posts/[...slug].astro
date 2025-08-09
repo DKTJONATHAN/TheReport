@@ -1,5 +1,4 @@
 ---
-// src/pages/[slug].astro
 import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
@@ -15,10 +14,12 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// Ensure the image URL is absolute for social media previews
+// Use the frontmatter image directly if it's an absolute URL; otherwise, prepend domain
 const absoluteImageUrl = post.data.image
-  ? `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
-  : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg'; // Fallback image
+  ? post.data.image.startsWith('http') 
+    ? post.data.image 
+    : `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
+  : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg';
 ---
 
 <Layout 
@@ -26,7 +27,6 @@ const absoluteImageUrl = post.data.image
   description={post.data.description}
   image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
-  // Add Open Graph and Twitter Card meta tags
   meta={[
     // Open Graph meta tags
     { name: 'og:title', content: post.data.title },
@@ -42,7 +42,7 @@ const absoluteImageUrl = post.data.image
     { name: 'twitter:description', content: post.data.description },
     { name: 'twitter:image', content: absoluteImageUrl },
     { name: 'twitter:image:alt', content: post.data.imageAlt || post.data.title },
-    { name: 'twitter:site', content: '@jonathanmwaniki' }, // Replace with your Twitter handle
+    { name: 'twitter:site', content: '@jonathanmwaniki' },
   ]}
 >
   <div class="reading-progress">
@@ -89,8 +89,6 @@ const absoluteImageUrl = post.data.image
             src={post.data.image}
             alt={post.data.imageAlt || post.data.title}
             class="post-featured-image"
-            width="900"
-            height="500"
           />
           <div class="post-image-overlay"></div>
         </div>
@@ -156,7 +154,7 @@ const absoluteImageUrl = post.data.image
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
-      border: 1px solid #BB1919; /* BBC Red */
+      border: 1px solid #BB1919;
       border-radius: 4px;
       background: #FFFFFF;
       color: #BB1919;
@@ -191,10 +189,10 @@ const absoluteImageUrl = post.data.image
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
-      border: 1px solid #E0E0E0; /* BBC's light gray */
+      border: 1px solid #E0E0E0;
       border-radius: 4px;
       background: #FFFFFF;
-      color: #141414; /* BBC's primary text */
+      color: #141414;
       font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
       font-size: 0.875rem;
       font-weight: 500;
@@ -204,7 +202,7 @@ const absoluteImageUrl = post.data.image
     }
 
     .share-button:hover {
-      background: #F6F6F6; /* BBC's secondary background */
+      background: #F6F6F6;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
@@ -220,17 +218,16 @@ const absoluteImageUrl = post.data.image
       fill: currentColor;
     }
 
-    /* Platform-specific hover colors */
     .share-button.twitter:hover {
-      color: #1DA1F2; /* Twitter blue */
+      color: #1DA1F2;
     }
 
     .share-button.linkedin:hover {
-      color: #0077B5; /* LinkedIn blue */
+      color: #0077B5;
     }
 
     .share-button.facebook:hover {
-      color: #1877F2; /* Facebook blue */
+      color: #1877F2;
     }
 
     @media (prefers-reduced-motion: reduce) {
