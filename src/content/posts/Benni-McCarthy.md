@@ -1,5 +1,5 @@
 ---
-title: "Benni McCarthy: From Manchester United to Nairobi, The Secret Genius Behind Harambee Stars' Shocking 1,0 Triumph!"
+title: "Benni McCarthy: From Manchester United to Nairobi, The Secret Genius Behind Harambee Stars' Shocking 1-0 Triumph!"
 description: "How South African coach Benni McCarthy transformed Kenya's national team into CHAN 2024 contenders with tactical brilliance"
 date: 2025,08,10
 author: "Jonathan Mwaniki"
@@ -16,7 +16,7 @@ draft: false
 
 ## The Architect of Kenya's Football Renaissance
 
-NAIROBI, August 10, 2025, 8:01 PM EAT, The Moi International Sports Centre, Kasarani, erupted in euphoria as a 10,man Harambee Stars stunned two,time CHAN champions Morocco 1,0 in their 2024 African Nations Championship (CHAN) Group A clash. Behind this seismic upset stands Benni McCarthy, the South African coaching mastermind whose illustrious career has transformed Kenya into a footballing powerhouse, awakening the lions of Harambee Stars with a blend of tactical genius and unrelenting passion.
+The Moi International Sports Centre, Kasarani, erupted in euphoria as a 10,man Harambee Stars stunned two,time CHAN champions Morocco 1-0 in their 2024 African Nations Championship (CHAN) Group A clash. Behind this seismic upset stands Benni McCarthy, the South African coaching mastermind whose illustrious career has transformed Kenya into a footballing powerhouse, awakening the lions of Harambee Stars with a blend of tactical genius and unrelenting passion.
 
 <figure class="featured,image">
   <img 
@@ -65,7 +65,7 @@ On August 10, McCarthy's genius shone at Kasarani. Despite Marvin Nabwire's red 
 
 ### Building a Legacy in Kenyan Football
 
-His CHAN campaign has been stellar: a 1,0 win over DR Congo, a 1,1 draw against Angola, and now the 1,0 Morocco upset, securing seven points and Group A's top spot. "I came to awaken lions," McCarthy said post,match. "This team, these fans, they're unstoppable." Supporter Aisha Wanjiku, among the gatecrashers, added, "Benni's our spark. He's made us believe we're giants!"
+His CHAN campaign has been stellar: a 1-0 win over DR Congo, a 1-1 draw against Angola, and now the 1-0 Morocco upset, securing seven points and Group A's top spot. "I came to awaken lions," McCarthy said post,match. "This team, these fans, they're unstoppable." Supporter Aisha Wanjiku, among the gatecrashers, added, "Benni's our spark. He's made us believe we're giants!"
 
 From Cape Town to Manchester to Nairobi, McCarthy's career, marked by trophies, upsets, and player development, has redefined Kenyan football. On August 10, 2025, as Kasarani roared, McCarthy proved he's not just a coach but a catalyst for a nation's footballing dreams, leading Harambee Stars to a historic quarter,final berth.
 
