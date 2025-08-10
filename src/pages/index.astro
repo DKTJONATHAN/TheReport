@@ -1,15 +1,16 @@
 ---
-// src/pages/index.astro
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// Get ALL posts sorted by date (newest first), ignoring featured status
+// Get all posts sorted by date (newest first)
 const allPosts = (await getCollection('posts'))
-  .sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// Get unique categories
+const categories = [...new Set(allPosts.map(post => post.data.category))].filter(Boolean);
 
 // Get the most recent post for featured display
 const featuredPost = allPosts[0];
-const remainingPosts = allPosts.slice(1);
 ---
 
 <Layout 
@@ -90,7 +91,7 @@ const remainingPosts = allPosts.slice(1);
                 <h2 class="section-title">Top Story</h2>
                 <article class="featured-post">
                     <a 
-                        href={`https://www.jonathanmwaniki.co.ke/posts/${featuredPost.slug}`} 
+                        href={`/posts/${featuredPost.slug}`} 
                         class="featured-link"
                         aria-label={`Read breaking story: ${featuredPost.data.title}`}
                     >
@@ -134,56 +135,61 @@ const remainingPosts = allPosts.slice(1);
             </section>
         )}
         
-        <!-- Other Posts Grid -->
-        {remainingPosts.length > 0 && (
-            <section class="posts-section" aria-label="More News Stories">
-                <h2 class="section-title">More News & Updates</h2>
-                <div class="posts-grid">
-                    {remainingPosts.map(post => (
-                        <article class="post-card">
-                            <a 
-                                href={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`} 
-                                class="post-link"
-                                aria-label={`Read article: ${post.data.title}`}
-                            >
-                                <div class="post-image-container">
-                                    <img
-                                        src={post.data.image}
-                                        alt={post.data.imageAlt || post.data.title}
-                                        class="post-image"
-                                        loading="lazy"
-                                        width="400"
-                                        height="240"
-                                    />
-                                </div>
-                                <div class="post-content">
-                                    <div class="post-meta">
-                                        <span class="post-category">{post.data.category}</span>
-                                        <time class="post-date" datetime={post.data.date}>
-                                            {new Date(post.data.date).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
-                                        </time>
-                                    </div>
-                                    <h3 class="post-title">{post.data.title}</h3>
-                                    <p class="post-excerpt">{post.data.description}</p>
-                                    <div class="post-footer">
-                                        <span class="read-more">
-                                            Read Article
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                            </svg>
-                                        </span>
-                                    </div>
-                                </div>
-                            </a>
-                        </article>
-                    ))}
-                </div>
+        <!-- Category Sections -->
+        {categories.map(category => {
+          const categoryPosts = allPosts
+            .filter(post => post.data.category === category)
+            .slice(0, 3); // Limit to 3 posts per category
+          return categoryPosts.length > 0 ? (
+            <section class="category-section" aria-label={`${category} News`}>
+              <h2 class="section-title">Latest {category} News</h2>
+              <div class="posts-grid">
+                {categoryPosts.map(post => (
+                  <article class="post-card">
+                    <a 
+                      href={`/posts/${post.slug}`} 
+                      class="post-link"
+                      aria-label={`Read article: ${post.data.title}`}
+                    >
+                      {post.data.image && (
+                        <div class="post-image-container">
+                          <img
+                            src={post.data.image}
+                            alt={post.data.imageAlt || post.data.title}
+                            class="post-image"
+                            loading="lazy"
+                            width="400"
+                            height="240"
+                          />
+                        </div>
+                      )}
+                      <div class="post-content">
+                        <div class="post-meta">
+                          <span class="post-category">{post.data.category}</span>
+                          <time class="post-date" datetime={post.data.date}>
+                            {new Date(post.data.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </time>
+                        </div>
+                        <h3 class="post-title">{post.data.title}</h3>
+                        {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
+                        <div class="post-footer">
+                          <span class="read-more">Read Article</span>
+                        </div>
+                      </div>
+                    </a>
+                  </article>
+                ))}
+              </div>
+              <p class="see-more">
+                <a href={`/category/${category.toLowerCase()}`} title={`More ${category} News Kenya`}>See more {category} stories</a>
+              </p>
             </section>
-        )}
+          ) : null;
+        })}
 
         {allPosts.length === 0 && (
             <div class="empty-state">
@@ -288,7 +294,6 @@ const remainingPosts = allPosts.slice(1);
             margin: 2rem auto;
         }
 
-        /* Constrain ad content to prevent overflow */
         .ad-container iframe {
             max-width: 468px;
             max-height: 60px;
@@ -463,8 +468,8 @@ const remainingPosts = allPosts.slice(1);
             transform: translateX(3px);
         }
 
-        /* Posts Grid */
-        .posts-section {
+        /* Category Section */
+        .category-section {
             margin: 4rem 0;
         }
 
@@ -530,8 +535,8 @@ const remainingPosts = allPosts.slice(1);
         }
 
         .post-category {
-            background: #f1f5f9;
-            color: #475569;
+            background: #dc2626;
+            color: white;
             padding: 0.25rem 0.6rem;
             border-radius: 15px;
             font-size: 0.75rem;
@@ -568,25 +573,31 @@ const remainingPosts = allPosts.slice(1);
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: #f8fafc;
-            color: #374151;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            color: #dc2626;
             font-size: 0.875rem;
             font-weight: 500;
             transition: all 0.3s ease;
         }
 
         .read-more:hover {
-            background: #dc2626;
-            color: white;
-            border-color: #dc2626;
+            color: #b91c1c;
         }
 
-        .read-more svg {
-            width: 14px;
-            height: 14px;
+        .see-more {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .see-more a {
+            color: #dc2626;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .see-more a:hover {
+            color: #b91c1c;
+            text-decoration: underline;
         }
 
         /* Empty State */
@@ -657,7 +668,8 @@ const remainingPosts = allPosts.slice(1);
 
         /* Focus styles for keyboard navigation */
         .featured-link:focus,
-        .post-link:focus {
+        .post-link:focus,
+        .see-more a:focus {
             outline: 2px solid #dc2626;
             outline-offset: 2px;
         }
