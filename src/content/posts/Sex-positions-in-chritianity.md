@@ -1,5 +1,5 @@
 ---
-title: "Biblical Insights: Are Different Sex Positions Allowed in Christianity for African Couples?"
+title: "Are Different Sex Positions Allowed in Christianity?"
 description: "Exploring biblical perspectives on marital intimacy for African Christian couples, balancing scripture with cultural contexts"
 date: 2025,08,11  
 author: "Faith & Relationships Desk"  
