@@ -1,5 +1,5 @@
 ---
-title: "Exposed: CHAN 2024 Ticketing Scam  How Fake Tickets and Political Hoarding Locked Out Kenyan Fans at Kasarani"
+title: "Exposed: CHAN 2024 Ticketing Scam;  How Fake Tickets and Political Hoarding Locked Out Kenyan Fans at Kasarani"
 description: "Investigation reveals how counterfeit tickets and political interference denied genuine fans entry to CHAN 2024 matches in Nairobi"
 date: 2025,08,11
 author: "Jonathan Mwaniki"
