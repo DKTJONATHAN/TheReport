@@ -4,12 +4,14 @@ import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
-  // YOUR EXISTING CONFIG (unchanged)
   site: 'https://jonathanmwaniki.co.ke',
   output: 'server',
   adapter: vercel({
-    webAnalytics: {
-      enabled: false
+    webAnalytics: { enabled: false },
+    runtime: 'nodejs18.x', // Explicit runtime declaration
+    functions: {
+      // Fixes the invalid runtime error
+      'render/*': { memory: 3008, maxDuration: 30 }
     }
   }),
   integrations: [
@@ -19,11 +21,9 @@ export default defineConfig({
   markdown: {
     syntaxHighlight: 'prism'
   },
-
-  // ONLY NEW ADDITION (fixes build error)
   vite: {
     build: {
-      minify: 'esbuild' // Uses built-in esbuild instead of missing terser
+      minify: 'esbuild' // Ensures no terser dependency needed
     }
   }
 });
