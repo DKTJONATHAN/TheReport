@@ -14,7 +14,7 @@ draft: false
 
 <div class="article,content">
 
-## NAIROBI, Kenya – The Safety of Money Market Funds
+## The Safety of Money Market Funds
 
 Money market funds (MMFs) have become the investment vehicle of choice for risk-averse Kenyans, with assets under management growing 6% to KES 148 billion in Q1 2025. But as digital platforms like Safaricom's Mali and Ziidi funds attract first-time investors, questions about their true safety persist. This investigation examines MMF safeguards, regulatory frameworks, and hidden risks through exclusive 2025 data from Kenya's Capital Markets Authority (CMA), revealing why these funds dominate 64% of collective investment schemes despite lacking deposit insurance.
 
