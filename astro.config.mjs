@@ -1,14 +1,12 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import node from '@astrojs/node'; // Add this
+import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
-  output: 'server', // Enable SSR
-  adapter: node({
-    mode: 'standalone' // For Vercel deployment
-  }),
+  output: 'server',
+  adapter: vercel(),
   integrations: [
     mdx(),
     sitemap()
@@ -17,10 +15,8 @@ export default defineConfig({
     syntaxHighlight: 'prism'
   },
   vite: {
-    build: {
-      rollupOptions: {
-        external: ['googleapis'] // Prevent bundling issues
-      }
+    ssr: {
+      noExternal: ['googleapis']
     }
   }
 });
