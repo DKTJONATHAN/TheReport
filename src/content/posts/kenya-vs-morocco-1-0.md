@@ -1,5 +1,5 @@
 ---
-title: "10,Man Harambee Stars Stun Morocco in CHAN 2024 Thriller!"
+title: "10-Man Harambee Stars Stun Morocco in CHAN 2024 Thriller!"
 description: "Kenya's national team overcomes red card to defeat Morocco 1,0 in electrifying CHAN 2024 match at packed Kasarani Stadium"
 date: 2025,08,10
 author: "Jonathan Mwaniki"
