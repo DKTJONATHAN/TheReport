@@ -6,17 +6,16 @@ import vercel from '@astrojs/vercel/serverless';
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    webAnalytics: {
+      enabled: false
+    }
+  }),
   integrations: [
     mdx(),
     sitemap()
   ],
   markdown: {
     syntaxHighlight: 'prism'
-  },
-  vite: {
-    ssr: {
-      noExternal: ['googleapis']
-    }
   }
 });
