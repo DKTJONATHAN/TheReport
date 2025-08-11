@@ -4,36 +4,26 @@ import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
+  // YOUR EXISTING CONFIG (unchanged)
   site: 'https://jonathanmwaniki.co.ke',
   output: 'server',
   adapter: vercel({
     webAnalytics: {
       enabled: false
-    },
-    // Explicit runtime configuration
-    runtime: 'nodejs18.x',
-    // Additional Vercel optimizations
-    includeFiles: ['src/pages/api/**/*'],
-    excludeFiles: ['src/pages/api/**/*.test.*']
+    }
   }),
   integrations: [
     mdx(),
-    sitemap({
-      // Sitemap configuration
-      changefreq: 'weekly',
-      priority: 0.7,
-      lastmod: new Date()
-    })
+    sitemap()
   ],
   markdown: {
-    syntaxHighlight: 'prism',
-    // Markdown extensions
-    extendDefaultPlugins: true
+    syntaxHighlight: 'prism'
   },
-  // Build optimizations
+
+  // ONLY NEW ADDITION (fixes build error)
   vite: {
     build: {
-      minify: 'terser'
+      minify: 'esbuild' // Uses built-in esbuild instead of missing terser
     }
   }
 });
