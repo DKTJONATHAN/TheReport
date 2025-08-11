@@ -62,12 +62,12 @@ const getOptimizedTitle = (title, category) => {
   };
   
   const categoryTag = categoryKeywords[category?.toLowerCase()] || 'Breaking Kenya News';
-  return `${title} | ${categoryTag} | Jonathan Mwaniki`;
+  return `${title || 'Untitled'} | ${categoryTag} | Jonathan Mwaniki`;
 };
 
 // Enhanced description for SEO
 const getOptimizedDescription = (description, category, title) => {
-  const baseDesc = description || title;
+  const baseDesc = description || title || 'Untitled';
   const categoryContext = {
     'politics': 'Latest political developments and government updates from Kenya.',
     'entertainment': 'Celebrity news, entertainment gossip, and showbiz updates from Kenya.',
@@ -92,19 +92,19 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
   image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
   meta={[
-    { name: 'og:title', content: `${post.data.title} - Breaking Kenya News` },
+    { name: 'og:title', content: `${post.data.title || 'Untitled'} - Breaking Kenya News` },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
     { name: 'og:url', content: `https://www.jonathanmwaniki.co.ke/posts/${post.slug}` },
     { name: 'og:image', content: absoluteImageUrl },
-    { name: 'og:image:alt', content: post.data.imageAlt || `${post.data.title} - Kenya News` },
+    { name: 'og:image:alt', content: post.data.imageAlt || `${post.data.title || 'Untitled'} - Kenya News` },
     { name: 'og:site_name', content: "Jonathan Mwaniki - Kenya News" },
     { name: 'og:locale', content: 'en_KE' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: `${post.data.title} - Kenya News Today` },
+    { name: 'twitter:title', content: `${post.data.title || 'Untitled'} - Kenya News Today` },
     { name: 'twitter:description', content: optimizedDescription },
     { name: 'twitter:image', content: absoluteImageUrl },
-    { name: 'twitter:image:alt', content: post.data.imageAlt || `${post.data.title} - Breaking Kenya News` },
+    { name: 'twitter:image:alt', content: post.data.imageAlt || `${post.data.title || 'Untitled'} - Breaking Kenya News` },
     { name: 'twitter:site', content: '@maestropuns' },
     { name: 'twitter:creator', content: '@maestropuns' },
     { name: 'keywords', content: competitiveKeywords },
@@ -114,9 +114,9 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     { name: 'article:author', content: post.data.author || 'Jonathan Mwaniki' },
     { name: 'article:published_time', content: post.data.date },
     { name: 'article:modified_time', content: post.data.updatedDate || post.data.date },
-    { name: 'article:section', content: post.data.category },
+    { name: 'article:section', content: post.data.category || 'Uncategorized' },
     { name: 'article:tag', content: (post.data.tags || []).join(', ') },
-    { name: 'news_keywords', content: `Kenya, Nairobi, ${post.data.category}, breaking news, trending` },
+    { name: 'news_keywords', content: `Kenya, Nairobi, ${post.data.category || 'Uncategorized'}, breaking news, trending` },
     { name: 'geo.region', content: 'KE' },
     { name: 'geo.country', content: 'Kenya' },
     { name: 'geo.placename', content: 'Nairobi' },
@@ -130,8 +130,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     {
       "@context": "https://schema.org",
       "@type": "NewsArticle",
-      "headline": "${post.data.title}",
-      "alternativeHeadline": "${post.data.title} - Kenya News Today",
+      "headline": "${post.data.title || 'Untitled'}",
+      "alternativeHeadline": "${post.data.title || 'Untitled'} - Kenya News Today",
       "image": {
         "@type": "ImageObject",
         "url": "${absoluteImageUrl}",
@@ -165,13 +165,13 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         ]
       },
       "description": "${optimizedDescription}",
-      "articleBody": "${post.data.description}",
+      "articleBody": "${post.data.description || 'No description available'}",
       "mainEntityOfPage": {
         "@type": "WebPage",
         "@id": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
       },
       "keywords": "${competitiveKeywords}",
-      "articleSection": "${post.data.category}",
+      "articleSection": "${post.data.category || 'Uncategorized'}",
       "wordCount": "800",
       "isAccessibleForFree": true,
       "hasPart": {
@@ -241,13 +241,13 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "${post.data.category} News Kenya",
-          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category?.toLowerCase()}"
+          "name": "${post.data.category || 'Uncategorized'} News Kenya",
+          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}"
         },
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "${post.data.title}",
+          "name": "${post.data.title || 'Untitled'}",
           "item": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
         }
       ]
@@ -276,8 +276,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     <nav aria-label="Breadcrumb">
       <ol class="breadcrumb">
         <li><a href="/" title="Kenya News Home">Home</a></li>
-        <li><a href="/category/${post.data.category?.toLowerCase()}" title="${post.data.category} News Kenya">${post.data.category}</a></li>
-        <li aria-current="page">${post.data.title}</li>
+        <li><a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>{post.data.category || 'Uncategorized'}</a></li>
+        <li aria-current="page">{post.data.title || 'Untitled'}</li>
       </ol>
     </nav>
 
@@ -298,8 +298,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       <header class="post-header">
         <div class="post-meta">
           <span class="post-category">
-            <a href="/category/${post.data.category?.toLowerCase()}" title="${post.data.category} News Kenya">
-              {post.data.category}
+            <a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+              {post.data.category || 'Uncategorized'}
             </a>
           </span>
           <time class="post-date" datetime={post.data.date} itemprop="datePublished">
@@ -312,7 +312,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           <span class="reading-time">📖 5 min read</span>
         </div>
         
-        <h1 class="post-title" itemprop="headline">{post.data.title}</h1>
+        <h1 class="post-title" itemprop="headline">{post.data.title || 'Untitled'}</h1>
         
         {post.data.description && (
           <p class="post-description" itemprop="description">{post.data.description}</p>
@@ -328,7 +328,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         <div class="post-image-container">
           <img 
             src={post.data.image}
-            alt={post.data.imageAlt || `${post.data.title} - Breaking Kenya News`}
+            alt={post.data.imageAlt || `${post.data.title || 'Untitled'} - Breaking Kenya News`}
             class="post-featured-image"
             loading="lazy"
             itemprop="image"
@@ -365,14 +365,14 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
           <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Kenya News</span>
           <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Nairobi Updates</span>
-          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">{post.data.category}</span>
+          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">{post.data.category || 'Uncategorized'}</span>
           <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Trending Kenya</span>
         </div>
       </div>
 
       <!-- Dynamic Related Articles Section -->
       <section class="related-articles">
-        <h2>More {post.data.category} News & Updates</h2>
+        <h2>More {post.data.category || 'Uncategorized'} News & Updates</h2>
         <ul>
           {
             (await getCollection('posts'))
@@ -381,14 +381,14 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
               .slice(0, 3)
               .map(relatedPost => (
                 <li>
-                  <a href={`/posts/${relatedPost.slug}`} title={`${relatedPost.data.title} - ${post.data.category} News Kenya`}>
+                  <a href={`/posts/${relatedPost.slug}`} title={`${relatedPost.data.title} - ${post.data.category || 'Uncategorized'} News Kenya`}>
                     {relatedPost.data.title}
                   </a>
                 </li>
               ))
           }
         </ul>
-        <p><a href={`/category/${post.data.category?.toLowerCase()}`} title="More {post.data.category} News Kenya">See more {post.data.category} stories</a></p>
+        <p><a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`More ${post.data.category || 'Uncategorized'} News Kenya`}>See more {post.data.category || 'Uncategorized'} stories</a></p>
       </section>
       
       <!-- Newsletter signup for engagement -->
@@ -421,7 +421,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           <p>Enjoyed this article? Share the latest Kenya news with your friends!</p>
           <div class="social-share">
             <a 
-              href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title} - Breaking Kenya News`)}&url=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}&hashtags=KenyaNews,NairobiUpdates,BreakingNews`}
+              href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Breaking Kenya News`)}&url=${encodeURIComponent(`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}&hashtags=KenyaNews,NairobiUpdates,BreakingNews`}
               target="_blank"
               rel="noopener noreferrer"
               class="share-button x"
@@ -463,7 +463,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
             </a>
 
             <a 
-              href={`whatsapp://send?text=${encodeURIComponent(`${post.data.title} - Breaking Kenya News: https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}`}
+              href={`whatsapp://send?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Breaking Kenya News: https://www.jonathanmwaniki.co.ke/posts/${post.slug}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               class="share-button whatsapp"
@@ -1006,6 +1006,10 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           });
         }
       }
+      
+      // Debug category and title values
+      console.log('Category:', `${post.data.category || 'Uncategorized'}`);
+      console.log('Title:', `${post.data.title || 'Untitled'}`);
       
       // Initialize all functionality
       window.addEventListener('scroll', updateReadingProgress);
