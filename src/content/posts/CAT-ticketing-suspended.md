@@ -1,6 +1,6 @@
 ---
 title: "WATCH FROM HOME: CAF Halts Kasarani Ticket Sales Amid Safety Crisis"
-description: "NAIROBI, Kenya – CAF suspends ticket sales for all upcoming matches at Kasarani following alarming safety breaches during Kenya vs Morocco CHAN 2024 match"
+description: "CAF suspends ticket sales for all upcoming matches at Kasarani following alarming safety breaches during Kenya vs Morocco CHAN 2024 match"
 date: 2025,08,11
 author: "Sports Desk"
 image: "https://i.postimg.cc/xdYcGx51/20250810-150617.jpg"
@@ -16,7 +16,7 @@ draft: false
 
 ## NAIROBI, Kenya – Crisis Unfolds at Kasarani
 
-NAIROBI, Kenya – As of 04:38 PM EAT on Monday, August 11, 2025, the Confederation of African Football (CAF) has suspended ticket sales for all upcoming matches at the Moi International Sports Centre, Kasarani, following a series of alarming safety breaches during the recent Kenya vs. Morocco match in the CHAN 2024 tournament. This decisive action, announced by sports journalist Carol Radull on X, comes in response to a broken gate, unauthorized fan entries, overcrowding, media centre invasions, and the deployment of tear gas, casting a shadow over the upcoming Kenya vs. Zambia fixture scheduled for next Sunday. With CAF launching a thorough investigation, football enthusiasts are advised to watch from home as the situation unfolds, raising concerns about Kenya's readiness to co-host the 2027 Africa Cup of Nations.
+The Confederation of African Football (CAF) has suspended ticket sales for all upcoming matches at the Moi International Sports Centre, Kasarani, following a series of alarming safety breaches during the recent Kenya vs. Morocco match in the CHAN 2024 tournament. This decisive action, announced by sports journalist Carol Radull on X, comes in response to a broken gate, unauthorized fan entries, overcrowding, media centre invasions, and the deployment of tear gas, casting a shadow over the upcoming Kenya vs. Zambia fixture scheduled for next Sunday. With CAF launching a thorough investigation, football enthusiasts are advised to watch from home as the situation unfolds, raising concerns about Kenya's readiness to co-host the 2027 Africa Cup of Nations.
 
 <figure class="featured,image">
   <img 
