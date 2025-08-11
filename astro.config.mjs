@@ -9,13 +9,31 @@ export default defineConfig({
   adapter: vercel({
     webAnalytics: {
       enabled: false
-    }
+    },
+    // Explicit runtime configuration
+    runtime: 'nodejs18.x',
+    // Additional Vercel optimizations
+    includeFiles: ['src/pages/api/**/*'],
+    excludeFiles: ['src/pages/api/**/*.test.*']
   }),
   integrations: [
     mdx(),
-    sitemap()
+    sitemap({
+      // Sitemap configuration
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date()
+    })
   ],
   markdown: {
-    syntaxHighlight: 'prism'
+    syntaxHighlight: 'prism',
+    // Markdown extensions
+    extendDefaultPlugins: true
+  },
+  // Build optimizations
+  vite: {
+    build: {
+      minify: 'terser'
+    }
   }
 });
