@@ -1,50 +1,67 @@
+import type { APIRoute } from 'astro';
 import { google } from 'googleapis';
-import { parseStringPromise } from 'xml2js';
 
-export const POST = async () => {
+export const POST: APIRoute = async () => {
   try {
-    // Fetch sitemap
+    // 1. Get fresh sitemap content
     const sitemapUrl = 'https://jonathanmwaniki.co.ke/sitemap-index.xml';
-    const response = await fetch(sitemapUrl);
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch sitemap' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    const sitemapXml = await response.text();
-    const parsed = await parseStringPromise(sitemapXml);
+    const sitemapRes = await fetch(sitemapUrl);
+    const sitemapContent = await sitemapRes.text();
 
-    // Extract URLs (handle both sitemapindex and urlset formats)
-    let urls = [];
-    if (parsed.sitemapindex?.sitemap) {
-      urls = parsed.sitemapindex.sitemap.map((entry) => entry.loc[0]);
-    } else if (parsed.urlset?.url) {
-      urls = parsed.urlset.url.map((entry) => entry.loc[0]);
-    }
-
-    if (!urls.length) {
-      return new Response(JSON.stringify({ error: 'No URLs found in sitemap' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Process URLs here (add your logic for what to do with the URLs)
-    // Example: submit to Google Search Console
-    // const auth = new google.auth.GoogleAuth({...});
-    // const searchconsole = google.searchconsole({...});
-    // await searchconsole.urlInspection.index.inspect({...});
-
-    return new Response(JSON.stringify({ success: true, urls }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    // 2. Submit to Google Search Console
+    const auth = new google.auth.GoogleAuth({
+      credentials: JSON.parse(import.meta.env.GOOGLE_CREDENTIALS),
+      scopes: ['https://www.googleapis.com/auth/webmasters']
     });
+
+    const searchconsole = google.searchconsole({ 
+      version: 'v1', 
+      auth: await auth.getClient() 
+    });
+
+    // Delete old sitemap first
+    await searchconsole.sitemaps.delete({
+      siteUrl: 'https://jonathanmwaniki.co.ke',
+      feedpath: '/sitemap-index.xml'
+    }).catch(() => {}); // Ignore if not exists
+
+    // Submit new sitemap
+    await searchconsole.sitemaps.submit({
+      siteUrl: 'https://jonathanmwaniki.co.ke',
+      feedpath: '/sitemap-index.xml'
+    });
+
+    // 3. Find today's new URLs (example logic)
+    const today = new Date().toISOString().split('T')[0];
+    const newUrls = extractUrlsFromSitemap(sitemapContent)
+      .filter(url => url.includes(today));
+
+    // 4. Index new URLs
+    if (newUrls.length > 0) {
+      await fetch(`${import.meta.env.SITE_URL}/api/indexing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: newUrls.slice(0, 50) }) // Google's daily limit
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      sitemap_updated: true,
+      new_urls_indexed: newUrls.length
+    }));
+
   } catch (error) {
-    console.error('Error submitting sitemap:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({
+      error: 'Submission failed',
+      details: error.message
+    }), { status: 500 });
   }
 };
+
+// Helper function (add to separate utils file if preferred)
+function extractUrlsFromSitemap(xmlContent: string): string[] {
+  const urlPattern = /<loc>(.*?)<\/loc>/g;
+  const matches = xmlContent.match(urlPattern) || [];
+  return matches.map(match => match.replace(/<\/?loc>/g, ''));
+}
