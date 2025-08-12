@@ -4,16 +4,40 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
+  // Get unique tags and categories
   const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))];
-  return allTags.map(tag => ({
-    params: { tag: tag.toLowerCase().replace(/\s+/g, '-') },
-    props: { tag },
-  }));
+  const allCategories = [...new Set(posts.map(post => post.data.category || 'Uncategorized'))];
+  
+  // Generate tag routes, avoiding exact matches with categories
+  const tagPaths = allTags.map(tag => {
+    const tagSlug = tag.toLowerCase().replace(/\s+/g, '-');
+    // Check if tag matches a category slug
+    const isCategory = allCategories
+      .map(cat => cat.toLowerCase().replace(/\s+/g, '-'))
+      .includes(tagSlug);
+    
+    // If tag matches a category, redirect to category page or use a unique tag slug
+    return {
+      params: { tag: tagSlug },
+      props: { 
+        tag, 
+        redirectToCategory: isCategory ? `/category/${tagSlug}` : null 
+      },
+    };
+  });
+
+  return tagPaths;
 }
 
-const { tag } = Astro.props;
+const { tag, redirectToCategory } = Astro.props;
+
+// If tag matches a category, redirect to the category page
+if (redirectToCategory) {
+  return Astro.redirect(redirectToCategory);
+}
+
 const posts = (await getCollection('posts'))
-  .filter(post => (post.data.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-')).includes(tag))
+  .filter(post => (post.data.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-')).includes(tag.toLowerCase().replace(/\s+/g, '-')))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
 // Get unique categories for navigation
@@ -23,7 +47,7 @@ const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategoriz
 // SEO optimizations
 const optimizedTitle = `${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News | Jonathan Mwaniki`;
 const optimizedDescription = `Explore the latest ${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} news and updates from Kenya. Stay informed with breaking stories, trends, and insights from Nairobi and beyond.`;
-const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tag}`;
+const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`;
 const competitiveKeywords = [
   'Kenya news today',
   'breaking news Kenya',
@@ -81,7 +105,7 @@ const competitiveKeywords = [
           "@type": "ListItem",
           "position": 2,
           "name": "${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News Kenya",
-          "item": "https://www.jonathanmwaniki.co.ke/tags/${tag}"
+          "item": "https://www.jonathanmwaniki.co.ke/tags/${tag.toLowerCase().replace(/\s+/g, '-')}"
         }
       ]
     }
@@ -116,7 +140,7 @@ const competitiveKeywords = [
         {categories.map(category => (
           <li>
             <a 
-              href={`/category/${category.toLowerCase()}`} 
+              href={`/category/${category.toLowerCase().replace(/\s+/g, '-')}`} 
               title={`${category} News Kenya`} 
               style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
             >
@@ -136,35 +160,40 @@ const competitiveKeywords = [
 
     <section class="tag-posts">
       <h1>{tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News</h1>
-      <p>Latest updates and stories related to {tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} in Kenya.</p>
-      
-      <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
-        {posts.map(post => (
-          <li>
-            <a 
-              href={`/posts/${post.slug}`} 
-              title={`${post.data.title} - Jonathan Mwaniki`} 
-              style="text-decoration: none; color: #2d3748; font-weight: 600;"
-            >
-              {post.data.title || 'Untitled'}
-            </a>
-            <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
-              {post.data.description || 'No description available'}
-            </p>
-            <span style="color: #666; font-size: 0.9rem;">
-              <a 
-                href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} 
-                title={`${post.data.category || 'Uncategorized'} News Kenya`}
-                style="color: #BB1919; text-decoration: none;"
-              >
-                {post.data.category || 'Uncategorized'}
-              </a>
-              &nbsp;•&nbsp;
-              {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {posts.length > 0 ? (
+        <>
+          <p>Latest updates and stories related to {tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} in Kenya.</p>
+          <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
+            {posts.map(post => (
+              <li>
+                <a 
+                  href={`/posts/${post.slug}`} 
+                  title={`${post.data.title} - Jonathan Mwaniki`} 
+                  style="text-decoration: none; color: #2d3748; font-weight: 600;"
+                >
+                  {post.data.title || 'Untitled'}
+                </a>
+                <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
+                  {post.data.description || 'No description available'}
+                </p>
+                <span style="color: #666; font-size: 0.9rem;">
+                  <a 
+                    href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} 
+                    title={`${post.data.category || 'Uncategorized'} News Kenya`}
+                    style="color: #BB1919; text-decoration: none;"
+                  >
+                    {post.data.category || 'Uncategorized'}
+                  </a>
+                  &nbsp;•&nbsp;
+                  {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>No posts found for this tag. Explore other <a href="/categories" title="Kenya News Categories">categories</a> or check back for updates.</p>
+      )}
     </section>
 
     <!-- Newsletter Signup -->
@@ -401,6 +430,10 @@ const competitiveKeywords = [
         });
       }
     }
+
+    // Debug tag and posts
+    console.log('Tag:', `${tag}`);
+    console.log('Posts found:', ${posts.length});
 
     window.addEventListener('load', handleNewsletterSignup);
   </script>
