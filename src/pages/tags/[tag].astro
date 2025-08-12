@@ -16,7 +16,7 @@ export async function getStaticPaths() {
       .map(cat => cat.toLowerCase().replace(/\s+/g, '-'))
       .includes(tagSlug);
     
-    // If tag matches a category, redirect to category page or use a unique tag slug
+    // If tag matches a category, redirect to category page
     return {
       params: { tag: tagSlug },
       props: { 
@@ -432,8 +432,8 @@ const competitiveKeywords = [
     }
 
     // Debug tag and posts
-    console.log('Tag:', `${tag}`);
-    console.log('Posts found:', ${posts.length});
+    console.log('Tag:', '%%tag%%');
+    console.log('Posts found:', '%%postsLength%%');
 
     window.addEventListener('load', handleNewsletterSignup);
   </script>
