@@ -26,7 +26,7 @@ Kenya's most decorated football club has launched an unprecedented transfer blit
     width="1200"
     height="675"
   />
-  <figcaption>Gor Mahia's new signings unveiled at Nyayo Stadium ahead of 2025/26 season</figcaption>
+  <figcaption>Gor Mahia</figcaption>
 </figure>
 
 ### The Wake-Up Call: 2024/25 Season Review
@@ -41,7 +41,7 @@ The Green Army's disappointing campaign saw them finish second with 59 points (1
     width="800"
     height="450"
   />
-  <figcaption>New coach Sinisa Mihic conducts tactical drills during preseason</figcaption>
+  <figcaption>Gor Mahia</figcaption>
 </figure>
 
 ### Transfer Revolution: National Team Talent Influx
@@ -61,7 +61,7 @@ On August 12, 2025, the club announced five key signings:
     width="800"
     height="450"
   />
-  <figcaption>New signings Lewis Bandi and Michael Kibwage in training</figcaption>
+  <figcaption>.</figcaption>
 </figure>
 
 ### Financial Firepower: SportPesa's Mega Deal
@@ -86,7 +86,7 @@ The Croatian gaffer is implementing:
     width="800"
     height="450"
   />
-  <figcaption>Technical staff briefing players on new tactical approach</figcaption>
+  <figcaption>Sirkal</figcaption>
 </figure>
 
 ### Season Outlook: Road to Redemption
