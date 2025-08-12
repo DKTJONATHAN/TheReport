@@ -3,9 +3,9 @@ title: "Gor Mahia's Bold Transfer Blitz: Signing Harambee Stars Talent to Domina
 description: "Kenya's most decorated club launches aggressive rebuild after trophyless season, signing national team stars ahead of new campaign"
 date: 2025,08,12
 author: "Sports Desk"
-image: "https://i.postimg.cc/TwQ1Ns79/20250812-193204.jpg"
-imageCaption: "Gor Mahia players during preseason training"
-imageAlt: "Gor Mahia FC squad training session"
+image: "https://i.postimg.cc/hGWXXTQ9/20250812-193333.jpg"
+imageCaption: "Gor Mahia's new signings unveiled at Nyayo Stadium"
+imageAlt: "Gor Mahia FC 2025/26 new players presentation"
 category: "Sports"
 tags: ["Gor Mahia", "FKF Premier League", "Kenya Football", "Harambee Stars", "SportPesa"]
 featured: true
@@ -20,32 +20,48 @@ Kenya's most decorated football club has launched an unprecedented transfer blit
 
 <figure class="featured,image">
   <img 
-    src="https://i.postimg.cc/TwQ1Ns79/20250812-193204.jpg" 
-    alt="."
+    src="https://i.postimg.cc/hGWXXTQ9/20250812-193333.jpg" 
+    alt="Gor Mahia squad"
     loading="lazy"
     width="1200"
     height="675"
   />
-  <figcaption>Gor Mahia players undergoing intense preseason preparations</figcaption>
+  <figcaption>Gor Mahia's new signings unveiled at Nyayo Stadium ahead of 2025/26 season</figcaption>
 </figure>
 
 ### The Wake-Up Call: 2024/25 Season Review
 
 The Green Army's disappointing campaign saw them finish second with 59 points (16W, 11D, 7L), six points behind champions Kenya Police FC. Critical stumbles included a 2-1 loss to Nairobi City Stars and a 0-0 draw against Murang'a Seal.
 
-### Transfer Revolution: National Team Talent Influx
-
-On August 12, 2025, the club announced five key signings from rival FKFPL clubs, bolstering all areas of the squad. The new arrivals bring both domestic league experience and national team pedigree.
-
 <figure class="content,image">
   <img 
-    src="https://i.postimg.cc/hGWXXTQ9/20250812-193333.jpg" 
-    alt="Gor Mahia new signings"
+    src="https://i.postimg.cc/TwQ1Ns79/20250812-193204.jpg" 
+    alt="Gor Mahia"
     loading="lazy"
     width="800"
     height="450"
   />
-  <figcaption>Gor Mahia's new recruits prepare for the upcoming season</figcaption>
+  <figcaption>New coach Sinisa Mihic conducts tactical drills during preseason</figcaption>
+</figure>
+
+### Transfer Revolution: National Team Talent Influx
+
+On August 12, 2025, the club announced five key signings:
+- Lewis Bandi (Defender from AFC Leopards)
+- Michael Kibwage (Defender from Tusker FC) 
+- Bryne Omondi (Goalkeeper from Bandari FC)
+- Siraj Mohammed (Defender from Bandari FC)
+- Felix Oluoch (Forward from Posta Rangers)
+
+<figure class="content,image">
+  <img 
+    src="https://i.postimg.cc/658qzYdr/20250812-193157.jpg" 
+    alt="Gor Mahia new players"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>New signings Lewis Bandi and Michael Kibwage in training</figcaption>
 </figure>
 
 ### Financial Firepower: SportPesa's Mega Deal
@@ -64,13 +80,13 @@ The Croatian gaffer is implementing:
 
 <figure class="content,image">
   <img 
-    src="https://i.postimg.cc/658qzYdr/20250812-193157.jpg" 
-    alt="Gor Mahia defensive players"
+    src="https://i.postimg.cc/kgdC8cwX/20250812-193153.jpg" 
+    alt="Gor Mahia"
     loading="lazy"
     width="800"
     height="450"
   />
-  <figcaption>New defensive reinforcements in action during training</figcaption>
+  <figcaption>Technical staff briefing players on new tactical approach</figcaption>
 </figure>
 
 ### Season Outlook: Road to Redemption
@@ -79,17 +95,6 @@ With the August 23 kickoff approaching, Gor Mahia are bookmakers' title favorite
 - Strongest squad on paper
 - Renewed financial backing
 - CAF Confederation Cup ambitions
-
-<figure class="content,image">
-  <img 
-    src="https://i.postimg.cc/kgdC8cwX/20250812-193153.jpg" 
-    alt="Gor Mahia team"
-    loading="lazy"
-    width="800"
-    height="450"
-  />
-  <figcaption>Technical staff implementing new tactical systems</figcaption>
-</figure>
 
 Key fixtures:
 - September 7: Mashemeji Derby vs AFC Leopards  
