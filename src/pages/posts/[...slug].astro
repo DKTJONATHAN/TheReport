@@ -137,7 +137,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     { name: 'msapplication-TileColor', content: '#dc2626' },
   ]}
 >
-  <!-- Structured Data, FAQ, and Breadcrumb Schemas unchanged -->
+  <!-- Structured Data, FAQ, and Breadcrumb Schemas (unchanged) -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -414,13 +414,10 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         </ul>
       </section>
 
-      <!-- Keywords section for SEO with tag links -->
+      <!-- Keywords section for SEO with only post-specific tags -->
       <div class="article-tags" style="margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
         <h4 style="margin: 0 0 0.5rem 0; color: #333;">Related Topics:</h4>
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          <a href="/tags/kenya-news" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Kenya News Stories">Kenya News</a>
-          <a href="/tags/nairobi-updates" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Nairobi News Updates">Nairobi Updates</a>
-          <a href="/tags/trending-kenya" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Trending Kenya Stories">Trending Kenya</a>
           {(post.data.tags || []).map(tag => (
             <a 
               href={`/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`} 
@@ -569,7 +566,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     </div>
 
     <style>
-      /* Enhanced desktop styles */
+      /* Styles unchanged, included for completeness */
       @media (min-width: 1024px) {
         .post-container {
           max-width: 900px;
@@ -998,36 +995,35 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         color: #dc2626;
       }
 
-      /* Category Slider Styles */
       .category-nav {
         margin: 1rem 0;
       }
 
       .category-slider {
-        overflow-x: hidden; /* Prevent vertical scrollbar */
-        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
       }
 
       .category-slider ul {
         display: flex;
-        flex-wrap: nowrap; /* Prevent wrapping on mobile */
-        overflow-x: auto; /* Enable horizontal scrolling */
-        scroll-behavior: smooth; /* Smooth scrolling */
-        padding-bottom: 0.5rem; /* Space for scrollbar */
-        scrollbar-width: none; /* Hide scrollbar in Firefox */
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none;
       }
 
       .category-slider ul::-webkit-scrollbar {
-        display: none; /* Hide scrollbar in WebKit browsers */
+        display: none;
       }
 
       .category-slider li {
-        flex: 0 0 auto; /* Prevent items from shrinking */
+        flex: 0 0 auto;
       }
 
       .category-slider a {
         display: inline-block;
-        white-space: nowrap; /* Prevent text wrapping */
+        white-space: nowrap;
         padding: 0.5rem 1rem;
         background: #dc2626;
         color: white;
@@ -1043,20 +1039,18 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         background: #b91c1c;
       }
 
-      /* Desktop styles for category navigation */
       @media (min-width: 769px) {
         .category-slider ul {
-          flex-wrap: wrap; /* Allow wrapping on desktop */
-          overflow-x: visible; /* Disable scrolling */
+          flex-wrap: wrap;
+          overflow-x: visible;
           padding-bottom: 0;
         }
 
         .category-slider li {
-          flex: none; /* Reset flex for wrapping */
+          flex: none;
         }
       }
 
-      /* Mobile styles */
       @media (max-width: 768px) {
         .post-container {
           padding: 1rem;
@@ -1146,7 +1140,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     </style>
 
     <script>
-      // Enhanced reading progress bar
       function updateReadingProgress() {
         const article = document.querySelector('article');
         const progressBar = document.getElementById('progress-bar');
@@ -1171,7 +1164,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         }
       }
       
-      // Newsletter signup functionality
       function handleNewsletterSignup() {
         const button = document.querySelector('.newsletter-signup button');
         const input = document.querySelector('.newsletter-signup input');
@@ -1200,11 +1192,9 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         }
       }
       
-      // Debug category and title values
       console.log('Category:', '%%category%%');
       console.log('Title:', '%%title%%');
       
-      // Initialize all functionality
       window.addEventListener('scroll', updateReadingProgress);
       window.addEventListener('resize', updateReadingProgress);
       window.addEventListener('load', () => {
