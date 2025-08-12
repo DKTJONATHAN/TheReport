@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: # Allow all crawling
+Sitemap: https://www.jonathanmwaniki.co.ke/sitemap-0.xml
