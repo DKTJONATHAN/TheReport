@@ -21,7 +21,7 @@ Kenya's most decorated football club has launched an unprecedented transfer blit
 <figure class="featured,image">
   <img 
     src="https://i.postimg.cc/TwQ1Ns79/20250812-193204.jpg" 
-    alt="Gor Mahia training session"
+    alt="."
     loading="lazy"
     width="1200"
     height="675"
@@ -83,7 +83,7 @@ With the August 23 kickoff approaching, Gor Mahia are bookmakers' title favorite
 <figure class="content,image">
   <img 
     src="https://i.postimg.cc/kgdC8cwX/20250812-193153.jpg" 
-    alt="Gor Mahia team strategy session"
+    alt="Gor Mahia team"
     loading="lazy"
     width="800"
     height="450"
