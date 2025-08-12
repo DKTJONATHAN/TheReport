@@ -1,12 +1,11 @@
 ---
-// src/components/Footer.astro
 const currentYear = new Date().getFullYear();
 const socialLinks = [
   { 
-    name: 'Twitter', 
-    url: 'https://twitter.com/jonathanmwaniki', 
-    icon: 'M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84',
-    color: '#1da1f2'
+    name: 'X', 
+    url: 'https://x.com/jonathanmwaniki', 
+    icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
+    color: '#000000' // Updated to black for X branding
   },
   { 
     name: 'LinkedIn', 
@@ -61,31 +60,6 @@ const footerLinks = [
 
 <footer class="site-footer">
   <div class="footer-container">
-    <!-- Newsletter Section -->
-    <div class="footer-newsletter">
-      <div class="newsletter-content">
-        <h3 class="newsletter-title">Stay Updated</h3>
-        <p class="newsletter-description">Get the latest news and insights delivered to your inbox</p>
-        <form class="newsletter-form" action="/subscribe" method="post">
-          <div class="input-group">
-            <input 
-              type="email" 
-              placeholder="Enter your email address" 
-              required 
-              class="newsletter-input"
-              aria-label="Email address for newsletter"
-            />
-            <button type="submit" class="newsletter-button">
-              <span>Subscribe</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-    
     <!-- Main Footer Content -->
     <div class="footer-main">
       <div class="footer-brand">
@@ -152,97 +126,17 @@ const footerLinks = [
   <style>
     /* BBC-Inspired Footer Styles */
     .site-footer {
-      background: #1A1A1A; /* BBC's dark footer background */
+      background: #1A1A1A;
       color: #F5F5F5;
       padding: 2rem 0;
       position: relative;
       font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
     }
 
-    .footer-bg-pattern {
-      display: none; /* Removed decorative pattern */
-    }
-
     .footer-container {
       max-width: 1280px;
       margin: 0 auto;
       padding: 0 1rem;
-    }
-
-    .footer-newsletter {
-      background: #2C2C2C;
-      padding: 1.5rem;
-      border-radius: 4px;
-      margin-bottom: 1.5rem;
-    }
-
-    .newsletter-content {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .newsletter-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #F5F5F5;
-      margin-bottom: 0.75rem;
-    }
-
-    .newsletter-description {
-      font-size: 0.875rem;
-      color: #A1A1A1;
-      margin-bottom: 1rem;
-    }
-
-    .newsletter-form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .input-group {
-      display: flex;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .newsletter-input {
-      flex: 1;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #5E5E5E;
-      border-radius: 4px 0 0 4px;
-      background: #3D3D3D;
-      color: #F5F5F5;
-      font-size: 0.875rem;
-    }
-
-    .newsletter-input:focus {
-      outline: none;
-      border-color: #BB1919; /* BBC Red */
-      box-shadow: 0 0 0 2px rgba(187, 25, 25, 0.2);
-    }
-
-    .newsletter-button {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: 1px solid #BB1919;
-      border-radius: 0 4px 4px 0;
-      background: #BB1919;
-      color: #FFFFFF;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    .newsletter-button:hover {
-      background: #8B0000;
-    }
-
-    .newsletter-button svg {
-      stroke: #FFFFFF;
     }
 
     .footer-main {
@@ -264,7 +158,7 @@ const footerLinks = [
     }
 
     .logo-image {
-      height: 32px; /* BBC logo height */
+      height: 32px;
       width: auto;
     }
 
@@ -272,10 +166,6 @@ const footerLinks = [
       font-size: 0.875rem;
       color: #A1A1A1;
       line-height: 1.5;
-    }
-
-    .footer-stats {
-      display: none; /* Removed stats for BBC's minimalist style */
     }
 
     .footer-links {
@@ -339,10 +229,6 @@ const footerLinks = [
       color: #A1A1A1;
     }
 
-    .tagline {
-      display: none; /* Removed tagline for BBC's clean style */
-    }
-
     .footer-social {
       display: flex;
       align-items: center;
@@ -396,7 +282,8 @@ const footerLinks = [
       }
 
       .footer-links {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr; /* Two columns on mobile */
+        gap: 1rem;
       }
 
       .footer-bottom {
@@ -411,125 +298,88 @@ const footerLinks = [
     }
 
     @media (max-width: 480px) {
-      .footer-newsletter {
-        padding: 1rem;
+      .footer-links {
+        grid-template-columns: 1fr; /* Fallback to single column for very small screens */
+        gap: 0.75rem;
       }
 
-      .newsletter-title {
-        font-size: 1.125rem;
+      .section-title {
+        font-size: 0.875rem;
       }
 
-      .newsletter-input,
-      .newsletter-button {
+      .footer-link {
         font-size: 0.8125rem;
-      }
-
-      .input-group {
-        flex-direction: column;
-      }
-
-      .newsletter-input {
-        border-radius: 4px;
-      }
-
-      .newsletter-button {
-        border-radius: 4px;
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .footer-link,
-      .newsletter-button,
       .back-to-top-button,
       .footer-section {
         transition: none;
       }
     }
   </style>
-</footer>
 
-<script is:inline>
-  // Enhanced Footer Functionality
-  function initFooter() {
-    const backToTopButton = document.querySelector('.back-to-top-button');
-    const newsletterForm = document.querySelector('.newsletter-form');
-    
-    if (backToTopButton) {
-      function toggleBackToTop() {
-        const scrolled = window.scrollY > 300;
-        backToTopButton.style.opacity = scrolled ? '1' : '0.5';
-        backToTopButton.style.pointerEvents = scrolled ? 'auto' : 'auto';
-      }
+  <script is:inline>
+    // Footer Functionality (removed newsletter logic)
+    function initFooter() {
+      const backToTopButton = document.querySelector('.back-to-top-button');
       
-      function scrollToTop() {
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      }
-      
-      backToTopButton.addEventListener('click', scrollToTop);
-      window.addEventListener('scroll', toggleBackToTop);
-      toggleBackToTop();
-    }
-    
-    if (newsletterForm) {
-      newsletterForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = this.querySelector('.newsletter-input').value;
-        const button = this.querySelector('.newsletter-button');
-        const originalText = button.innerHTML;
-        
-        button.innerHTML = '<span>Subscribing...</span>';
-        button.disabled = true;
-        
-        setTimeout(() => {
-          button.innerHTML = '<span>✓ Subscribed!</span>';
-          
-          setTimeout(() => {
-            button.innerHTML = originalText;
-            button.disabled = false;
-            this.reset();
-          }, 2000);
-        }, 1000);
-      });
-    }
-    
-    const socialLinks = document.querySelectorAll('.social-link');
-    socialLinks.forEach(link => {
-      link.addEventListener('click', function() {
-        const platform = this.getAttribute('aria-label');
-        console.log('Social link clicked:', platform);
-      });
-    });
-    
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
+      if (backToTopButton) {
+        function toggleBackToTop() {
+          const scrolled = window.scrollY > 300;
+          backToTopButton.style.opacity = scrolled ? '1' : '0.5';
+          backToTopButton.style.pointerEvents = scrolled ? 'auto' : 'auto';
         }
+        
+        function scrollToTop() {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+        
+        backToTopButton.addEventListener('click', scrollToTop);
+        window.addEventListener('scroll', toggleBackToTop);
+        toggleBackToTop();
+      }
+      
+      const socialLinks = document.querySelectorAll('.social-link');
+      socialLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          const platform = this.getAttribute('aria-label');
+          console.log('Social link clicked:', platform);
+        });
       });
-    }, observerOptions);
+      
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
+        });
+      }, observerOptions);
+      
+      const footerSections = document.querySelectorAll('.footer-section');
+      footerSections.forEach(section => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(20px)';
+        section.style.transition = 'all 0.6s ease';
+        observer.observe(section);
+      });
+    }
     
-    const footerSections = document.querySelectorAll('.footer-section');
-    footerSections.forEach(section => {
-      section.style.opacity = '0';
-      section.style.transform = 'translateY(20px)';
-      section.style.transition = 'all 0.6s ease';
-      observer.observe(section);
-    });
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFooter);
-  } else {
-    initFooter();
-  }
-</script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFooter);
+    } else {
+      initFooter();
+    }
+  </script>
+</footer>
