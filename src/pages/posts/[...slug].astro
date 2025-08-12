@@ -14,6 +14,18 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
+// Fetch all posts for category and tag navigation
+const allPosts = await getCollection('posts');
+
+// Get unique categories
+const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategorized'))];
+
+// Get top 4 categories by post count for footer
+const categoryCounts = categories.map(category => ({
+  name: category,
+  count: allPosts.filter(p => (p.data.category || 'Uncategorized') === category).length,
+})).sort((a, b) => b.count - a.count).slice(0, 4);
+
 const absoluteImageUrl = post.data.image
   ? post.data.image.startsWith('http') 
     ? post.data.image 
@@ -281,6 +293,24 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       </ol>
     </nav>
 
+    <!-- Category Navigation Bar -->
+    <nav class="category-nav" aria-label="Category Navigation">
+      <h3 style="margin: 0.5rem 0; color: #1a202c;">Explore Kenya News Categories</h3>
+      <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {categories.map(category => (
+          <li>
+            <a 
+              href={`/category/${category.toLowerCase()}`} 
+              title={`${category} News Kenya`} 
+              style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
+            >
+              {category}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
     <a href="/" class="back-link" title="Back to Kenya Breaking News">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -359,14 +389,48 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         </Article>
       </div>
 
-      <!-- Keywords section for SEO -->
+      <!-- In-Content Related Articles -->
+      <section class="mid-content-links">
+        <h3 style="margin: 1.5rem 0 1rem; color: #1a202c;">Explore More {post.data.category || 'Uncategorized'} Stories</h3>
+        <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
+          {
+            (await getCollection('posts'))
+              .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
+              .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+              .slice(0, 2)
+              .map(relatedPost => (
+                <li>
+                  <a 
+                    href={`/posts/${relatedPost.slug}`} 
+                    title={`${relatedPost.data.title} - ${post.data.category || 'Uncategorized'} News Kenya`} 
+                    style="text-decoration: none; color: #2d3748; font-weight: 600; display: block;"
+                    class="related-link"
+                  >
+                    {relatedPost.data.title}
+                  </a>
+                </li>
+              ))
+          }
+        </ul>
+      </section>
+
+      <!-- Keywords section for SEO with tag links -->
       <div class="article-tags" style="margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
         <h4 style="margin: 0 0 0.5rem 0; color: #333;">Related Topics:</h4>
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Kenya News</span>
-          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Nairobi Updates</span>
-          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">{post.data.category || 'Uncategorized'}</span>
-          <span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">Trending Kenya</span>
+          <a href="/tags/kenya-news" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Kenya News Stories">Kenya News</a>
+          <a href="/tags/nairobi-updates" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Nairobi News Updates">Nairobi Updates</a>
+          <a href={`/tags/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title={`${post.data.category || 'Uncategorized'} News`}>{post.data.category || 'Uncategorized'}</a>
+          <a href="/tags/trending-kenya" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Trending Kenya Stories">Trending Kenya</a>
+          {(post.data.tags || []).map(tag => (
+            <a 
+              href={`/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`} 
+              style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" 
+              title={`${tag} News Kenya`}
+            >
+              {tag}
+            </a>
+          ))}
         </div>
       </div>
 
@@ -482,6 +546,25 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
             <h4 style="margin: 0 0 1rem 0;">About the Author</h4>
             <p style="margin: 0; line-height: 1.6;"><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist with over 5 years of experience covering politics, entertainment, and trending stories from Nairobi and across Kenya. Follow for the latest breaking news and exclusive insights.</p>
           </div>
+
+          <!-- Popular Categories in Footer -->
+          <section class="popular-categories" style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="margin: 0 0 1rem 0; color: #1a202c;">Popular Kenya News Categories</h3>
+            <ul style="list-style: none; padding: 0; display: grid; gap: 0.5rem;">
+              {categoryCounts.map(category => (
+                <li>
+                  <a 
+                    href={`/category/${category.name.toLowerCase()}`} 
+                    title={`${category.name} News Kenya`} 
+                    style="text-decoration: none; color: #2d3748; font-weight: 600;"
+                    class="category-link"
+                  >
+                    {category.name} ({category.count} articles)
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </footer>
     </div>
@@ -566,6 +649,37 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           padding: 1rem;
           border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* Mid-content links styling */
+        .mid-content-links {
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .mid-content-links h3 {
+          font-size: 1.25rem;
+          color: #1a202c;
+          margin-bottom: 1rem;
+        }
+
+        .mid-content-links ul {
+          display: grid;
+          gap: 0.5rem;
+        }
+
+        .mid-content-links li {
+          background: white;
+          padding: 0.75rem;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .related-link:hover {
+          color: #dc2626;
         }
       }
 
@@ -874,6 +988,29 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         color: #dc2626;
       }
 
+      /* Popular Categories Styling */
+      .popular-categories {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .popular-categories h3 {
+        font-size: 1.25rem;
+        color: #1a202c;
+        margin-bottom: 1rem;
+      }
+
+      .popular-categories ul {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .category-link:hover {
+        color: #dc2626;
+      }
+
       /* Mobile responsiveness */
       @media (max-width: 768px) {
         .post-container {
@@ -915,12 +1052,23 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         .related-articles ul {
           grid-template-columns: 1fr;
         }
+
+        .mid-content-links ul {
+          grid-template-columns: 1fr;
+        }
+
+        .category-nav ul {
+          flex-direction: column;
+          gap: 0.75rem;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
         .back-link,
         .share-button,
-        .related-articles li {
+        .related-articles li,
+        .category-link,
+        .related-link {
           transition: none;
         }
       }
@@ -931,7 +1079,10 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         .back-link,
         .social-share,
         .ad-container,
-        .newsletter-signup {
+        .newsletter-signup,
+        .category-nav,
+        .mid-content-links,
+        .popular-categories {
           display: none !important;
         }
         
@@ -945,7 +1096,10 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       .breadcrumb a:focus,
       .back-link:focus,
       .share-button:focus,
-      .related-articles a:focus {
+      .related-articles a:focus,
+      .category-nav a:focus,
+      .related-link:focus,
+      .category-link:focus {
         outline: 2px solid #dc2626;
         outline-offset: 2px;
         border-radius: 4px;
