@@ -2,7 +2,7 @@
 title: "Is Ruto Gambling With CHAN for Political Gains?: How Football, Money and Politics Will Backfire"
 description: "Analysis of President Ruto's attempt to use the African Nations Championship for political gain ahead of Kenya's 2027 elections"
 date: 2025,08,12
-author: "Political Analysis Team"
+author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/Nj2PLm2x/Ruto-watching-a-Harambee-stars-match-at-kasarani-stadium.jpg"
 imageCaption: "President Ruto attending a Harambee Stars match at Kasarani Stadium"
 imageAlt: "William Ruto watching football match in stadium"
