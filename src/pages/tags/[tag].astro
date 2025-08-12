@@ -1,0 +1,407 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))];
+  return allTags.map(tag => ({
+    params: { tag: tag.toLowerCase().replace(/\s+/g, '-') },
+    props: { tag },
+  }));
+}
+
+const { tag } = Astro.props;
+const posts = (await getCollection('posts'))
+  .filter(post => (post.data.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-')).includes(tag))
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// Get unique categories for navigation
+const allPosts = await getCollection('posts');
+const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategorized'))];
+
+// SEO optimizations
+const optimizedTitle = `${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News | Jonathan Mwaniki`;
+const optimizedDescription = `Explore the latest ${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} news and updates from Kenya. Stay informed with breaking stories, trends, and insights from Nairobi and beyond.`;
+const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tag}`;
+const competitiveKeywords = [
+  'Kenya news today',
+  'breaking news Kenya',
+  'Nairobi news',
+  tag.replace(/-/g, ' '),
+  'Kenya trending stories',
+  'Nairobi updates',
+  'East Africa news',
+  'Kenya viral news',
+].filter(Boolean).join(', ');
+---
+
+<Layout
+  title={optimizedTitle}
+  description={optimizedDescription}
+  canonical={canonicalUrl}
+  image="https://www.jonathanmwaniki.co.ke/default-og-image.jpg"
+  meta={[
+    { name: 'og:title', content: optimizedTitle },
+    { name: 'og:description', content: optimizedDescription },
+    { name: 'og:type', content: 'website' },
+    { name: 'og:url', content: canonicalUrl },
+    { name: 'og:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
+    { name: 'og:image:alt', content: `${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News - Jonathan Mwaniki` },
+    { name: 'og:site_name', content: 'Jonathan Mwaniki - Kenya News' },
+    { name: 'og:locale', content: 'en_KE' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: optimizedTitle },
+    { name: 'twitter:description', content: optimizedDescription },
+    { name: 'twitter:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
+    { name: 'twitter:image:alt', content: `${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News - Jonathan Mwaniki` },
+    { name: 'twitter:site', content: '@maestropuns' },
+    { name: 'keywords', content: competitiveKeywords },
+    { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
+    { name: 'geo.region', content: 'KE' },
+    { name: 'geo.country', content: 'Kenya' },
+    { name: 'geo.placename', content: 'Nairobi' },
+    { name: 'ICBM', content: '-1.286389, 36.817223' },
+    { name: 'theme-color', content: '#dc2626' },
+  ]}
+>
+  <!-- Breadcrumb Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Kenya News Home",
+          "item": "https://www.jonathanmwaniki.co.ke"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "${tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News Kenya",
+          "item": "https://www.jonathanmwaniki.co.ke/tags/${tag}"
+        }
+      ]
+    }
+  </script>
+
+  <!-- Top Ad -->
+  <div class="ad-container">
+    <script type="text/javascript">
+      atOptions = {
+        'key': '1610960d9ced232cc76d8f5510ee4608',
+        'format': 'iframe',
+        'height': 60,
+        'width': 468,
+        'params': {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+  </div>
+
+  <div class="post-container">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb">
+        <li><a href="/" title="Kenya News Home">Home</a></li>
+        <li aria-current="page">{tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</li>
+      </ol>
+    </nav>
+
+    <!-- Category Navigation Bar -->
+    <nav class="category-nav" aria-label="Category Navigation">
+      <h3 style="margin: 0.5rem 0; color: #1a202c;">Explore Kenya News Categories</h3>
+      <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {categories.map(category => (
+          <li>
+            <a 
+              href={`/category/${category.toLowerCase()}`} 
+              title={`${category} News Kenya`} 
+              style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
+            >
+              {category}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <a href="/" class="back-link" title="Back to Kenya Breaking News">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back to Kenya News
+    </a>
+
+    <section class="tag-posts">
+      <h1>{tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} News</h1>
+      <p>Latest updates and stories related to {tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} in Kenya.</p>
+      
+      <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
+        {posts.map(post => (
+          <li>
+            <a 
+              href={`/posts/${post.slug}`} 
+              title={`${post.data.title} - Jonathan Mwaniki`} 
+              style="text-decoration: none; color: #2d3748; font-weight: 600;"
+            >
+              {post.data.title || 'Untitled'}
+            </a>
+            <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
+              {post.data.description || 'No description available'}
+            </p>
+            <span style="color: #666; font-size: 0.9rem;">
+              <a 
+                href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} 
+                title={`${post.data.category || 'Uncategorized'} News Kenya`}
+                style="color: #BB1919; text-decoration: none;"
+              >
+                {post.data.category || 'Uncategorized'}
+              </a>
+              &nbsp;•&nbsp;
+              {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Newsletter Signup -->
+    <div class="newsletter-signup" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: center;">
+      <h3 style="margin: 0 0 1rem 0;">Stay Updated with Kenya News</h3>
+      <p style="margin: 0 0 1.5rem 0;">Get breaking news from Kenya delivered to your inbox. Politics, entertainment, business & trending stories.</p>
+      <div style="display: flex; gap: 0.5rem; max-width: 400px; margin: 0 auto;">
+        <input type="email" placeholder="Enter your email" style="flex: 1; padding: 0.75rem; border: none; border-radius: 6px;">
+        <button style="background: white; color: #dc2626; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer;">Subscribe</button>
+      </div>
+    </div>
+
+    <!-- Bottom Ad -->
+    <div class="ad-container">
+      <script type="text/javascript">
+        atOptions = {
+          'key': '1610960d9ced232cc76d8f5510ee4608',
+          'format': 'iframe',
+          'height': 60,
+          'width': 468,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    </div>
+  </div>
+
+  <style>
+    .post-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .tag-posts h1 {
+      font-size: 2.5rem;
+      color: #1a202c;
+      margin-bottom: 1rem;
+    }
+
+    .tag-posts p {
+      font-size: 1.25rem;
+      color: #4a5568;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .tag-posts ul {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .tag-posts li {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .tag-posts li:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #dc2626;
+    }
+
+    .tag-posts a:hover {
+      color: #dc2626;
+    }
+
+    /* Reuse styles from posts/[slug].astro */
+    .breadcrumb {
+      list-style: none;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      font-size: 0.875rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .breadcrumb li {
+      display: inline;
+    }
+
+    .breadcrumb li + li:before {
+      content: " › ";
+      padding: 0 0.5rem;
+      color: #666;
+    }
+
+    .breadcrumb a {
+      text-decoration: none;
+      color: #BB1919;
+      font-weight: 500;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .category-nav {
+      margin: 1rem 0;
+    }
+
+    .category-nav h3 {
+      font-size: 1.25rem;
+      color: #1a202c;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #BB1919;
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #BB1919;
+      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+      margin: 1rem 0;
+    }
+
+    .back-link:hover {
+      background: #BB1919;
+      color: #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .back-link:focus {
+      outline: 2px solid #BB1919;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
+    .ad-container {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .post-container {
+        padding: 1rem;
+      }
+
+      .tag-posts h1 {
+        font-size: 1.75rem;
+      }
+
+      .tag-posts p {
+        font-size: 1rem;
+      }
+
+      .category-nav ul {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .newsletter-signup div {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      .ad-container,
+      .back-link,
+      .category-nav,
+      .newsletter-signup {
+        display: none !important;
+      }
+
+      .post-container {
+        max-width: none;
+        padding: 0;
+      }
+    }
+
+    /* Focus styles for accessibility */
+    .breadcrumb a:focus,
+    .back-link:focus,
+    .category-nav a:focus {
+      outline: 2px solid #dc2626;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  </style>
+
+  <script>
+    // Newsletter signup functionality
+    function handleNewsletterSignup() {
+      const button = document.querySelector('.newsletter-signup button');
+      const input = document.querySelector('.newsletter-signup input');
+      
+      if (button && input) {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const email = input.value.trim();
+          if (email && email.includes('@')) {
+            button.textContent = 'Subscribed!';
+            button.style.background = '#10b981';
+            input.value = '';
+            setTimeout(() => {
+              button.textContent = 'Subscribe';
+              button.style.background = 'white';
+            }, 3000);
+          } else {
+            button.textContent = 'Invalid Email';
+            button.style.background = '#ef4444';
+            setTimeout(() => {
+              button.textContent = 'Subscribe';
+              button.style.background = 'white';
+            }, 2000);
+          }
+        });
+      }
+    }
+
+    window.addEventListener('load', handleNewsletterSignup);
+  </script>
+</Layout>
