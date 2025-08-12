@@ -137,7 +137,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     { name: 'msapplication-TileColor', content: '#dc2626' },
   ]}
 >
-  <!-- Enhanced Structured Data for Article with competitive SEO -->
+  <!-- Structured Data, FAQ, and Breadcrumb Schemas unchanged -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -212,7 +212,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     }
   </script>
 
-  <!-- FAQ Schema for competitive advantage -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -238,7 +237,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     }
   </script>
 
-  <!-- Breadcrumb Schema -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -254,7 +252,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           "@type": "ListItem",
           "position": 2,
           "name": "${post.data.category || 'Uncategorized'} News Kenya",
-          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}"
+          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}"
         },
         {
           "@type": "ListItem",
@@ -288,27 +286,29 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     <nav aria-label="Breadcrumb">
       <ol class="breadcrumb">
         <li><a href="/" title="Kenya News Home">Home</a></li>
-        <li><a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>{post.data.category || 'Uncategorized'}</a></li>
+        <li><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>{post.data.category || 'Uncategorized'}</a></li>
         <li aria-current="page">{post.data.title || 'Untitled'}</li>
       </ol>
     </nav>
 
-    <!-- Category Navigation Bar -->
+    <!-- Category Navigation Bar with Horizontal Slider on Mobile -->
     <nav class="category-nav" aria-label="Category Navigation">
       <h3 style="margin: 0.5rem 0; color: #1a202c;">Explore Kenya News Categories</h3>
-      <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        {categories.map(category => (
-          <li>
-            <a 
-              href={`/category/${category.toLowerCase()}`} 
-              title={`${category} News Kenya`} 
-              style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
-            >
-              {category}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div class="category-slider">
+        <ul style="list-style: none; padding: 0; display: flex; gap: 0.5rem;">
+          {categories.map(category => (
+            <li>
+              <a 
+                href={`/category/${category.toLowerCase().replace(/\s+/g, '-')}`} 
+                title={`${category} News Kenya`} 
+                style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none; white-space: nowrap;"
+              >
+                {category}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
 
     <a href="/" class="back-link" title="Back to Kenya Breaking News">
@@ -328,7 +328,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       <header class="post-header">
         <div class="post-meta">
           <span class="post-category">
-            <a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+            <a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
               {post.data.category || 'Uncategorized'}
             </a>
           </span>
@@ -369,7 +369,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         </div>
       )}
       
-      <!-- Middle Ad (After Featured Image) -->
+      <!-- Middle Ad -->
       <div class="ad-container">
         <script type="text/javascript">
           atOptions = {
@@ -420,7 +420,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
           <a href="/tags/kenya-news" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Kenya News Stories">Kenya News</a>
           <a href="/tags/nairobi-updates" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Nairobi News Updates">Nairobi Updates</a>
-          <a href={`/tags/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title={`${post.data.category || 'Uncategorized'} News`}>{post.data.category || 'Uncategorized'}</a>
           <a href="/tags/trending-kenya" style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" title="Trending Kenya Stories">Trending Kenya</a>
           {(post.data.tags || []).map(tag => (
             <a 
@@ -452,10 +451,10 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
               ))
           }
         </ul>
-        <p><a href={`/category/${post.data.category ? post.data.category.toLowerCase() : 'uncategorized'}`} title={`More ${post.data.category || 'Uncategorized'} News Kenya`}>See more {post.data.category || 'Uncategorized'} stories</a></p>
+        <p><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`More ${post.data.category || 'Uncategorized'} News Kenya`}>See more {post.data.category || 'Uncategorized'} stories</a></p>
       </section>
       
-      <!-- Newsletter signup for engagement -->
+      <!-- Newsletter Signup -->
       <div class="newsletter-signup" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: center;">
         <h3 style="margin: 0 0 1rem 0;">Stay Updated with Kenya News</h3>
         <p style="margin: 0 0 1.5rem 0;">Get breaking news from Kenya delivered to your inbox. Politics, entertainment, business & trending stories.</p>
@@ -465,7 +464,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         </div>
       </div>
       
-      <!-- Bottom Ad (Before Footer) -->
+      <!-- Bottom Ad -->
       <div class="ad-container">
         <script type="text/javascript">
           atOptions = {
@@ -541,7 +540,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
             </a>
           </div>
           
-          <!-- Author bio for E-A-T -->
+          <!-- Author bio -->
           <div class="author-bio" style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px;">
             <h4 style="margin: 0 0 1rem 0;">About the Author</h4>
             <p style="margin: 0; line-height: 1.6;"><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist with over 5 years of experience covering politics, entertainment, and trending stories from Nairobi and across Kenya. Follow for the latest breaking news and exclusive insights.</p>
@@ -554,7 +553,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
               {categoryCounts.map(category => (
                 <li>
                   <a 
-                    href={`/category/${category.name.toLowerCase()}`} 
+                    href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`} 
                     title={`${category.name} News Kenya`} 
                     style="text-decoration: none; color: #2d3748; font-weight: 600;"
                     class="category-link"
@@ -570,7 +569,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     </div>
 
     <style>
-      /* Enhanced desktop styles for professional look */
+      /* Enhanced desktop styles */
       @media (min-width: 1024px) {
         .post-container {
           max-width: 900px;
@@ -651,7 +650,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* Mid-content links styling */
         .mid-content-links {
           margin: 2rem 0;
           padding: 1.5rem;
@@ -683,7 +681,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         }
       }
 
-      /* Existing styles maintained */
       .reading-progress {
         position: fixed;
         top: 0;
@@ -701,7 +698,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         width: 0%;
       }
 
-      /* Author info styles */
       .author-info {
         display: flex;
         align-items: center;
@@ -726,7 +722,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         gap: 0.25rem;
       }
 
-      /* Ad container styling */
       .ad-container {
         display: flex;
         justify-content: center;
@@ -737,7 +732,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         border: 1px solid #e2e8f0;
       }
 
-      /* BBC-Inspired Button Styles */
       .back-link {
         display: inline-flex;
         align-items: center;
@@ -828,14 +822,12 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         border-color: #25D366;
       }
 
-      /* Breadcrumb Styling */
       .breadcrumb {
         list-style: none;
-        padding: 0;
+        padding: 0.75rem 1rem;
         margin: 0.5rem 0;
         font-size: 0.875rem;
         background: #f8f9fa;
-        padding: 0.75rem 1rem;
         border-radius: 6px;
         border: 1px solid #e2e8f0;
       }
@@ -860,7 +852,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         text-decoration: underline;
       }
 
-      /* Post meta styling */
       .post-meta {
         display: flex;
         align-items: center;
@@ -892,7 +883,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         font-size: 0.9rem;
       }
 
-      /* Draft notice */
       .draft-notice {
         background: #fef3c7;
         border: 1px solid #f59e0b;
@@ -903,7 +893,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         font-weight: 500;
       }
 
-      /* Post footer */
       .post-footer {
         margin-top: 4rem;
         padding: 2rem 0;
@@ -925,7 +914,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         margin-bottom: 1.5rem;
       }
 
-      /* Related Articles Enhanced Styling */
       .related-articles {
         margin-top: 3rem;
         padding: 2rem;
@@ -988,7 +976,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         color: #dc2626;
       }
 
-      /* Popular Categories Styling */
       .popular-categories {
         margin-top: 2rem;
         padding: 1.5rem;
@@ -1011,7 +998,65 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         color: #dc2626;
       }
 
-      /* Mobile responsiveness */
+      /* Category Slider Styles */
+      .category-nav {
+        margin: 1rem 0;
+      }
+
+      .category-slider {
+        overflow-x: hidden; /* Prevent vertical scrollbar */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      }
+
+      .category-slider ul {
+        display: flex;
+        flex-wrap: nowrap; /* Prevent wrapping on mobile */
+        overflow-x: auto; /* Enable horizontal scrolling */
+        scroll-behavior: smooth; /* Smooth scrolling */
+        padding-bottom: 0.5rem; /* Space for scrollbar */
+        scrollbar-width: none; /* Hide scrollbar in Firefox */
+      }
+
+      .category-slider ul::-webkit-scrollbar {
+        display: none; /* Hide scrollbar in WebKit browsers */
+      }
+
+      .category-slider li {
+        flex: 0 0 auto; /* Prevent items from shrinking */
+      }
+
+      .category-slider a {
+        display: inline-block;
+        white-space: nowrap; /* Prevent text wrapping */
+        padding: 0.5rem 1rem;
+        background: #dc2626;
+        color: white;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition: background 0.3s ease;
+      }
+
+      .category-slider a:hover {
+        background: #b91c1c;
+      }
+
+      /* Desktop styles for category navigation */
+      @media (min-width: 769px) {
+        .category-slider ul {
+          flex-wrap: wrap; /* Allow wrapping on desktop */
+          overflow-x: visible; /* Disable scrolling */
+          padding-bottom: 0;
+        }
+
+        .category-slider li {
+          flex: none; /* Reset flex for wrapping */
+        }
+      }
+
+      /* Mobile styles */
       @media (max-width: 768px) {
         .post-container {
           padding: 1rem;
@@ -1056,11 +1101,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         .mid-content-links ul {
           grid-template-columns: 1fr;
         }
-
-        .category-nav ul {
-          flex-direction: column;
-          gap: 0.75rem;
-        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -1068,12 +1108,12 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         .share-button,
         .related-articles li,
         .category-link,
-        .related-link {
+        .related-link,
+        .category-slider a {
           transition: none;
         }
       }
 
-      /* Print styles for SEO */
       @media print {
         .reading-progress,
         .back-link,
@@ -1092,7 +1132,6 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         }
       }
 
-      /* Focus styles for accessibility */
       .breadcrumb a:focus,
       .back-link:focus,
       .share-button:focus,
@@ -1162,8 +1201,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       }
       
       // Debug category and title values
-      console.log('Category:', `${post.data.category || 'Uncategorized'}`);
-      console.log('Title:', `${post.data.title || 'Untitled'}`);
+      console.log('Category:', '%%category%%');
+      console.log('Title:', '%%title%%');
       
       // Initialize all functionality
       window.addEventListener('scroll', updateReadingProgress);
