@@ -112,209 +112,211 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     <div class="reading-progress-bar" id="progress-bar"></div>
   </div>
 
-  <nav aria-label="Breadcrumb" class="breadcrumb-nav">
-    <ol class="breadcrumb">
-      <li><a href="/" title="Kenya News Home">Home</a></li>
-      <li><a href={categoryUrl} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
-        {post.data.category || 'Uncategorized'}
-      </a></li>
-      <li aria-current="page">{post.data.title || 'Untitled'}</li>
-    </ol>
-  </nav>
+  <div class="content-wrapper">
+    <nav aria-label="Breadcrumb" class="breadcrumb-nav">
+      <ol class="breadcrumb">
+        <li><a href="/" title="Kenya News Home">Home</a></li>
+        <li><a href={categoryUrl} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+          {post.data.category || 'Uncategorized'}
+        </a></li>
+        <li aria-current="page">{post.data.title || 'Untitled'}</li>
+      </ol>
+    </nav>
 
-  <nav class="category-nav" aria-label="Category Navigation">
-    <h3>Explore Kenya News Categories</h3>
-    <div class="category-slider">
-      <ul>
-        {categories.map(category => (
-          <li>
-            <a href={`/category/${category.toLowerCase().replace(/ /g, '-')}`} 
-               title={`${category} News Kenya`}>
-              {category}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </nav>
-
-  <a href="/" class="back-link">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-    </svg>
-    Back to Kenya News
-  </a>
-  
-  {post.data.draft && (
-    <div class="draft-notice">
-      ⚠️ This is a draft article
-    </div>
-  )}
-  
-  <article class="post-card">
-    <header class="post-header">
-      <div class="post-meta">
-        <span class="post-category">
-          <a href={categoryUrl} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
-            {post.data.category || 'Uncategorized'}
-          </a>
-        </span>
-        <time class="post-date" datetime={post.data.date}>
-          {new Date(post.data.date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </time>
-        <span class="reading-time">📖 5 min read</span>
-      </div>
-      
-      <h1 class="post-title">{post.data.title || 'Untitled'}</h1>
-      
-      {post.data.description && (
-        <p class="post-excerpt">{post.data.description}</p>
-      )}
-
-      <div class="author-info">
-        <span>By <strong>{post.data.author || 'Jonathan Mwaniki'}</strong></span>
-        <span class="author-title">Kenya News Editor</span>
-      </div>
-    </header>
-    
-    {post.data.image && (
-      <div class="post-image-container">
-        <img 
-          src={post.data.image}
-          alt={post.data.imageAlt || `${post.data.title || 'Untitled'} - Jonathan Mwaniki`}
-          class="post-image"
-          loading="lazy"
-          width="800"
-          height="450"
-        />
-      </div>
-    )}
-    
-    <div class="ad-container post-content-ad">
-      <script type="text/javascript">
-        atOptions = {
-          'key': '1610960d9ced232cc76d8f5510ee4608',
-          'format': 'iframe',
-          'height': 60,
-          'width': 468,
-          'params': {}
-        };
-      </script>
-      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
-    
-    <div class="article-wrapper">
-      <Article>
-        <Content />
-      </Article>
-    </div>
-
-    <section class="related-articles">
-      <h2>More {post.data.category || 'Uncategorized'} News</h2>
-      <div class="posts-grid">
-        {(await getCollection('posts'))
-          .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
-          .slice(0, 3)
-          .map(relatedPost => (
-            <article class="related-post-card">
-              <a href={`/posts/${relatedPost.slug}`} class="post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
-                {relatedPost.data.image && (
-                  <div class="post-image-container">
-                    <img
-                      src={relatedPost.data.image}
-                      alt={relatedPost.data.imageAlt || relatedPost.data.title}
-                      class="post-image"
-                      loading="lazy"
-                      width="400"
-                      height="240"
-                    />
-                  </div>
-                )}
-                <div class="post-content">
-                  <div class="post-meta">
-                    <span class="post-category">{relatedPost.data.category}</span>
-                    <time class="post-date" datetime={relatedPost.data.date}>
-                      {new Date(relatedPost.data.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </time>
-                  </div>
-                  <h3 class="post-title">{relatedPost.data.title}</h3>
-                  {relatedPost.data.description && <p class="post-excerpt">{relatedPost.data.description}</p>}
-                  <div class="post-footer">
-                    <span class="read-more">Read Article</span>
-                  </div>
-                </div>
-              </a>
-            </article>
-          ))}
-      </div>
-    </section>
-    
-    <section class="newsletter-signup">
-      <h3>Stay Updated with Kenya News</h3>
-      <p>Get breaking news from Kenya delivered to your inbox</p>
-      <form>
-        <input type="email" placeholder="Enter your email">
-        <button class="button">Subscribe</button>
-      </form>
-    </section>
-    
-    <div class="ad-container bottom-ad">
-      <script type="text/javascript">
-        atOptions = {
-          'key': '1610960d9ced232cc76d8f5510ee4608',
-          'format': 'iframe',
-          'height': 60,
-          'width': 468,
-          'params': {}
-        };
-      </script>
-      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
-    
-    <footer class="post-footer">
-      <h3>Share This Kenya News</h3>
-      <div class="social-share">
-        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-          </svg>
-          X
-        </a>
-        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
-          </svg>
-          Facebook
-        </a>
-      </div>
-      
-      <div class="author-bio">
-        <h4>About the Author</h4>
-        <p><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist.</p>
-      </div>
-
-      <section class="popular-categories">
-        <h3>Popular Kenya News Categories</h3>
+    <nav class="category-nav" aria-label="Category Navigation">
+      <h3>Explore Kenya News Categories</h3>
+      <div class="category-slider">
         <ul>
-          {categoryCounts.map(category => (
+          {categories.map(category => (
             <li>
-              <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
-                {category.name} ({category.count} articles)
+              <a href={`/category/${category.toLowerCase().replace(/ /g, '-')}`} 
+                 title={`${category} News Kenya`}>
+                {category}
               </a>
             </li>
           ))}
         </ul>
+      </div>
+    </nav>
+
+    <a href="/" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back to Kenya News
+    </a>
+    
+    {post.data.draft && (
+      <div class="draft-notice">
+        ⚠️ This is a draft article
+      </div>
+    )}
+    
+    <article class="post-card">
+      <header class="post-header">
+        <div class="post-meta">
+          <span class="post-category">
+            <a href={categoryUrl} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+              {post.data.category || 'Uncategorized'}
+            </a>
+          </span>
+          <time class="post-date" datetime={post.data.date}>
+            {new Date(post.data.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </time>
+          <span class="reading-time">📖 5 min read</span>
+        </div>
+        
+        <h1 class="post-title">{post.data.title || 'Untitled'}</h1>
+        
+        {post.data.description && (
+          <p class="post-excerpt">{post.data.description}</p>
+        )}
+
+        <div class="author-info">
+          <span>By <strong>{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+          <span class="author-title">Kenya News Editor</span>
+        </div>
+      </header>
+      
+      {post.data.image && (
+        <div class="post-image-container">
+          <img 
+            src={post.data.image}
+            alt={post.data.imageAlt || `${post.data.title || 'Untitled'} - Jonathan Mwaniki`}
+            class="post-image"
+            loading="lazy"
+            width="800"
+            height="450"
+          />
+        </div>
+      )}
+      
+      <div class="ad-container post-content-ad">
+        <script type="text/javascript">
+          atOptions = {
+            'key': '1610960d9ced232cc76d8f5510ee4608',
+            'format': 'iframe',
+            'height': 60,
+            'width': 468,
+            'params': {}
+          };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+      </div>
+      
+      <div class="article-wrapper">
+        <Article>
+          <Content />
+        </Article>
+      </div>
+
+      <section class="related-articles">
+        <h2>More {post.data.category || 'Uncategorized'} News</h2>
+        <div class="posts-grid">
+          {(await getCollection('posts'))
+            .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
+            .slice(0, 3)
+            .map(relatedPost => (
+              <article class="related-post-card">
+                <a href={`/posts/${relatedPost.slug}`} class="post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
+                  {relatedPost.data.image && (
+                    <div class="post-image-container">
+                      <img
+                        src={relatedPost.data.image}
+                        alt={relatedPost.data.imageAlt || relatedPost.data.title}
+                        class="post-image"
+                        loading="lazy"
+                        width="400"
+                        height="240"
+                      />
+                    </div>
+                  )}
+                  <div class="post-content">
+                    <div class="post-meta">
+                      <span class="post-category">{relatedPost.data.category}</span>
+                      <time class="post-date" datetime={relatedPost.data.date}>
+                        {new Date(relatedPost.data.date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </time>
+                    </div>
+                    <h3 class="post-title">{relatedPost.data.title}</h3>
+                    {relatedPost.data.description && <p class="post-excerpt">{relatedPost.data.description}</p>}
+                    <div class="post-footer">
+                      <span class="read-more">Read Article</span>
+                    </div>
+                  </div>
+                </a>
+              </article>
+            ))}
+        </div>
       </section>
-    </footer>
-  </article>
+      
+      <section class="newsletter-signup">
+        <h3>Stay Updated with Kenya News</h3>
+        <p>Get breaking news from Kenya delivered to your inbox</p>
+        <form>
+          <input type="email" placeholder="Enter your email">
+          <button class="button">Subscribe</button>
+        </form>
+      </section>
+      
+      <div class="ad-container bottom-ad">
+        <script type="text/javascript">
+          atOptions = {
+            'key': '1610960d9ced232cc76d8f5510ee4608',
+            'format': 'iframe',
+            'height': 60,
+            'width': 468,
+            'params': {}
+          };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+      </div>
+      
+      <footer class="post-footer">
+        <h3>Share This Kenya News</h3>
+        <div class="social-share">
+          <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            X
+          </a>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
+            </svg>
+            Facebook
+          </a>
+        </div>
+        
+        <div class="author-bio">
+          <h4>About the Author</h4>
+          <p><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist.</p>
+        </div>
+
+        <section class="popular-categories">
+          <h3>Popular Kenya News Categories</h3>
+          <ul>
+            {categoryCounts.map(category => (
+              <li>
+                <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
+                  {category.name} ({category.count} articles)
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </footer>
+    </article>
+  </div>
 
   <style>
     * {
@@ -323,9 +325,18 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
     body {
       margin: 0;
-      padding: 0 1rem;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       background: #ffffff;
+    }
+
+    /* Content Wrapper */
+    .content-wrapper {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0;
+      position: relative;
+      z-index: 1;
     }
 
     /* Ad Container Styles */
@@ -334,7 +345,6 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       justify-content: center;
       align-items: center;
       margin: 2rem auto;
-      padding: 1rem;
       background: #f8f9fa;
       border-radius: 8px;
       border: 1px solid #e2e8f0;
@@ -343,7 +353,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .top-ad {
-      margin-top: 1rem;
+      margin-top: 4rem; /* Increased to account for header height */
       margin-bottom: 2rem;
     }
 
@@ -359,6 +369,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .ad-container script {
       max-width: 468px;
       max-height: 60px;
+      width: 100%;
     }
 
     /* Reading Progress Bar */
@@ -369,6 +380,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       width: 100%;
       height: 4px;
       background: rgba(220, 38, 38, 0.2);
+      z-index: 1002; /* Above header but below skip-link */
     }
 
     .reading-progress-bar {
@@ -381,6 +393,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     /* Breadcrumb Navigation */
     .breadcrumb-nav {
       margin: 2rem 0;
+      padding: 0 1rem;
     }
 
     .breadcrumb {
@@ -414,6 +427,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     /* Category Navigation */
     .category-nav {
       margin: 2rem 0;
+      padding: 0 1rem;
     }
 
     .category-nav h3 {
@@ -464,7 +478,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       color: #dc2626;
       font-weight: 600;
       text-decoration: none;
-      margin: 1.5rem 0;
+      margin: 1.5rem 1rem;
     }
 
     .back-link svg {
@@ -482,7 +496,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       color: #b45309;
       padding: 1rem;
       border-radius: 8px;
-      margin: 1.5rem 0;
+      margin: 1.5rem 1rem;
       text-align: center;
       font-weight: 500;
     }
@@ -825,7 +839,43 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     /* Mobile Optimizations */
     @media (max-width: 768px) {
       body {
-        padding: 0 0.75rem;
+        padding: 0;
+      }
+
+      .content-wrapper {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+
+      .ad-container {
+        max-width: 100%;
+        border-radius: 0;
+        margin: 1rem 0;
+      }
+
+      .top-ad {
+        margin-top: 4rem; /* Ensure content clears header */
+        margin-bottom: 1rem;
+      }
+
+      .post-content-ad,
+      .bottom-ad {
+        margin: 1rem 0;
+      }
+
+      .breadcrumb-nav,
+      .category-nav,
+      .back-link,
+      .draft-notice,
+      .post-card,
+      .related-articles,
+      .newsletter-signup,
+      .post-footer {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
       }
 
       .post-title {
@@ -888,6 +938,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       .post-title {
         font-size: 1.5rem;
       }
+
+      .post-header,
+      .article-wrapper,
+      .related-articles {
+        padding: 1.5rem;
+      }
     }
 
     /* Accessibility */
@@ -932,7 +988,9 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       if (article && progressBar) {
         const articleHeight = article.offsetHeight;
         const scrollTop = window.scrollY;
-        const progress = (scrollTop / articleHeight) * 100;
+        const windowHeight = window.innerHeight;
+        const maxScroll = articleHeight - windowHeight;
+        const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 100;
         progressBar.style.width = Math.min(100, progress) + '%';
       }
     });
