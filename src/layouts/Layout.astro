@@ -181,6 +181,13 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   </div>
   
   <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #ffffff;
+    }
+
     .skip-link {
       position: absolute;
       top: -40px;
@@ -295,12 +302,29 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
       to { opacity: 1; transform: translateY(0); }
     }
 
+    @media (min-width: 769px) {
+      body {
+        padding: 0 1rem;
+      }
+
+      .cookie-consent {
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        padding: 1.5rem;
+      }
+    }
+
     @media (max-width: 768px) {
       .cookie-consent {
-        bottom: 0.75rem;
-        left: 0.75rem;
-        right: 0.75rem;
-        padding: 1rem;
+        bottom: 0.5rem;
+        left: 0;
+        right: 0;
+        padding: 0.5rem;
+        border-radius: 0;
+        box-shadow: none;
+        border-left: none;
+        border-right: none;
       }
 
       .cookie-content h2 {
@@ -326,9 +350,7 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     @media (max-width: 480px) {
       .cookie-consent {
         bottom: 0.5rem;
-        left: 0.5rem;
-        right: 0.5rem;
-        padding: 0.75rem;
+        padding: 0.5rem;
       }
 
       .cookie-content h2 {
