@@ -257,14 +257,14 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       </div>
     </section>
     
-    <div class="newsletter-signup">
+    <section class="newsletter-signup">
       <h3>Stay Updated with Kenya News</h3>
       <p>Get breaking news from Kenya delivered to your inbox</p>
-      <div>
+      <form>
         <input type="email" placeholder="Enter your email">
         <button class="button">Subscribe</button>
-      </div>
-    </div>
+      </form>
+    </section>
     
     <div class="ad-container bottom-ad">
       <script type="text/javascript">
@@ -280,41 +280,39 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     </div>
     
     <footer class="post-footer">
-      <div class="post-footer-content">
-        <h3>Share This Kenya News</h3>
-        <div class="social-share">
-          <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-            X
-          </a>
-          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
-            </svg>
-            Facebook
-          </a>
-        </div>
-        
-        <div class="author-bio">
-          <h4>About the Author</h4>
-          <p><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist.</p>
-        </div>
-
-        <section class="popular-categories">
-          <h3>Popular Kenya News Categories</h3>
-          <ul>
-            {categoryCounts.map(category => (
-              <li>
-                <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
-                  {category.name} ({category.count} articles)
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <h3>Share This Kenya News</h3>
+      <div class="social-share">
+        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          X
+        </a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
+          </svg>
+          Facebook
+        </a>
       </div>
+      
+      <div class="author-bio">
+        <h4>About the Author</h4>
+        <p><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist.</p>
+      </div>
+
+      <section class="popular-categories">
+        <h3>Popular Kenya News Categories</h3>
+        <ul>
+          {categoryCounts.map(category => (
+            <li>
+              <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
+                {category.name} ({category.count} articles)
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
     </footer>
   </article>
 
@@ -327,6 +325,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin: 0;
       padding: 0 1rem;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #ffffff;
     }
 
     /* Ad Container Styles */
@@ -710,7 +709,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin-bottom: 1.5rem;
     }
 
-    .newsletter-signup div {
+    .newsletter-signup form {
       display: flex;
       gap: 0.5rem;
       justify-content: center;
@@ -784,12 +783,6 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin: 3rem 0;
       padding-top: 2rem;
       border-top: 1px solid #e2e8f0;
-    }
-
-    .post-footer-content {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
     }
 
     .author-bio h4 {
@@ -877,7 +870,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         gap: 1.5rem;
       }
 
-      .newsletter-signup div {
+      .newsletter-signup form {
         flex-direction: column;
         align-items: center;
       }
