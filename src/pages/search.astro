@@ -6,23 +6,34 @@ import { getCollection } from 'astro:content';
 const posts = await getCollection('posts');
 
 // Get the search query from URL parameters
-const query = Astro.url.searchParams.get('query')?.toLowerCase() || '';
+const query = Astro.url.searchParams.get('query')?.toLowerCase().trim() || '';
 const words = query.split(' ').filter(Boolean);
 
-// Filter posts based on query (matching title, category, tags, keywords)
+// Filter posts based on query (matching title, category, tags, keywords, and content)
 const results = query
-  ? posts.filter(post => {
-      const titleWords = (post.data.title || '').toLowerCase().split(' ');
-      const categoryWords = (post.data.category || '').toLowerCase().split(' ');
-      const tagWords = (post.data.tags || []).join(' ').toLowerCase().split(' ');
-      const keywordWords = (post.data.keywords || []).join(' ').toLowerCase().split(' ');
-      return words.some(q =>
-        titleWords.some(w => w.includes(q)) ||
-        categoryWords.some(w => w.includes(q)) ||
-        tagWords.some(w => w.includes(q)) ||
-        keywordWords.some(w => w.includes(q))
-      );
-    }).sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  ? await Promise.all(
+      posts.map(async post => {
+        // Render post to access content
+        const { Content } = await post.render();
+        const content = post.body.toLowerCase(); // Raw markdown content
+        const titleWords = (post.data.title || '').toLowerCase().split(' ');
+        const categoryWords = (post.data.category || '').toLowerCase().split(' ');
+        const tagWords = (post.data.tags || []).join(' ').toLowerCase().split(' ');
+        const keywordWords = (post.data.keywords || []).join(' ').toLowerCase().split(' ');
+        const contentWords = content.split(' ').filter(word => word.length > 2); // Exclude short words for performance
+        const matches = words.some(q =>
+          titleWords.some(w => w.includes(q)) ||
+          categoryWords.some(w => w.includes(q)) ||
+          tagWords.some(w => w.includes(q)) ||
+          keywordWords.some(w => w.includes(q)) ||
+          contentWords.some(w => w.includes(q))
+        );
+        return matches ? post : null;
+      })
+    ).then(results => results
+      .filter(post => post !== null)
+      .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+    )
   : [];
 ---
 
@@ -40,7 +51,7 @@ const results = query
             <li class="result-item">
               <a href={`/posts/${post.slug}`} class="result-link">
                 <h2 class="result-title">{post.data.title}</h2>
-                <p class="result-meta">{post.data.category} | {new Date(post.data.date).toLocaleDateString()}</p>
+                <p class="result-meta">{post.data.category || 'Uncategorized'} | {new Date(post.data.date).toLocaleDateString()}</p>
                 {post.data.description && (
                   <p class="result-description">{post.data.description}</p>
                 )}
