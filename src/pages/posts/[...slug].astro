@@ -216,46 +216,29 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
       <section class="related-articles">
         <h2>More {post.data.category || 'Uncategorized'} News</h2>
-        <div class="posts-grid">
+        <ul class="related-posts-list">
           {(await getCollection('posts'))
             .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
+            .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
             .slice(0, 3)
             .map(relatedPost => (
-              <article class="related-post-card">
-                <a href={`/posts/${relatedPost.slug}`} class="post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
+              <li class="related-post-item">
+                <a href={`/posts/${relatedPost.slug}`} class="related-post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
                   {relatedPost.data.image && (
-                    <div class="post-image-container">
-                      <img
-                        src={relatedPost.data.image}
-                        alt={relatedPost.data.imageAlt || relatedPost.data.title}
-                        class="post-image"
-                        loading="lazy"
-                        width="400"
-                        height="240"
-                      />
-                    </div>
+                    <img
+                      src={relatedPost.data.image}
+                      alt={relatedPost.data.imageAlt || relatedPost.data.title}
+                      class="related-post-image"
+                      loading="lazy"
+                      width="80"
+                      height="80"
+                    />
                   )}
-                  <div class="post-content">
-                    <div class="post-meta">
-                      <span class="post-category">{relatedPost.data.category}</span>
-                      <time class="post-date" datetime={relatedPost.data.date}>
-                        {new Date(relatedPost.data.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </time>
-                    </div>
-                    <h3 class="post-title">{relatedPost.data.title}</h3>
-                    {relatedPost.data.description && <p class="post-excerpt">{relatedPost.data.description}</p>}
-                    <div class="post-footer">
-                      <span class="read-more">Read Article</span>
-                    </div>
-                  </div>
+                  <span class="related-post-title">{relatedPost.data.title}</span>
                 </a>
-              </article>
+              </li>
             ))}
-        </div>
+        </ul>
       </section>
       
       <section class="newsletter-signup">
@@ -327,7 +310,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #ffffff;
+      background: #ffffff !important;
+      color: #1a202c !important;
     }
 
     /* Content Wrapper */
@@ -345,22 +329,19 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       justify-content: center;
       align-items: center;
       margin: 2rem auto;
-      background: #f8f9fa;
+      background: #f8f9fa !important;
+      border: 1px solid #e2e8f0 !important;
       border-radius: 8px;
-      border: 1px solid #e2e8f0;
       max-width: 500px;
       overflow: hidden;
     }
 
     .top-ad {
-      margin-top: 4rem; /* Increased to account for header height */
+      margin-top: 4rem;
       margin-bottom: 2rem;
     }
 
-    .post-content-ad {
-      margin: 2rem auto;
-    }
-
+    .post-content-ad,
     .bottom-ad {
       margin: 2rem auto;
     }
@@ -379,13 +360,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       left: 0;
       width: 100%;
       height: 4px;
-      background: rgba(220, 38, 38, 0.2);
-      z-index: 1002; /* Above header but below skip-link */
+      background: rgba(220, 38, 38, 0.2) !important;
+      z-index: 1002;
     }
 
     .reading-progress-bar {
       height: 100%;
-      background: #dc2626;
+      background: #dc2626 !important;
       width: 0;
       transition: width 0.2s ease;
     }
@@ -403,7 +384,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       gap: 0.5rem;
       font-size: 0.9rem;
-      color: #64748b;
+      color: #64748b !important;
     }
 
     .breadcrumb li::after {
@@ -416,7 +397,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .breadcrumb a {
-      color: #dc2626;
+      color: #dc2626 !important;
       text-decoration: none;
     }
 
@@ -434,7 +415,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 1rem;
-      color: #1a1a1a;
+      color: #1a1a1a !important;
     }
 
     .category-slider {
@@ -456,8 +437,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .category-slider a {
       display: inline-flex;
       padding: 0.5rem 1rem;
-      background: #dc2626;
-      color: white;
+      background: #dc2626 !important;
+      color: white !important;
       border-radius: 20px;
       font-size: 0.9rem;
       font-weight: 600;
@@ -467,7 +448,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .category-slider a:hover {
-      background: #b91c1c;
+      background: #b91c1c !important;
     }
 
     /* Back Link */
@@ -475,7 +456,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #dc2626;
+      color: #dc2626 !important;
       font-weight: 600;
       text-decoration: none;
       margin: 1.5rem 1rem;
@@ -484,16 +465,21 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .back-link svg {
       width: 20px;
       height: 20px;
+      stroke: #dc2626 !important;
     }
 
     .back-link:hover {
-      color: #b91c1c;
+      color: #b91c1c !important;
+    }
+
+    .back-link:hover svg {
+      stroke: #b91c1c !important;
     }
 
     /* Draft Notice */
     .draft-notice {
-      background: #fef3c7;
-      color: #b45309;
+      background: #fef3c7 !important;
+      color: #b45309 !important;
       padding: 1rem;
       border-radius: 8px;
       margin: 1.5rem 1rem;
@@ -503,11 +489,11 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
     /* Post Card */
     .post-card {
-      background: white;
+      background: white !important;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e2e8f0;
+      border: 1px solid #e2e8f0 !important;
       margin: 2rem 0;
     }
 
@@ -524,8 +510,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-category a {
-      background: #dc2626;
-      color: white;
+      background: #dc2626 !important;
+      color: white !important;
       padding: 0.3rem 0.8rem;
       border-radius: 20px;
       font-size: 0.8rem;
@@ -535,12 +521,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-category a:hover {
-      background: #b91c1c;
+      background: #b91c1c !important;
     }
 
     .post-date,
     .reading-time {
-      color: #64748b;
+      color: #64748b !important;
       font-size: 0.9rem;
     }
 
@@ -549,13 +535,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-weight: 700;
       line-height: 1.2;
       margin: 0 0 1rem 0;
-      color: #1a1a1a;
+      color: #1a1a1a !important;
     }
 
     .post-excerpt {
       font-size: 1.1rem;
       line-height: 1.6;
-      color: #4a5568;
+      color: #4a5568 !important;
       margin: 0 0 1.5rem 0;
     }
 
@@ -563,7 +549,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      color: #4a5568;
+      color: #4a5568 !important;
       font-size: 0.95rem;
     }
 
@@ -592,14 +578,14 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       padding: 2rem;
       font-size: 1.125rem;
       line-height: 1.8;
-      color: #1a202c;
+      color: #1a202c !important;
     }
 
     /* Related Articles */
     .related-articles {
       margin: 3rem 0;
       padding: 2rem;
-      background: #f8f9fa;
+      background: #f8f9fa !important;
       border-radius: 8px;
     }
 
@@ -607,105 +593,51 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.75rem;
       font-weight: 700;
       margin-bottom: 1.5rem;
-      color: #1a1a1a;
+      color: #1a1a1a !important;
     }
 
-    .posts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
+    .related-posts-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
     }
 
-    .related-post-card {
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s ease;
-      border: 1px solid #e2e8f0;
-    }
-
-    .related-post-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-      border-color: #dc2626;
-    }
-
-    .post-link {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      height: 100%;
-    }
-
-    .post-content {
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      height: calc(100% - 200px);
-    }
-
-    .post-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    .related-post-item {
       margin-bottom: 1rem;
-      flex-wrap: wrap;
     }
 
-    .post-category {
-      background: #dc2626;
-      color: white;
-      padding: 0.25rem 0.6rem;
-      border-radius: 15px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .post-date {
-      color: #64748b;
-      font-size: 0.85rem;
-    }
-
-    .post-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 0.75rem 0;
-      line-height: 1.3;
-      color: #1a202c;
-    }
-
-    .post-excerpt {
-      color: #4a5568;
-      line-height: 1.5;
-      margin: 0 0 1.5rem 0;
-      flex-grow: 1;
-      font-size: 0.95rem;
-    }
-
-    .post-footer {
-      margin-top: auto;
-    }
-
-    .read-more {
-      display: inline-flex;
+    .related-post-link {
+      display: flex;
       align-items: center;
-      gap: 0.5rem;
-      color: #dc2626;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
+      gap: 1rem;
+      text-decoration: none;
+      color: #1a202c !important;
     }
 
-    .read-more:hover {
-      color: #b91c1c;
+    .related-post-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .related-post-title {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.4;
+      color: #1a202c !important;
+    }
+
+    .related-post-link:hover .related-post-title {
+      color: #dc2626 !important;
+      text-decoration: underline;
     }
 
     /* Newsletter Signup */
     .newsletter-signup {
-      background: #dc2626;
-      color: white;
+      background: #dc2626 !important;
+      color: white !important;
       padding: 2rem;
       border-radius: 8px;
       text-align: center;
@@ -716,11 +648,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 0.75rem;
+      color: white !important;
     }
 
     .newsletter-signup p {
       font-size: 1rem;
       margin-bottom: 1.5rem;
+      color: white !important;
     }
 
     .newsletter-signup form {
@@ -736,6 +670,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1rem;
       width: 250px;
       max-width: 100%;
+      background: white !important;
+      color: #1a202c !important;
     }
 
     .newsletter-signup .button {
@@ -743,8 +679,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.75rem 1.5rem;
-      background: #ffffff;
-      color: #dc2626;
+      background: #ffffff !important;
+      color: #dc2626 !important;
       border-radius: 6px;
       font-weight: 600;
       font-size: 1rem;
@@ -756,8 +692,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .newsletter-signup .button:hover {
-      background: #f1f1f1;
-      color: #b91c1c;
+      background: #f1f1f1 !important;
+      color: #b91c1c !important;
       transform: translateX(5px);
     }
 
@@ -774,8 +710,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: #dc2626;
-      color: white;
+      background: #dc2626 !important;
+      color: white !important;
       border-radius: 6px;
       font-weight: 600;
       text-decoration: none;
@@ -783,30 +719,32 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .share-button:hover {
-      background: #b91c1c;
+      background: #b91c1c !important;
       transform: translateX(3px);
     }
 
     .share-button svg {
       width: 16px;
       height: 16px;
+      fill: white !important;
     }
 
     /* Post Footer */
     .post-footer {
       margin: 3rem 0;
       padding-top: 2rem;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid #e2e8f0 !important;
     }
 
     .author-bio h4 {
       font-size: 1.25rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
+      color: #1a1a1a !important;
     }
 
     .author-bio p {
-      color: #4a5568;
+      color: #4a5568 !important;
       line-height: 1.5;
     }
 
@@ -814,6 +752,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 1rem;
+      color: #1a1a1a !important;
     }
 
     .popular-categories ul {
@@ -826,13 +765,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .popular-categories a {
-      color: #dc2626;
+      color: #dc2626 !important;
       text-decoration: none;
       font-weight: 500;
     }
 
     .popular-categories a:hover {
-      color: #b91c1c;
+      color: #b91c1c !important;
       text-decoration: underline;
     }
 
@@ -855,7 +794,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       }
 
       .top-ad {
-        margin-top: 4rem; /* Ensure content clears header */
+        margin-top: 4rem;
         margin-bottom: 1rem;
       }
 
@@ -907,17 +846,25 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       }
 
       .category-slider::-webkit-scrollbar-thumb {
-        background: #dc2626;
+        background: #dc2626 !important;
         border-radius: 4px;
       }
 
       .category-slider::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background: #f1f1f1 !important;
       }
 
-      .posts-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+      .related-posts-list {
+        padding: 0;
+      }
+
+      .related-post-image {
+        width: 60px;
+        height: 60px;
+      }
+
+      .related-post-title {
+        font-size: 0.9rem;
       }
 
       .newsletter-signup form {
@@ -944,6 +891,15 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       .related-articles {
         padding: 1.5rem;
       }
+
+      .related-post-image {
+        width: 50px;
+        height: 50px;
+      }
+
+      .related-post-title {
+        font-size: 0.85rem;
+      }
     }
 
     /* Accessibility */
@@ -959,15 +915,15 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .share-button:focus,
     .back-link:focus,
     .category-slider a:focus,
-    .newsletter-signup .button:focus {
-      outline: 2px solid #dc2626;
+    .newsletter-signup .button:focus,
+    .related-post-link:focus {
+      outline: 2px solid #dc2626 !important;
       outline-offset: 2px;
     }
 
     /* Print styles */
     @media print {
-      .post-card,
-      .related-post-card {
+      .post-card {
         box-shadow: none !important;
         border: 1px solid #ccc !important;
       }
@@ -977,6 +933,31 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       .category-nav,
       .newsletter-signup {
         display: none !important;
+      }
+
+      .related-posts-list {
+        display: block !important;
+      }
+    }
+
+    /* Prevent Dark/Light Mode Overrides */
+    @media (prefers-color-scheme: dark), (prefers-color-scheme: light) {
+      body, .post-card, .related-articles, .newsletter-signup, .ad-container,
+      .reading-progress, .reading-progress-bar, .breadcrumb, .post-date,
+      .reading-time, .post-excerpt, .author-info, .author-bio p,
+      .popular-categories h3, .category-nav h3, .post-title, .related-post-title,
+      .category-slider a, .category-slider a:hover, .post-category a,
+      .post-category a:hover, .back-link, .back-link svg, .back-link:hover,
+      .back-link:hover svg, .draft-notice, .share-button, .share-button:hover,
+      .share-button svg, .newsletter-signup h3, .newsletter-signup p,
+      .newsletter-signup input, .newsletter-signup .button,
+      .newsletter-signup .button:hover, .category-slider::-webkit-scrollbar-thumb,
+      .category-slider::-webkit-scrollbar-track {
+        background: inherit !important;
+        color: inherit !important;
+        border-color: inherit !important;
+        stroke: inherit !important;
+        fill: inherit !important;
       }
     }
   </style>
