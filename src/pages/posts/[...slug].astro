@@ -24,7 +24,7 @@ const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategoriz
 const categoryCounts = categories.map(category => ({
   name: category,
   count: allPosts.filter(p => (p.data.category || 'Uncategorized') === category).length,
-})).sort((a, b) => b.count - a.count).slice(0, 4);
+})).sort((a, b) => b politiekecount - a.count).slice(0, 4);
 
 const absoluteImageUrl = post.data.image
   ? post.data.image.startsWith('http') 
@@ -86,7 +86,7 @@ const getOptimizedDescription = (description, category, title) => {
     'business': 'Business news, economic updates, and market analysis from Kenya.',
     'sports': 'Sports news, match updates, and athlete stories from Kenya.',
     'lifestyle': 'Lifestyle trends, social stories, and cultural updates from Kenya.',
-    'technology': 'Technology news, innovation, and digital trends in Kenya.',
+    'technology': 'Technology news, innovation, and digital每trends in Kenya.',
     'health': 'Health news, medical updates, and wellness information for Kenyans.'
   };
   
@@ -104,6 +104,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
   image={absoluteImageUrl}
   canonical={`https://www.jonathanmwaniki.co.ke/posts/${post.slug}`}
   meta={[
+    ...(post.data.draft ? [{ name: 'robots', content: 'noindex' }] : []),
     { name: 'og:title', content: `${post.data.title || 'Untitled'} | Jonathan Mwaniki` },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
@@ -120,7 +121,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     { name: 'twitter:site', content: '@maestropuns' },
     { name: 'twitter:creator', content: '@maestropuns' },
     { name: 'keywords', content: competitiveKeywords },
-    { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
+    { name: 'robots', content: post.data.draft ? 'noindex' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
     { name: 'author', content: post.data.author || 'Jonathan Mwaniki' },
     { name: 'publisher', content: 'Jonathan Mwaniki News' },
     { name: 'article:author', content: post.data.author || 'Jonathan Mwaniki' },
@@ -137,7 +138,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     { name: 'msapplication-TileColor', content: '#dc2626' },
   ]}
 >
-  <!-- Structured Data, FAQ, and Breadcrumb Schemas (unchanged) -->
+  <!-- Structured Data, FAQ, and Breadcrumb Schemas -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -252,7 +253,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           "@type": "ListItem",
           "position": 2,
           "name": "${post.data.category || 'Uncategorized'} News Kenya",
-          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}"
+          "item": "https://www.jonathanmwaniki.co.ke/category/${post.data.category ? post.data.category.toLowerCase().replace(/\\s+/g, '-') : 'uncategorized'}"
         },
         {
           "@type": "ListItem",
@@ -286,7 +287,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
     <nav aria-label="Breadcrumb">
       <ol class="breadcrumb">
         <li><a href="/" title="Kenya News Home">Home</a></li>
-        <li><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>{post.data.category || 'Uncategorized'}</a></li>
+        <li><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>{post.data.category || 'Uncategorized'}</a></li>
         <li aria-current="page">{post.data.title || 'Untitled'}</li>
       </ol>
     </nav>
@@ -299,7 +300,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           {categories.map(category => (
             <li>
               <a 
-                href={`/category/${category.toLowerCase().replace(/\s+/g, '-')}`} 
+                href={`/category/${category.toLowerCase().replace(/\\s+/g, '-')}`} 
                 title={`${category} News Kenya`} 
                 style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none; white-space: nowrap;"
               >
@@ -328,7 +329,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
       <header class="post-header">
         <div class="post-meta">
           <span class="post-category">
-            <a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+            <a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\\s+/g, '-') : 'uncategorized'}`} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
               {post.data.category || 'Uncategorized'}
             </a>
           </span>
@@ -420,7 +421,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
           {(post.data.tags || []).map(tag => (
             <a 
-              href={`/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`} 
+              href={`/tags/${tag.toLowerCase().replace(/\\s+/g, '-')}`} 
               style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; text-decoration: none;" 
               title={`${tag} News Kenya`}
             >
@@ -448,7 +449,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
               ))
           }
         </ul>
-        <p><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} title={`More ${post.data.category || 'Uncategorized'} News Kenya`}>See more {post.data.category || 'Uncategorized'} stories</a></p>
+        <p><a href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\\s+/g, '-') : 'uncategorized'}`} title={`More ${post.data.category || 'Uncategorized'} News Kenya`}>See more {post.data.category || 'Uncategorized'} stories</a></p>
       </section>
       
       <!-- Newsletter Signup -->
@@ -550,7 +551,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
               {categoryCounts.map(category => (
                 <li>
                   <a 
-                    href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`} 
+                    href={`/category/${category.name.toLowerCase().replace(/\\s+/g, '-')}`} 
                     title={`${category.name} News Kenya`} 
                     style="text-decoration: none; color: #2d3748; font-weight: 600;"
                     class="category-link"
@@ -1192,8 +1193,8 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
         }
       }
       
-      console.log('Category:', '%%category%%');
-      console.log('Title:', '%%title%%');
+      console.log('Category:', '${post.data.category || 'Uncategorized'}');
+      console.log('Title:', '${post.data.title || 'Untitled'}');
       
       window.addEventListener('scroll', updateReadingProgress);
       window.addEventListener('resize', updateReadingProgress);
