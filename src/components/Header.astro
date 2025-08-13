@@ -120,30 +120,24 @@ const navItems = [
       </div>
     </nav>
     
-    <button class="mobile-menu-button" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
-      <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hamburger-icon" aria-hidden="true">
-        <line x1="3" y1="6" x2="21" y2="6" class="hamburger-line"/>
-        <line x1="3" y1="12" x2="21" y2="12" class="hamburger-line"/>
-        <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
-      </svg>
-    </button>
-  </div>
-  
-  <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
-
-  <!-- Mobile Search Bar -->
-  <div class="mobile-search-container" id="mobile-search-container" aria-hidden="false">
-    <form class="mobile-search-form" id="mobile-search-form" role="search" action="/search">
-      <input type="search" class="mobile-search-input" name="query" placeholder="Search news..." aria-label="Search news articles by category, tags, or keywords" autocomplete="off" />
-      <button type="submit" class="mobile-search-submit" aria-label="Submit mobile search">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <div class="mobile-controls">
+      <button class="mobile-menu-button" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hamburger-icon" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6" class="hamburger-line"/>
+          <line x1="3" y1="12" x2="21" y2="12" class="hamburger-line"/>
+          <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
+        </svg>
+      </button>
+      <button class="mobile-search-toggle" id="mobile-search-toggle" aria-label="Toggle mobile search" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
       </button>
-      <ul class="mobile-search-results" id="mobile-search-results" role="listbox" aria-live="polite"></ul>
-    </form>
+    </div>
   </div>
+  
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
 </header>
 
 <style>
@@ -453,6 +447,11 @@ const navItems = [
     display: block;
   }
 
+  .mobile-controls {
+    display: none;
+    gap: 0.5rem;
+  }
+
   .mobile-menu-button {
     display: none;
     background: none;
@@ -468,6 +467,27 @@ const navItems = [
   }
 
   .mobile-menu-button:focus {
+    outline: 2px solid #BB1919;
+    outline-offset: 2px;
+  }
+
+  .mobile-search-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #666;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-search-toggle:hover {
+    color: #BB1919;
+    background: rgba(187, 25, 25, 0.05);
+  }
+
+  .mobile-search-toggle:focus {
     outline: 2px solid #BB1919;
     outline-offset: 2px;
   }
@@ -582,97 +602,6 @@ const navItems = [
 
   .skip-link:focus {
     top: 0;
-  }
-
-  /* Mobile Search Styles */
-  .mobile-search-container {
-    display: none;
-    position: sticky;
-    top: 0;
-    z-index: 998;
-    margin: 0.75rem 1rem;
-    padding: 0.4rem;
-    background: #FFFFFF;
-    border-radius: 8px;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: opacity 0.3s ease, display 0.3s ease;
-    opacity: 1;
-  }
-
-  .mobile-search-container.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .mobile-search-form {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    width: 100%;
-  }
-
-  .mobile-search-input {
-    flex: 1;
-    padding: 0.4rem;
-    border: 1px solid #E0E0E0;
-    border-radius: 4px;
-    font-size: 0.85rem;
-  }
-
-  .mobile-search-submit {
-    background: #BB1919;
-    border: none;
-    color: #FFFFFF;
-    padding: 0.4rem;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .mobile-search-submit:hover {
-    background: #991616;
-  }
-
-  .mobile-search-results {
-    display: none;
-    position: absolute;
-    top: calc(100% + 0.4rem);
-    left: 0.4rem;
-    right: 0.4rem;
-    background: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    list-style: none;
-    padding: 0.4rem 0;
-    margin: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    border-radius: 4px;
-  }
-
-  .mobile-search-results.active {
-    display: block;
-  }
-
-  .mobile-search-results li {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-    color: #141414;
-    cursor: pointer;
-  }
-
-  .mobile-search-results li:hover,
-  .mobile-search-results li:focus,
-  .mobile-search-results li[aria-selected="true"] {
-    background: rgba(187, 25, 25, 0.05);
-    color: #BB1919;
-  }
-
-  .mobile-search-results li a {
-    text-decoration: none;
-    color: inherit;
-    display: block;
   }
 
   @media (max-width: 768px) {
@@ -820,10 +749,33 @@ const navItems = [
     }
 
     .search-container {
+      position: static;
       display: none;
     }
 
+    .search-form {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      margin: 0.75rem 1rem;
+      padding: 0.4rem;
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid #E0E0E0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 998;
+    }
+
+    .mobile-controls {
+      display: flex;
+    }
+
     .mobile-menu-button {
+      display: block;
+    }
+
+    .mobile-search-toggle {
       display: block;
     }
 
@@ -840,10 +792,6 @@ const navItems = [
 
     .ticker-text {
       max-width: 70%;
-    }
-
-    .mobile-search-container {
-      display: block;
     }
   }
 
@@ -891,20 +839,6 @@ const navItems = [
     .ticker-label {
       font-size: 0.45rem;
     }
-
-    .mobile-search-input {
-      font-size: 0.8rem;
-      padding: 0.3rem;
-    }
-
-    .mobile-search-submit {
-      padding: 0.3rem;
-    }
-
-    .mobile-search-container {
-      margin: 0.6rem 0.75rem;
-      padding: 0.3rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -913,11 +847,11 @@ const navItems = [
     .category-link,
     .category-toggle,
     .search-toggle,
+    .mobile-search-toggle,
     .hamburger-line,
     .main-nav,
     .mobile-nav-overlay,
-    .ticker-text,
-    .mobile-search-container {
+    .ticker-text {
       transition: none;
       animation: none;
     }
@@ -936,12 +870,9 @@ const navItems = [
     const searchForm = document.getElementById('search-form');
     const searchInput = searchForm?.querySelector('.search-input');
     const searchResults = document.getElementById('search-results');
-    const mobileSearchContainer = document.getElementById('mobile-search-container');
-    const mobileSearchForm = document.getElementById('mobile-search-form');
-    const mobileSearchInput = mobileSearchForm?.querySelector('.mobile-search-input');
-    const mobileSearchResults = document.getElementById('mobile-search-results');
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
     
-    if (!menuButton || !nav || !overlay || !header || !mobileSearchContainer) return;
+    if (!menuButton || !nav || !overlay || !header || !mobileSearchToggle) return;
     
     let isMenuOpen = false;
     let isCategoryOpen = false;
@@ -999,80 +930,40 @@ const navItems = [
       categoryToggle.addEventListener('click', toggleCategoryMenu);
     }
     
-    // Desktop Search Toggle
-    if (searchToggle && searchForm) {
-      function toggleSearch() {
-        isSearchOpen = !isSearchOpen;
-        searchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
-        searchForm.classList.toggle('active', isSearchOpen);
-        searchForm.style.display = isSearchOpen ? 'flex' : 'none';
-        if (isSearchOpen) {
-          setTimeout(() => searchInput.focus(), 100);
+    // Search Toggle (Desktop and Mobile)
+    function toggleSearch() {
+      isSearchOpen = !isSearchOpen;
+      searchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
+      mobileSearchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
+      searchForm.classList.toggle('active', isSearchOpen);
+      searchForm.style.display = isSearchOpen ? 'flex' : 'none';
+      if (isSearchOpen) {
+        setTimeout(() => searchInput.focus(), 100);
+      } else {
+        searchResults.classList.remove('active');
+        searchInput.value = '';
+        if (window.innerWidth <= 768) {
+          mobileSearchToggle.focus();
         } else {
-          searchResults.classList.remove('active');
-          searchInput.value = '';
           searchToggle.focus();
         }
       }
-      
+    }
+    
+    if (searchToggle && searchForm) {
       searchToggle.addEventListener('click', toggleSearch);
     }
     
-    // Header Scroll Effect and Mobile Search Show/Hide
+    if (mobileSearchToggle) {
+      mobileSearchToggle.addEventListener('click', toggleSearch);
+    }
+    
+    // Header Scroll Effect
     let lastScrollY = window.scrollY;
-    let isMobileSearchVisible = true;
-    const scrollThreshold = 10; // Minimum scroll distance to trigger visibility change
-    let lastVisibilityChangeY = lastScrollY; // Track last position where visibility changed
     
     function handleScroll() {
       const currentScrollY = window.scrollY;
-      const isMobile = window.innerWidth <= 768;
-      const scrollDelta = Math.abs(currentScrollY - lastVisibilityChangeY);
-      
-      // Header scroll effect
       header.classList.toggle('scrolled', currentScrollY > 50);
-      
-      // Mobile search bar show/hide
-      if (isMobile && scrollDelta > scrollThreshold) {
-        if (currentScrollY <= 50) {
-          // Show at top
-          if (!isMobileSearchVisible) {
-            isMobileSearchVisible = true;
-            mobileSearchContainer.classList.remove('hidden');
-            mobileSearchContainer.style.display = 'block';
-            mobileSearchContainer.style.opacity = '1';
-            mobileSearchContainer.setAttribute('aria-hidden', 'false');
-            lastVisibilityChangeY = currentScrollY;
-          }
-        } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-          // Hide when scrolling down
-          if (isMobileSearchVisible) {
-            isMobileSearchVisible = false;
-            mobileSearchContainer.classList.add('hidden');
-            mobileSearchContainer.style.opacity = '0';
-            setTimeout(() => {
-              if (!isMobileSearchVisible) {
-                mobileSearchContainer.style.display = 'none';
-                mobileSearchResults.classList.remove('active');
-                mobileSearchInput.value = '';
-              }
-            }, 300); // Match CSS transition duration
-            mobileSearchContainer.setAttribute('aria-hidden', 'true');
-            lastVisibilityChangeY = currentScrollY;
-          }
-        } else if (currentScrollY < lastScrollY) {
-          // Show when scrolling up
-          if (!isMobileSearchVisible) {
-            isMobileSearchVisible = true;
-            mobileSearchContainer.classList.remove('hidden');
-            mobileSearchContainer.style.display = 'block';
-            mobileSearchContainer.style.opacity = '1';
-            mobileSearchContainer.setAttribute('aria-hidden', 'false');
-            lastVisibilityChangeY = currentScrollY;
-          }
-        }
-      }
-      
       lastScrollY = currentScrollY;
     }
     
@@ -1082,16 +973,9 @@ const navItems = [
         scrollTimeout = setTimeout(() => {
           handleScroll();
           scrollTimeout = null;
-        }, 50); // Increased debounce delay to 50ms
+        }, 50);
       }
     });
-    
-    // Initialize mobile search visibility
-    if (window.innerWidth <= 768) {
-      mobileSearchContainer.classList.remove('hidden');
-      mobileSearchContainer.style.display = 'block';
-      mobileSearchContainer.setAttribute('aria-hidden', 'false');
-    }
     
     // Set Active Nav and Category Links
     function setActiveLinks() {
@@ -1120,7 +1004,7 @@ const navItems = [
     setActiveLinks();
     window.addEventListener('popstate', setActiveLinks);
 
-    // Search Autocomplete (Desktop and Mobile)
+    // Search Autocomplete
     const posts = window.postsData || [];
     let selectedIndex = -1;
     let debounceTimeout;
@@ -1169,7 +1053,6 @@ const navItems = [
       }, 300);
     }
 
-    // Desktop Search
     if (searchForm && searchInput && searchResults) {
       searchInput.addEventListener('input', (e) => {
         debounceSearch(e.target.value, searchResults, searchInput);
@@ -1205,48 +1088,6 @@ const navItems = [
       searchForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const query = searchInput.value.trim();
-        if (query) {
-          window.location.href = `/search?query=${encodeURIComponent(query)}`;
-        }
-      });
-    }
-
-    // Mobile Search
-    if (mobileSearchForm && mobileSearchInput && mobileSearchResults) {
-      mobileSearchInput.addEventListener('input', (e) => {
-        debounceSearch(e.target.value, mobileSearchResults, mobileSearchInput);
-      });
-
-      mobileSearchInput.addEventListener('keydown', (e) => {
-        const items = mobileSearchResults.querySelectorAll('li[role="option"]');
-        if (items.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-          updateSelection(mobileSearchResults, mobileSearchInput);
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          selectedIndex = Math.max(selectedIndex - 1, -1);
-          updateSelection(mobileSearchResults, mobileSearchInput);
-        } else if (e.key === 'Enter' && selectedIndex >= 0) {
-          e.preventDefault();
-          const selectedItem = items[selectedIndex];
-          const link = selectedItem.querySelector('a');
-          if (link) window.location.href = link.getAttribute('href');
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!mobileSearchForm.contains(e.target) && !mobileSearchContainer.classList.contains('hidden')) {
-          mobileSearchResults.classList.remove('active');
-          mobileSearchInput.value = '';
-        }
-      });
-
-      mobileSearchForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const query = mobileSearchInput.value.trim();
         if (query) {
           window.location.href = `/search?query=${encodeURIComponent(query)}`;
         }
