@@ -310,8 +310,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #ffffff !important;
-      color: #1a202c !important;
+      background: #ffffff;
+      color: #1a1a1a;
     }
 
     /* Content Wrapper */
@@ -328,22 +328,21 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 2rem auto;
-      background: #f8f9fa !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 8px;
+      margin: 1rem auto;
+      background: #f8f9fa;
+      border: 1px solid #e2e8f0;
       max-width: 500px;
       overflow: hidden;
     }
 
     .top-ad {
-      margin-top: 4rem;
-      margin-bottom: 2rem;
+      margin-top: 3rem; /* Reduced to minimize gap */
+      margin-bottom: 1rem;
     }
 
     .post-content-ad,
     .bottom-ad {
-      margin: 2rem auto;
+      margin: 1rem auto;
     }
 
     .ad-container iframe,
@@ -360,20 +359,20 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       left: 0;
       width: 100%;
       height: 4px;
-      background: rgba(220, 38, 38, 0.2) !important;
+      background: rgba(187, 25, 25, 0.2); /* Matches header #BB1919 */
       z-index: 1002;
     }
 
     .reading-progress-bar {
       height: 100%;
-      background: #dc2626 !important;
+      background: #BB1919;
       width: 0;
       transition: width 0.2s ease;
     }
 
     /* Breadcrumb Navigation */
     .breadcrumb-nav {
-      margin: 2rem 0;
+      margin: 1rem 0;
       padding: 0 1rem;
     }
 
@@ -384,7 +383,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       gap: 0.5rem;
       font-size: 0.9rem;
-      color: #64748b !important;
+      color: #64748b;
     }
 
     .breadcrumb li::after {
@@ -397,25 +396,26 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .breadcrumb a {
-      color: #dc2626 !important;
+      color: #BB1919;
       text-decoration: none;
     }
 
     .breadcrumb a:hover {
+      color: #991111;
       text-decoration: underline;
     }
 
     /* Category Navigation */
     .category-nav {
-      margin: 2rem 0;
+      margin: 1rem 0;
       padding: 0 1rem;
     }
 
     .category-nav h3 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 1rem;
-      color: #1a1a1a !important;
+      margin-bottom: 0.75rem;
+      color: #1a1a1a;
     }
 
     .category-slider {
@@ -437,8 +437,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .category-slider a {
       display: inline-flex;
       padding: 0.5rem 1rem;
-      background: #dc2626 !important;
-      color: white !important;
+      background: #BB1919;
+      color: white;
       border-radius: 20px;
       font-size: 0.9rem;
       font-weight: 600;
@@ -448,7 +448,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .category-slider a:hover {
-      background: #b91c1c !important;
+      background: #991111;
     }
 
     /* Back Link */
@@ -456,62 +456,62 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #dc2626 !important;
+      color: #BB1919;
       font-weight: 600;
       text-decoration: none;
-      margin: 1.5rem 1rem;
+      margin: 1rem;
     }
 
     .back-link svg {
       width: 20px;
       height: 20px;
-      stroke: #dc2626 !important;
+      stroke: #BB1919;
     }
 
     .back-link:hover {
-      color: #b91c1c !important;
+      color: #991111;
     }
 
     .back-link:hover svg {
-      stroke: #b91c1c !important;
+      stroke: #991111;
     }
 
     /* Draft Notice */
     .draft-notice {
-      background: #fef3c7 !important;
-      color: #b45309 !important;
+      background: #fef3c7;
+      color: #b45309;
       padding: 1rem;
       border-radius: 8px;
-      margin: 1.5rem 1rem;
+      margin: 1rem;
       text-align: center;
       font-weight: 500;
     }
 
     /* Post Card */
     .post-card {
-      background: white !important;
+      background: white;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e2e8f0 !important;
-      margin: 2rem 0;
+      border: 1px solid #e2e8f0;
+      margin: 1rem 0;
     }
 
     .post-header {
-      padding: 2rem;
+      padding: 1.5rem;
     }
 
     .post-meta {
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       flex-wrap: wrap;
     }
 
     .post-category a {
-      background: #dc2626 !important;
-      color: white !important;
+      background: #BB1919;
+      color: white;
       padding: 0.3rem 0.8rem;
       border-radius: 20px;
       font-size: 0.8rem;
@@ -521,12 +521,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-category a:hover {
-      background: #b91c1c !important;
+      background: #991111;
     }
 
     .post-date,
     .reading-time {
-      color: #64748b !important;
+      color: #64748b;
       font-size: 0.9rem;
     }
 
@@ -534,22 +534,22 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: clamp(1.5rem, 3vw, 2.5rem);
       font-weight: 700;
       line-height: 1.2;
-      margin: 0 0 1rem 0;
-      color: #1a1a1a !important;
+      margin: 0 0 0.75rem 0;
+      color: #1a1a1a;
     }
 
     .post-excerpt {
       font-size: 1.1rem;
       line-height: 1.6;
-      color: #4a5568 !important;
-      margin: 0 0 1.5rem 0;
+      color: #4a5568;
+      margin: 0 0 1rem 0;
     }
 
     .author-info {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      color: #4a5568 !important;
+      color: #4a5568;
       font-size: 0.95rem;
     }
 
@@ -575,25 +575,29 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .article-wrapper {
-      padding: 2rem;
+      padding: 1.5rem;
       font-size: 1.125rem;
       line-height: 1.8;
-      color: #1a202c !important;
+      color: #1a1a1a;
+    }
+
+    .article-wrapper p {
+      margin: 0.5rem 0;
     }
 
     /* Related Articles */
     .related-articles {
-      margin: 3rem 0;
-      padding: 2rem;
-      background: #f8f9fa !important;
+      margin: 1rem 0;
+      padding: 1.5rem;
+      background: #f8f9fa;
       border-radius: 8px;
     }
 
     .related-articles h2 {
       font-size: 1.75rem;
       font-weight: 700;
-      margin-bottom: 1.5rem;
-      color: #1a1a1a !important;
+      margin-bottom: 0.75rem;
+      color: #1a1a1a;
     }
 
     .related-posts-list {
@@ -603,7 +607,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .related-post-item {
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .related-post-link {
@@ -611,7 +615,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 1rem;
       text-decoration: none;
-      color: #1a202c !important;
+      color: #1a1a1a;
     }
 
     .related-post-image {
@@ -626,35 +630,35 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1rem;
       font-weight: 500;
       line-height: 1.4;
-      color: #1a202c !important;
+      color: #1a1a1a;
     }
 
     .related-post-link:hover .related-post-title {
-      color: #dc2626 !important;
+      color: #BB1919;
       text-decoration: underline;
     }
 
     /* Newsletter Signup */
     .newsletter-signup {
-      background: #dc2626 !important;
-      color: white !important;
-      padding: 2rem;
+      background: #BB1919;
+      color: white;
+      padding: 1.5rem;
       border-radius: 8px;
+      margin: 1rem 0;
       text-align: center;
-      margin: 3rem 0;
     }
 
     .newsletter-signup h3 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 0.75rem;
-      color: white !important;
+      margin-bottom: 0.5rem;
+      color: white;
     }
 
     .newsletter-signup p {
       font-size: 1rem;
-      margin-bottom: 1.5rem;
-      color: white !important;
+      margin-bottom: 1rem;
+      color: white;
     }
 
     .newsletter-signup form {
@@ -670,8 +674,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1rem;
       width: 250px;
       max-width: 100%;
-      background: white !important;
-      color: #1a202c !important;
+      background: white;
+      color: #1a1a1a;
     }
 
     .newsletter-signup .button {
@@ -679,8 +683,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.75rem 1.5rem;
-      background: #ffffff !important;
-      color: #dc2626 !important;
+      background: white;
+      color: #BB1919;
       border-radius: 6px;
       font-weight: 600;
       font-size: 1rem;
@@ -692,8 +696,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .newsletter-signup .button:hover {
-      background: #f1f1f1 !important;
-      color: #b91c1c !important;
+      background: #f1f1f1;
+      color: #991111;
       transform: translateX(5px);
     }
 
@@ -702,7 +706,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       gap: 1rem;
       justify-content: center;
-      margin: 1.5rem 0;
+      margin: 1rem 0;
     }
 
     .share-button {
@@ -710,8 +714,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: #dc2626 !important;
-      color: white !important;
+      background: #BB1919;
+      color: white;
       border-radius: 6px;
       font-weight: 600;
       text-decoration: none;
@@ -719,45 +723,47 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .share-button:hover {
-      background: #b91c1c !important;
+      background: #991111;
       transform: translateX(3px);
     }
 
     .share-button svg {
       width: 16px;
       height: 16px;
-      fill: white !important;
+      fill: white;
     }
 
     /* Post Footer */
     .post-footer {
-      margin: 3rem 0;
-      padding-top: 2rem;
-      border-top: 1px solid #e2e8f0 !important;
+      margin: 1rem 0;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
     }
 
     .author-bio h4 {
       font-size: 1.25rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      color: #1a1a1a !important;
+      color: #1a1a1a;
     }
 
     .author-bio p {
-      color: #4a5568 !important;
+      color: #4a5568;
       line-height: 1.5;
+      margin: 0.5rem 0;
     }
 
     .popular-categories h3 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 1rem;
-      color: #1a1a1a !important;
+      margin-bottom: 0.5rem;
+      color: #1a1a1a;
     }
 
     .popular-categories ul {
       list-style: none;
       padding: 0;
+      margin: 0;
     }
 
     .popular-categories li {
@@ -765,13 +771,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .popular-categories a {
-      color: #dc2626 !important;
+      color: #BB1919;
       text-decoration: none;
       font-weight: 500;
     }
 
     .popular-categories a:hover {
-      color: #b91c1c !important;
+      color: #991111;
       text-decoration: underline;
     }
 
@@ -789,18 +795,18 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
       .ad-container {
         max-width: 100%;
+        margin: 0.5rem 0;
         border-radius: 0;
-        margin: 1rem 0;
       }
 
       .top-ad {
-        margin-top: 4rem;
-        margin-bottom: 1rem;
+        margin-top: 3rem;
+        margin-bottom: 0.5rem;
       }
 
       .post-content-ad,
       .bottom-ad {
-        margin: 1rem 0;
+        margin: 0.5rem 0;
       }
 
       .breadcrumb-nav,
@@ -846,12 +852,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       }
 
       .category-slider::-webkit-scrollbar-thumb {
-        background: #dc2626 !important;
+        background: #BB1919;
         border-radius: 4px;
       }
 
       .category-slider::-webkit-scrollbar-track {
-        background: #f1f1f1 !important;
+        background: #f1f1f1;
       }
 
       .related-posts-list {
@@ -888,8 +894,9 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
       .post-header,
       .article-wrapper,
-      .related-articles {
-        padding: 1.5rem;
+      .related-articles,
+      .newsletter-signup {
+        padding: 1rem;
       }
 
       .related-post-image {
@@ -917,7 +924,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .category-slider a:focus,
     .newsletter-signup .button:focus,
     .related-post-link:focus {
-      outline: 2px solid #dc2626 !important;
+      outline: 2px solid #BB1919;
       outline-offset: 2px;
     }
 
@@ -952,7 +959,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       .share-button svg, .newsletter-signup h3, .newsletter-signup p,
       .newsletter-signup input, .newsletter-signup .button,
       .newsletter-signup .button:hover, .category-slider::-webkit-scrollbar-thumb,
-      .category-slider::-webkit-scrollbar-track {
+      .category-slider::-webkit-scrollbar-track, .related-post-link,
+      .related-post-link:hover .related-post-title {
         background: inherit !important;
         color: inherit !important;
         border-color: inherit !important;
