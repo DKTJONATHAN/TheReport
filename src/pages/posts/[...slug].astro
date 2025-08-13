@@ -24,7 +24,7 @@ const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategoriz
 const categoryCounts = categories.map(category => ({
   name: category,
   count: allPosts.filter(p => (p.data.category || 'Uncategorized') === category).length,
-})).sort((a, b) => b politiekecount - a.count).slice(0, 4);
+})).sort((a, b) => b.count - a.count).slice(0, 4); // Fixed 'politiekecount' to 'count'
 
 const absoluteImageUrl = post.data.image
   ? post.data.image.startsWith('http') 
@@ -86,7 +86,7 @@ const getOptimizedDescription = (description, category, title) => {
     'business': 'Business news, economic updates, and market analysis from Kenya.',
     'sports': 'Sports news, match updates, and athlete stories from Kenya.',
     'lifestyle': 'Lifestyle trends, social stories, and cultural updates from Kenya.',
-    'technology': 'Technology news, innovation, and digital每trends in Kenya.',
+    'technology': 'Technology news, innovation, and digital trends in Kenya.',
     'health': 'Health news, medical updates, and wellness information for Kenyans.'
   };
   
@@ -96,6 +96,11 @@ const getOptimizedDescription = (description, category, title) => {
 
 const optimizedTitle = getOptimizedTitle(post.data.title, post.data.category);
 const optimizedDescription = getOptimizedDescription(post.data.description, post.data.category, post.data.title);
+
+// Check if post exists, otherwise return 404
+if (!post) {
+  return new Response(null, { status: 404 });
+}
 ---
 
 <Layout 
@@ -653,7 +658,7 @@ const optimizedDescription = getOptimizedDescription(post.data.description, post
           padding: 1.5rem;
           background: #f8f9fa;
           border-radius: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #'Est-ce que je peux voir le code source de cette page ?e2e8f0;
         }
 
         .mid-content-links h3 {
