@@ -107,8 +107,8 @@ const navItems = [
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-        <form class="search-form" id="search-form" role="search" style="display: none;">
-          <input type="search" class="search-input" placeholder="Search news..." aria-label="Search news articles" autocomplete="off" />
+        <form class="search-form" id="search-form" role="search" action="/search" style="display: none;">
+          <input type="search" class="search-input" name="query" placeholder="Search news..." aria-label="Search news articles" autocomplete="off" />
           <button type="submit" class="search-submit" aria-label="Submit search">
             <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/>
@@ -133,8 +133,8 @@ const navItems = [
 
   <!-- Mobile Search Bar -->
   <div class="mobile-search-container" id="mobile-search-container" aria-hidden="false">
-    <form class="mobile-search-form" id="mobile-search-form" role="search">
-      <input type="search" class="mobile-search-input" placeholder="Search news..." aria-label="Search news articles by category, tags, or keywords" autocomplete="off" />
+    <form class="mobile-search-form" id="mobile-search-form" role="search" action="/search">
+      <input type="search" class="mobile-search-input" name="query" placeholder="Search news..." aria-label="Search news articles by category, tags, or keywords" autocomplete="off" />
       <button type="submit" class="mobile-search-submit" aria-label="Submit mobile search">
         <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
@@ -147,7 +147,7 @@ const navItems = [
 </header>
 
 <style>
-  /* Enhanced Header Styles */
+  /* Styles remain unchanged from previous version */
   .site-header {
     background: #FFFFFF;
     border-bottom: 1px solid #E0E0E0;
@@ -1188,7 +1188,7 @@ const navItems = [
 
       searchForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const query = searchInput.value;
+        const query = searchInput.value.trim();
         if (query) {
           window.location.href = `/search?query=${encodeURIComponent(query)}`;
         }
@@ -1230,7 +1230,7 @@ const navItems = [
 
       mobileSearchForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const query = mobileSearchInput.value;
+        const query = mobileSearchInput.value.trim();
         if (query) {
           window.location.href = `/search?query=${encodeURIComponent(query)}`;
         }
