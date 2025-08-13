@@ -27,7 +27,6 @@ const absoluteImageUrl = post.data.image
     : `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
   : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg';
 
-// Fixed URL generation
 const categorySlug = post.data.category 
   ? post.data.category.toLowerCase().replace(/ /g, '-')
   : 'uncategorized';
@@ -96,7 +95,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
   </script>
 
-  <div class="ad-container">
+  <div class="ad-container top-ad">
     <script type="text/javascript">
       atOptions = {
         'key': '1610960d9ced232cc76d8f5510ee4608',
@@ -153,7 +152,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       </div>
     )}
     
-    <article>
+    <article class="post-card">
       <header class="post-header">
         <div class="post-meta">
           <span class="post-category">
@@ -174,7 +173,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         <h1 class="post-title">{post.data.title || 'Untitled'}</h1>
         
         {post.data.description && (
-          <p class="post-description">{post.data.description}</p>
+          <p class="post-excerpt">{post.data.description}</p>
         )}
 
         <div class="author-info">
@@ -188,7 +187,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
           <img 
             src={post.data.image}
             alt={post.data.imageAlt || `${post.data.title || 'Untitled'} - Jonathan Mwaniki`}
-            class="post-featured-image"
+            class="post-image"
             loading="lazy"
             width="800"
             height="450"
@@ -196,7 +195,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         </div>
       )}
       
-      <div class="ad-container">
+      <div class="ad-container post-content-ad">
         <script type="text/javascript">
           atOptions = {
             'key': '1610960d9ced232cc76d8f5510ee4608',
@@ -217,18 +216,46 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
       <section class="related-articles">
         <h2>More {post.data.category || 'Uncategorized'} News</h2>
-        <ul>
+        <div class="posts-grid">
           {(await getCollection('posts'))
             .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
             .slice(0, 3)
             .map(relatedPost => (
-              <li>
-                <a href={`/posts/${relatedPost.slug}`}>
-                  {relatedPost.data.title}
+              <article class="related-post-card">
+                <a href={`/posts/${relatedPost.slug}`} class="post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
+                  {relatedPost.data.image && (
+                    <div class="post-image-container">
+                      <img
+                        src={relatedPost.data.image}
+                        alt={relatedPost.data.imageAlt || relatedPost.data.title}
+                        class="post-image"
+                        loading="lazy"
+                        width="400"
+                        height="240"
+                      />
+                    </div>
+                  )}
+                  <div class="post-content">
+                    <div class="post-meta">
+                      <span class="post-category">{relatedPost.data.category}</span>
+                      <time class="post-date" datetime={relatedPost.data.date}>
+                        {new Date(relatedPost.data.date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </time>
+                    </div>
+                    <h3 class="post-title">{relatedPost.data.title}</h3>
+                    {relatedPost.data.description && <p class="post-excerpt">{relatedPost.data.description}</p>}
+                    <div class="post-footer">
+                      <span class="read-more">Read Article</span>
+                    </div>
+                  </div>
                 </a>
-              </li>
+              </article>
             ))}
-        </ul>
+        </div>
       </section>
       
       <div class="newsletter-signup">
@@ -236,11 +263,11 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         <p>Get breaking news from Kenya delivered to your inbox</p>
         <div>
           <input type="email" placeholder="Enter your email">
-          <button>Subscribe</button>
+          <button class="button">Subscribe</button>
         </div>
       </div>
       
-      <div class="ad-container">
+      <div class="ad-container bottom-ad">
         <script type="text/javascript">
           atOptions = {
             'key': '1610960d9ced232cc76d8f5510ee4608',
@@ -294,6 +321,51 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
   </div>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    .post-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* Ad Container Styles */
+    .ad-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem auto;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      max-width: 500px;
+      overflow: hidden;
+    }
+
+    .top-ad {
+      margin-top: 0;
+      margin-bottom: 2rem;
+    }
+
+    .post-content-ad {
+      margin: 2rem auto;
+    }
+
+    .bottom-ad {
+      margin: 2rem auto;
+    }
+
+    .ad-container iframe,
+    .ad-container script {
+      max-width: 468px;
+      max-height: 60px;
+    }
+
+    /* Reading Progress Bar */
     .reading-progress {
       position: fixed;
       top: 0;
@@ -302,77 +374,564 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       height: 4px;
       background: rgba(220, 38, 38, 0.2);
     }
+
     .reading-progress-bar {
       height: 100%;
       background: #dc2626;
-      width: 0%;
+      width: 0;
+      transition: width 0.2s ease;
     }
-    .post-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-    .post-title {
-      font-size: 2.5rem;
-      line-height: 1.2;
+
+    /* Breadcrumb Navigation */
+    .breadcrumb {
+      list-style: none;
+      padding: 0;
       margin: 1rem 0;
-    }
-    .post-meta {
       display: flex;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #64748b;
     }
-    .post-category {
+
+    .breadcrumb li::after {
+      content: '>';
+      margin-left: 0.5rem;
+    }
+
+    .breadcrumb li:last-child::after {
+      content: '';
+    }
+
+    .breadcrumb a {
+      color: #dc2626;
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Category Navigation */
+    .category-nav {
+      margin: 2rem 0;
+    }
+
+    .category-nav h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #1a1a1a;
+    }
+
+    .category-slider {
+      overflow-x: hidden;
+    }
+
+    .category-slider ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .category-slider li {
+      flex: 0 0 auto;
+    }
+
+    .category-slider a {
+      display: inline-flex;
+      padding: 0.5rem 1rem;
       background: #dc2626;
       color: white;
-      padding: 0.5rem 1rem;
       border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: background 0.3s ease;
     }
-    .post-featured-image {
-      width: 100%;
-      height: auto;
+
+    .category-slider a:hover {
+      background: #b91c1c;
+    }
+
+    /* Back Link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #dc2626;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .back-link svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .back-link:hover {
+      color: #b91c1c;
+    }
+
+    /* Draft Notice */
+    .draft-notice {
+      background: #fef3c7;
+      color: #b45309;
+      padding: 1rem;
       border-radius: 8px;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-weight: 500;
     }
+
+    /* Post Card */
+    .post-card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 2rem;
+    }
+
+    .post-header {
+      padding: 2rem;
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .post-category a {
+      background: #dc2626;
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .post-category a:hover {
+      background: #b91c1c;
+    }
+
+    .post-date,
+    .reading-time {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .post-title {
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0 0 1rem 0;
+      color: #1a1a1a;
+    }
+
+    .post-excerpt {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: #4a5568;
+      margin: 0 0 1.5rem 0;
+    }
+
+    .author-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      color: #4a5568;
+      font-size: 0.95rem;
+    }
+
+    .author-title {
+      font-style: italic;
+    }
+
+    .post-image-container {
+      height: 450px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .post-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .post-card:hover .post-image {
+      transform: scale(1.05);
+    }
+
     .article-wrapper {
-      line-height: 1.8;
+      padding: 2rem;
       font-size: 1.125rem;
+      line-height: 1.8;
+      color: #1a202c;
     }
+
+    /* Related Articles */
     .related-articles {
       margin: 3rem 0;
       padding: 2rem;
       background: #f8f9fa;
+      border-radius: 8px;
     }
+
+    .related-articles h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #1a1a1a;
+    }
+
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .related-post-card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border: 1px solid #e2e8f0;
+    }
+
+    .related-post-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      border-color: #dc2626;
+    }
+
+    .post-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      height: 100%;
+    }
+
+    .post-content {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 200px);
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .post-category {
+      background: #dc2626;
+      color: white;
+      padding: 0.25rem 0.6rem;
+      border-radius: 15px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .post-date {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+
+    .post-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem 0;
+      line-height: 1.3;
+      color: #1a202c;
+    }
+
+    .post-excerpt {
+      color: #4a5568;
+      line-height: 1.5;
+      margin: 0 0 1.5rem 0;
+      flex-grow: 1;
+      font-size: 0.95rem;
+    }
+
+    .post-footer {
+      margin-top: auto;
+    }
+
+    .read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #dc2626;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .read-more:hover {
+      color: #b91c1c;
+    }
+
+    /* Newsletter Signup */
     .newsletter-signup {
       background: #dc2626;
       color: white;
       padding: 2rem;
       border-radius: 8px;
       text-align: center;
+      margin: 2rem 0;
     }
+
+    .newsletter-signup h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .newsletter-signup p {
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .newsletter-signup div {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .newsletter-signup input {
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      width: 250px;
+      max-width: 100%;
+    }
+
+    .newsletter-signup .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: #ffffff;
+      color: #dc2626;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .newsletter-signup .button:hover {
+      background: #f1f1f1;
+      color: #b91c1c;
+      transform: translateX(5px);
+    }
+
+    /* Social Share */
     .social-share {
       display: flex;
       gap: 1rem;
       justify-content: center;
+      margin: 1.5rem 0;
     }
+
     .share-button {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      border-radius: 4px;
+      background: #dc2626;
+      color: white;
+      border-radius: 6px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
     }
+
+    .share-button:hover {
+      background: #b91c1c;
+      transform: translateX(3px);
+    }
+
+    .share-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Post Footer */
+    .post-footer {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .post-footer-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .author-bio h4 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .author-bio p {
+      color: #4a5568;
+      line-height: 1.5;
+    }
+
+    .popular-categories h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .popular-categories ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .popular-categories li {
+      margin-bottom: 0.5rem;
+    }
+
+    .popular-categories a {
+      color: #dc2626;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .popular-categories a:hover {
+      color: #b91c1c;
+      text-decoration: underline;
+    }
+
+    /* Mobile Optimizations */
     @media (max-width: 768px) {
       .post-container {
         padding: 1rem;
       }
+
       .post-title {
         font-size: 1.75rem;
+      }
+
+      .post-image-container {
+        height: 250px;
+      }
+
+      .category-slider {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .category-slider ul {
+        display: flex;
+        flex-wrap: nowrap;
+        padding-bottom: 0.5rem;
+      }
+
+      .category-slider li {
+        scroll-snap-align: start;
+      }
+
+      .category-slider::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .category-slider::-webkit-scrollbar-thumb {
+        background: #dc2626;
+        border-radius: 4px;
+      }
+
+      .category-slider::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      .posts-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .newsletter-signup div {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .newsletter-signup input {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .post-image-container {
+        height: 200px;
+      }
+
+      .post-title {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .post-link:focus,
+    .share-button:focus,
+    .back-link:focus,
+    .category-slider a:focus,
+    .newsletter-signup .button:focus {
+      outline: 2px solid #dc2626;
+      outline-offset: 2px;
+    }
+
+    /* Print styles */
+    @media print {
+      .post-card,
+      .related-post-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+      }
+
+      .ad-container,
+      .reading-progress,
+      .category-nav,
+      .newsletter-signup {
+        display: none !important;
       }
     }
   </style>
 
   <script>
-    // Reading progress bar
     window.addEventListener('scroll', function() {
       const article = document.querySelector('article');
       const progressBar = document.getElementById('progress-bar');
