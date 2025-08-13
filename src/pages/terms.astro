@@ -1,0 +1,145 @@
+---
+import Layout from '../layouts/Layout.astro';
+const lastUpdated = "August 13, 2025";
+---
+
+<Layout title="Terms of Service - The Mwaniki Report">
+  <main class="policy-page" role="main">
+    <section class="policy-header">
+      <h1>Terms of Service</h1>
+      <p>Last Updated: {lastUpdated}</p>
+    </section>
+    <section class="policy-content">
+      <h2>1. Introduction</h2>
+      <p>These Terms of Service ("Terms") govern your use of <a href="/">jonathanmwaniki.co.ke</a> ("Website") operated by The Mwaniki Report ("we," "us," or "our"). By accessing our Website, you agree to these Terms, which comply with Kenyan law and international standards.</p>
+
+      <h2>2. Use of the Website</h2>
+      <p>You agree to:</p>
+      <ul>
+        <li>Use the Website for lawful purposes only.</li>
+        <li>Not post or transmit harmful, offensive, or illegal content.</li>
+        <li>Not attempt to gain unauthorized access to our systems.</li>
+      </ul>
+
+      <h2>3. Intellectual Property</h2>
+      <p>All content on the Website (e.g., articles, images, logos) is owned by The Mwaniki Report or its licensors and protected by Kenyan copyright laws and international treaties. You may not reproduce or distribute content without permission.</p>
+
+      <h2>4. User Contributions</h2>
+      <p>Comments or submissions you provide may be published on the Website. By submitting, you grant us a non-exclusive, royalty-free license to use, modify, and display such content.</p>
+
+      <h2>5. Third-Party Links</h2>
+      <p>Our Website may contain links to third-party sites. We are not responsible for their content or practices.</p>
+
+      <h2>6. Limitation of Liability</h2>
+      <p>The Website is provided "as is." We are not liable for any damages arising from your use, to the extent permitted by Kenyan law.</p>
+
+      <h2>7. Governing Law</h2>
+      <p>These Terms are governed by the laws of Kenya. Disputes will be resolved in the courts of Nairobi, Kenya, subject to international jurisdiction where applicable (e.g., GDPR for EU users).</p>
+
+      <h2>8. Changes to These Terms</h2>
+      <p>We may update these Terms. Changes will be posted here with an updated "Last Updated" date.</p>
+
+      <h2>9. Contact Us</h2>
+      <p>For questions, contact us at:</p>
+      <p>Email: <a href="mailto:info@jonathanmwaniki.co.ke">info@jonathanmwaniki.co.ke</a></p>
+      <p>The Mwaniki Report, Nairobi, Kenya.</p>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .policy-page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    color: #141414;
+  }
+
+  .policy-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .policy-header h1 {
+    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
+    font-size: 2rem;
+    color: #141414;
+    margin: 0 0 0.5rem;
+  }
+
+  .policy-header p {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  .policy-content {
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .policy-content h2 {
+    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
+    font-size: 1.5rem;
+    color: #141414;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  .policy-content p, .policy-content ul {
+    font-size: 0.9375rem;
+    color: #333;
+  }
+
+  .policy-content ul {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+  }
+
+  .policy-content a {
+    color: #BB1919;
+    text-decoration: none;
+  }
+
+  .policy-content a:hover,
+  .policy-content a:focus {
+    text-decoration: underline;
+  }
+
+  .policy-content a:focus {
+    outline: 2px solid #BB1919;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 768px) {
+    .policy-page {
+      padding: 1.5rem 0.75rem;
+    }
+
+    .policy-header h1 {
+      font-size: 1.75rem;
+    }
+
+    .policy-content h2 {
+      font-size: 1.25rem;
+    }
+
+    .policy-content p, .policy-content ul {
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .policy-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .policy-content h2 {
+      font-size: 1.125rem;
+    }
+
+    .policy-content p, .policy-content ul {
+      font-size: 0.8125rem;
+    }
+  }
+</style>
