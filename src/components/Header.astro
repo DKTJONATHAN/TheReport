@@ -147,7 +147,6 @@ const navItems = [
 </header>
 
 <style>
-  /* Styles remain unchanged from previous version */
   .site-header {
     background: #FFFFFF;
     border-bottom: 1px solid #E0E0E0;
@@ -597,11 +596,11 @@ const navItems = [
     border-radius: 8px;
     border: 1px solid #E0E0E0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, display 0.3s ease;
+    opacity: 1;
   }
 
   .mobile-search-container.hidden {
-    display: none;
     opacity: 0;
     pointer-events: none;
   }
@@ -926,7 +925,6 @@ const navItems = [
 </style>
 
 <script is:inline>
-  // Enhanced Mobile Menu and Search Functionality
   function initHeader() {
     const menuButton = document.getElementById('mobile-menu-toggle');
     const nav = document.getElementById('main-nav');
@@ -1023,37 +1021,55 @@ const navItems = [
     // Header Scroll Effect and Mobile Search Show/Hide
     let lastScrollY = window.scrollY;
     let isMobileSearchVisible = true;
+    const scrollThreshold = 10; // Minimum scroll distance to trigger visibility change
+    let lastVisibilityChangeY = lastScrollY; // Track last position where visibility changed
     
     function handleScroll() {
       const currentScrollY = window.scrollY;
       const isMobile = window.innerWidth <= 768;
+      const scrollDelta = Math.abs(currentScrollY - lastVisibilityChangeY);
       
       // Header scroll effect
       header.classList.toggle('scrolled', currentScrollY > 50);
       
       // Mobile search bar show/hide
-      if (isMobile) {
+      if (isMobile && scrollDelta > scrollThreshold) {
         if (currentScrollY <= 50) {
           // Show at top
-          isMobileSearchVisible = true;
-          mobileSearchContainer.classList.remove('hidden');
-          mobileSearchContainer.style.display = 'block';
-          mobileSearchContainer.setAttribute('aria-hidden', 'false');
+          if (!isMobileSearchVisible) {
+            isMobileSearchVisible = true;
+            mobileSearchContainer.classList.remove('hidden');
+            mobileSearchContainer.style.display = 'block';
+            mobileSearchContainer.style.opacity = '1';
+            mobileSearchContainer.setAttribute('aria-hidden', 'false');
+            lastVisibilityChangeY = currentScrollY;
+          }
         } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
           // Hide when scrolling down
-          isMobileSearchVisible = false;
-          mobileSearchContainer.classList.add('hidden');
-          mobileSearchContainer.style.display = 'none';
-          mobileSearchContainer.setAttribute('aria-hidden', 'true');
-          // Clear search results and input when hiding
-          mobileSearchResults.classList.remove('active');
-          mobileSearchInput.value = '';
+          if (isMobileSearchVisible) {
+            isMobileSearchVisible = false;
+            mobileSearchContainer.classList.add('hidden');
+            mobileSearchContainer.style.opacity = '0';
+            setTimeout(() => {
+              if (!isMobileSearchVisible) {
+                mobileSearchContainer.style.display = 'none';
+                mobileSearchResults.classList.remove('active');
+                mobileSearchInput.value = '';
+              }
+            }, 300); // Match CSS transition duration
+            mobileSearchContainer.setAttribute('aria-hidden', 'true');
+            lastVisibilityChangeY = currentScrollY;
+          }
         } else if (currentScrollY < lastScrollY) {
           // Show when scrolling up
-          isMobileSearchVisible = true;
-          mobileSearchContainer.classList.remove('hidden');
-          mobileSearchContainer.style.display = 'block';
-          mobileSearchContainer.setAttribute('aria-hidden', 'false');
+          if (!isMobileSearchVisible) {
+            isMobileSearchVisible = true;
+            mobileSearchContainer.classList.remove('hidden');
+            mobileSearchContainer.style.display = 'block';
+            mobileSearchContainer.style.opacity = '1';
+            mobileSearchContainer.setAttribute('aria-hidden', 'false');
+            lastVisibilityChangeY = currentScrollY;
+          }
         }
       }
       
@@ -1066,7 +1082,7 @@ const navItems = [
         scrollTimeout = setTimeout(() => {
           handleScroll();
           scrollTimeout = null;
-        }, 16);
+        }, 50); // Increased debounce delay to 50ms
       }
     });
     
