@@ -1,0 +1,187 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+// Fetch all posts
+const posts = await getCollection('posts');
+
+// Get the search query from URL parameters
+const query = Astro.url.searchParams.get('query')?.toLowerCase() || '';
+const words = query.split(' ').filter(Boolean);
+
+// Filter posts based on query (matching title, category, tags, keywords)
+const results = query
+  ? posts.filter(post => {
+      const titleWords = (post.data.title || '').toLowerCase().split(' ');
+      const categoryWords = (post.data.category || '').toLowerCase().split(' ');
+      const tagWords = (post.data.tags || []).join(' ').toLowerCase().split(' ');
+      const keywordWords = (post.data.keywords || []).join(' ').toLowerCase().split(' ');
+      return words.some(q =>
+        titleWords.some(w => w.includes(q)) ||
+        categoryWords.some(w => w.includes(q)) ||
+        tagWords.some(w => w.includes(q)) ||
+        keywordWords.some(w => w.includes(q))
+      );
+    }).sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  : [];
+---
+
+<Layout title={`Search Results for "${query}" - The Mwaniki Report`}>
+  <main class="search-results-page" role="main">
+    <section class="search-header">
+      <h1>Search Results{query ? ` for "${query}"` : ''}</h1>
+      {query && <p>Found {results.length} {results.length === 1 ? 'result' : 'results'}</p>}
+    </section>
+
+    <section class="search-content" aria-live="polite">
+      {results.length > 0 ? (
+        <ul class="results-list">
+          {results.map(post => (
+            <li class="result-item">
+              <a href={`/posts/${post.slug}`} class="result-link">
+                <h2 class="result-title">{post.data.title}</h2>
+                <p class="result-meta">{post.data.category} | {new Date(post.data.date).toLocaleDateString()}</p>
+                {post.data.description && (
+                  <p class="result-description">{post.data.description}</p>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        query ? (
+          <p class="no-results">No results found for "{query}". Try a different search term.</p>
+        ) : (
+          <p class="no-query">Enter a search term to find articles.</p>
+        )
+      )}
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .search-results-page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .search-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .search-header h1 {
+    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
+    font-size: 2rem;
+    color: #141414;
+    margin: 0 0 0.5rem;
+  }
+
+  .search-header p {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 1rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .results-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .result-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #E0E0E0;
+  }
+
+  .result-link {
+    text-decoration: none;
+    color: #141414;
+    display: block;
+  }
+
+  .result-link:hover,
+  .result-link:focus {
+    color: #BB1919;
+  }
+
+  .result-link:focus {
+    outline: 2px solid #BB1919;
+    outline-offset: 2px;
+  }
+
+  .result-title {
+    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
+    font-size: 1.5rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .result-meta {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0 0 0.25rem;
+  }
+
+  .result-description {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.9375rem;
+    color: #333;
+    margin: 0;
+  }
+
+  .no-results,
+  .no-query {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 1rem;
+    color: #666;
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .search-results-page {
+      padding: 1.5rem 0.75rem;
+    }
+
+    .search-header h1 {
+      font-size: 1.75rem;
+    }
+
+    .search-header p {
+      font-size: 0.875rem;
+    }
+
+    .result-title {
+      font-size: 1.25rem;
+    }
+
+    .result-meta {
+      font-size: 0.8rem;
+    }
+
+    .result-description {
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .search-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .result-title {
+      font-size: 1.125rem;
+    }
+
+    .result-meta {
+      font-size: 0.75rem;
+    }
+
+    .result-description {
+      font-size: 0.8rem;
+    }
+  }
+</style>
