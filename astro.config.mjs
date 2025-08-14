@@ -1,12 +1,15 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel/static'; // Changed to static adapter
+import vercel from '@astrojs/vercel/static';
 
 export default defineConfig({
-  site: 'https://jonathanmwaniki.co.ke',
-  output: 'static', // Changed to static output
+  site: 'https://www.jonathanmwaniki.co.ke', // Changed to www version
+  output: 'static',
   adapter: vercel(),
-  integrations: [mdx(), sitemap()],
-  markdown: { syntaxHighlight: 'prism' }
+  integrations: [mdx(), sitemap({
+    canonicalURL: 'https://www.jonathanmwaniki.co.ke' // Added canonical URL for sitemap
+  })],
+  markdown: { syntaxHighlight: 'prism' },
+  trailingSlash: 'ignore', // Recommended for consistency
 });
