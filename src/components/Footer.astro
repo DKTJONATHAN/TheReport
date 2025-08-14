@@ -5,7 +5,7 @@ const socialLinks = [
     name: 'X', 
     url: 'https://x.com/jonathanmwaniki', 
     icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-    color: '#000000' // Updated to black for X branding
+    color: '#000000'
   },
   { 
     name: 'LinkedIn', 
@@ -34,7 +34,8 @@ const footerLinks = [
       { name: 'Home', url: '/' },
       { name: 'About', url: '/about' },
       { name: 'Contact', url: '/contact' },
-      { name: 'Archives', url: '/archives' }
+      { name: 'Archives', url: '/archives' },
+      { name: 'Sitemap', url: 'https://jonathanmwaniki/sitemap-0.xml' } // Added Sitemap link
     ]
   },
   {
@@ -74,18 +75,34 @@ const footerLinks = [
       
       <!-- Footer Links -->
       <div class="footer-links">
-        {footerLinks.map(section => (
-          <div class="footer-section">
-            <h4 class="section-title">{section.title}</h4>
-            <ul class="section-links">
-              {section.links.map(link => (
-                <li>
-                  <a href={link.url} class="footer-link">{link.name}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        <div class="footer-links-left">
+          {footerLinks.filter(section => section.title === 'Legal').map(section => (
+            <div class="footer-section">
+              <h4 class="section-title">{section.title}</h4>
+              <ul class="section-links">
+                {section.links.map(link => (
+                  <li>
+                    <a href={link.url} class="footer-link">{link.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div class="footer-links-right">
+          {footerLinks.filter(section => section.title !== 'Legal').map(section => (
+            <div class="footer-section">
+              <h4 class="section-title">{section.title}</h4>
+              <ul class="section-links">
+                {section.links.map(link => (
+                  <li>
+                    <a href={link.url} class="footer-link">{link.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
     
@@ -169,6 +186,13 @@ const footerLinks = [
     }
 
     .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-links-left,
+    .footer-links-right {
+      flex: 1;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 1.5rem;
@@ -202,8 +226,7 @@ const footerLinks = [
 
     .footer-link:hover {
       color: #BB1919;
-    }
-
+ pop-up
     .footer-link:focus {
       outline: 2px solid #BB1919;
       outline-offset: 2px;
@@ -245,6 +268,10 @@ const footerLinks = [
       transition: color 0.3s ease;
     }
 
+    .footer-link:hover {
+      color: #BB1919;
+    }
+
     .social-link:hover {
       color: var(--social-color);
     }
@@ -282,8 +309,16 @@ const footerLinks = [
       }
 
       .footer-links {
-        grid-template-columns: 1fr 1fr; /* Two columns on mobile */
+        flex-direction: row;
         gap: 1rem;
+      }
+
+      .footer-links-left {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-links-right {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
 
       .footer-bottom {
@@ -299,8 +334,13 @@ const footerLinks = [
 
     @media (max-width: 480px) {
       .footer-links {
-        grid-template-columns: 1fr; /* Fallback to single column for very small screens */
+        flex-direction: column;
         gap: 0.75rem;
+      }
+
+      .footer-links-left,
+      .footer-links-right {
+        grid-template-columns: 1fr;
       }
 
       .section-title {
@@ -314,6 +354,7 @@ const footerLinks = [
 
     @media (prefers-reduced-motion: reduce) {
       .footer-link,
+      .social-link,
       .back-to-top-button,
       .footer-section {
         transition: none;
@@ -322,7 +363,7 @@ const footerLinks = [
   </style>
 
   <script is:inline>
-    // Footer Functionality (removed newsletter logic)
+    // Footer Functionality
     function initFooter() {
       const backToTopButton = document.querySelector('.back-to-top-button');
       
