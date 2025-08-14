@@ -3,7 +3,7 @@ title: "Kenya's Dangerous Denial: How Government Officials Are Concealing Child 
 description: "An analysis of the Kenyan government's aggressive response to BBC's child trafficking exposé, raising serious concerns about official complicity and human rights violations"
 date: 2025,08,14
 author: "Investigative Research Team"
-image: "https://example.com/kenya-government-denial-featured.jpg"
+image: "https://i.postimg.cc/0NzkXT2j/images-1.jpg"
 imageCaption: "Interior CS Kipchumba Murkomen addresses parliament regarding BBC documentary"
 imageAlt: "Kenyan government official speaking at parliamentary session"
 category: "Human Rights Investigation"
@@ -18,7 +18,7 @@ The Kenyan government's vehement denial of a BBC investigation exposing child se
 
 <figure class="content-image">
   <img 
-    src="https://example.com/murkomen-parliament-session.jpg" 
+    src="https://i.postimg.cc/B6Jhn0LQ/533274760-1220814086753020-1717136375753495441-n.jpg" 
     alt="CS Murkomen addressing parliament about BBC documentary"
     loading="lazy"
     width="800"
@@ -37,7 +37,7 @@ The BBC investigation followed proper journalistic protocols, submitting all evi
 
 <figure class="content-image">
   <img 
-    src="https://example.com/maai-mahiu-transport-hub.jpg" 
+    src="https://i.postimg.cc/0NzkXT2j/images-1.jpg" 
     alt="Maai Mahiu transport corridor showing trucks and busy road"
     loading="lazy"
     width="800"
