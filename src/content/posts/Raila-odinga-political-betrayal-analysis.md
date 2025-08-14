@@ -3,10 +3,10 @@ title: "The Fall of a Political Titan: How Raila Odinga Betrayed Kenya's Struggl
 description: "An in-depth analysis of Raila Odinga's shocking alliance with President Ruto, his attacks on media exposing corruption, and the complete collapse of his political career"
 date: 2025,08,14
 author: "Political Analysis Team"
-image: "https://example.com/raila-betrayal-featured.jpg"
+image: "https://i.postimg.cc/J7kb9tLy/images-5.jpg"
 imageCaption: "Raila Odinga and William Ruto's controversial handshake that shocked Kenya"
 imageAlt: "Raila Odinga shaking hands with President William Ruto in political alliance"
-category: "Political Analysis"
+category: "Politics"
 tags: ["Raila Odinga", "Kenya Politics", "Political Betrayal", "Ruto Government", "Opposition Politics"]
 featured: true
 draft: false
@@ -18,7 +18,7 @@ The man once hailed as the champion of Kenya's democratic struggle has fallen so
 
 <figure class="content-image">
   <img 
-    src="https://example.com/raila-ruto-handshake-2025.jpg" 
+    src="https://i.postimg.cc/tTmnxNyR/images-4.jpg" 
     alt="Raila Odinga and William Ruto shaking hands during their political alliance announcement"
     loading="lazy"
     width="800"
@@ -39,7 +39,7 @@ The formalization of this betrayal came on March 7, 2025, when Raila signed a Me
 
 <figure class="content-image">
   <img 
-    src="https://example.com/gen-z-reject-raila.jpg" 
+    src="https://i.postimg.cc/VNP60shh/images-7.jpg" 
     alt="Kenyan youth protesters holding signs rejecting Raila Odinga"
     loading="lazy"
     width="800"
@@ -74,7 +74,7 @@ The youth's rejection was not just tactical – it was ideological. They recogni
 
 <figure class="content-image">
   <img 
-    src="https://example.com/raila-political-cartoon-betrayal.jpg" 
+    src="https://i.postimg.cc/ZRkrRhPY/images-6.jpg" 
     alt="Political cartoon showing Raila Odinga's transformation from opposition to government"
     loading="lazy"
     width="800"
@@ -105,7 +105,7 @@ His attack on corruption-exposing media shows that he has fully internalized the
 
 <figure class="content-image">
   <img 
-    src="https://example.com/odm-party-crisis.jpg" 
+    src="https://i.postimg.cc/jS45NYrd/images-8.jpg" 
     alt="ODM party headquarters showing signs of internal crisis"
     loading="lazy"
     width="800"
