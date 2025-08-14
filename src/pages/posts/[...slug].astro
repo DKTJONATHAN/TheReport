@@ -46,6 +46,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
   image={absoluteImageUrl}
   canonical={postUrl}
   meta={[
+    { name: 'color-scheme', content: 'light dark' }, /* Added to support both themes */
     { name: 'og:title', content: optimizedTitle },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
@@ -291,7 +292,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
             {categoryCounts.map(category => (
               <li>
                 <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
-                  {category.name} ({category.count} articles)
+                  {category.name} ({<button class="button">Subscribe</button>category.count} articles)
                 </a>
               </li>
             ))}
@@ -306,12 +307,48 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       box-sizing: border-box;
     }
 
+    :root {
+      --background: #ffffff;
+      --text-color: #1a1a1a;
+      --card-bg: #ffffff;
+      --secondary-text: #4a5568;
+      --accent: #BB1919;
+      --accent-hover: #991111;
+      --border: #e2e8f0;
+      --progress-bg: rgba(187, 25, 25, 0.2);
+      --ad-bg: #f8f9fa;
+      --draft-bg: #fef3c7;
+      --draft-text: #b45309;
+      --newsletter-bg: #BB1919;
+      --scrollbar-thumb: #BB1919;
+      --scrollbar-track: #f1f1f1;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #1a1a1a;
+        --text-color: #e0e0e0;
+        --card-bg: #2d2d2d;
+        --secondary-text: #b0b0b0;
+        --accent: #ff4d4d;
+        --accent-hover: #ff6666;
+        --border: #444;
+        --progress-bg: rgba(255, 77, 77, 0.2);
+        --ad-bg: #333;
+        --draft-bg: #4a3b00;
+        --draft-text: #ffd700;
+        --newsletter-bg: #2d2d2d;
+        --scrollbar-thumb: #ff4d4d;
+        --scrollbar-track: #333;
+      }
+    }
+
     body {
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #ffffff;
-      color: #1a1a1a;
+      background: var(--background);
+      color: var(--text-color);
     }
 
     /* Content Wrapper */
@@ -329,27 +366,27 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       justify-content: center;
       align-items: center;
       margin: 1rem auto;
-      background: #f8f9fa;
-      border: 1px solid #e2e8f0;
+      background: var(--ad-bg);
+      border: 1px solid var(--border);
       max-width: 500px;
       overflow: hidden;
     }
 
+    .ad-container iframe {
+      background: var(--card-bg);
+      max-width: 468px;
+      max-height: 60px;
+      width: 100%;
+    }
+
     .top-ad {
-      margin-top: 3rem; /* Reduced to minimize gap */
+      margin-top: 3rem;
       margin-bottom: 1rem;
     }
 
     .post-content-ad,
     .bottom-ad {
       margin: 1rem auto;
-    }
-
-    .ad-container iframe,
-    .ad-container script {
-      max-width: 468px;
-      max-height: 60px;
-      width: 100%;
     }
 
     /* Reading Progress Bar */
@@ -359,13 +396,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       left: 0;
       width: 100%;
       height: 4px;
-      background: rgba(187, 25, 25, 0.2); /* Matches header #BB1919 */
+      background: var(--progress-bg);
       z-index: 1002;
     }
 
     .reading-progress-bar {
       height: 100%;
-      background: #BB1919;
+      background: var(--accent);
       width: 0;
       transition: width 0.2s ease;
     }
@@ -383,7 +420,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       gap: 0.5rem;
       font-size: 0.9rem;
-      color: #64748b;
+      color: var(--secondary-text);
     }
 
     .breadcrumb li::after {
@@ -396,12 +433,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .breadcrumb a {
-      color: #BB1919;
+      color: var(--accent);
       text-decoration: none;
     }
 
     .breadcrumb a:hover {
-      color: #991111;
+      color: var(--accent-hover);
       text-decoration: underline;
     }
 
@@ -415,7 +452,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 0.75rem;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .category-slider {
@@ -437,8 +474,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .category-slider a {
       display: inline-flex;
       padding: 0.5rem 1rem;
-      background: #BB1919;
-      color: white;
+      background: var(--accent);
+      color: #ffffff;
       border-radius: 20px;
       font-size: 0.9rem;
       font-weight: 600;
@@ -448,7 +485,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .category-slider a:hover {
-      background: #991111;
+      background: var(--accent-hover);
     }
 
     /* Back Link */
@@ -456,7 +493,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #BB1919;
+      color: var(--accent);
       font-weight: 600;
       text-decoration: none;
       margin: 1rem;
@@ -465,21 +502,21 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .back-link svg {
       width: 20px;
       height: 20px;
-      stroke: #BB1919;
+      stroke: var(--accent);
     }
 
     .back-link:hover {
-      color: #991111;
+      color: var(--accent-hover);
     }
 
     .back-link:hover svg {
-      stroke: #991111;
+      stroke: var(--accent-hover);
     }
 
     /* Draft Notice */
     .draft-notice {
-      background: #fef3c7;
-      color: #b45309;
+      background: var(--draft-bg);
+      color: var(--draft-text);
       padding: 1rem;
       border-radius: 8px;
       margin: 1rem;
@@ -489,11 +526,11 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
     /* Post Card */
     .post-card {
-      background: white;
+      background: var(--card-bg);
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--border);
       margin: 1rem 0;
     }
 
@@ -510,8 +547,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-category a {
-      background: #BB1919;
-      color: white;
+      background: var(--accent);
+      color: #ffffff;
       padding: 0.3rem 0.8rem;
       border-radius: 20px;
       font-size: 0.8rem;
@@ -521,12 +558,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-category a:hover {
-      background: #991111;
+      background: var(--accent-hover);
     }
 
     .post-date,
     .reading-time {
-      color: #64748b;
+      color: var(--secondary-text);
       font-size: 0.9rem;
     }
 
@@ -535,13 +572,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-weight: 700;
       line-height: 1.2;
       margin: 0 0 0.75rem 0;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .post-excerpt {
       font-size: 1.1rem;
       line-height: 1.6;
-      color: #4a5568;
+      color: var(--secondary-text);
       margin: 0 0 1rem 0;
     }
 
@@ -549,7 +586,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      color: #4a5568;
+      color: var(--secondary-text);
       font-size: 0.95rem;
     }
 
@@ -578,7 +615,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       padding: 1.5rem;
       font-size: 1.125rem;
       line-height: 1.8;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .article-wrapper p {
@@ -589,7 +626,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .related-articles {
       margin: 1rem 0;
       padding: 1.5rem;
-      background: #f8f9fa;
+      background: var(--card-bg);
       border-radius: 8px;
     }
 
@@ -597,7 +634,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.75rem;
       font-weight: 700;
       margin-bottom: 0.75rem;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .related-posts-list {
@@ -615,7 +652,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 1rem;
       text-decoration: none;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .related-post-image {
@@ -630,18 +667,18 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1rem;
       font-weight: 500;
       line-height: 1.4;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .related-post-link:hover .related-post-title {
-      color: #BB1919;
+      color: var(--accent);
       text-decoration: underline;
     }
 
     /* Newsletter Signup */
     .newsletter-signup {
-      background: #BB1919;
-      color: white;
+      background: var(--newsletter-bg);
+      color: #ffffff;
       padding: 1.5rem;
       border-radius: 8px;
       margin: 1rem 0;
@@ -652,13 +689,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      color: white;
+      color: #ffffff;
     }
 
     .newsletter-signup p {
       font-size: 1rem;
       margin-bottom: 1rem;
-      color: white;
+      color: #ffffff;
     }
 
     .newsletter-signup form {
@@ -674,8 +711,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1rem;
       width: 250px;
       max-width: 100%;
-      background: white;
-      color: #1a1a1a;
+      background: #ffffff;
+      color: var(--text-color);
     }
 
     .newsletter-signup .button {
@@ -683,8 +720,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.75rem 1.5rem;
-      background: white;
-      color: #BB1919;
+      background: var(--accent);
+      color: #ffffff;
       border-radius: 6px;
       font-weight: 600;
       font-size: 1rem;
@@ -696,8 +733,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .newsletter-signup .button:hover {
-      background: #f1f1f1;
-      color: #991111;
+      background: var(--accent-hover);
       transform: translateX(5px);
     }
 
@@ -714,8 +750,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: #BB1919;
-      color: white;
+      background: var(--accent);
+      color: #ffffff;
       border-radius: 6px;
       font-weight: 600;
       text-decoration: none;
@@ -723,32 +759,32 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .share-button:hover {
-      background: #991111;
+      background: var(--accent-hover);
       transform: translateX(3px);
     }
 
     .share-button svg {
       width: 16px;
       height: 16px;
-      fill: white;
+      fill: #ffffff;
     }
 
     /* Post Footer */
     .post-footer {
       margin: 1rem 0;
       padding-top: 1rem;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid var(--border);
     }
 
     .author-bio h4 {
       font-size: 1.25rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .author-bio p {
-      color: #4a5568;
+      color: var(--secondary-text);
       line-height: 1.5;
       margin: 0.5rem 0;
     }
@@ -757,7 +793,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
 
     .popular-categories ul {
@@ -771,13 +807,13 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .popular-categories a {
-      color: #BB1919;
+      color: var(--accent);
       text-decoration: none;
       font-weight: 500;
     }
 
     .popular-categories a:hover {
-      color: #991111;
+      color: var(--accent-hover);
       text-decoration: underline;
     }
 
@@ -852,12 +888,12 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       }
 
       .category-slider::-webkit-scrollbar-thumb {
-        background: #BB1919;
+        background: var(--scrollbar-thumb);
         border-radius: 4px;
       }
 
       .category-slider::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background: var(--scrollbar-track);
       }
 
       .related-posts-list {
@@ -924,7 +960,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .category-slider a:focus,
     .newsletter-signup .button:focus,
     .related-post-link:focus {
-      outline: 2px solid #BB1919;
+      outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
 
@@ -944,28 +980,6 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
       .related-posts-list {
         display: block !important;
-      }
-    }
-
-    /* Prevent Dark/Light Mode Overrides */
-    @media (prefers-color-scheme: dark), (prefers-color-scheme: light) {
-      body, .post-card, .related-articles, .newsletter-signup, .ad-container,
-      .reading-progress, .reading-progress-bar, .breadcrumb, .post-date,
-      .reading-time, .post-excerpt, .author-info, .author-bio p,
-      .popular-categories h3, .category-nav h3, .post-title, .related-post-title,
-      .category-slider a, .category-slider a:hover, .post-category a,
-      .post-category a:hover, .back-link, .back-link svg, .back-link:hover,
-      .back-link:hover svg, .draft-notice, .share-button, .share-button:hover,
-      .share-button svg, .newsletter-signup h3, .newsletter-signup p,
-      .newsletter-signup input, .newsletter-signup .button,
-      .newsletter-signup .button:hover, .category-slider::-webkit-scrollbar-thumb,
-      .category-slider::-webkit-scrollbar-track, .related-post-link,
-      .related-post-link:hover .related-post-title {
-        background: inherit !important;
-        color: inherit !important;
-        border-color: inherit !important;
-        stroke: inherit !important;
-        fill: inherit !important;
       }
     }
   </style>
