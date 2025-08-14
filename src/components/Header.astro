@@ -99,7 +99,7 @@ const navItems = [
         </a>
       </div>
 
-      <!-- Desktop Search Form -->
+      <!-- Search Form (Shared for Desktop and Mobile) -->
       <div class="search-container">
         <button class="search-toggle" aria-label="Toggle search" aria-expanded="false">
           <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -107,7 +107,7 @@ const navItems = [
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-        <form class="search-form" id="search-form" role="search" action="/search" style="display: none;">
+        <form class="search-form" id="search-form" role="search" action="/search">
           <input type="search" class="search-input" name="query" placeholder="Search news..." aria-label="Search news articles" autocomplete="off" />
           <button type="submit" class="search-submit" aria-label="Submit search">
             <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -234,9 +234,10 @@ const navItems = [
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
-    width: 100%;
+    width: auto;
     max-width: 400px;
     pointer-events: none;
+    z-index: 0;
   }
 
   .site-title {
@@ -425,10 +426,10 @@ const navItems = [
     border: 1px solid var(--search-border);
     box-shadow: 0 4px 12px var(--shadow-color);
     padding: 0.5rem;
-    display: flex;
+    display: none;
     align-items: center;
     gap: 0.5rem;
-    z-index: 1000;
+    z-index: 1001;
   }
 
   .search-form.active {
@@ -664,6 +665,7 @@ const navItems = [
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: relative;
     }
 
     .logo-title-section {
@@ -671,7 +673,7 @@ const navItems = [
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      position: relative;
+      justify-content: flex-start;
     }
 
     .site-logo {
@@ -680,21 +682,25 @@ const navItems = [
     }
 
     .title-tagline {
-      position: absolute;
+      position: fixed; /* Changed to fixed to ignore header padding */
+      top: 0.4rem;
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
-      width: 100%;
+      width: auto;
       max-width: 300px;
       pointer-events: none;
+      z-index: 0;
     }
 
     .site-title {
       font-size: 1.25rem;
+      pointer-events: auto;
     }
 
     .site-tagline {
       font-size: 0.7rem;
+      pointer-events: auto;
     }
 
     .logo-image {
@@ -811,32 +817,55 @@ const navItems = [
 
     .search-container {
       position: static;
-      display: none;
     }
 
     .search-form {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      margin: 0.75rem 1rem;
-      padding: 0.4rem;
+      top: 3rem; /* Below header */
+      left: 0.5rem;
+      right: 0.5rem;
+      margin: 0;
+      padding: 0.5rem;
       background: var(--search-bg);
       border-radius: 8px;
       border: 1px solid var(--search-border);
       box-shadow: 0 4px 12px var(--shadow-color);
-      z-index: 998;
+      z-index: 1002; /* Above mobile menu and overlay */
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .search-form.active {
+      display: flex;
+    }
+
+    .search-input {
+      width: 100%;
+      max-width: none;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .search-submit {
+      padding: 0.5rem;
+    }
+
+    .search-results {
+      top: calc(100% + 0.5rem);
+      left: 0;
+      right: 0;
+      max-height: 300px;
     }
 
     .mobile-controls {
       display: flex;
+      align-items: center;
+      gap: 0.5rem;
       z-index: 1;
     }
 
-    .mobile-menu-button {
-      display: block;
-    }
-
+    .mobile-menu-button,
     .mobile-search-toggle {
       display: block;
     }
@@ -858,6 +887,10 @@ const navItems = [
   }
 
   @media (max-width: 480px) {
+    .title-tagline {
+      max-width: 200px;
+    }
+
     .site-title {
       font-size: 1rem;
     }
@@ -892,6 +925,10 @@ const navItems = [
     .contact-link {
       font-size: 0.85rem;
       padding: 0.5rem 0.5rem;
+    }
+
+    .search-form {
+      top: 2.5rem;
     }
 
     .top-story-ticker {
@@ -929,12 +966,12 @@ const navItems = [
     const categoryToggle = document.querySelector('.category-toggle');
     const categoryMenu = document.getElementById('category-menu');
     const searchToggle = document.querySelector('.search-toggle');
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
     const searchForm = document.getElementById('search-form');
     const searchInput = searchForm?.querySelector('.search-input');
     const searchResults = document.getElementById('search-results');
-    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
     
-    if (!menuButton || !nav || !overlay || !header || !mobileSearchToggle) return;
+    if (!menuButton || !nav || !overlay || !header || !mobileSearchToggle || !searchForm) return;
     
     let isMenuOpen = false;
     let isCategoryOpen = false;
@@ -966,20 +1003,6 @@ const navItems = [
     menuButton.addEventListener('click', toggleMenu);
     overlay.addEventListener('click', closeMenu);
     
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && (isMenuOpen || isCategoryOpen || isSearchOpen)) {
-        if (isSearchOpen) toggleSearch();
-        if (isCategoryOpen) toggleCategoryMenu();
-        if (isMenuOpen) closeMenu();
-      }
-    });
-    
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 768 && isMenuOpen) {
-        closeMenu();
-      }
-    });
-    
     // Category Menu Toggle
     if (categoryToggle && categoryMenu) {
       function toggleCategoryMenu() {
@@ -999,6 +1022,12 @@ const navItems = [
       mobileSearchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
       searchForm.classList.toggle('active', isSearchOpen);
       searchForm.style.display = isSearchOpen ? 'flex' : 'none';
+      
+      // Close mobile menu if open
+      if (isSearchOpen && isMenuOpen) {
+        toggleMenu();
+      }
+      
       if (isSearchOpen) {
         setTimeout(() => searchInput.focus(), 100);
       } else {
@@ -1012,13 +1041,37 @@ const navItems = [
       }
     }
     
-    if (searchToggle && searchForm) {
+    if (searchToggle) {
       searchToggle.addEventListener('click', toggleSearch);
     }
     
     if (mobileSearchToggle) {
       mobileSearchToggle.addEventListener('click', toggleSearch);
     }
+    
+    // Close search when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!searchForm.contains(e.target) && !mobileSearchToggle.contains(e.target) && !searchToggle.contains(e.target) && isSearchOpen) {
+        toggleSearch();
+      }
+    });
+    
+    // Close menus and search on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && (isMenuOpen || isCategoryOpen || isSearchOpen)) {
+        if (isSearchOpen) toggleSearch();
+        if (isCategoryOpen) toggleCategoryMenu();
+        if (isMenuOpen) closeMenu();
+      }
+    });
+    
+    // Close menu on resize to desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768 && (isMenuOpen || isSearchOpen)) {
+        if (isMenuOpen) closeMenu();
+        if (isSearchOpen) toggleSearch();
+      }
+    });
     
     // Header Scroll Effect
     let lastScrollY = window.scrollY;
@@ -1137,13 +1190,6 @@ const navItems = [
           const selectedItem = items[selectedIndex];
           const link = selectedItem.querySelector('a');
           if (link) window.location.href = link.getAttribute('href');
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!searchForm.contains(e.target) && isSearchOpen) {
-          searchResults.classList.remove('active');
-          searchInput.value = '';
         }
       });
 
