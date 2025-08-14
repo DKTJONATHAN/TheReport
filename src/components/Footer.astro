@@ -3,7 +3,7 @@ const currentYear = new Date().getFullYear();
 const socialLinks = [
   { 
     name: 'X', 
-    url: 'https://x.com/jonathanmwaniki', 
+    url: 'https://x.com/maestropuns', // Updated Twitter/X handle
     icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
     color: '#000000'
   },
@@ -35,7 +35,7 @@ const footerLinks = [
       { name: 'About', url: '/about' },
       { name: 'Contact', url: '/contact' },
       { name: 'Archives', url: '/archives' },
-      { name: 'Sitemap', url: 'https://jonathanmwaniki/sitemap-0.xml' } // Added Sitemap link
+      { name: 'Sitemap', url: 'https://jonathanmwaniki/sitemap-0.xml' }
     ]
   },
   {
@@ -226,7 +226,8 @@ const footerLinks = [
 
     .footer-link:hover {
       color: #BB1919;
- pop-up
+    }
+
     .footer-link:focus {
       outline: 2px solid #BB1919;
       outline-offset: 2px;
@@ -266,10 +267,11 @@ const footerLinks = [
     .social-link {
       color: #A1A1A1;
       transition: color 0.3s ease;
-    }
-
-    .footer-link:hover {
-      color: #BB1919;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
     }
 
     .social-link:hover {
@@ -279,6 +281,7 @@ const footerLinks = [
     .social-icon {
       width: 20px;
       height: 20px;
+      fill: currentColor;
     }
 
     .back-to-top {
