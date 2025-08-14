@@ -76,6 +76,44 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
   </main>
 
   <style>
+    /* Define CSS variables for light and dark themes */
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #1a1a1a;
+      --subtext-color: #4a5568;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --category-bg: #dc2626;
+      --category-text: #ffffff;
+      --read-more: #dc2626;
+      --shadow-color: rgba(0, 0, 0, 0.08);
+      --date-color: #64748b;
+      --link-hover: #b91c1c;
+    }
+
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e2e8f0;
+        --subtext-color: #9ca3af;
+        --card-bg: #2d2d2d;
+        --card-border: #4b5563;
+        --category-bg: #ef4444;
+        --category-text: #ffffff;
+        --read-more: #ef4444;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --date-color: #9ca3af;
+        --link-hover: #f87171;
+      }
+    }
+
+    /* Apply variables to styles */
+    .main-container {
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+
     .category-header {
       padding: 2rem 0;
       text-align: center;
@@ -83,11 +121,11 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
     .category-header h1 {
       font-size: 2.5rem;
       font-weight: 700;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
     .category-header p {
       font-size: 1.2rem;
-      color: #4a5568;
+      color: var(--subtext-color);
     }
     .posts-grid {
       display: grid;
@@ -96,16 +134,19 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
       margin: 2rem 0;
     }
     .post-card {
-      background: white;
+      background: var(--card-bg);
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 15px var(--shadow-color);
+      border: 1px solid var(--card-border);
     }
     .post-link {
       text-decoration: none;
       color: inherit;
       display: block;
+    }
+    .post-link:hover .read-more {
+      color: var(--link-hover);
     }
     .post-image-container {
       height: 200px;
@@ -125,24 +166,25 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
       margin-bottom: 1rem;
     }
     .post-category {
-      background: #dc2626;
-      color: white;
+      background: var(--category-bg);
+      color: var(--category-text);
       padding: 0.25rem 0.6rem;
       border-radius: 15px;
       font-size: 0.75rem;
       font-weight: 600;
     }
     .post-date {
-      color: #64748b;
+      color: var(--date-color);
       font-size: 0.85rem;
     }
     .post-title {
       font-size: 1.25rem;
       font-weight: 600;
       margin: 0 0 0.75rem;
+      color: var(--text-color);
     }
     .post-excerpt {
-      color: #4a5568;
+      color: var(--subtext-color);
       font-size: 0.95rem;
       line-height: 1.5;
     }
@@ -150,8 +192,16 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
       margin-top: 1rem;
     }
     .read-more {
-      color: #dc2626;
+      color: var(--read-more);
       font-weight: 600;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--subtext-color);
+    }
+    .empty-state h2 {
+      color: var(--text-color);
     }
     @media (max-width: 768px) {
       .posts-grid {
