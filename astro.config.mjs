@@ -11,16 +11,16 @@ export default defineConfig({
     mdx(),
     sitemap({
       canonicalURL: 'https://www.jonathanmwaniki.co.ke',
-      // Customize for news website (hourly updates)
-      transform: (entry) => {
+      entryLimit: 50000,
+      serialize(item) {
         return {
-          loc: entry.loc,
-          lastmod: new Date().toISOString(), // Current timestamp
-          changefreq: 'hourly', // For breaking news
-          priority: entry.loc === 'https://www.jonathanmwaniki.co.ke/' ? 1.0 : 0.9, // Homepage gets highest priority
+          url: item.url,
+          lastmod: new Date().toISOString(),
+          changefreq: 'hourly',
+          priority: item.url === '/' ? 1.0 : 0.9,
         };
-      },
-    }),
+      }
+    })
   ],
   markdown: { syntaxHighlight: 'prism' },
   trailingSlash: 'ignore',
