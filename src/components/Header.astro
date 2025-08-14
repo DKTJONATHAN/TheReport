@@ -122,14 +122,14 @@ const navItems = [
     
     <div class="mobile-controls">
       <button class="mobile-menu-button" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hamburger-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hamburger-icon" aria-hidden="true">
           <line x1="3" y1="6" x2="21" y2="6" class="hamburger-line"/>
           <line x1="3" y1="12" x2="21" y2="12" class="hamburger-line"/>
           <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
         </svg>
       </button>
       <button class="mobile-search-toggle" id="mobile-search-toggle" aria-label="Toggle mobile search" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
@@ -141,9 +141,50 @@ const navItems = [
 </header>
 
 <style>
+  /* Define CSS variables for light and dark themes */
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #141414;
+    --subtext-color: #666666;
+    --accent-color: #BB1919;
+    --accent-hover: #991616;
+    --border-color: #E0E0E0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --ticker-bg: #BB1919;
+    --ticker-text: #ffffff;
+    --ticker-label-bg: #ffffff;
+    --ticker-label-text: #BB1919;
+    --search-bg: #ffffff;
+    --search-border: #E0E0E0;
+    --search-submit-bg: #BB1919;
+    --search-submit-bg-hover: #991616;
+    --focus-outline: #BB1919;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-color: #1a1a1a;
+      --text-color: #e2e8f0;
+      --subtext-color: #9ca3af;
+      --accent-color: #ef4444;
+      --accent-hover: #f87171;
+      --border-color: #4b5563;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+      --ticker-bg: #ef4444;
+      --ticker-text: #ffffff;
+      --ticker-label-bg: #2d2d2d;
+      --ticker-label-text: #ef4444;
+      --search-bg: #2d2d2d;
+      --search-border: #4b5563;
+      --search-submit-bg: #ef4444;
+      --search-submit-bg-hover: #f87171;
+      --focus-outline: #f87171;
+    }
+  }
+
   .site-header {
-    background: #FFFFFF;
-    border-bottom: 1px solid #E0E0E0;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -151,7 +192,7 @@ const navItems = [
   }
 
   .site-header.scrolled {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px var(--shadow-color);
   }
 
   .header-container {
@@ -161,12 +202,14 @@ const navItems = [
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
   }
 
   .logo-title-section {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-shrink: 0;
   }
 
   .site-logo {
@@ -187,8 +230,13 @@ const navItems = [
   }
 
   .title-tagline {
-    display: flex;
-    flex-direction: column;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    pointer-events: none;
   }
 
   .site-title {
@@ -196,20 +244,22 @@ const navItems = [
     font-size: 1.75rem;
     font-weight: 700;
     margin: 0;
-    color: #141414;
+    color: var(--text-color);
     letter-spacing: -0.02em;
+    pointer-events: auto;
   }
 
   .site-title .highlight {
-    color: #BB1919;
+    color: var(--accent-color);
   }
 
   .site-tagline {
     font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
     font-size: 0.875rem;
-    color: #666;
+    color: var(--subtext-color);
     margin: 0;
     line-height: 1.2;
+    pointer-events: auto;
   }
 
   .main-nav {
@@ -232,7 +282,7 @@ const navItems = [
   }
 
   .nav-link, .category-link {
-    color: #141414;
+    color: var(--text-color);
     font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
     font-size: 0.9375rem;
     font-weight: 500;
@@ -244,11 +294,11 @@ const navItems = [
 
   .nav-link:hover, .nav-link.active,
   .category-link:hover, .category-link.active {
-    color: #BB1919;
+    color: var(--accent-color);
   }
 
   .nav-link:focus, .category-link:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -259,7 +309,7 @@ const navItems = [
   .category-toggle {
     background: none;
     border: none;
-    color: #141414;
+    color: var(--text-color);
     font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
     font-size: 0.9375rem;
     font-weight: 500;
@@ -272,11 +322,11 @@ const navItems = [
   }
 
   .category-toggle:hover, .category-toggle.active {
-    color: #BB1919;
+    color: var(--accent-color);
   }
 
   .category-toggle:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -285,9 +335,9 @@ const navItems = [
     position: absolute;
     top: 100%;
     left: 0;
-    background: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
     list-style: none;
     padding: 0.5rem 0;
     margin: 0;
@@ -315,11 +365,11 @@ const navItems = [
     align-items: center;
     gap: 1rem;
     padding-left: 1.5rem;
-    border-left: 1px solid #E0E0E0;
+    border-left: 1px solid var(--border-color);
   }
 
   .contact-link {
-    color: #666;
+    color: var(--subtext-color);
     padding: 0.5rem;
     border-radius: 6px;
     transition: all 0.3s ease;
@@ -330,12 +380,12 @@ const navItems = [
   }
 
   .contact-link:hover {
-    color: #BB1919;
+    color: var(--accent-color);
     background: rgba(187, 25, 25, 0.05);
   }
 
   .contact-link:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -350,7 +400,7 @@ const navItems = [
   .search-toggle {
     background: none;
     border: none;
-    color: #666;
+    color: var(--subtext-color);
     padding: 0.5rem;
     cursor: pointer;
     border-radius: 6px;
@@ -358,12 +408,12 @@ const navItems = [
   }
 
   .search-toggle:hover {
-    color: #BB1919;
+    color: var(--accent-color);
     background: rgba(187, 25, 25, 0.05);
   }
 
   .search-toggle:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -371,9 +421,9 @@ const navItems = [
     position: absolute;
     top: 100%;
     right: 0;
-    background: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: var(--search-bg);
+    border: 1px solid var(--search-border);
+    box-shadow: 0 4px 12px var(--shadow-color);
     padding: 0.5rem;
     display: flex;
     align-items: center;
@@ -387,23 +437,25 @@ const navItems = [
 
   .search-input {
     padding: 0.5rem;
-    border: 1px solid #E0E0E0;
+    border: 1px solid var(--search-border);
     border-radius: 4px;
     font-size: 0.875rem;
     width: 200px;
+    background: var(--bg-color);
+    color: var(--text-color);
   }
 
   .search-submit {
-    background: #BB1919;
+    background: var(--search-submit-bg);
     border: none;
-    color: #FFFFFF;
+    color: var(--ticker-text);
     padding: 0.5rem;
     border-radius: 4px;
     cursor: pointer;
   }
 
   .search-submit:hover {
-    background: #991616;
+    background: var(--search-submit-bg-hover);
   }
 
   .search-results {
@@ -412,9 +464,9 @@ const navItems = [
     top: calc(100% + 2.5rem);
     left: 0;
     right: 0;
-    background: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: var(--search-bg);
+    border: 1px solid var(--search-border);
+    box-shadow: 0 4px 12px var(--shadow-color);
     list-style: none;
     padding: 0.5rem 0;
     margin: 0;
@@ -430,15 +482,15 @@ const navItems = [
   .search-results li {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
-    color: #141414;
+    color: var(--text-color);
     cursor: pointer;
   }
 
   .search-results li:hover,
   .search-results li:focus,
   .search-results li[aria-selected="true"] {
-    background: rgba(187, 25, 25, 0.05);
-    color: #BB1919;
+    background: rgba(239, 68, 68, 0.05);
+    color: var(--accent-color);
   }
 
   .search-results li a {
@@ -467,7 +519,7 @@ const navItems = [
   }
 
   .mobile-menu-button:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -475,7 +527,7 @@ const navItems = [
     display: none;
     background: none;
     border: none;
-    color: #666;
+    color: var(--subtext-color);
     padding: 0.5rem;
     cursor: pointer;
     border-radius: 6px;
@@ -483,12 +535,12 @@ const navItems = [
   }
 
   .mobile-search-toggle:hover {
-    color: #BB1919;
+    color: var(--accent-color);
     background: rgba(187, 25, 25, 0.05);
   }
 
   .mobile-search-toggle:focus {
-    outline: 2px solid #BB1919;
+    outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
@@ -530,8 +582,8 @@ const navItems = [
   }
 
   .top-story-ticker {
-    background: #BB1919;
-    color: #FFFFFF;
+    background: var(--ticker-bg);
+    color: var(--ticker-text);
     padding: 0.2rem 0.2rem 0.2rem 0.4rem;
     font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
     font-size: 0.65rem;
@@ -546,8 +598,8 @@ const navItems = [
   }
 
   .ticker-label {
-    background: #FFFFFF;
-    color: #BB1919;
+    background: var(--ticker-label-bg);
+    color: var(--ticker-label-text);
     padding: 0.1rem 0.2rem;
     border-radius: 4px;
     font-size: 0.5rem;
@@ -556,7 +608,7 @@ const navItems = [
   }
 
   .ticker-link {
-    color: #FFFFFF;
+    color: var(--ticker-text);
     text-decoration: none;
     display: inline-block;
     max-width: 80%;
@@ -594,14 +646,16 @@ const navItems = [
     position: absolute;
     top: -1000px;
     left: 0;
-    background: #BB1919;
-    color: #FFFFFF;
+    background: var(--accent-color);
+    color: var(--ticker-text);
     padding: 0.5rem;
     z-index: 1001;
   }
 
   .skip-link:focus {
     top: 0;
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
   }
 
   @media (max-width: 768px) {
@@ -617,15 +671,22 @@ const navItems = [
       display: flex;
       align-items: center;
       gap: 0.4rem;
+      position: relative;
     }
 
     .site-logo {
       flex-shrink: 0;
+      z-index: 1;
     }
 
     .title-tagline {
-      flex: 1;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       text-align: center;
+      width: 100%;
+      max-width: 300px;
+      pointer-events: none;
     }
 
     .site-title {
@@ -651,7 +712,7 @@ const navItems = [
       left: 0;
       width: 80%;
       height: 100%;
-      background: #FFFFFF;
+      background: var(--bg-color);
       flex-direction: column;
       justify-content: flex-start;
       align-items: stretch;
@@ -679,7 +740,7 @@ const navItems = [
       padding: 0.8rem 0.5rem;
       font-size: 1rem;
       font-weight: 600;
-      border-bottom: 1px solid #F0F0F0;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .category-nav {
@@ -693,7 +754,7 @@ const navItems = [
       font-size: 1rem;
       font-weight: 600;
       padding: 0.8rem 0.5rem;
-      border-bottom: 1px solid #F0F0F0;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .category-menu {
@@ -724,7 +785,7 @@ const navItems = [
       gap: 0.6rem;
       padding: 1.5rem 0 0;
       border-left: none;
-      border-top: 2px solid #E0E0E0;
+      border-top: 2px solid var(--border-color);
       width: 100%;
     }
 
@@ -760,15 +821,16 @@ const navItems = [
       right: 0;
       margin: 0.75rem 1rem;
       padding: 0.4rem;
-      background: #FFFFFF;
+      background: var(--search-bg);
       border-radius: 8px;
-      border: 1px solid #E0E0E0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--search-border);
+      box-shadow: 0 4px 12px var(--shadow-color);
       z-index: 998;
     }
 
     .mobile-controls {
       display: flex;
+      z-index: 1;
     }
 
     .mobile-menu-button {
@@ -1036,7 +1098,7 @@ const navItems = [
           const li = document.createElement('li');
           li.setAttribute('role', 'option');
           li.setAttribute('id', `result-${index}`);
-          li.innerHTML = `<a href="/posts/${post.slug}">${post.title} <span style="color: #666; font-size: 0.8em;">(${post.category})</span></a>`;
+          li.innerHTML = `<a href="/posts/${post.slug}">${post.title} <span style="color: var(--subtext-color); font-size: 0.8em;">(${post.category})</span></a>`;
           li.addEventListener('click', () => {
             window.location.href = `/posts/${post.slug}`;
           });
