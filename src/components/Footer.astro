@@ -193,9 +193,14 @@ const footerLinks = [
     .footer-links-left,
     .footer-links-right {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .footer-links-right {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1.5rem;
     }
 
     .footer-section {
@@ -312,16 +317,18 @@ const footerLinks = [
       }
 
       .footer-links {
-        flex-direction: row;
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two columns: Legal on left, others on right */
         gap: 1rem;
       }
 
       .footer-links-left {
-        grid-template-columns: 1fr;
+        grid-column: 1;
       }
 
       .footer-links-right {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-column: 2;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjust for smaller screens */
       }
 
       .footer-bottom {
@@ -337,11 +344,14 @@ const footerLinks = [
 
     @media (max-width: 480px) {
       .footer-links {
-        flex-direction: column;
-        gap: 0.75rem;
+        grid-template-columns: 1fr; /* Stack vertically on very small screens */
       }
 
       .footer-links-left,
+      .footer-links-right {
+        grid-column: auto;
+      }
+
       .footer-links-right {
         grid-template-columns: 1fr;
       }
