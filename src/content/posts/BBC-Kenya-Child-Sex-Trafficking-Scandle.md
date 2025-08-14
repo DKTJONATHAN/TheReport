@@ -72,7 +72,7 @@ This represents a clear violation of Kenyan law and international human rights s
 
 <figure class="content-image">
   <img 
-    src="https://i.postimg.cc/zf27wPxq/20250814-171345.jpg" 
+    src="https://i.postimg.cc/t4MDWMSp/images-3.jpg" 
     alt="Kenya DCI headquarters building"
     loading="lazy"
     width="800"
