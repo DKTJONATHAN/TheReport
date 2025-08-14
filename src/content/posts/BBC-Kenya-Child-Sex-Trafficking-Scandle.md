@@ -72,7 +72,7 @@ This represents a clear violation of Kenyan law and international human rights s
 
 <figure class="content-image">
   <img 
-    src="https://example.com/dci-headquarters-kenya.jpg" 
+    src="https://i.postimg.cc/zf27wPxq/20250814-171345.jpg" 
     alt="Kenya DCI headquarters building"
     loading="lazy"
     width="800"
@@ -119,7 +119,7 @@ Women governors have condemned the exploitation and specifically called for acco
 
 <figure class="content-image">
   <img 
-    src="https://example.com/child-protection-awareness.jpg" 
+    src="https://i.postimg.cc/qvyH5yPf/images-2.jpg" 
     alt="Child protection awareness campaign poster"
     loading="lazy"
     width="800"
