@@ -56,7 +56,7 @@ If Raila's alliance with Ruto was shocking, his statements on August 14, 2025, a
 
 This statement represents the complete ideological collapse of a man who once championed press freedom. The same Raila who relied on independent media to expose the excesses of previous governments now attacks journalists for doing their job. The same man who used media platforms to build his political career now dismisses their corruption exposés as paid propaganda.
 
-The timing of these statements is particularly damning – coming just days after the BBC documentary exposing child sex trafficking in Kenya, which his new government allies are desperately trying to discredit. Raila has essentially become a spokesperson for those who want to silence investigative journalism and protect corrupt networks.
+The timing of these statements is particularly damning – coming just days after the [BBC documentary exposing child sex trafficking in Kenya](https://www.jonathanmwaniki.co.ke/posts/bbc-kenya-child-sex-trafficking-scandle), which his new government allies are desperately trying to discredit. Raila has essentially become a spokesperson for those who want to silence investigative journalism and protect corrupt networks.
 
 ### The Systematic Destruction of Kenya's Opposition
 
