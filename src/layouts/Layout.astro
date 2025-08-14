@@ -181,19 +181,58 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   </div>
   
   <style>
+    /* Define CSS variables for light and dark themes */
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #141414;
+      --subtext-color: #333333;
+      --accent-color: #BB1919;
+      --accent-hover: #991616;
+      --border-color: #E0E0E0;
+      --shadow-color: rgba(0, 0, 0, 0.15);
+      --button-bg: #BB1919;
+      --button-text: #ffffff;
+      --button-bg-hover: #991616;
+      --decline-bg: #E0E0E0;
+      --decline-text: #141414;
+      --decline-bg-hover: #D0D0D0;
+      --focus-outline: #BB1919;
+    }
+
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e2e8f0;
+        --subtext-color: #9ca3af;
+        --accent-color: #ef4444;
+        --accent-hover: #f87171;
+        --border-color: #4b5563;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --button-bg: #ef4444;
+        --button-text: #ffffff;
+        --button-bg-hover: #f87171;
+        --decline-bg: #4b5563;
+        --decline-text: #e2e8f0;
+        --decline-bg-hover: #6b7280;
+        --focus-outline: #f87171;
+      }
+    }
+
     body {
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #ffffff;
+      background: var(--bg-color);
+      color: var(--text-color);
     }
 
     .skip-link {
       position: absolute;
       top: -40px;
       left: 6px;
-      background: #BB1919;
-      color: white;
+      background: var(--button-bg);
+      color: var(--button-text);
       padding: 8px;
       text-decoration: none;
       z-index: 9999;
@@ -203,6 +242,8 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     
     .skip-link:focus {
       top: 6px;
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
     }
 
     .cookie-consent {
@@ -210,9 +251,9 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
       bottom: 1rem;
       left: 1rem;
       right: 1rem;
-      background: #FFFFFF;
-      border: 1px solid #E0E0E0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px var(--shadow-color);
       border-radius: 8px;
       z-index: 1000;
       max-width: 600px;
@@ -229,30 +270,31 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     .cookie-content h2 {
       font-family: 'ReithSerif', 'Georgia', 'Times', serif;
       font-size: 1.5rem;
-      color: #141414;
+      color: var(--text-color);
       margin: 0 0 0.5rem;
     }
 
     .cookie-content p {
       font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
       font-size: 0.875rem;
-      color: #333;
+      color: var(--subtext-color);
       margin: 0 0 1rem;
       line-height: 1.5;
     }
 
     .cookie-content a {
-      color: #BB1919;
+      color: var(--accent-color);
       text-decoration: none;
     }
 
     .cookie-content a:hover,
     .cookie-content a:focus {
+      color: var(--accent-hover);
       text-decoration: underline;
     }
 
     .cookie-content a:focus {
-      outline: 2px solid #BB1919;
+      outline: 2px solid var(--focus-outline);
       outline-offset: 2px;
     }
 
@@ -274,26 +316,26 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     }
 
     .cookie-accept {
-      background: #BB1919;
-      color: #FFFFFF;
+      background: var(--button-bg);
+      color: var(--button-text);
     }
 
     .cookie-accept:hover {
-      background: #991616;
+      background: var(--button-bg-hover);
     }
 
     .cookie-decline {
-      background: #E0E0E0;
-      color: #141414;
+      background: var(--decline-bg);
+      color: var(--decline-text);
     }
 
     .cookie-decline:hover {
-      background: #D0D0D0;
+      background: var(--decline-bg-hover);
     }
 
     .cookie-accept:focus,
     .cookie-decline:focus {
-      outline: 2px solid #BB1919;
+      outline: 2px solid var(--focus-outline);
       outline-offset: 2px;
     }
 
