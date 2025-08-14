@@ -55,6 +55,12 @@ const navItems = [
           <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
         </svg>
       </button>
+      <button class="search-button" id="search-toggle" aria-label="Toggle search" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -110,6 +116,39 @@ const navItems = [
       </a>
     </div>
   </nav>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="search-overlay" aria-hidden="true">
+    <div class="search-container">
+      <form class="search-form" id="search-form" role="search" action="/search">
+        <label for="search-input" class="visually-hidden">Search articles</label>
+        <input
+          type="text"
+          id="search-input"
+          name="query"
+          placeholder="Search articles..."
+          class="search-input"
+          aria-label="Search articles"
+          autocomplete="off"
+        />
+        <button type="submit" class="search-submit" aria-label="Submit search">
+          <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </form>
+      <div class="search-results" id="search-results" aria-live="polite">
+        <!-- Results will be populated by JavaScript -->
+      </div>
+    </div>
+    <button class="search-close" id="search-close" aria-label="Close search">
+      <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--text-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
 
   <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
 </header>
@@ -198,7 +237,8 @@ const navItems = [
   .title-tagline {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
     width: auto;
     max-width: 400px;
@@ -387,7 +427,7 @@ const navItems = [
     z-index: 1;
   }
 
-  .mobile-menu-button {
+  .mobile-menu-button, .search-button {
     display: block;
     background: none;
     border: none;
@@ -397,16 +437,16 @@ const navItems = [
     transition: background-color 0.3s ease;
   }
 
-  .mobile-menu-button:hover {
+  .mobile-menu-button:hover, .search-button:hover {
     background: rgba(0, 0, 0, 0.05);
   }
 
-  .mobile-menu-button:focus {
+  .mobile-menu-button:focus, .search-button:focus {
     outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
 
-  .hamburger-icon {
+  .hamburger-icon, .search-icon {
     width: 24px;
     height: 24px;
     transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
@@ -441,6 +481,192 @@ const navItems = [
   .mobile-nav-overlay.active {
     display: block;
     opacity: 1;
+  }
+
+  .search-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .search-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  .search-container {
+    background: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    max-width: 600px;
+    width: 90%;
+    padding: 1.5rem;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    color: var(--text-color);
+    background: var(--bg-color);
+  }
+
+  .search-input:focus {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
+  }
+
+  .search-submit {
+    background: var(--accent-color);
+    border: none;
+    padding: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+  }
+
+  .search-submit:hover {
+    background: var(--accent-hover);
+  }
+
+  .search-submit:focus {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
+  }
+
+  .search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .result-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .result-link {
+    text-decoration: none;
+    color: var(--text-color);
+    display: block;
+  }
+
+  .result-link:hover,
+  .result-link:focus {
+    color: var(--accent-color);
+  }
+
+  .result-link:focus {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
+  }
+
+  .result-title {
+    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
+    font-size: 1.25rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .result-meta {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.8rem;
+    color: var(--subtext-color);
+    margin: 0 0 0.25rem;
+  }
+
+  .result-description {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    margin: 0;
+  }
+
+  .see-more-button {
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--accent-color);
+    color: var(--ticker-text);
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: background-color 0.3s ease;
+  }
+
+  .see-more-button:hover {
+    background: var(--accent-hover);
+  }
+
+  .see-more-button:focus {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
+  }
+
+  .no-results {
+    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+    font-size: 0.875rem;
+    color: var(--subtext-color);
+    text-align: center;
+    margin: 1rem 0;
+  }
+
+  .search-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+
+  .search-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .search-close:focus {
+    outline: 2px solid var(--focus-outline);
+    outline-offset: 2px;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
   }
 
   .top-story-ticker {
@@ -535,8 +761,6 @@ const navItems = [
     }
 
     .title-tagline {
-      top: 50%;
-      transform: translate(-50%, -50%);
       max-width: 300px;
     }
 
@@ -558,6 +782,37 @@ const navItems = [
 
     .main-nav {
       width: 85%;
+    }
+
+    .search-container {
+      width: 95%;
+      padding: 1rem;
+    }
+
+    .search-input {
+      font-size: 0.9rem;
+      padding: 0.5rem;
+    }
+
+    .search-submit {
+      padding: 0.5rem;
+    }
+
+    .result-title {
+      font-size: 1.125rem;
+    }
+
+    .result-meta {
+      font-size: 0.75rem;
+    }
+
+    .result-description {
+      font-size: 0.8rem;
+    }
+
+    .see-more-button {
+      font-size: 0.8rem;
+      padding: 0.4rem;
     }
 
     .top-story-ticker {
@@ -615,6 +870,34 @@ const navItems = [
       padding: 0.5rem 0.5rem;
     }
 
+    .search-container {
+      padding: 0.75rem;
+    }
+
+    .search-input {
+      font-size: 0.85rem;
+    }
+
+    .search-submit {
+      padding: 0.4rem;
+    }
+
+    .result-title {
+      font-size: 1rem;
+    }
+
+    .result-meta {
+      font-size: 0.7rem;
+    }
+
+    .result-description {
+      font-size: 0.75rem;
+    }
+
+    .see-more-button {
+      font-size: 0.75rem;
+    }
+
     .top-story-ticker {
       font-size: 0.6rem;
     }
@@ -632,6 +915,7 @@ const navItems = [
     .hamburger-line,
     .main-nav,
     .mobile-nav-overlay,
+    .search-overlay,
     .ticker-text {
       transition: none;
       animation: none;
@@ -640,114 +924,250 @@ const navItems = [
 </style>
 
 <script is:inline>
-  function initHeader() {
-    const menuButton = document.getElementById('mobile-menu-toggle');
-    const nav = document.getElementById('main-nav');
-    const overlay = document.getElementById('mobile-nav-overlay');
-    const header = document.querySelector('.site-header');
-    const categoryToggle = document.querySelector('.category-toggle');
-    const categoryMenu = document.getElementById('category-menu');
+// Preload posts data for client-side search
+const posts = [
+  <% posts.forEach(post => { %>
+    {
+      slug: "<%= post.slug %>",
+      title: "<%= post.data.title %>",
+      category: "<%= post.data.category || 'Uncategorized' %>",
+      tags: <%= JSON.stringify(post.data.tags || []) %>,
+      keywords: <%= JSON.stringify(post.data.keywords || []) %>,
+      date: "<%= post.data.date %>",
+      description: "<%= post.data.description || '' %>",
+      content: "<%= post.body.replace(/"/g, '\\"') %>"
+    },
+  <% }) %>
+];
 
-    if (!menuButton || !nav || !overlay || !header) return;
+function initHeader() {
+  const menuButton = document.getElementById('mobile-menu-toggle');
+  const nav = document.getElementById('main-nav');
+  const navOverlay = document.getElementById('mobile-nav-overlay');
+  const header = document.querySelector('.site-header');
+  const categoryToggle = document.querySelector('.category-toggle');
+  const categoryMenu = document.getElementById('category-menu');
+  const searchButton = document.getElementById('search-toggle');
+  const searchOverlay = document.getElementById('search-overlay');
+  const searchClose = document.getElementById('search-close');
+  const searchForm = document.getElementById('search-form');
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
 
-    let isMenuOpen = false;
-    let isCategoryOpen = false;
+  if (!menuButton || !nav || !navOverlay || !header || !searchButton || !searchOverlay || !searchClose || !searchForm || !searchInput || !searchResults) return;
 
-    // Menu Toggle
-    function toggleMenu() {
-      isMenuOpen = !isMenuOpen;
-      menuButton.classList.toggle('active', isMenuOpen);
-      menuButton.setAttribute('aria-expanded', isMenuOpen.toString());
-      nav.classList.toggle('active', isMenuOpen);
-      overlay.classList.toggle('active', isMenuOpen);
-      document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+  let isMenuOpen = false;
+  let isCategoryOpen = false;
+  let isSearchOpen = false;
 
-      if (isMenuOpen) {
-        const firstNavLink = nav.querySelector('.nav-link');
-        if (firstNavLink) setTimeout(() => firstNavLink.focus(), 100);
-      } else {
-        menuButton.focus();
-        if (isCategoryOpen) toggleCategoryMenu();
-      }
+  // Menu Toggle
+  function toggleMenu() {
+    isMenuOpen = !isMenuOpen;
+    menuButton.classList.toggle('active', isMenuOpen);
+    menuButton.setAttribute('aria-expanded', isMenuOpen.toString());
+    nav.classList.toggle('active', isMenuOpen);
+    navOverlay.classList.toggle('active', isMenuOpen);
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+    
+    if (isMenuOpen) {
+      const firstNavLink = nav.querySelector('.nav-link');
+      if (firstNavLink) setTimeout(() => firstNavLink.focus(), 100);
+      if (isSearchOpen) toggleSearch();
+    } else {
+      menuButton.focus();
+      if (isCategoryOpen) toggleCategoryMenu();
+    }
+  }
+
+  function closeMenu() {
+    if (isMenuOpen) toggleMenu();
+  }
+
+  menuButton.addEventListener('click', toggleMenu);
+  navOverlay.addEventListener('click', () => {
+    closeMenu();
+    if (isSearchOpen) toggleSearch();
+  });
+
+  // Category Menu Toggle
+  if (categoryToggle && categoryMenu) {
+    function toggleCategoryMenu() {
+      isCategoryOpen = !isCategoryOpen;
+      categoryToggle.setAttribute('aria-expanded', isCategoryOpen.toString());
+      categoryToggle.classList.toggle('active', isCategoryOpen);
+      categoryMenu.classList.toggle('active', isCategoryOpen);
     }
 
-    function closeMenu() {
-      if (isMenuOpen) toggleMenu();
+    categoryToggle.addEventListener('click', toggleCategoryMenu);
+  }
+
+  // Search Toggle
+  function toggleSearch() {
+    isSearchOpen = !isSearchOpen;
+    searchButton.setAttribute('aria-expanded', isSearchOpen.toString());
+    searchOverlay.classList.toggle('active', isSearchOpen);
+    searchOverlay.setAttribute('aria-hidden', (!isSearchOpen).toString());
+    document.body.style.overflow = isSearchOpen ? 'hidden' : '';
+    
+    if (isSearchOpen) {
+      searchInput.focus();
+      if (isMenuOpen) closeMenu();
+    } else {
+      searchButton.focus();
+      searchInput.value = '';
+      searchResults.innerHTML = '';
+    }
+  }
+
+  function closeSearch() {
+    if (isSearchOpen) toggleSearch();
+  }
+
+  searchButton.addEventListener('click', toggleSearch);
+  searchClose.addEventListener('click', closeSearch);
+  navOverlay.addEventListener('click', closeSearch);
+
+  // Search Functionality
+  function performSearch(query) {
+    if (!query) {
+      searchResults.innerHTML = '<p class="no-results">Enter a search term to find articles.</p>';
+      return;
     }
 
-    menuButton.addEventListener('click', toggleMenu);
-    overlay.addEventListener('click', closeMenu);
+    const words = query.toLowerCase().trim().split(' ').filter(Boolean);
+    const results = posts
+      .filter(post => {
+        const titleWords = (post.title || '').toLowerCase().split(' ');
+        const categoryWords = (post.category || '').toLowerCase().split(' ');
+        const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
+        const keywordWords = (post.keywords || []).join(' ').toLowerCase().split(' ');
+        const contentWords = (post.content || '').toLowerCase().split(' ').filter(word => word.length > 2);
+        return words.some(q =>
+          titleWords.some(w => w.includes(q)) ||
+          categoryWords.some(w => w.includes(q)) ||
+          tagWords.some(w => w.includes(q)) ||
+          keywordWords.some(w => w.includes(q)) ||
+          contentWords.some(w => w.includes(q))
+        );
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3); // Limit to 3 results
 
-    // Category Menu Toggle
-    if (categoryToggle && categoryMenu) {
-      function toggleCategoryMenu() {
-        isCategoryOpen = !isCategoryOpen;
-        categoryToggle.setAttribute('aria-expanded', isCategoryOpen.toString());
-        categoryToggle.classList.toggle('active', isCategoryOpen);
-        categoryMenu.classList.toggle('active', isCategoryOpen);
-      }
-
-      categoryToggle.addEventListener('click', toggleCategoryMenu);
+    searchResults.innerHTML = '';
+    if (results.length === 0) {
+      searchResults.innerHTML = `<p class="no-results">No results found for "${query}". Try a different search term.</p>`;
+      return;
     }
 
-    // Close menus on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && (isMenuOpen || isCategoryOpen)) {
-        if (isCategoryOpen) toggleCategoryMenu();
-        if (isMenuOpen) closeMenu();
+    const resultsList = document.createElement('ul');
+    resultsList.className = 'results-list';
+    results.forEach(post => {
+      const li = document.createElement('li');
+      li.className = 'result-item';
+      li.innerHTML = `
+        <a href="/posts/${post.slug}" class="result-link">
+          <h2 class="result-title">${post.title}</h2>
+          <p class="result-meta">${post.category} | ${new Date(post.date).toLocaleDateString()}</p>
+          ${post.description ? `<p class="result-description">${post.description}</p>` : ''}
+        </a>
+      `;
+      resultsList.appendChild(li);
+    });
+    searchResults.appendChild(resultsList);
+
+    if (posts.filter(post => {
+      const titleWords = (post.title || '').toLowerCase().split(' ');
+      const categoryWords = (post.category || '').toLowerCase().split(' ');
+      const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
+      const keywordWords = (post.keywords || []).join(' ').toLowerCase().split(' ');
+      const contentWords = (post.content || '').toLowerCase().split(' ').filter(word => word.length > 2);
+      return words.some(q =>
+        titleWords.some(w => w.includes(q)) ||
+        categoryWords.some(w => w.includes(q)) ||
+        tagWords.some(w => w.includes(q)) ||
+        keywordWords.some(w => w.includes(q)) ||
+        contentWords.some(w => w.includes(q))
+      );
+    }).length > 3) {
+      const seeMore = document.createElement('a');
+      seeMore.className = 'see-more-button';
+      seeMore.href = `/search?query=${encodeURIComponent(query)}`;
+      seeMore.textContent = 'See More';
+      searchResults.appendChild(seeMore);
+    }
+  }
+
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const query = searchInput.value;
+    if (query) {
+      window.location.href = `/search?query=${encodeURIComponent(query)}`;
+    }
+  });
+
+  searchInput.addEventListener('input', () => {
+    performSearch(searchInput.value);
+  });
+
+  // Close menus and search on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (isCategoryOpen) toggleCategoryMenu();
+      if (isMenuOpen) closeMenu();
+      if (isSearchOpen) closeSearch();
+    }
+  });
+
+  // Header Scroll Effect
+  let lastScrollY = window.scrollY;
+
+  function handleScroll() {
+    const currentScrollY = window.scrollY;
+    header.classList.toggle('scrolled', currentScrollY > 50);
+    lastScrollY = currentScrollY;
+  }
+
+  let scrollTimeout;
+  window.addEventListener('scroll', () => {
+    if (!scrollTimeout) {
+      scrollTimeout = setTimeout(() => {
+        handleScroll();
+        scrollTimeout = null;
+      }, 50);
+    }
+  });
+
+  // Set Active Nav and Category Links
+  function setActiveLinks() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    const categoryLinks = document.querySelectorAll('.category-link');
+
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      const linkPath = link.getAttribute('href');
+      if (linkPath === currentPath || (currentPath === '/' && linkPath === '/')) {
+        link.classList.add('active');
       }
     });
 
-    // Header Scroll Effect
-    let lastScrollY = window.scrollY;
-
-    function handleScroll() {
-      const currentScrollY = window.scrollY;
-      header.classList.toggle('scrolled', currentScrollY > 50);
-      lastScrollY = currentScrollY;
-    }
-
-    let scrollTimeout;
-    window.addEventListener('scroll', () => {
-      if (!scrollTimeout) {
-        scrollTimeout = setTimeout(() => {
-          handleScroll();
-          scrollTimeout = null;
-        }, 50);
+    categoryLinks.forEach(link => {
+      link.classList.remove('active');
+      const linkPath = link.getAttribute('href');
+      if (currentPath.startsWith(linkPath)) {
+        link.classList.add('active');
+        if (categoryToggle) categoryToggle.classList.add('active');
       }
     });
-
-    // Set Active Nav and Category Links
-    function setActiveLinks() {
-      const currentPath = window.location.pathname;
-      const navLinks = document.querySelectorAll('.nav-link');
-      const categoryLinks = document.querySelectorAll('.category-link');
-
-      navLinks.forEach(link => {
-        link.classList.remove('active');
-        const linkPath = link.getAttribute('href');
-        if (linkPath === currentPath || (currentPath === '/' && linkPath === '/')) {
-          link.classList.add('active');
-        }
-      });
-
-      categoryLinks.forEach(link => {
-        link.classList.remove('active');
-        const linkPath = link.getAttribute('href');
-        if (currentPath.startsWith(linkPath)) {
-          link.classList.add('active');
-          if (categoryToggle) categoryToggle.classList.add('active');
-        }
-      });
-    }
-
-    setActiveLinks();
-    window.addEventListener('popstate', setActiveLinks);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHeader);
-  } else {
-    initHeader();
-  }
+  setActiveLinks();
+  window.addEventListener('popstate', setActiveLinks);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initHeader);
+} else {
+  initHeader();
+}
 </script>
