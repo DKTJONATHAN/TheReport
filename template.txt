@@ -1,106 +1,70 @@
-Here's a **general-purpose Markdown template** for your Astro blog posts with all key sections and frontmatter:
-
-```markdown
 ---
-title: "Your Post Title"
-pubDate: YYYY-MM-DD
-description: "1-2 sentence summary of the post"
-author: "Your Name"  # Optional
-tags: ["tag1", "tag2"]  # Max 3-5 tags
-image:
-  src: "/images/your-image.jpg"  # Path from /public
-  alt: "Image description"  # Required for accessibility
-  width: 1200  # Optional dimensions
-  height: 630
-draft: false  # Set to true for unpublished posts
+title: "Your Article Title Here"
+description: "Brief description of your article content"
+date: YYYY,MM,DD
+author: "Author Name"
+image: "https://example.com/featured-image.jpg"
+imageCaption: "Featured image caption text"
+imageAlt: "Featured image alt text"
+category: "Category"
+tags: ["Tag1", "Tag2", "Tag3"]
+featured: true
+draft: false
 ---
 
-# Introduction
+<div class="article-content">
 
-Start with an engaging opening paragraph that explains:
-- What this post is about
-- Who it's for
-- Why it matters
+Your introductory paragraph here. This should introduce the main topic and thesis of your article.
 
-![Decorative image](/images/intro-image.jpg)
+<figure class="content-image">
+  <img 
+    src="https://example.com/image1.jpg" 
+    alt="Alt text for first image"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>Caption for first image</figcaption>
+</figure>
 
----
+### First Section Header
+Your first section content here. This should develop one key aspect of your argument or story.
 
-## Section 1: Core Concept
+<figure class="content-image">
+  <img 
+    src="https://example.com/image2.jpg" 
+    alt="Alt text for second image"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>Caption for second image</figcaption>
+</figure>
 
-Break your content into logical sections with H2 headers.
+### Second Section Header
+Your second section content here. Continue developing your analysis or narrative.
 
-Key points to cover:
-- Bullet point explanations
-- Important terminology
-- Examples or analogies
+<figure class="content-image">
+  <img 
+    src="https://example.com/image3.jpg" 
+    alt="Alt text for third image"
+    loading="lazy"
+    width="800"
+    height="450"
+  />
+  <figcaption>Caption for third image</figcaption>
+</figure>
 
-```javascript
-// Code snippets (specify language)
-function example() {
-  return "Markdown supports syntax highlighting";
-}
-```
+### Third Section Header
+Your final major section content here. Build toward your conclusion.
 
----
+### Conclusion
+Wrap up your article with a strong conclusion that reinforces your main points.
 
-## Section 2: Practical Implementation
+<div class="article-meta">
+  <p><strong>Published:</strong> Month DD, YYYY</p>
+  <p><strong>Updated:</strong> Month DD, YYYY</p>
+  <p><strong>Tags:</strong> Tag1, Tag2, Tag3</p>
+</div>
 
-### Subsection (H3 for nested topics)
-
-Use numbered steps for tutorials:
-1. Step one
-2. Step two
-3. Step three
-
-> "Quote important concepts or references"  
-> *— Source/Author*
-
----
-
-## Advanced Tips (Optional)
-
-| Feature | Benefit | Example |
-|---------|---------|---------|
-| Table   | Organize data | `markdown tables` |
-| Footnotes[^1] | Add references | See bottom of post |
-
-[^1]: Footnote details appear here.
-
----
-
-## Conclusion
-
-Summarize key takeaways:
-- Main point 1
-- Main point 2
-- Final thought or call-to-action
-
-**Further Reading:**
-- [Link Title](https://example.com)
-- [Another Resource](#)
-
-<!-- Add Astro components if needed -->
-<YourComponent prop="value" />
-```
-
----
-
-### **Template Features**:
-1. **Frontmatter**  
-   - Matches your `content.config.ts` schema  
-   - SEO-friendly with image meta  
-   - Draft mode for unpublished posts  
-
-2. **Body Structure**  
-   - Semantic headers (H2, H3)  
-   - Code blocks with syntax highlighting  
-   - Tables, footnotes, and blockquotes  
-   - Responsive image syntax  
-
-3. **Best Practices**  
-   - 80-100 characters per line  
-   - Two spaces between sections  
-   - Descriptive alt text for images  
-
-Save this as `post-template.md` in your project's docs folder for reference when creating new posts.
+</div>
