@@ -46,7 +46,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
   image={absoluteImageUrl}
   canonical={postUrl}
   meta={[
-    { name: 'color-scheme', content: 'light dark' }, /* Added to support both themes */
+    { name: 'color-scheme', content: 'light dark' },
     { name: 'og:title', content: optimizedTitle },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
@@ -292,7 +292,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
             {categoryCounts.map(category => (
               <li>
                 <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
-                  {category.name} ({<button class="button">Subscribe</button>category.count} articles)
+                  {category.name} ({category.count} articles)
                 </a>
               </li>
             ))}
