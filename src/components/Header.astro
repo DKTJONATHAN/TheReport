@@ -64,7 +64,7 @@ const navItems = [
     </div>
   </div>
 
-  <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+  <nav class="main-nav" id="main-nav" aria-label="Main navigation" aria-hidden="true">
     <ul class="nav-list">
       {navItems.map(item => (
         <li class="nav-item">
@@ -150,7 +150,7 @@ const navItems = [
     </button>
   </div>
 
-  <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+  <div class="overlay" id="overlay"></div>
 </header>
 
 <style>
@@ -222,6 +222,7 @@ const navItems = [
     align-items: center;
     text-decoration: none;
     flex-shrink: 0;
+    z-index: 2;
   }
 
   .logo-image {
@@ -270,7 +271,9 @@ const navItems = [
   }
 
   .main-nav {
-    display: none;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -284,13 +287,14 @@ const navItems = [
     padding: 3rem 1.5rem 2rem;
     z-index: 1000;
     transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-    overflow-y: auto;
+    transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s ease, visibility 0s linear 0.3s;
   }
 
   .main-nav.active {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
     transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s ease, visibility 0s linear;
   }
 
   .nav-list {
@@ -424,11 +428,13 @@ const navItems = [
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    z-index: 1;
+    z-index: 2;
   }
 
   .mobile-menu-button, .search-button {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
     cursor: pointer;
@@ -465,8 +471,10 @@ const navItems = [
     transform: rotate(-45deg) translate(7px, -7px);
   }
 
-  .mobile-nav-overlay {
-    display: none;
+  .overlay {
+    display: block;
+    visibility: hidden;
+    opacity: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -474,17 +482,19 @@ const navItems = [
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
     z-index: 999;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
   }
 
-  .mobile-nav-overlay.active {
-    display: block;
+  .overlay.active {
+    visibility: visible;
     opacity: 1;
+    transition: opacity 0.3s ease, visibility 0s linear;
   }
 
   .search-overlay {
-    display: none;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -494,13 +504,13 @@ const navItems = [
     z-index: 1001;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
   }
 
   .search-overlay.active {
-    display: flex;
+    visibility: visible;
     opacity: 1;
+    transition: opacity 0.3s ease, visibility 0s linear;
   }
 
   .search-container {
@@ -757,7 +767,7 @@ const navItems = [
     }
 
     .site-logo {
-      z-index: 1;
+      z-index: 2;
     }
 
     .title-tagline {
@@ -914,7 +924,7 @@ const navItems = [
     .category-toggle,
     .hamburger-line,
     .main-nav,
-    .mobile-nav-overlay,
+    .overlay,
     .search-overlay,
     .ticker-text {
       transition: none;
@@ -935,15 +945,16 @@ const posts = [
       keywords: <%= JSON.stringify(post.data.keywords || []) %>,
       date: "<%= post.data.date %>",
       description: "<%= post.data.description || '' %>",
-      content: "<%= post.body.replace(/"/g, '\\"') %>"
+      content: "<%= post.body.replace(/"/g, '\\"').replace(/\n/g, ' ') %>"
     },
   <% }) %>
 ];
 
 function initHeader() {
+  // DOM elements
   const menuButton = document.getElementById('mobile-menu-toggle');
   const nav = document.getElementById('main-nav');
-  const navOverlay = document.getElementById('mobile-nav-overlay');
+  const overlay = document.getElementById('overlay');
   const header = document.querySelector('.site-header');
   const categoryToggle = document.querySelector('.category-toggle');
   const categoryMenu = document.getElementById('category-menu');
@@ -954,7 +965,11 @@ function initHeader() {
   const searchInput = document.getElementById('search-input');
   const searchResults = document.getElementById('search-results');
 
-  if (!menuButton || !nav || !navOverlay || !header || !searchButton || !searchOverlay || !searchClose || !searchForm || !searchInput || !searchResults) return;
+  // Check if all required elements exist
+  if (!menuButton || !nav || !overlay || !header || !searchButton || !searchOverlay || !searchClose || !searchForm || !searchInput || !searchResults) {
+    console.error('One or more required DOM elements are missing');
+    return;
+  }
 
   let isMenuOpen = false;
   let isCategoryOpen = false;
@@ -964,11 +979,12 @@ function initHeader() {
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
     menuButton.classList.toggle('active', isMenuOpen);
-    menuButton.setAttribute('aria-expanded', isMenuOpen.toString());
+    menuButton.setAttribute('aria-expanded', isMenuOpen);
     nav.classList.toggle('active', isMenuOpen);
-    navOverlay.classList.toggle('active', isMenuOpen);
+    nav.setAttribute('aria-hidden', !isMenuOpen);
+    overlay.classList.toggle('active', isMenuOpen);
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
-    
+
     if (isMenuOpen) {
       const firstNavLink = nav.querySelector('.nav-link');
       if (firstNavLink) setTimeout(() => firstNavLink.focus(), 100);
@@ -984,31 +1000,33 @@ function initHeader() {
   }
 
   menuButton.addEventListener('click', toggleMenu);
-  navOverlay.addEventListener('click', () => {
+  overlay.addEventListener('click', () => {
     closeMenu();
-    if (isSearchOpen) toggleSearch();
+    closeSearch();
   });
 
   // Category Menu Toggle
-  if (categoryToggle && categoryMenu) {
-    function toggleCategoryMenu() {
-      isCategoryOpen = !isCategoryOpen;
-      categoryToggle.setAttribute('aria-expanded', isCategoryOpen.toString());
-      categoryToggle.classList.toggle('active', isCategoryOpen);
-      categoryMenu.classList.toggle('active', isCategoryOpen);
-    }
+  function toggleCategoryMenu() {
+    if (!categoryToggle || !categoryMenu) return;
+    isCategoryOpen = !isCategoryOpen;
+    categoryToggle.setAttribute('aria-expanded', isCategoryOpen);
+    categoryToggle.classList.toggle('active', isCategoryOpen);
+    categoryMenu.classList.toggle('active', isCategoryOpen);
+  }
 
+  if (categoryToggle && categoryMenu) {
     categoryToggle.addEventListener('click', toggleCategoryMenu);
   }
 
   // Search Toggle
   function toggleSearch() {
     isSearchOpen = !isSearchOpen;
-    searchButton.setAttribute('aria-expanded', isSearchOpen.toString());
+    searchButton.setAttribute('aria-expanded', isSearchOpen);
     searchOverlay.classList.toggle('active', isSearchOpen);
-    searchOverlay.setAttribute('aria-hidden', (!isSearchOpen).toString());
+    searchOverlay.setAttribute('aria-hidden', !isSearchOpen);
+    overlay.classList.toggle('active', isSearchOpen);
     document.body.style.overflow = isSearchOpen ? 'hidden' : '';
-    
+
     if (isSearchOpen) {
       searchInput.focus();
       if (isMenuOpen) closeMenu();
@@ -1025,10 +1043,10 @@ function initHeader() {
 
   searchButton.addEventListener('click', toggleSearch);
   searchClose.addEventListener('click', closeSearch);
-  navOverlay.addEventListener('click', closeSearch);
 
   // Search Functionality
   function performSearch(query) {
+    searchResults.innerHTML = '';
     if (!query) {
       searchResults.innerHTML = '<p class="no-results">Enter a search term to find articles.</p>';
       return;
@@ -1053,7 +1071,6 @@ function initHeader() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 3); // Limit to 3 results
 
-    searchResults.innerHTML = '';
     if (results.length === 0) {
       searchResults.innerHTML = `<p class="no-results">No results found for "${query}". Try a different search term.</p>`;
       return;
@@ -1075,7 +1092,7 @@ function initHeader() {
     });
     searchResults.appendChild(resultsList);
 
-    if (posts.filter(post => {
+    const totalResults = posts.filter(post => {
       const titleWords = (post.title || '').toLowerCase().split(' ');
       const categoryWords = (post.category || '').toLowerCase().split(' ');
       const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
@@ -1088,7 +1105,9 @@ function initHeader() {
         keywordWords.some(w => w.includes(q)) ||
         contentWords.some(w => w.includes(q))
       );
-    }).length > 3) {
+    }).length;
+
+    if (totalResults > 3) {
       const seeMore = document.createElement('a');
       seeMore.className = 'see-more-button';
       seeMore.href = `/search?query=${encodeURIComponent(query)}`;
