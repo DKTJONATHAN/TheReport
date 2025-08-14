@@ -98,26 +98,6 @@ const navItems = [
           <span class="contact-text">@jonathanmwaniki</span>
         </a>
       </div>
-
-      <!-- Search Form (Shared for Desktop and Mobile) -->
-      <div class="search-container">
-        <button class="search-toggle" aria-label="Toggle search" aria-expanded="false">
-          <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
-        <form class="search-form" id="search-form" role="search" action="/search">
-          <input type="search" class="search-input" name="query" placeholder="Search news..." aria-label="Search news articles" autocomplete="off" />
-          <button type="submit" class="search-submit" aria-label="Submit search">
-            <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </button>
-          <ul class="search-results" id="search-results" role="listbox" aria-live="polite"></ul>
-        </form>
-      </div>
     </nav>
     
     <div class="mobile-controls">
@@ -126,12 +106,6 @@ const navItems = [
           <line x1="3" y1="6" x2="21" y2="6" class="hamburger-line"/>
           <line x1="3" y1="12" x2="21" y2="12" class="hamburger-line"/>
           <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
-        </svg>
-      </button>
-      <button class="mobile-search-toggle" id="mobile-search-toggle" aria-label="Toggle mobile search" aria-expanded="false">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
       </button>
     </div>
@@ -154,10 +128,6 @@ const navItems = [
     --ticker-text: #ffffff;
     --ticker-label-bg: #ffffff;
     --ticker-label-text: #BB1919;
-    --search-bg: #ffffff;
-    --search-border: #E0E0E0;
-    --search-submit-bg: #BB1919;
-    --search-submit-bg-hover: #991616;
     --focus-outline: #BB1919;
   }
 
@@ -174,10 +144,6 @@ const navItems = [
       --ticker-text: #ffffff;
       --ticker-label-bg: #2d2d2d;
       --ticker-label-text: #ef4444;
-      --search-bg: #2d2d2d;
-      --search-border: #4b5563;
-      --search-submit-bg: #ef4444;
-      --search-submit-bg-hover: #f87171;
       --focus-outline: #f87171;
     }
   }
@@ -394,112 +360,6 @@ const navItems = [
     display: none;
   }
 
-  .search-container {
-    position: relative;
-  }
-
-  .search-toggle {
-    background: none;
-    border: none;
-    color: var(--subtext-color);
-    padding: 0.5rem;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-  }
-
-  .search-toggle:hover {
-    color: var(--accent-color);
-    background: rgba(187, 25, 25, 0.05);
-  }
-
-  .search-toggle:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .search-form {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--search-bg);
-    border: 1px solid var(--search-border);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    padding: 0.5rem;
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    z-index: 1001;
-  }
-
-  .search-form.active {
-    display: flex;
-  }
-
-  .search-input {
-    padding: 0.5rem;
-    border: 1px solid var(--search-border);
-    border-radius: 4px;
-    font-size: 0.875rem;
-    width: 200px;
-    background: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  .search-submit {
-    background: var(--search-submit-bg);
-    border: none;
-    color: var(--ticker-text);
-    padding: 0.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .search-submit:hover {
-    background: var(--search-submit-bg-hover);
-  }
-
-  .search-results {
-    display: none;
-    position: absolute;
-    top: calc(100% + 2.5rem);
-    left: 0;
-    right: 0;
-    background: var(--search-bg);
-    border: 1px solid var(--search-border);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    list-style: none;
-    padding: 0.5rem 0;
-    margin: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-  }
-
-  .search-results.active {
-    display: block;
-  }
-
-  .search-results li {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    color: var(--text-color);
-    cursor: pointer;
-  }
-
-  .search-results li:hover,
-  .search-results li:focus,
-  .search-results li[aria-selected="true"] {
-    background: rgba(239, 68, 68, 0.05);
-    color: var(--accent-color);
-  }
-
-  .search-results li a {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-  }
-
   .mobile-controls {
     display: none;
     gap: 0.5rem;
@@ -520,27 +380,6 @@ const navItems = [
   }
 
   .mobile-menu-button:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .mobile-search-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--subtext-color);
-    padding: 0.5rem;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-  }
-
-  .mobile-search-toggle:hover {
-    color: var(--accent-color);
-    background: rgba(187, 25, 25, 0.05);
-  }
-
-  .mobile-search-toggle:focus {
     outline: 2px solid var(--focus-outline);
     outline-offset: 2px;
   }
@@ -682,10 +521,10 @@ const navItems = [
     }
 
     .title-tagline {
-      position: fixed; /* Changed to fixed to ignore header padding */
-      top: 0.4rem;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
       left: 50%;
-      transform: translateX(-50%);
       text-align: center;
       width: auto;
       max-width: 300px;
@@ -815,49 +654,6 @@ const navItems = [
       display: inline;
     }
 
-    .search-container {
-      position: static;
-    }
-
-    .search-form {
-      position: fixed;
-      top: 3rem; /* Below header */
-      left: 0.5rem;
-      right: 0.5rem;
-      margin: 0;
-      padding: 0.5rem;
-      background: var(--search-bg);
-      border-radius: 8px;
-      border: 1px solid var(--search-border);
-      box-shadow: 0 4px 12px var(--shadow-color);
-      z-index: 1002; /* Above mobile menu and overlay */
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .search-form.active {
-      display: flex;
-    }
-
-    .search-input {
-      width: 100%;
-      max-width: none;
-      padding: 0.5rem;
-      font-size: 0.9rem;
-    }
-
-    .search-submit {
-      padding: 0.5rem;
-    }
-
-    .search-results {
-      top: calc(100% + 0.5rem);
-      left: 0;
-      right: 0;
-      max-height: 300px;
-    }
-
     .mobile-controls {
       display: flex;
       align-items: center;
@@ -865,8 +661,7 @@ const navItems = [
       z-index: 1;
     }
 
-    .mobile-menu-button,
-    .mobile-search-toggle {
+    .mobile-menu-button {
       display: block;
     }
 
@@ -927,10 +722,6 @@ const navItems = [
       padding: 0.5rem 0.5rem;
     }
 
-    .search-form {
-      top: 2.5rem;
-    }
-
     .top-story-ticker {
       font-size: 0.6rem;
     }
@@ -945,8 +736,6 @@ const navItems = [
     .nav-link,
     .category-link,
     .category-toggle,
-    .search-toggle,
-    .mobile-search-toggle,
     .hamburger-line,
     .main-nav,
     .mobile-nav-overlay,
@@ -965,17 +754,11 @@ const navItems = [
     const header = document.querySelector('.site-header');
     const categoryToggle = document.querySelector('.category-toggle');
     const categoryMenu = document.getElementById('category-menu');
-    const searchToggle = document.querySelector('.search-toggle');
-    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
-    const searchForm = document.getElementById('search-form');
-    const searchInput = searchForm?.querySelector('.search-input');
-    const searchResults = document.getElementById('search-results');
     
-    if (!menuButton || !nav || !overlay || !header || !mobileSearchToggle || !searchForm) return;
+    if (!menuButton || !nav || !overlay || !header) return;
     
     let isMenuOpen = false;
     let isCategoryOpen = false;
-    let isSearchOpen = false;
     
     // Mobile Menu Toggle
     function toggleMenu() {
@@ -992,7 +775,6 @@ const navItems = [
       } else {
         menuButton.focus();
         if (isCategoryOpen) toggleCategoryMenu();
-        if (isSearchOpen) toggleSearch();
       }
     }
     
@@ -1015,51 +797,9 @@ const navItems = [
       categoryToggle.addEventListener('click', toggleCategoryMenu);
     }
     
-    // Search Toggle (Desktop and Mobile)
-    function toggleSearch() {
-      isSearchOpen = !isSearchOpen;
-      searchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
-      mobileSearchToggle.setAttribute('aria-expanded', isSearchOpen.toString());
-      searchForm.classList.toggle('active', isSearchOpen);
-      searchForm.style.display = isSearchOpen ? 'flex' : 'none';
-      
-      // Close mobile menu if open
-      if (isSearchOpen && isMenuOpen) {
-        toggleMenu();
-      }
-      
-      if (isSearchOpen) {
-        setTimeout(() => searchInput.focus(), 100);
-      } else {
-        searchResults.classList.remove('active');
-        searchInput.value = '';
-        if (window.innerWidth <= 768) {
-          mobileSearchToggle.focus();
-        } else {
-          searchToggle.focus();
-        }
-      }
-    }
-    
-    if (searchToggle) {
-      searchToggle.addEventListener('click', toggleSearch);
-    }
-    
-    if (mobileSearchToggle) {
-      mobileSearchToggle.addEventListener('click', toggleSearch);
-    }
-    
-    // Close search when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!searchForm.contains(e.target) && !mobileSearchToggle.contains(e.target) && !searchToggle.contains(e.target) && isSearchOpen) {
-        toggleSearch();
-      }
-    });
-    
-    // Close menus and search on Escape key
+    // Close menus on Escape key
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && (isMenuOpen || isCategoryOpen || isSearchOpen)) {
-        if (isSearchOpen) toggleSearch();
+      if (e.key === 'Escape' && (isMenuOpen || isCategoryOpen)) {
         if (isCategoryOpen) toggleCategoryMenu();
         if (isMenuOpen) closeMenu();
       }
@@ -1067,9 +807,8 @@ const navItems = [
     
     // Close menu on resize to desktop
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 768 && (isMenuOpen || isSearchOpen)) {
-        if (isMenuOpen) closeMenu();
-        if (isSearchOpen) toggleSearch();
+      if (window.innerWidth > 768 && isMenuOpen) {
+        closeMenu();
       }
     });
     
@@ -1118,103 +857,6 @@ const navItems = [
     
     setActiveLinks();
     window.addEventListener('popstate', setActiveLinks);
-
-    // Search Autocomplete
-    const posts = window.postsData || [];
-    let selectedIndex = -1;
-    let debounceTimeout;
-
-    function updateSearchResults(query, resultsElement, inputElement) {
-      resultsElement.innerHTML = '';
-      selectedIndex = -1;
-      if (!query) {
-        resultsElement.classList.remove('active');
-        return;
-      }
-      const words = query.toLowerCase().split(' ');
-      const results = posts.filter(post => {
-        const titleWords = (post.title || '').toLowerCase().split(' ');
-        const categoryWords = (post.category || '').toLowerCase().split(' ');
-        const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
-        const keywordWords = (post.keywords || []).join(' ').toLowerCase().split(' ');
-        return words.some(q => 
-          titleWords.some(w => w.includes(q)) ||
-          categoryWords.some(w => w.includes(q)) ||
-          tagWords.some(w => w.includes(q)) ||
-          keywordWords.some(w => w.includes(q))
-        );
-      }).slice(0, 8);
-      if (results.length === 0) {
-        resultsElement.innerHTML = '<li>No results found</li>';
-      } else {
-        results.forEach((post, index) => {
-          const li = document.createElement('li');
-          li.setAttribute('role', 'option');
-          li.setAttribute('id', `result-${index}`);
-          li.innerHTML = `<a href="/posts/${post.slug}">${post.title} <span style="color: var(--subtext-color); font-size: 0.8em;">(${post.category})</span></a>`;
-          li.addEventListener('click', () => {
-            window.location.href = `/posts/${post.slug}`;
-          });
-          resultsElement.appendChild(li);
-        });
-      }
-      resultsElement.classList.add('active');
-    }
-
-    function debounceSearch(query, resultsElement, inputElement) {
-      clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
-        updateSearchResults(query, resultsElement, inputElement);
-      }, 300);
-    }
-
-    if (searchForm && searchInput && searchResults) {
-      searchInput.addEventListener('input', (e) => {
-        debounceSearch(e.target.value, searchResults, searchInput);
-      });
-
-      searchInput.addEventListener('keydown', (e) => {
-        const items = searchResults.querySelectorAll('li[role="option"]');
-        if (items.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-          updateSelection(searchResults, searchInput);
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          selectedIndex = Math.max(selectedIndex - 1, -1);
-          updateSelection(searchResults, searchInput);
-        } else if (e.key === 'Enter' && selectedIndex >= 0) {
-          e.preventDefault();
-          const selectedItem = items[selectedIndex];
-          const link = selectedItem.querySelector('a');
-          if (link) window.location.href = link.getAttribute('href');
-        }
-      });
-
-      searchForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (query) {
-          window.location.href = `/search?query=${encodeURIComponent(query)}`;
-        }
-      });
-    }
-
-    function updateSelection(resultsElement, inputElement) {
-      const items = resultsElement.querySelectorAll('li[role="option"]');
-      items.forEach((item, index) => {
-        item.setAttribute('aria-selected', index === selectedIndex);
-        if (index === selectedIndex) {
-          item.scrollIntoView({ block: 'nearest' });
-          inputElement.setAttribute('aria-activedescendant', `result-${index}`);
-        }
-      });
-      if (selectedIndex === -1) {
-        inputElement.removeAttribute('aria-activedescendant');
-      }
-    }
   }
   
   if (document.readyState === 'loading') {
@@ -1222,15 +864,4 @@ const navItems = [
   } else {
     initHeader();
   }
-</script>
-
-<script is:inline define:vars={{ posts: posts.map(p => ({
-  slug: p.slug,
-  title: p.data.title,
-  description: p.data.description,
-  category: p.data.category,
-  tags: p.data.tags || [],
-  keywords: p.data.keywords || []
-})) }}>
-  window.postsData = posts;
 </script>
