@@ -3,7 +3,7 @@ title: "Top 10 Richest Kenyan OnlyFans Models Who Went Public: Net Worth and Vir
 description: "Meet Kenya's boldest OnlyFans creators—from Alicia Kanini to Queen Tahshaar—who've openly embraced their work, revealed their net worth, and sparked major online trends."
 date: 2025,08,15
 author: "Social Trends Research"
-image: "https://example.com/alicia-kanini-kenya-onlyfans-feature.jpg"
+image: "https://i.postimg.cc/wBn7hxcy/20250815-170214.jpg"
 imageCaption: "Alicia Kanini, Kenya's most outspoken OnlyFans influencer and digital entrepreneur"
 imageAlt: "Alicia Kanini posing confidently for a social media shoot"
 category: "Kenya Celebrities & Influence"
@@ -17,7 +17,7 @@ Kenya's digital revolution has given rise to a new generation of content creator
 
 <figure class="content-image">
   <img 
-    src="https://example.com/queen-tahshaar-luxury-cash.jpg" 
+    src="https://i.postimg.cc/d1mwLJWK/357028417-219105074418683-4683778908045604538-n.jpg" 
     alt="Queen Tahshaar displaying her wealth and social success"
     loading="lazy"
     width="800"
@@ -31,7 +31,7 @@ Alicia Kanini, aged 23, is one of Kenya's most vocal OnlyFans creators. Proud of
 
 <figure class="content-image">
   <img 
-    src="https://example.com/alicia-kanini-cultural-dance.jpg" 
+    src="https://i.postimg.cc/fWfRbfF0/Fhb-WUEp-L-400x400.jpg" 
     alt="Alicia Kanini leading a traditional Kamba dance session online"
     loading="lazy"
     width="800"
@@ -51,7 +51,7 @@ Kenyan celebrity and beauty entrepreneur Huddah Monroe was among the first to pu
 
 <figure class="content-image">
   <img 
-    src="https://example.com/huddah-monroe-celebrity-luxe.jpg" 
+    src="https://i.postimg.cc/Bb4Zgj86/61951329c021a.jpg" 
     alt="Huddah Monroe posing at an exclusive event"
     loading="lazy"
     width="800"
