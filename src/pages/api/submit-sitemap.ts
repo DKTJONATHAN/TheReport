@@ -4,7 +4,7 @@ import { google } from 'googleapis';
 export const POST: APIRoute = async () => {
   try {
     // 1. Get fresh sitemap content
-    const sitemapUrl = 'https://jonathanmwaniki.co.ke/sitemap-index.xml';
+    const sitemapUrl = 'https://jonathanmwaniki.co.ke/sitemap-0.xml';
     const sitemapRes = await fetch(sitemapUrl);
     const sitemapContent = await sitemapRes.text();
 
@@ -22,13 +22,13 @@ export const POST: APIRoute = async () => {
     // Delete old sitemap first
     await searchconsole.sitemaps.delete({
       siteUrl: 'https://jonathanmwaniki.co.ke',
-      feedpath: '/sitemap-index.xml'
+      feedpath: '/sitemap-0.xml'
     }).catch(() => {}); // Ignore if not exists
 
     // Submit new sitemap
     await searchconsole.sitemaps.submit({
       siteUrl: 'https://jonathanmwaniki.co.ke',
-      feedpath: '/sitemap-index.xml'
+      feedpath: '/sitemap-0.xml'
     });
 
     // 3. Find today's new URLs (example logic)
