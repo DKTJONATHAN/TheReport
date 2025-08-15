@@ -3,4 +3,4 @@ Disallow: /tags/
 Disallow: /category/
 Allow: /
 
-Sitemap: https://www.jonathanmwaniki.co.ke/sitemap.xml
+Sitemap: https://www.jonathanmwaniki.co.ke/sitemap-0.xml
