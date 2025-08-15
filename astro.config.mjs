@@ -26,12 +26,12 @@ export default defineConfig({
     sitemap({
       canonicalURL: 'https://www.jonathanmwaniki.co.ke',
       entryLimit: 50000,
-      filter: (page) => !page.includes('/tags/') && !page.includes('/category/'), // Exclude tags and categories
+      filter: (page) => !page.includes('/tags/') && !page.includes('/category/'),
       serialize(item) {
         return {
           url: item.url,
           lastmod: item.lastmod || new Date().toISOString(),
-          changefreq: getChangeFreq(item.url), // Now calling the function directly
+          changefreq: getChangeFreq(item.url),
           priority: getPriority(item.url),
         };
       },
@@ -50,6 +50,12 @@ export default defineConfig({
   },
   trailingSlash: 'ignore',
   vite: {
+    define: {
+      // Safely inject Google credentials from environment
+      'import.meta.env.GOOGLE_CREDENTIALS': JSON.stringify(
+        process.env.GOOGLE_CREDENTIALS || ''
+      )
+    },
     plugins: [
       {
         name: 'noindex-tag-pages',
