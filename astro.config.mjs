@@ -3,6 +3,20 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/static';
 
+// Helper functions for dynamic sitemap values
+function getChangeFreq(url) {
+  if (url === '/') return 'hourly';
+  if (url.includes('/posts/')) return 'daily';
+  return 'weekly';
+}
+
+function getPriority(url) {
+  if (url === '/') return 1.0;
+  if (url.includes('/posts/')) return 0.9;
+  if (url.includes('/about') || url.includes('/contact')) return 0.8;
+  return 0.7;
+}
+
 export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
   output: 'static',
@@ -17,8 +31,8 @@ export default defineConfig({
         return {
           url: item.url,
           lastmod: item.lastmod || new Date().toISOString(),
-          changefreq: this.getChangeFreq(item.url), // Dynamic change frequency
-          priority: this.getPriority(item.url), // Dynamic priority
+          changefreq: getChangeFreq(item.url), // Now calling the function directly
+          priority: getPriority(item.url),
         };
       },
       customPages: [
@@ -52,17 +66,3 @@ export default defineConfig({
     ]
   }
 });
-
-// Helper functions for dynamic sitemap values
-function getChangeFreq(url) {
-  if (url === '/') return 'hourly';
-  if (url.includes('/posts/')) return 'daily';
-  return 'weekly';
-}
-
-function getPriority(url) {
-  if (url === '/') return 1.0;
-  if (url.includes('/posts/')) return 0.9;
-  if (url.includes('/about') || url.includes('/contact')) return 0.8;
-  return 0.7;
-}
