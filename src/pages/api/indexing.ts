@@ -1,69 +1,61 @@
 import type { APIRoute } from 'astro';
 import { google } from 'googleapis';
 
-// Configuration
-const DAILY_LIMIT = 200; // Google's actual daily limit
-const SITEMAP_URL = 'https://www.jonathanmwaniki.co.ke/sitemap-0.xml';
+const DAILY_LIMIT = 200;
 
-export const POST: APIRoute = async () => {
+export const POST: APIRoute = async ({ request }) => {
   try {
-    // 1. Fetch sitemap
-    const sitemapRes = await fetch(SITEMAP_URL);
-    if (!sitemapRes.ok) throw new Error(`Failed to fetch sitemap: ${sitemapRes.status}`);
-    const sitemapContent = await sitemapRes.text();
+    const { urls = [], type = 'URL_UPDATED' } = await request.json();
 
-    // 2. Extract URLs from sitemap
-    const urls = extractUrlsFromSitemap(sitemapContent);
-    if (!urls.length) throw new Error('No URLs found in sitemap');
+    if (!urls.length) {
+      return new Response(JSON.stringify({ 
+        error: 'No URLs provided',
+        hint: 'Include URLs array in request body'
+      }), { status: 400 });
+    }
 
-    // 3. Authenticate with Google
     const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(import.meta.env.GOOGLE_CREDENTIALS),
+      credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),  // Changed from import.meta.env
       scopes: ['https://www.googleapis.com/auth/indexing'],
     });
-    const indexing = google.indexing({ version: 'v3', auth: await auth.getClient() });
 
-    // 4. Submit URLs in batches
-    const results = [];
+    const client = await auth.getClient();
+    const indexing = google.indexing({ 
+      version: 'v3',
+      auth: client
+    });
+
     const batch = urls.slice(0, DAILY_LIMIT);
-    
-    for (const url of batch) {
-      try {
-        const res = await indexing.urlNotifications.publish({
-          requestBody: { url, type: 'URL_UPDATED' }
-        });
-        results.push({ url, status: res.status, success: true });
-        await new Promise(resolve => setTimeout(resolve, 500)); // Rate limiting
-      } catch (error) {
-        results.push({
-          url,
-          status: error.code || 500,
-          error: error.message,
-          success: false
-        });
-      }
-    }
+    const results = await Promise.all(
+      batch.map(async url => {
+        try {
+          const res = await indexing.urlNotifications.publish({
+            requestBody: { url, type }
+          });
+          return { url, status: res.status, success: true };
+        } catch (error) {
+          return { 
+            url, 
+            status: error.code || 500, 
+            error: error.message,
+            success: false 
+          };
+        }
+      })
+    );
 
     return new Response(JSON.stringify({
       success: true,
-      sitemap: SITEMAP_URL,
-      urls_found: urls.length,
-      urls_processed: results.length,
+      limit: DAILY_LIMIT,
+      processed: results.length,
       results
     }));
 
   } catch (error) {
     return new Response(JSON.stringify({
-      success: false,
-      error: error.message,
-      sitemap: SITEMAP_URL,
-      stack: import.meta.env.DEV ? error.stack : undefined
+      error: 'Indexing failed',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }), { status: 500 });
   }
 };
-
-// Helper to extract URLs from sitemap XML
-function extractUrlsFromSitemap(xmlContent: string): string[] {
-  const urlMatches = xmlContent.match(/<loc>(.*?)<\/loc>/g) || [];
-  return urlMatches.map(url => url.replace(/<\/?loc>/g, ''));
-}
