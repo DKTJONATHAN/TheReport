@@ -309,7 +309,10 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     <!-- Draft Notice -->
     {post.data.draft && (
       <div class="draft-notice" role="alert">
-        ⚠️ This is a draft article
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 9a.75.75 0 00-1.5 0v2.25H9a.75.75 0 000 1.5h2.25V15a.75.75 0 001.5 0v-2.25H15a.75.75 0 000-1.5h-2.25V9z" clip-rule="evenodd" />
+        </svg>
+        This is a draft article
       </div>
     )}
 
@@ -330,10 +333,26 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
             })}
           </time>
           <meta itemprop="dateModified" content={modifiedDate} />
-          <span class="reading-time">📖 {readingTime} min read</span>
+          <span class="reading-time">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+              <path d="M11.25 5.337c0-.355-.186-.676-.401-.959a1.647 1.647 0 00-1.918 0c-.216.283-.401.604-.401.959v.518c0 .355.186.676.401.959a1.647 1.647 0 001.918 0c.215-.283.401-.604.401-.959v-.518zm-.75 5.663V10.5c0-.355-.186-.676-.401-.959a1.647 1.647 0 00-1.918 0c-.216.283-.401.604-.401.959v.518c0 .355.186.676.401.959a1.647 1.647 0 001.918 0c.215-.283.401-.604.401-.959zm.75 2.25c0 .355-.186.676-.401.959a1.647 1.647 0 01-1.918 0c-.216-.283-.401-.604-.401-.959v-.518c0-.355.186.676.401.959a1.647 1.647 0 001.918 0c.215-.283.401-.604.401-.959v.518zM12.75 5.337v5.663c0 .355-.186.676-.401.959a1.647 1.647 0 01-1.918 0c-.216-.283-.401-.604-.401-.959V5.337c0-.355.186-.676.401-.959a1.647 1.647 0 011.918 0c.215.283.401.604.401.959zM12 18.75c-3.385 0-6.375-2.115-7.5-5.25C3.375 10.365 4.365 7.5 6.75 6.375c1.125-.525 2.355-.825 3.75-.825V3.75c-1.627 0-3.177.315-4.5.885C3.135 5.865 1.5 8.865 1.5 12c0 3.135 1.635 6.135 4.5 7.365 1.323.57 2.873.885 4.5.885v-1.8c-1.395 0-2.625-.3-3.75-.825z" />
+            </svg>
+            {readingTime} min read
+          </span>
           <span class="word-count">({wordCount} words)</span>
-          <span class="view-count">👀 {viewCount.toLocaleString()} views</span>
-          <span class="share-count">↗️ {shareCount.toLocaleString()} shares</span>
+          <span class="view-count">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+              <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+              <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.49 4.467-5.705 7.69-10.675 7.69-4.973 0-9.19-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+            </svg>
+            {viewCount.toLocaleString()} views
+          </span>
+          <span class="share-count">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+              <path fill-rule="evenodd" d="M15.75 4.5a3 3 0 11.825 2.066l-8.421 4.679a3.002 3.002 0 010 1.51l8.421 4.679a3 3 0 11-.729 1.824l-8.421-4.678a3 3 0 11-4.132-4.132l8.422-4.679a3 3 0 01-.096-1.269zm-1.5 15.75a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm-12-12a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm12-6a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clip-rule="evenodd" />
+            </svg>
+            {shareCount.toLocaleString()} shares
+          </span>
         </div>
 
         <h1 class="post-title" itemprop="headline">{post.data.title || 'Untitled'}</h1>
@@ -347,7 +366,12 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
             <span itemprop="name"><strong>{post.data.author || 'Jonathan Mwaniki'}</strong></span>
           </a>
           <span class="author-title">Kenya News Editor</span>
-          <span class="author-verified">✅ Verified</span>
+          <span class="author-verified">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+            </svg>
+            Verified
+          </span>
         </div>
       </header>
 
@@ -408,31 +432,19 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       <!-- Article Reactions -->
       <section class="article-reactions" aria-label="Article Reactions">
         <h2>Your Reaction</h2>
-        <button class="button reaction-button" data-reaction="like">👍 Like</button>
-        <button class="button reaction-button" data-reaction="dislike">👎 Dislike</button>
-      </section>
-
-      <!-- Social Share (Fixed at Bottom) -->
-      <div class="social-share" aria-label="Share this article">
-        <button class="share-button copy-link" aria-label="Copy article link" data-url={postUrl}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        <button class="button reaction-button" data-reaction="like">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+            <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a6.75 6.75 0 00-.75 3.248c0 1.152.26 2.243.723 3.218.266.558-.107 1.282-.725 1.282H2.25a.75.75 0 01-.75-.75v-6a.75.75 0 01.75-.75h.327c.418 0 .805.236.957.636z" />
           </svg>
-          Copy Link
+          Like
         </button>
-        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        <button class="button reaction-button" data-reaction="dislike">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">
+            <path d="M15.73 5.25c1.284 0 2.411.834 2.785 2.053a7.493 7.493 0 011.465 4.472c0 1.75-.599 3.358-1.602 4.634-.151.192-.373.309-.6.397-.473.183-.89.514-1.212.924a9.042 9.042 0 00-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 01-.322 1.672V21a.75.75 0 01-.75.75 2.25 2.25 0 01-2.25-2.25c0-1.152.26-2.243.723-3.218.266-.558-.107-1.282-.725-1.282H3.375c-1.026 0-1.945-.694-2.054-1.715A12.137 12.137 0 01.75 12c0-1.285.227-2.51.642-3.631.388-.482.987-.729 1.605-.729h1.523c.483 0 .964.078 1.423.23l3.114 1.04a4.501 4.501 0 001.423.23h.777c.425 0 .82.236.975.632A7.48 7.48 0 0018 8.625c0-1.152-.26-2.243-.723-3.218-.266-.558.107-1.282.725-1.282h.327a.75.75 0 00.75-.75V3z" />
           </svg>
-          Share on X
-        </a>
-        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
-          </svg>
-          Share on Facebook
-        </a>
-      </div>
+          Dislike
+        </button>
+      </section>
 
       <!-- Author Box -->
       <section class="author-box" aria-label="About the Author">
@@ -574,18 +586,27 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         </ul>
       </section>
 
-      <!-- Newsletter Signup -->
-      <section class="newsletter-signup" aria-label="Newsletter Signup">
-        <h2>Stay Updated with Kenya News</h2>
-        <p>Get breaking news from Kenya delivered to your inbox.</p>
-        <form action="/subscribe" method="POST">
-          <input type="email" name="email" placeholder="Enter your email" required aria-label="Email for newsletter" />
-          <label>
-            <input type="checkbox" name="consent" required aria-label="Consent to newsletter" />
-            I agree to the <a href="/privacy-policy">Privacy Policy</a>
-          </label>
-          <button class="button" type="submit">Subscribe</button>
-        </form>
+      <!-- Social Share -->
+      <section class="social-share" aria-label="Share this article">
+        <h2>Share This Article</h2>
+        <button class="share-button copy-link" aria-label="Copy article link" data-url={postUrl}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy Link
+        </button>
+        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          Share on X
+        </a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+          </svg>
+          Share on Facebook
+        </a>
       </section>
 
       <!-- Back to Top Button -->
@@ -814,7 +835,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       --ad-bg: #f8f9fa;
       --draft-bg: #fef3c7;
       --draft-text: #b45309;
-      --newsletter-bg: #f7f7f7;
       --scrollbar-thumb: #BB1919;
       --scrollbar-track: #f1f1f1;
       --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
@@ -835,7 +855,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         --ad-bg: #333;
         --draft-bg: #4a3b00;
         --draft-text: #ffd700;
-        --newsletter-bg: #2d2d2d;
         --scrollbar-thumb: #ff4d4d;
         --scrollbar-track: #333;
         --shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -869,6 +888,13 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     }
 
     /* Full CSS */
+    .icon {
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 0.25rem;
+    }
+
     .reading-progress {
       position: fixed;
       top: 0;
@@ -1127,7 +1153,8 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     .author-box,
     .related-articles,
     .recent-articles,
-    .author-articles {
+    .author-articles,
+    .social-share {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -1142,7 +1169,8 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     .author-box h2,
     .related-articles h2,
     .recent-articles h2,
-    .author-articles h2 {
+    .author-articles h2,
+    .social-share h2 {
       font-family: 'ReithSerif', Georgia, Times, serif;
       font-size: 1.5rem;
       font-weight: 700;
@@ -1235,7 +1263,7 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     }
 
     .quote-highlight {
-      background: var(--newsletter-bg);
+      background: var(--card-bg);
       padding: 1.5rem;
       border-left: 4px solid var(--accent);
       margin: 1.5rem 0;
@@ -1432,89 +1460,16 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       color: var(--secondary-text);
     }
 
-    .newsletter-signup {
-      background: var(--newsletter-bg);
+    .social-share {
+      background: var(--card-bg);
       padding: 2rem;
       border-radius: 12px;
       margin: 1.5rem 0;
       text-align: center;
       box-shadow: var(--shadow);
-    }
-
-    .newsletter-signup h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-
-    .newsletter-signup p {
-      font-size: 1rem;
-      margin-bottom: 1.5rem;
-      color: var(--secondary-text);
-    }
-
-    .newsletter-signup form {
       display: flex;
       gap: 0.75rem;
       justify-content: center;
-      align-items: center;
-    }
-
-    .newsletter-signup input[type="email"] {
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 1rem;
-      width: 300px;
-      max-width: 100%;
-      background: var(--card-bg);
-      color: var(--text-color);
-      transition: var(--transition);
-    }
-
-    .newsletter-signup input[type="email"]:focus {
-      border-color: var(--accent);
-      outline: none;
-    }
-
-    .newsletter-signup label {
-      font-size: 0.9rem;
-      color: var(--secondary-text);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .newsletter-signup .button {
-      padding: 0.75rem 1.5rem;
-      background: var(--accent);
-      color: #ffffff;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 1rem;
-      text-transform: uppercase;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .newsletter-signup .button:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
-    }
-
-    .social-share {
-      position: fixed;
-      bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 0.75rem;
-      background: var(--card-bg);
-      padding: 0.75rem;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      z-index: 1000;
     }
 
     .share-button {
@@ -1639,24 +1594,14 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         max-width: 100%;
       }
 
-      .newsletter-signup form {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .newsletter-signup input[type="email"] {
-        width: 100%;
+      .social-share {
+        padding: 1.5rem;
       }
 
       .related-posts-list,
       .recent-posts-list,
       .author-posts-list {
         grid-template-columns: 1fr;
-      }
-
-      .social-share {
-        bottom: 0.5rem;
-        padding: 0.5rem;
       }
 
       .share-button {
@@ -1721,7 +1666,8 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       .author-box,
       .related-articles,
       .recent-articles,
-      .author-articles {
+      .author-articles,
+      .social-share {
         box-shadow: none;
         border: 1px solid #ccc;
       }
@@ -1732,7 +1678,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       .back-to-top,
       .category-nav,
       .article-reactions,
-      .newsletter-signup,
       .offline-indicator {
         display: none;
       }
