@@ -254,13 +254,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
 
   <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
 
-  <!-- Cookie Consent -->
-  <div class="cookie-consent" role="dialog" aria-label="Cookie Consent" hidden>
-    <p>We use cookies to enhance your experience. <a href="/privacy-policy">Learn more</a>.</p>
-    <button class="button cookie-accept">Accept</button>
-    <button class="button cookie-decline">Decline</button>
-  </div>
-
   <div class="reading-progress">
     <div class="reading-progress-bar" id="progress-bar"></div>
   </div>
@@ -319,14 +312,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         ⚠️ This is a draft article
       </div>
     )}
-
-    <!-- Article Controls -->
-    <div class="article-controls">
-      <button class="button font-size-adjuster" aria-label="Increase font size" data-action="increase">+</button>
-      <button class="button font-size-adjuster" aria-label="Decrease font size" data-action="decrease">-</button>
-      <button class="button reading-mode-toggle" aria-label="Toggle reading mode">Reading Mode</button>
-      <button class="button print-button" aria-label="Print article">Print</button>
-    </div>
 
     <!-- Main Article -->
     <article class="post-card" itemscope itemtype="https://schema.org/NewsArticle">
@@ -426,6 +411,28 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         <button class="button reaction-button" data-reaction="like">👍 Like</button>
         <button class="button reaction-button" data-reaction="dislike">👎 Dislike</button>
       </section>
+
+      <!-- Social Share (Fixed at Bottom) -->
+      <div class="social-share" aria-label="Share this article">
+        <button class="share-button copy-link" aria-label="Copy article link" data-url={postUrl}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy Link
+        </button>
+        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          Share on X
+        </a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+          </svg>
+          Share on Facebook
+        </a>
+      </div>
 
       <!-- Author Box -->
       <section class="author-box" aria-label="About the Author">
@@ -581,28 +588,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         </form>
       </section>
 
-      <!-- Social Share (Sticky on Mobile) -->
-      <div class="social-share sticky-share" aria-label="Share this article">
-        <button class="share-button copy-link" aria-label="Copy article link" data-url={postUrl}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-          Copy Link
-        </button>
-        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-          </svg>
-          X
-        </a>
-        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook" target="_blank" rel="noopener noreferrer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
-          </svg>
-          Facebook
-        </a>
-      </div>
-
       <!-- Back to Top Button -->
       <button class="back-to-top" aria-label="Back to top" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -645,12 +630,12 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
   </div>
 
   <!-- Analytics (Google Analytics 4) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX', {
+    gtag('config', 'G-W3FVP4FRPT', {
       page_path: window.location.pathname,
       page_title: document.title,
     });
@@ -706,14 +691,12 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       copyLinkButton.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(copyLinkButton.dataset.url);
+          const originalContent = copyLinkButton.innerHTML;
           copyLinkButton.textContent = 'Link Copied!';
+          copyLinkButton.disabled = true;
           setTimeout(() => {
-            copyLinkButton.innerHTML = `
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-              </svg>
-              Copy Link
-            `;
+            copyLinkButton.innerHTML = originalContent;
+            copyLinkButton.disabled = false;
           }, 2000);
           if (typeof gtag !== 'undefined') {
             gtag('event', 'share', { method: 'copy_link', content_id: window.location.pathname });
@@ -723,9 +706,33 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
           }
         } catch (err) {
           console.error('Failed to copy link:', err);
+          copyLinkButton.textContent = 'Copy Failed';
+          setTimeout(() => {
+            copyLinkButton.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Copy Link
+            `;
+            copyLinkButton.disabled = false;
+          }, 2000);
         }
       });
     }
+
+    // Share Button Tracking
+    const shareButtons = document.querySelectorAll('.share-button.x, .share-button.facebook');
+    shareButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const platform = button.classList.contains('x') ? 'x' : 'facebook';
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'share', { method: platform, content_id: window.location.pathname });
+        }
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'Share', { content_id: window.location.pathname, platform: platform });
+        }
+      });
+    });
 
     // Lazy Loading for Ads
     const lazyAds = document.querySelectorAll('.ad-container[data-lazy]');
@@ -762,55 +769,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       }
     });
 
-    // Font Size Adjuster
-    const fontSizeAdjusters = document.querySelectorAll('.font-size-adjuster');
-    fontSizeAdjusters.forEach(button => {
-      button.addEventListener('click', () => {
-        const action = button.dataset.action;
-        const articleWrapper = document.querySelector('.article-wrapper');
-        let fontSize = parseFloat(getComputedStyle(articleWrapper).fontSize);
-        if (action === 'increase') {
-          fontSize = Math.min(fontSize + 2, 24);
-        } else {
-          fontSize = Math.max(fontSize - 2, 12);
-        }
-        articleWrapper.style.fontSize = `${fontSize}px`;
-        localStorage.setItem('fontSize', fontSize);
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'font_size_adjust', { action, font_size: fontSize });
-        }
-      });
-    });
-
-    // Restore Font Size
-    const savedFontSize = localStorage.getItem('fontSize');
-    if (savedFontSize) {
-      document.querySelector('.article-wrapper').style.fontSize = `${savedFontSize}px`;
-    }
-
-    // Reading Mode
-    const readingModeToggle = document.querySelector('.reading-mode-toggle');
-    if (readingModeToggle) {
-      readingModeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('reading-mode');
-        readingModeToggle.textContent = document.body.classList.contains('reading-mode') ? 'Exit Reading Mode' : 'Reading Mode';
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'reading_mode', { state: document.body.classList.contains('reading-mode') ? 'on' : 'off' });
-        }
-      });
-    }
-
-    // Print Button
-    const printButton = document.querySelector('.print-button');
-    if (printButton) {
-      printButton.addEventListener('click', () => {
-        window.print();
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'print', { content_id: window.location.pathname });
-        }
-      });
-    }
-
     // Article Reactions
     const reactionButtons = document.querySelectorAll('.reaction-button');
     reactionButtons.forEach(button => {
@@ -825,26 +783,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
         }
       });
     });
-
-    // Cookie Consent
-    const cookieConsent = document.querySelector('.cookie-consent');
-    if (cookieConsent && !localStorage.getItem('cookieConsent')) {
-      cookieConsent.hidden = false;
-      document.querySelector('.cookie-accept').addEventListener('click', () => {
-        localStorage.setItem('cookieConsent', 'accepted');
-        cookieConsent.hidden = true;
-        if (typeof gtag !== 'undefined') {
-          gtag('consent', 'update', { ad_storage: 'granted', analytics_storage: 'granted' });
-        }
-      });
-      document.querySelector('.cookie-decline').addEventListener('click', () => {
-        localStorage.setItem('cookieConsent', 'declined');
-        cookieConsent.hidden = true;
-        if (typeof gtag !== 'undefined') {
-          gtag('consent', 'update', { ad_storage: 'denied', analytics_storage: 'denied' });
-        }
-      });
-    }
 
     // Service Worker and Offline Indicator
     if ('serviceWorker' in navigator) {
@@ -946,50 +884,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       background: var(--accent);
       width: 0;
       transition: width 0.2s ease;
-    }
-
-    .cookie-consent {
-      position: fixed;
-      bottom: 1rem;
-      left: 1rem;
-      right: 1rem;
-      background: var(--card-bg);
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      z-index: 1000;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .cookie-consent p {
-      margin: 0;
-      font-size: 0.9rem;
-    }
-
-    .cookie-consent a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    .cookie-consent a:hover {
-      color: var(--accent-hover);
-    }
-
-    .cookie-consent .button {
-      padding: 0.5rem 1rem;
-      background: var(--accent);
-      color: #ffffff;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .cookie-consent .button:hover {
-      background: var(--accent-hover);
     }
 
     .breadcrumb-nav {
@@ -1131,29 +1025,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       text-align: center;
       font-weight: 500;
       font-size: 1rem;
-    }
-
-    .article-controls {
-      display: flex;
-      gap: 0.75rem;
-      margin: 1rem 0;
-      justify-content: flex-end;
-    }
-
-    .article-controls .button {
-      padding: 0.5rem 1rem;
-      background: var(--accent);
-      color: #ffffff;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: var(--transition);
-    }
-
-    .article-controls .button:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
     }
 
     .post-card {
@@ -1419,6 +1290,11 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       transform: translateY(-2px);
     }
 
+    .reaction-button:disabled {
+      background: var(--secondary-text);
+      cursor: not-allowed;
+    }
+
     .author-box-content {
       display: flex;
       gap: 1rem;
@@ -1641,16 +1517,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       z-index: 1000;
     }
 
-    @media (min-width: 768px) {
-      .social-share {
-        top: 50%;
-        left: 1rem;
-        bottom: auto;
-        transform: translateY(-50%);
-        flex-direction: column;
-      }
-    }
-
     .share-button {
       display: flex;
       align-items: center;
@@ -1662,12 +1528,14 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       font-weight: 600;
       font-size: 0.9rem;
       text-decoration: none;
+      border: none;
+      cursor: pointer;
       transition: var(--transition);
     }
 
     .share-button:hover {
       background: var(--accent-hover);
-      transform: translateX(5px);
+      transform: translateY(-2px);
     }
 
     .share-button svg {
@@ -1748,26 +1616,6 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       margin-bottom: 3rem;
     }
 
-    .reading-mode .post-card,
-    .reading-mode .article-wrapper {
-      background: #fffef2;
-      color: #1a1a1a;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .reading-mode .ad-container,
-    .reading-mode .social-share,
-    .reading-mode .category-nav,
-    .reading-mode .related-articles,
-    .reading-mode .recent-articles,
-    .reading-mode .author-articles,
-    .reading-mode .newsletter-signup,
-    .reading-mode .article-controls,
-    .reading-mode .article-reactions {
-      display: none;
-    }
-
     /* Mobile Optimizations */
     @media (max-width: 768px) {
       .content-wrapper {
@@ -1805,6 +1653,21 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       .author-posts-list {
         grid-template-columns: 1fr;
       }
+
+      .social-share {
+        bottom: 0.5rem;
+        padding: 0.5rem;
+      }
+
+      .share-button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
+
+      .share-button svg {
+        width: 14px;
+        height: 14px;
+      }
     }
 
     @media (max-width: 480px) {
@@ -1827,6 +1690,11 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       .recent-post-title,
       .author-post-title {
         font-size: 0.9rem;
+      }
+
+      .social-share {
+        flex-wrap: wrap;
+        justify-content: center;
       }
     }
 
@@ -1863,10 +1731,8 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       .social-share,
       .back-to-top,
       .category-nav,
-      .article-controls,
       .article-reactions,
       .newsletter-signup,
-      .cookie-consent,
       .offline-indicator {
         display: none;
       }
