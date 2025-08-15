@@ -1,5 +1,31 @@
 {
   "version": 2,
-  "builds": [{"src": "package.json", "use": "@vercel/static-build"}],
-  "routes": [{"handle": "filesystem"}]
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": ".vercel/output/static",
+        "runtime": "nodejs18.x"
+      }
+    },
+    {
+      "src": "src/pages/api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "/api/indexing"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1",
+      "continue": true
+    },
+    {
+      "handle": "filesystem"
+    }
+  ]
 }
