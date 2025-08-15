@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
 
+// Get static paths for all posts
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
   return posts.map(post => ({
@@ -14,71 +15,131 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
+// Fetch all posts for categories and related articles
 const allPosts = await getCollection('posts');
 const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategorized'))];
-const categoryCounts = categories.map(category => ({
-  name: category,
-  count: allPosts.filter(p => (p.data.category || 'Uncategorized') === category).length,
-})).sort((a, b) => b.count - a.count).slice(0, 4);
+const categoryCounts = categories
+  .map(category => ({
+    name: category,
+    count: allPosts.filter(p => (p.data.category || 'Uncategorized') === category).length,
+  }))
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 4);
 
+// Generate absolute image URL
 const absoluteImageUrl = post.data.image
-  ? post.data.image.startsWith('http') 
-    ? post.data.image 
+  ? post.data.image.startsWith('http')
+    ? post.data.image
     : `https://www.jonathanmwaniki.co.ke${post.data.image.startsWith('/') ? '' : '/'}${post.data.image}`
   : 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg';
 
-const categorySlug = post.data.category 
+// Generate URLs
+const categorySlug = post.data.category
   ? post.data.category.toLowerCase().replace(/ /g, '-')
   : 'uncategorized';
 const postUrl = `https://www.jonathanmwaniki.co.ke/posts/${post.slug}`;
 const categoryUrl = `https://www.jonathanmwaniki.co.ke/category/${categorySlug}`;
 
+// SEO-optimized metadata
 const optimizedTitle = `${post.data.title || 'Untitled'} | ${post.data.category || 'Kenya News'} | Jonathan Mwaniki`;
-const optimizedDescription = `${post.data.description || ''} Latest news from Kenya about ${post.data.category || 'current events'}. Stay updated with Jonathan Mwaniki.`;
-
+const optimizedDescription = `${post.data.description || 'Read the latest Kenya news and updates.'} Stay informed with Jonathan Mwaniki's in-depth coverage.`;
+const keywords = [
+  'Kenya news',
+  post.data.category || 'current events',
+  ...(post.data.tags || []),
+  ...(post.data.keywords || []),
+  'Jonathan Mwaniki',
+].join(', ');
 const isoDate = new Date(post.data.date).toISOString();
 const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
+
+// Calculate reading time and word count
+const words = post.body.split(/\s+/).length;
+const readingTime = Math.ceil(words / 200); // Average 200 words per minute
+const wordCount = words;
+
+// Related articles (improved matching with tags and category)
+const relatedArticles = allPosts
+  .filter(p => p.slug !== post.slug && (p.data.category === post.data.category || p.data.tags?.some(tag => post.data.tags?.includes(tag))))
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 3);
+
+// Recently published articles
+const recentArticles = allPosts
+  .filter(p => p.slug !== post.slug)
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 3);
+
+// FAQ Schema (example, customize based on content)
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": `What is the main topic of ${post.data.title || 'this article'}?`,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": post.data.description || `This article covers ${post.data.category || 'current events'} in Kenya, provided by Jonathan Mwaniki.`
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who is the author of this article?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": post.data.author || "Jonathan Mwaniki, a leading Kenya news journalist."
+      }
+    }
+  ]
+};
 ---
 
-<Layout 
+<Layout
   title={optimizedTitle}
   description={optimizedDescription}
   image={absoluteImageUrl}
   canonical={postUrl}
   meta={[
-    { name: 'color-scheme', content: 'light dark' },
+    { name: 'robots', content: 'index, follow' },
+    { name: 'googlebot', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
+    { name: 'keywords', content: keywords },
+    { name: 'news_keywords', content: keywords },
     { name: 'og:title', content: optimizedTitle },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
     { name: 'og:url', content: postUrl },
     { name: 'og:image', content: absoluteImageUrl },
     { name: 'og:image:alt', content: post.data.imageAlt || optimizedTitle },
-    { name: 'og:site_name', content: "Jonathan Mwaniki - Kenya News" },
+    { name: 'og:site_name', content: 'Jonathan Mwaniki - Kenya News' },
     { name: 'og:locale', content: 'en_KE' },
+    { name: 'article:published_time', content: isoDate },
+    { name: 'article:modified_time', content: modifiedDate },
+    { name: 'article:section', content: post.data.category || 'Uncategorized' },
+    { name: 'article:tag', content: (post.data.tags || []).join(', ') },
+    { name: 'article:author', content: post.data.author || 'Jonathan Mwaniki' },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: optimizedTitle },
     { name: 'twitter:description', content: optimizedDescription },
     { name: 'twitter:image', content: absoluteImageUrl },
     { name: 'twitter:image:alt', content: post.data.imageAlt || optimizedTitle },
     { name: 'twitter:site', content: '@maestropuns' },
-    { name: 'twitter:creator', content: '@maestropuns' },
-    { name: 'article:published_time', content: isoDate },
-    { name: 'article:modified_time', content: modifiedDate },
-    { name: 'article:section', content: post.data.category || 'Uncategorized' },
-    { name: 'article:tag', content: (post.data.tags || []).join(', ') }
+    { name: 'twitter:creator', content: '@maestropuns' }
   ]}
 >
+  <!-- JSON-LD Schema for NewsArticle -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "NewsArticle",
-      "headline": "{post.data.title || 'Untitled'}",
-      "image": "{absoluteImageUrl}",
-      "datePublished": "{isoDate}",
-      "dateModified": "{modifiedDate}",
+      "headline": ${JSON.stringify(post.data.title || 'Untitled')},
+      "image": ${JSON.stringify(absoluteImageUrl)},
+      "datePublished": ${JSON.stringify(isoDate)},
+      "dateModified": ${JSON.stringify(modifiedDate)},
       "author": {
         "@type": "Person",
-        "name": "{post.data.author || 'Jonathan Mwaniki'}"
+        "name": ${JSON.stringify(post.data.author || 'Jonathan Mwaniki')},
+        "url": "https://www.jonathanmwaniki.co.ke/author/jonathan-mwaniki"
       },
       "publisher": {
         "@type": "Organization",
@@ -88,50 +149,86 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
           "url": "https://www.jonathanmwaniki.co.ke/logo.png"
         }
       },
-      "description": "{optimizedDescription}",
+      "description": ${JSON.stringify(optimizedDescription)},
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": "{postUrl}"
-      }
+        "@id": ${JSON.stringify(postUrl)}
+      },
+      "keywords": ${JSON.stringify(keywords)},
+      "wordCount": ${wordCount},
+      "articleSection": ${JSON.stringify(post.data.category || 'Uncategorized')}
     }
   </script>
 
-  <div class="ad-container top-ad">
-    <script type="text/javascript">
-      atOptions = {
-        'key': '1610960d9ced232cc76d8f5510ee4608',
-        'format': 'iframe',
-        'height': 60,
-        'width': 468,
-        'params': {}
-      };
-    </script>
-    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-  </div>
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+    ${JSON.stringify(faqSchema)}
+  </script>
+
+  <!-- Breadcrumb Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.jonathanmwaniki.co.ke"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": ${JSON.stringify(post.data.category || 'Uncategorized')},
+          "item": ${JSON.stringify(categoryUrl)}
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": ${JSON.stringify(post.data.title || 'Untitled')},
+          "item": ${JSON.stringify(postUrl)}
+        }
+      ]
+    }
+  </script>
 
   <div class="reading-progress">
     <div class="reading-progress-bar" id="progress-bar"></div>
   </div>
 
   <div class="content-wrapper">
+    <!-- Breadcrumb Navigation -->
     <nav aria-label="Breadcrumb" class="breadcrumb-nav">
-      <ol class="breadcrumb">
-        <li><a href="/" title="Kenya News Home">Home</a></li>
-        <li><a href={categoryUrl} title={`${post.data.category || 'Uncategorized'} News Kenya`}>
-          {post.data.category || 'Uncategorized'}
-        </a></li>
-        <li aria-current="page">{post.data.title || 'Untitled'}</li>
+      <ol class="breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="/" itemprop="item" title="Kenya News Home">
+            <span itemprop="name">Home</span>
+          </a>
+          <meta itemprop="position" content="1" />
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href={categoryUrl} itemprop="item" title={`${post.data.category || 'Uncategorized'} News Kenya`}>
+            <span itemprop="name">{post.data.category || 'Uncategorized'}</span>
+          </a>
+          <meta itemprop="position" content="2" />
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" aria-current="page">
+          <span itemprop="name">{post.data.title || 'Untitled'}</span>
+          <meta itemprop="item" content={postUrl} />
+          <meta itemprop="position" content="3" />
+        </li>
       </ol>
     </nav>
 
+    <!-- Category Navigation -->
     <nav class="category-nav" aria-label="Category Navigation">
       <h3>Explore Kenya News Categories</h3>
       <div class="category-slider">
         <ul>
           {categories.map(category => (
             <li>
-              <a href={`/category/${category.toLowerCase().replace(/ /g, '-')}`} 
-                 title={`${category} News Kenya`}>
+              <a href={`/category/${category.toLowerCase().replace(/ /g, '-')}`} title={`${category} News Kenya`} class="category-link">
                 {category}
               </a>
             </li>
@@ -140,20 +237,23 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       </div>
     </nav>
 
-    <a href="/" class="back-link">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <!-- Back Link -->
+    <a href="/" class="back-link" title="Back to Kenya News">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
       </svg>
       Back to Kenya News
     </a>
-    
+
+    <!-- Draft Notice -->
     {post.data.draft && (
       <div class="draft-notice">
         ⚠️ This is a draft article
       </div>
     )}
-    
-    <article class="post-card">
+
+    <!-- Main Article -->
+    <article class="post-card" itemscope itemtype="https://schema.org/NewsArticle">
       <header class="post-header">
         <div class="post-meta">
           <span class="post-category">
@@ -161,152 +261,238 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
               {post.data.category || 'Uncategorized'}
             </a>
           </span>
-          <time class="post-date" datetime={post.data.date}>
+          <time class="post-date" datetime={isoDate} itemprop="datePublished">
             {new Date(post.data.date).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
             })}
           </time>
-          <span class="reading-time">📖 5 min read</span>
+          <meta itemprop="dateModified" content={modifiedDate} />
+          <span class="reading-time">📖 {readingTime} min read</span>
+          <span class="word-count">({wordCount} words)</span>
         </div>
-        
-        <h1 class="post-title">{post.data.title || 'Untitled'}</h1>
-        
+
+        <h1 class="post-title" itemprop="headline">{post.data.title || 'Untitled'}</h1>
+
         {post.data.description && (
-          <p class="post-excerpt">{post.data.description}</p>
+          <p class="post-excerpt" itemprop="description">{post.data.description}</p>
         )}
 
-        <div class="author-info">
-          <span>By <strong>{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+        <div class="author-info" itemprop="author" itemscope itemtype="https://schema.org/Person">
+          <span>By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
           <span class="author-title">Kenya News Editor</span>
         </div>
       </header>
-      
+
       {post.data.image && (
         <div class="post-image-container">
-          <img 
+          <img
             src={post.data.image}
             alt={post.data.imageAlt || `${post.data.title || 'Untitled'} - Jonathan Mwaniki`}
             class="post-image"
             loading="lazy"
             width="800"
             height="450"
+            itemprop="image"
           />
         </div>
       )}
-      
-      <div class="ad-container post-content-ad">
-        <script type="text/javascript">
-          atOptions = {
-            'key': '1610960d9ced232cc76d8f5510ee4608',
-            'format': 'iframe',
-            'height': 60,
-            'width': 468,
-            'params': {}
-          };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-      </div>
-      
-      <div class="article-wrapper">
+
+      <!-- Table of Contents (Dynamic based on headings) -->
+      <nav class="toc" aria-label="Table of Contents">
+        <h2>Table of Contents</h2>
+        <ul id="toc-list"></ul>
+      </nav>
+
+      <!-- Article Content -->
+      <div class="article-wrapper" itemprop="articleBody">
         <Article>
           <Content />
         </Article>
       </div>
 
-      <section class="related-articles">
-        <h2>More {post.data.category || 'Uncategorized'} News</h2>
-        <ul class="related-posts-list">
-          {(await getCollection('posts'))
-            .filter(p => p.data.category === post.data.category && p.slug !== post.slug)
-            .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
-            .slice(0, 3)
-            .map(relatedPost => (
-              <li class="related-post-item">
-                <a href={`/posts/${relatedPost.slug}`} class="related-post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
-                  {relatedPost.data.image && (
-                    <img
-                      src={relatedPost.data.image}
-                      alt={relatedPost.data.imageAlt || relatedPost.data.title}
-                      class="related-post-image"
-                      loading="lazy"
-                      width="80"
-                      height="80"
-                    />
-                  )}
-                  <span class="related-post-title">{relatedPost.data.title}</span>
-                </a>
-              </li>
-            ))}
+      <!-- Author Box -->
+      <section class="author-box" aria-label="About the Author">
+        <h2>About the Author</h2>
+        <div class="author-box-content">
+          <img
+            src="/author-jonathan-mwaniki.jpg"
+            alt="Jonathan Mwaniki, Kenya News Editor"
+            class="author-image"
+            loading="lazy"
+            width="80"
+            height="80"
+          />
+          <div>
+            <h3>{post.data.author || 'Jonathan Mwaniki'}</h3>
+            <p>Jonathan Mwaniki is a leading Kenya news journalist, delivering in-depth coverage of current events.</p>
+            <div class="author-social">
+              <a href="https://x.com/maestropuns" aria-label="Follow Jonathan Mwaniki on X" target="_blank" rel="noopener noreferrer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </a>
+              <a href="https://facebook.com/jonathanmwaniki" aria-label="Follow Jonathan Mwaniki on Facebook" target="_blank" rel="noopener noreferrer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section class="faq-section" aria-label="Frequently Asked Questions">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">What is the main topic of this article?</h3>
+          <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+            <p itemprop="text">{post.data.description || `This article covers ${post.data.category || 'current events'} in Kenya, provided by Jonathan Mwaniki.`}</p>
+          </div>
+        </div>
+        <div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">Who is the author of this article?</h3>
+          <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+            <p itemprop="text">{post.data.author || 'Jonathan Mwaniki, a leading Kenya news journalist.'}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- People Also Ask (PAA) -->
+      <section class="paa-section" aria-label="People Also Ask">
+        <h2>People Also Ask</h2>
+        <ul>
+          <li><a href={`/search?query=${encodeURIComponent(post.data.category || 'Kenya news')}`}>More {post.data.category || 'Uncategorized'} news in Kenya</a></li>
+          <li><a href="/about">Who is Jonathan Mwaniki?</a></li>
+          <li><a href="/category/kenya-news">Latest Kenya news updates</a></li>
         </ul>
       </section>
-      
-      <section class="newsletter-signup">
-        <h3>Stay Updated with Kenya News</h3>
-        <p>Get breaking news from Kenya delivered to your inbox</p>
-        <form>
-          <input type="email" placeholder="Enter your email">
-          <button class="button">Subscribe</button>
+
+      <!-- Related Articles -->
+      <section class="related-articles" aria-label="Related Articles">
+        <h2>More {post.data.category || 'Uncategorized'} News</h2>
+        <ul class="related-posts-list">
+          {relatedArticles.map(relatedPost => (
+            <li class="related-post-item">
+              <a href={`/posts/${relatedPost.slug}`} class="related-post-link" aria-label={`Read article: ${relatedPost.data.title}`}>
+                {relatedPost.data.image && (
+                  <img
+                    src={relatedPost.data.image}
+                    alt={relatedPost.data.imageAlt || relatedPost.data.title}
+                    class="related-post-image"
+                    loading="lazy"
+                    width="80"
+                    height="80"
+                  />
+                )}
+                <div>
+                  <span class="related-post-title">{relatedPost.data.title}</span>
+                  <span class="related-post-meta">{relatedPost.data.category} | {new Date(relatedPost.data.date).toLocaleDateString()}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- Recently Published -->
+      <section class="recent-articles" aria-label="Recently Published Articles">
+        <h2>Recently Published</h2>
+        <ul class="recent-posts-list">
+          {recentArticles.map(recentPost => (
+            <li class="recent-post-item">
+              <a href={`/posts/${recentPost.slug}`} class="recent-post-link" aria-label={`Read article: ${recentPost.data.title}`}>
+                {recentPost.data.image && (
+                  <img
+                    src={recentPost.data.image}
+                    alt={recentPost.data.imageAlt || recentPost.data.title}
+                    class="recent-post-image"
+                    loading="lazy"
+                    width="80"
+                    height="80"
+                  />
+                )}
+                <div>
+                  <span class="recent-post-title">{recentPost.data.title}</span>
+                  <span class="recent-post-meta">{recentPost.data.category} | {new Date(recentPost.data.date).toLocaleDateString()}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- Newsletter Signup -->
+      <section class="newsletter-signup" aria-label="Newsletter Signup">
+        <h2>Stay Updated with Kenya News</h2>
+        <p>Get breaking news from Kenya delivered to your inbox.</p>
+        <form action="/subscribe" method="POST">
+          <input type="email" name="email" placeholder="Enter your email" required aria-label="Email for newsletter" />
+          <button class="button" type="submit">Subscribe</button>
         </form>
       </section>
-      
-      <div class="ad-container bottom-ad">
-        <script type="text/javascript">
-          atOptions = {
-            'key': '1610960d9ced232cc76d8f5510ee4608',
-            'format': 'iframe',
-            'height': 60,
-            'width': 468,
-            'params': {}
-          };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-      </div>
-      
-      <footer class="post-footer">
-        <h3>Share This Kenya News</h3>
-        <div class="social-share">
-          <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-            X
-          </a>
-          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
-            </svg>
-            Facebook
-          </a>
-        </div>
-        
-        <div class="author-bio">
-          <h4>About the Author</h4>
-          <p><strong>{post.data.author || 'Jonathan Mwaniki'}</strong> is a leading Kenya news journalist.</p>
-        </div>
 
-        <section class="popular-categories">
-          <h3>Popular Kenya News Categories</h3>
-          <ul>
-            {categoryCounts.map(category => (
-              <li>
-                <a href={`/category/${category.name.toLowerCase().replace(/ /g, '-')}`}>
-                  {category.name} ({category.count} articles)
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </footer>
+      <!-- Social Share (Floating) -->
+      <div class="social-share floating" aria-label="Share this article">
+        <button class="share-button copy-link" aria-label="Copy article link" data-url={postUrl}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy Link
+        </button>
+        <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${post.data.title || 'Untitled'} - Jonathan Mwaniki`)}&url=${encodeURIComponent(postUrl)}`} class="share-button x" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          X
+        </a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} class="share-button facebook" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+          </svg>
+          Facebook
+        </a>
+      </div>
+
+      <!-- Back to Top Button -->
+      <button class="back-to-top" aria-label="Back to top" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+        </svg>
+      </button>
     </article>
+
+    <!-- Ad Containers (Optimized placement) -->
+    <div class="ad-container top-ad">
+      <script type="text/javascript">
+        atOptions = {
+          'key': '1610960d9ced232cc76d8f5510ee4608',
+          'format': 'iframe',
+          'height': 60,
+          'width': 468,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    </div>
+
+    <div class="ad-container bottom-ad">
+      <script type="text/javascript">
+        atOptions = {
+          'key': '1610960d9ced232cc76d8f5510ee4608',
+          'format': 'iframe',
+          'height': 60,
+          'width': 468,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+    </div>
   </div>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     :root {
       --background: #ffffff;
       --text-color: #1a1a1a;
@@ -319,9 +505,11 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       --ad-bg: #f8f9fa;
       --draft-bg: #fef3c7;
       --draft-text: #b45309;
-      --newsletter-bg: #BB1919;
+      --newsletter-bg: #f7f7f7;
       --scrollbar-thumb: #BB1919;
       --scrollbar-track: #f1f1f1;
+      --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -340,53 +528,26 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         --newsletter-bg: #2d2d2d;
         --scrollbar-thumb: #ff4d4d;
         --scrollbar-track: #333;
+        --shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       }
     }
 
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'ReithSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--background);
       color: var(--text-color);
+      line-height: 1.6;
     }
 
     /* Content Wrapper */
     .content-wrapper {
       max-width: 1280px;
       margin: 0 auto;
-      padding: 0;
+      padding: 0 1rem;
       position: relative;
       z-index: 1;
-    }
-
-    /* Ad Container Styles */
-    .ad-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 1rem auto;
-      background: var(--ad-bg);
-      border: 1px solid var(--border);
-      max-width: 500px;
-      overflow: hidden;
-    }
-
-    .ad-container iframe {
-      background: var(--card-bg);
-      max-width: 468px;
-      max-height: 60px;
-      width: 100%;
-    }
-
-    .top-ad {
-      margin-top: 3rem;
-      margin-bottom: 1rem;
-    }
-
-    .post-content-ad,
-    .bottom-ad {
-      margin: 1rem auto;
     }
 
     /* Reading Progress Bar */
@@ -409,8 +570,8 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
     /* Breadcrumb Navigation */
     .breadcrumb-nav {
-      margin: 1rem 0;
-      padding: 0 1rem;
+      margin: 1.5rem 0;
+      padding: 0;
     }
 
     .breadcrumb {
@@ -435,6 +596,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     .breadcrumb a {
       color: var(--accent);
       text-decoration: none;
+      transition: var(--transition);
     }
 
     .breadcrumb a:hover {
@@ -444,19 +606,21 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
 
     /* Category Navigation */
     .category-nav {
-      margin: 1rem 0;
-      padding: 0 1rem;
+      margin: 1.5rem 0;
+      padding: 0;
     }
 
     .category-nav h3 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       color: var(--text-color);
     }
 
     .category-slider {
-      overflow-x: hidden;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
     }
 
     .category-slider ul {
@@ -465,13 +629,15 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       margin: 0;
       display: flex;
       gap: 0.75rem;
+      padding-bottom: 0.5rem;
     }
 
     .category-slider li {
       flex: 0 0 auto;
+      scroll-snap-align: start;
     }
 
-    .category-slider a {
+    .category-link {
       display: inline-flex;
       padding: 0.5rem 1rem;
       background: var(--accent);
@@ -481,11 +647,30 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-weight: 600;
       text-decoration: none;
       text-transform: uppercase;
-      transition: background 0.3s ease;
+      transition: var(--transition);
     }
 
-    .category-slider a:hover {
+    .category-link:hover {
       background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    .category-link:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .category-slider::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .category-slider::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 4px;
+    }
+
+    .category-slider::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
     }
 
     /* Back Link */
@@ -496,21 +681,29 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       color: var(--accent);
       font-weight: 600;
       text-decoration: none;
-      margin: 1rem;
+      margin: 1.5rem 0;
+      transition: var(--transition);
     }
 
     .back-link svg {
       width: 20px;
       height: 20px;
       stroke: var(--accent);
+      transition: var(--transition);
     }
 
     .back-link:hover {
       color: var(--accent-hover);
+      transform: translateX(-5px);
     }
 
     .back-link:hover svg {
       stroke: var(--accent-hover);
+    }
+
+    .back-link:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     /* Draft Notice */
@@ -519,42 +712,50 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       color: var(--draft-text);
       padding: 1rem;
       border-radius: 8px;
-      margin: 1rem;
+      margin: 1.5rem 0;
       text-align: center;
       font-weight: 500;
+      font-size: 1rem;
     }
 
     /* Post Card */
     .post-card {
       background: var(--card-bg);
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow);
       border: 1px solid var(--border);
-      margin: 1rem 0;
+      margin: 1.5rem 0;
+      transition: var(--transition);
+    }
+
+    .post-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
     }
 
     .post-header {
-      padding: 1.5rem;
+      padding: 2rem;
     }
 
     .post-meta {
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       flex-wrap: wrap;
     }
 
     .post-category a {
       background: var(--accent);
       color: #ffffff;
-      padding: 0.3rem 0.8rem;
+      padding: 0.4rem 1rem;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
       text-transform: uppercase;
       text-decoration: none;
+      transition: var(--transition);
     }
 
     .post-category a:hover {
@@ -562,16 +763,18 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
     }
 
     .post-date,
-    .reading-time {
+    .reading-time,
+    .word-count {
       color: var(--secondary-text);
       font-size: 0.9rem;
     }
 
     .post-title {
-      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      font-family: 'ReithSerif', Georgia, Times, serif;
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
       font-weight: 700;
       line-height: 1.2;
-      margin: 0 0 0.75rem 0;
+      margin: 0 0 1rem;
       color: var(--text-color);
     }
 
@@ -579,7 +782,7 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-size: 1.1rem;
       line-height: 1.6;
       color: var(--secondary-text);
-      margin: 0 0 1rem 0;
+      margin: 0 0 1.5rem;
     }
 
     .author-info {
@@ -604,58 +807,253 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
+      transition: transform 0.5s ease;
     }
 
     .post-card:hover .post-image {
       transform: scale(1.05);
     }
 
-    .article-wrapper {
-      padding: 1.5rem;
-      font-size: 1.125rem;
-      line-height: 1.8;
-      color: var(--text-color);
-    }
-
-    .article-wrapper p {
-      margin: 0.5rem 0;
-    }
-
-    /* Related Articles */
-    .related-articles {
-      margin: 1rem 0;
-      padding: 1.5rem;
+    /* Table of Contents */
+    .toc {
       background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
     }
 
-    .related-articles h2 {
-      font-size: 1.75rem;
+    .toc h2 {
+      font-size: 1.25rem;
       font-weight: 700;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       color: var(--text-color);
     }
 
-    .related-posts-list {
+    .toc ul {
       list-style: none;
       padding: 0;
       margin: 0;
     }
 
-    .related-post-item {
-      margin-bottom: 0.75rem;
+    .toc li {
+      margin-bottom: 0.5rem;
     }
 
-    .related-post-link {
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+
+    .toc a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* Article Content */
+    .article-wrapper {
+      padding: 2rem;
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: var(--text-color);
+    }
+
+    .article-wrapper h2,
+    .article-wrapper h3,
+    .article-wrapper h4 {
+      font-family: 'ReithSerif', Georgia, Times, serif;
+      margin: 1.5rem 0 1rem;
+      color: var(--text-color);
+    }
+
+    .article-wrapper p {
+      margin: 1rem 0;
+    }
+
+    .article-wrapper a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .article-wrapper a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* Author Box */
+    .author-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .author-box h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .author-box-content {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .author-image {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .author-box h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+
+    .author-box p {
+      margin: 0 0 0.5rem;
+      color: var(--secondary-text);
+    }
+
+    .author-social {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .author-social a {
+      color: var(--accent);
+      transition: var(--transition);
+    }
+
+    .author-social a:hover {
+      color: var(--accent-hover);
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .faq-section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .faq-item {
+      margin-bottom: 1rem;
+    }
+
+    .faq-item h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+
+    .faq-item p {
+      margin: 0;
+      color: var(--secondary-text);
+    }
+
+    /* People Also Ask */
+    .paa-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .paa-section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .paa-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .paa-section li {
+      margin-bottom: 0.5rem;
+    }
+
+    .paa-section a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .paa-section a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* Related and Recent Articles */
+    .related-articles,
+    .recent-articles {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .related-articles h2,
+    .recent-articles h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .related-posts-list,
+    .recent-posts-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .related-post-item,
+    .recent-post-item {
+      transition: var(--transition);
+    }
+
+    .related-post-link,
+    .recent-post-link {
       display: flex;
       align-items: center;
       gap: 1rem;
       text-decoration: none;
       color: var(--text-color);
+      transition: var(--transition);
     }
 
-    .related-post-image {
+    .related-post-link:hover,
+    .recent-post-link:hover {
+      transform: translateX(5px);
+    }
+
+    .related-post-image,
+    .recent-post-image {
       width: 80px;
       height: 80px;
       object-fit: cover;
@@ -663,62 +1061,73 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       flex-shrink: 0;
     }
 
-    .related-post-title {
+    .related-post-title,
+    .recent-post-title {
       font-size: 1rem;
-      font-weight: 500;
+      font-weight: 600;
       line-height: 1.4;
       color: var(--text-color);
     }
 
-    .related-post-link:hover .related-post-title {
+    .related-post-meta,
+    .recent-post-meta {
+      font-size: 0.85rem;
+      color: var(--secondary-text);
+    }
+
+    .related-post-link:hover .related-post-title,
+    .recent-post-link:hover .recent-post-title {
       color: var(--accent);
-      text-decoration: underline;
     }
 
     /* Newsletter Signup */
     .newsletter-signup {
       background: var(--newsletter-bg);
-      color: #ffffff;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin: 1rem 0;
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 1.5rem 0;
       text-align: center;
+      box-shadow: var(--shadow);
     }
 
-    .newsletter-signup h3 {
+    .newsletter-signup h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: #ffffff;
+      margin-bottom: 0.75rem;
+      color: var(--text-color);
     }
 
     .newsletter-signup p {
       font-size: 1rem;
-      margin-bottom: 1rem;
-      color: #ffffff;
+      margin-bottom: 1.5rem;
+      color: var(--secondary-text);
     }
 
     .newsletter-signup form {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.75rem;
       justify-content: center;
+      align-items: center;
     }
 
     .newsletter-signup input {
       padding: 0.75rem;
-      border: none;
+      border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 1rem;
-      width: 250px;
+      width: 300px;
       max-width: 100%;
-      background: #ffffff;
+      background: var(--card-bg);
       color: var(--text-color);
+      transition: var(--transition);
+    }
+
+    .newsletter-signup input:focus {
+      border-color: var(--accent);
+      outline: none;
     }
 
     .newsletter-signup .button {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
       padding: 0.75rem 1.5rem;
       background: var(--accent);
       color: #ffffff;
@@ -726,27 +1135,39 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       font-weight: 600;
       font-size: 1rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
       border: none;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: var(--transition);
     }
 
     .newsletter-signup .button:hover {
       background: var(--accent-hover);
-      transform: translateX(5px);
+      transform: translateY(-2px);
+    }
+
+    .newsletter-signup .button:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     /* Social Share */
     .social-share {
+      position: fixed;
+      top: 50%;
+      left: 1rem;
+      transform: translateY(-50%);
       display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin: 1rem 0;
+      flex-direction: column;
+      gap: 0.75rem;
+      background: var(--card-bg);
+      padding: 0.75rem;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
     }
 
     .share-button {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
@@ -754,109 +1175,96 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       color: #ffffff;
       border-radius: 6px;
       font-weight: 600;
+      font-size: 0.9rem;
       text-decoration: none;
-      transition: all 0.3s ease;
+      transition: var(--transition);
     }
 
     .share-button:hover {
       background: var(--accent-hover);
-      transform: translateX(3px);
+      transform: translateX(5px);
+    }
+
+    .share-button:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .share-button svg {
       width: 16px;
       height: 16px;
       fill: #ffffff;
+      stroke: #ffffff;
     }
 
-    /* Post Footer */
-    .post-footer {
-      margin: 1rem 0;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
+    /* Back to Top Button */
+    .back-to-top {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      z-index: 1000;
     }
 
-    .author-bio h4 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
+    .back-to-top:hover {
+      background: var(--accent-hover);
+      transform: translateY(-5px);
     }
 
-    .author-bio p {
-      color: var(--secondary-text);
-      line-height: 1.5;
-      margin: 0.5rem 0;
+    .back-to-top:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
-    .popular-categories h3 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: var(--text-color);
+    .back-to-top svg {
+      width: 24px;
+      height: 24px;
+      stroke: #ffffff;
     }
 
-    .popular-categories ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
+    /* Ad Container */
+    .ad-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem auto;
+      background: var(--ad-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-width: 500px;
+      overflow: hidden;
     }
 
-    .popular-categories li {
-      margin-bottom: 0.5rem;
+    .ad-container iframe {
+      background: var(--card-bg);
+      max-width: 468px;
+      max-height: 60px;
+      width: 100%;
     }
 
-    .popular-categories a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 500;
+    .top-ad {
+      margin-top: 3rem;
     }
 
-    .popular-categories a:hover {
-      color: var(--accent-hover);
-      text-decoration: underline;
+    .bottom-ad {
+      margin-bottom: 3rem;
     }
 
     /* Mobile Optimizations */
     @media (max-width: 768px) {
-      body {
-        padding: 0;
-      }
-
       .content-wrapper {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-      }
-
-      .ad-container {
-        max-width: 100%;
-        margin: 0.5rem 0;
-        border-radius: 0;
-      }
-
-      .top-ad {
-        margin-top: 3rem;
-        margin-bottom: 0.5rem;
-      }
-
-      .post-content-ad,
-      .bottom-ad {
-        margin: 0.5rem 0;
-      }
-
-      .breadcrumb-nav,
-      .category-nav,
-      .back-link,
-      .draft-notice,
-      .post-card,
-      .related-articles,
-      .newsletter-signup,
-      .post-footer {
-        margin-left: 0;
-        margin-right: 0;
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
+        padding: 0 0.75rem;
       }
 
       .post-title {
@@ -864,128 +1272,139 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
       }
 
       .post-image-container {
-        height: 250px;
+        height: 300px;
       }
 
-      .category-slider {
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
+      .article-wrapper {
+        padding: 1.5rem;
       }
 
-      .category-slider ul {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 0.5rem;
-      }
-
-      .category-slider li {
-        scroll-snap-align: start;
-      }
-
-      .category-slider::-webkit-scrollbar {
-        height: 8px;
-      }
-
-      .category-slider::-webkit-scrollbar-thumb {
-        background: var(--scrollbar-thumb);
-        border-radius: 4px;
-      }
-
-      .category-slider::-webkit-scrollbar-track {
-        background: var(--scrollbar-track);
-      }
-
-      .related-posts-list {
-        padding: 0;
-      }
-
-      .related-post-image {
-        width: 60px;
-        height: 60px;
-      }
-
-      .related-post-title {
-        font-size: 0.9rem;
+      .social-share {
+        position: static;
+        flex-direction: row;
+        justify-content: center;
+        margin: 1.5rem 0;
+        transform: none;
       }
 
       .newsletter-signup form {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
       }
 
       .newsletter-signup input {
         width: 100%;
       }
+
+      .related-posts-list,
+      .recent-posts-list {
+        grid-template-columns: 1fr;
+      }
+
+      .category-slider {
+        overflow-x: auto;
+      }
+
+      .post-header,
+      .related-articles,
+      .recent-articles,
+      .newsletter-signup,
+      .author-box,
+      .faq-section,
+      .paa-section {
+        padding: 1.25rem;
+      }
     }
 
     @media (max-width: 480px) {
+      .post-title {
+        font-size: 1.5rem;
+      }
+
       .post-image-container {
         height: 200px;
       }
 
-      .post-title {
-        font-size: 1.5rem;
+      .related-post-image,
+      .recent-post-image {
+        width: 60px;
+        height: 60px;
+      }
+
+      .related-post-title,
+      .recent-post-title {
+        font-size: 0.9rem;
       }
 
       .post-header,
       .article-wrapper,
       .related-articles,
-      .newsletter-signup {
+      .recent-articles,
+      .newsletter-signup,
+      .author-box,
+      .faq-section,
+      .paa-section {
         padding: 1rem;
       }
 
-      .related-post-image {
-        width: 50px;
-        height: 50px;
-      }
-
-      .related-post-title {
-        font-size: 0.85rem;
+      .toc h2,
+      .faq-section h2,
+      .paa-section h2,
+      .related-articles h2,
+      .recent-articles h2,
+      .newsletter-signup h2,
+      .author-box h2 {
+        font-size: 1.25rem;
       }
     }
 
     /* Accessibility */
     @media (prefers-reduced-motion: reduce) {
       * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition: none !important;
+        animation: none !important;
       }
     }
 
     .post-link:focus,
     .share-button:focus,
     .back-link:focus,
-    .category-slider a:focus,
+    .category-link:focus,
     .newsletter-signup .button:focus,
-    .related-post-link:focus {
+    .related-post-link:focus,
+    .recent-post-link:focus,
+    .back-to-top:focus,
+    .toc a:focus {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
 
-    /* Print styles */
+    /* Print Styles */
     @media print {
-      .post-card {
-        box-shadow: none !important;
-        border: 1px solid #ccc !important;
+      .post-card,
+      .related-articles,
+      .recent-articles,
+      .newsletter-signup,
+      .author-box,
+      .faq-section,
+      .paa-section {
+        box-shadow: none;
+        border: 1px solid #ccc;
       }
 
       .ad-container,
       .reading-progress,
-      .category-nav,
-      .newsletter-signup {
-        display: none !important;
-      }
-
-      .related-posts-list {
-        display: block !important;
+      .social-share,
+      .back-to-top,
+      .category-nav {
+        display: none;
       }
     }
   </style>
 
   <script>
-    window.addEventListener('scroll', function() {
+    // Reading Progress Bar
+    window.addEventListener('scroll', () => {
       const article = document.querySelector('article');
       const progressBar = document.getElementById('progress-bar');
       if (article && progressBar) {
@@ -994,8 +1413,106 @@ const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOStri
         const windowHeight = window.innerHeight;
         const maxScroll = articleHeight - windowHeight;
         const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 100;
-        progressBar.style.width = Math.min(100, progress) + '%';
+        progressBar.style.width = `${Math.min(100, progress)}%`;
       }
     });
+
+    // Back to Top Button
+    const backToTop = document.querySelector('.back-to-top');
+    if (backToTop) {
+      window.addEventListener('scroll', () => {
+        backToTop.hidden = window.scrollY < 300;
+      });
+      backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // Copy Link Functionality
+    const copyLinkButton = document.querySelector('.copy-link');
+    if (copyLinkButton) {
+      copyLinkButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(copyLinkButton.dataset.url);
+          copyLinkButton.textContent = 'Link Copied!';
+          setTimeout(() => {
+            copyLinkButton.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Copy Link
+            `;
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy link:', err);
+        }
+      });
+    }
+
+    // Lazy Loading Images
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src || img.src;
+          observer.unobserve(img);
+        }
+      });
+    }, { rootMargin: '100px' });
+    images.forEach(img => observer.observe(img));
+
+    // Table of Contents Generator
+    document.addEventListener('DOMContentLoaded', () => {
+      const tocList = document.getElementById('toc-list');
+      if (tocList) {
+        const headings = document.querySelectorAll('.article-wrapper h2, .article-wrapper h3');
+        if (headings.length > 0) {
+          headings.forEach((heading, index) => {
+            const id = `section-${index}`;
+            heading.id = id;
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="#${id}">${heading.textContent}</a>`;
+            tocList.appendChild(li);
+          });
+        } else {
+          tocList.parentElement.style.display = 'none';
+        }
+      }
+    });
+
+    // Service Worker for Offline Reading
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.error('Service Worker registration failed:', err);
+      });
+    }
+  </script>
+
+  <!-- Service Worker (Basic Implementation) -->
+  <script>
+    // This should be in a separate /sw.js file
+    /*
+    self.addEventListener('install', event => {
+      event.waitUntil(
+        caches.open('news-cache-v1').then(cache => {
+          return cache.addAll([
+            '/',
+            '/styles.css',
+            '/logo.png',
+            '/default-og-image.jpg'
+          ]);
+        })
+      );
+    });
+
+    self.addEventListener('fetch', event => {
+      event.respondWith(
+        caches.match(event.request).then(response => {
+          return response || fetch(event.request);
+        })
+      );
+    });
+    */
   </script>
 </Layout>
