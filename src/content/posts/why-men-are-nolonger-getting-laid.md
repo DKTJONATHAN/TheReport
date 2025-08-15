@@ -3,7 +3,7 @@ title: "The Brutal Truth: Why Kenyan Men Are Struggling to Get Laid in 2025"
 description: "A savage, unfiltered look at the harsh realities of modern dating in Kenya - from looks and money to bad boy magnetism and why nice guys finish last"
 date: 2025,08,15
 author: "Dating Reality Check Team"
-image: "https://example.com/kenyan-men-dating-struggles.jpg"
+image: "https://i.postimg.cc/Pf2zfG6m/pexels-mart-production-8096342.jpg"
 imageCaption: "The harsh reality of modern dating struggles faced by Kenyan men"
 imageAlt: "Young Kenyan man looking frustrated with dating apps on his phone"
 category: "Relationships"
@@ -20,7 +20,7 @@ The truth is savage, but it's time someone said it without sugar-coating: the da
 
 <figure class="content-image">
   <img 
-    src="https://example.com/money-dating-success-kenya.jpg" 
+    src="https://i.postimg.cc/ZnK8PjqB/pexels-mart-production-8096403.jpg" 
     alt="Young couple displaying wealth and lifestyle success"
     loading="lazy"
     width="800"
@@ -43,7 +43,7 @@ The appearance standards have become impossibly high. Women want the complete pa
 
 <figure class="content-image">
   <img 
-    src="https://example.com/kenyan-men-modern-grooming.jpg" 
+    src="https://i.postimg.cc/0j8fWPVN/pexels-dejiprince-30783110.jpg" 
     alt="Well-groomed Kenyan man in stylish clothing"
     loading="lazy"
     width="800"
@@ -80,7 +80,7 @@ Even worse, social media has created unrealistic expectations about what relatio
 
 <figure class="content-image">
   <img 
-    src="https://example.com/bad-boy-vs-nice-guy-comparison.jpg" 
+    src="https://i.postimg.cc/9QvB3GLK/pexels-picturesbyamusan-7191260.jpg" 
     alt="Split image comparing bad boy and nice guy personalities"
     loading="lazy"
     width="800"
