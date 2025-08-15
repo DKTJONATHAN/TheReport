@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel/static';
+import vercel from '@astrojs/vercel/serverless'; // Changed from 'static' to 'serverless'
 
 // Helper functions for dynamic sitemap values
 function getChangeFreq(url) {
@@ -19,7 +19,7 @@ function getPriority(url) {
 
 export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
-  output: 'static',
+  output: 'server', // Changed from 'static' to 'server'
   adapter: vercel(),
   integrations: [
     mdx(),
@@ -51,7 +51,6 @@ export default defineConfig({
   trailingSlash: 'ignore',
   vite: {
     define: {
-      // Safely inject Google credentials from environment
       'import.meta.env.GOOGLE_CREDENTIALS': JSON.stringify(
         process.env.GOOGLE_CREDENTIALS || ''
       )
