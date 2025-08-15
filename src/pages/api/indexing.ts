@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { google } from 'googleapis';
+import { google, type Auth } from 'googleapis';
+import { JWT } from 'google-auth-library';
 
 const DAILY_LIMIT = 200;
 
@@ -14,15 +15,18 @@ export const POST: APIRoute = async ({ request }) => {
       }), { status: 400 });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),  // Changed from import.meta.env
+    // 1. Fix auth initialization
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS!);
+    const auth = new JWT({
+      email: credentials.client_email,
+      key: credentials.private_key,
       scopes: ['https://www.googleapis.com/auth/indexing'],
     });
 
-    const client = await auth.getClient();
+    // 2. Initialize indexing API
     const indexing = google.indexing({ 
       version: 'v3',
-      auth: client
+      auth: auth as Auth.OAuth2Client // Type assertion
     });
 
     const batch = urls.slice(0, DAILY_LIMIT);
@@ -33,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
             requestBody: { url, type }
           });
           return { url, status: res.status, success: true };
-        } catch (error) {
+        } catch (error: any) {
           return { 
             url, 
             status: error.code || 500, 
@@ -51,7 +55,7 @@ export const POST: APIRoute = async ({ request }) => {
       results
     }));
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({
       error: 'Indexing failed',
       details: error.message,
