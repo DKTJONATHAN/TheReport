@@ -1,5 +1,6 @@
 User-agent: *
 Disallow: /tags/
+Disallow: /author/
 Disallow: /category/
 Allow: /
 
