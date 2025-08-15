@@ -3,29 +3,25 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/static-build",
+      "use": "@astrojs/vercel",
       "config": {
-        "distDir": ".vercel/output/static",
-        "runtime": "nodejs18.x"
+        "nodeVersion": "22.x",
+        "includeFiles": ["src/**/*.json"],
+        "edgeMiddleware": true
       }
-    },
-    {
-      "src": "src/pages/api/**/*.ts",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/.*",
-      "dest": "/api/indexing"
+      "src": "/_astro/.*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/(.*)",
       "dest": "/$1",
       "continue": true
-    },
-    {
-      "handle": "filesystem"
     }
   ]
 }
