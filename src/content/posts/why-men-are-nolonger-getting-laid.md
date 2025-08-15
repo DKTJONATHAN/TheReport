@@ -119,7 +119,7 @@ The harsh reality? **Being genuinely nice should be the baseline, not your main 
 
 <figure class="content-image">
   <img 
-    src="https://example.com/dating-rejection-reality.jpg" 
+    src="https://i.postimg.cc/ZnpWdd8B/images-9.jpg" 
     alt="Young man looking frustrated while using dating apps"
     loading="lazy"
     width="800"
