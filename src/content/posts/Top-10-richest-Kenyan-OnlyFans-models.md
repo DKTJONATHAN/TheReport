@@ -10,7 +10,7 @@ category: "Kenya Celebrities & Influence"
 tags: ["Alicia Kanini", "Queen Tahshaar", "Chelsy Ndiragu", "Huddah Monroe", "Ayu Wayua", "Kenyan OnlyFans", "Social Media Earnings", "Viral Trends"]
 featured: true
 draft: false
-
+---
 <div class="article-content">
 
 Kenya's digital revolution has given rise to a new generation of content creators who refuse to hide their success. The OnlyFans wave has swept the country, with several bold influencers openly announcing their careers, net worth, and viral moments—from Alicia Kanini's unapologetic online persona to Queen Tahshaar flaunting her luxury lifestyle.
