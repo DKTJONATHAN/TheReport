@@ -652,7 +652,7 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
     gtag('js', new Date());
     gtag('config', 'G-XXXXXXXXXX', {
       page_path: window.location.pathname,
-      page_title: ${JSON.stringify(optimizedTitle)},
+      page_title: document.title,
     });
   </script>
 
@@ -672,6 +672,196 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
   <noscript>
     <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/>
   </noscript>
+
+  <!-- Client-Side JavaScript -->
+  <script>
+    // Reading Progress Bar
+    window.addEventListener('scroll', () => {
+      const article = document.querySelector('article');
+      const progressBar = document.getElementById('progress-bar');
+      if (article && progressBar) {
+        const articleHeight = article.offsetHeight;
+        const scrollTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const maxScroll = articleHeight - windowHeight;
+        const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 100;
+        progressBar.style.width = `${Math.min(100, progress)}%`;
+      }
+    });
+
+    // Back to Top Button
+    const backToTop = document.querySelector('.back-to-top');
+    if (backToTop) {
+      window.addEventListener('scroll', () => {
+        backToTop.hidden = window.scrollY < 300;
+      });
+      backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // Copy Link Functionality
+    const copyLinkButton = document.querySelector('.copy-link');
+    if (copyLinkButton) {
+      copyLinkButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(copyLinkButton.dataset.url);
+          copyLinkButton.textContent = 'Link Copied!';
+          setTimeout(() => {
+            copyLinkButton.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Copy Link
+            `;
+          }, 2000);
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'share', { method: 'copy_link', content_id: window.location.pathname });
+          }
+          if (typeof fbq !== 'undefined') {
+            fbq('track', 'Share', { content_id: window.location.pathname });
+          }
+        } catch (err) {
+          console.error('Failed to copy link:', err);
+        }
+      });
+    }
+
+    // Lazy Loading for Ads
+    const lazyAds = document.querySelectorAll('.ad-container[data-lazy]');
+    const adObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const ad = entry.target;
+          const script = ad.querySelector('script[defer]');
+          if (script) {
+            script.src = script.getAttribute('src');
+            observer.unobserve(ad);
+          }
+        }
+      });
+    }, { rootMargin: '200px' });
+    lazyAds.forEach(ad => adObserver.observe(ad));
+
+    // Table of Contents Generator
+    document.addEventListener('DOMContentLoaded', () => {
+      const tocList = document.getElementById('toc-list');
+      if (tocList) {
+        const headings = document.querySelectorAll('.article-wrapper h2, .article-wrapper h3');
+        if (headings.length > 0) {
+          headings.forEach((heading, index) => {
+            const id = `section-${index}`;
+            heading.id = id;
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="#${id}">${heading.textContent}</a>`;
+            tocList.appendChild(li);
+          });
+        } else {
+          tocList.parentElement.style.display = 'none';
+        }
+      }
+    });
+
+    // Font Size Adjuster
+    const fontSizeAdjusters = document.querySelectorAll('.font-size-adjuster');
+    fontSizeAdjusters.forEach(button => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.action;
+        const articleWrapper = document.querySelector('.article-wrapper');
+        let fontSize = parseFloat(getComputedStyle(articleWrapper).fontSize);
+        if (action === 'increase') {
+          fontSize = Math.min(fontSize + 2, 24);
+        } else {
+          fontSize = Math.max(fontSize - 2, 12);
+        }
+        articleWrapper.style.fontSize = `${fontSize}px`;
+        localStorage.setItem('fontSize', fontSize);
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'font_size_adjust', { action, font_size: fontSize });
+        }
+      });
+    });
+
+    // Restore Font Size
+    const savedFontSize = localStorage.getItem('fontSize');
+    if (savedFontSize) {
+      document.querySelector('.article-wrapper').style.fontSize = `${savedFontSize}px`;
+    }
+
+    // Reading Mode
+    const readingModeToggle = document.querySelector('.reading-mode-toggle');
+    if (readingModeToggle) {
+      readingModeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('reading-mode');
+        readingModeToggle.textContent = document.body.classList.contains('reading-mode') ? 'Exit Reading Mode' : 'Reading Mode';
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'reading_mode', { state: document.body.classList.contains('reading-mode') ? 'on' : 'off' });
+        }
+      });
+    }
+
+    // Print Button
+    const printButton = document.querySelector('.print-button');
+    if (printButton) {
+      printButton.addEventListener('click', () => {
+        window.print();
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'print', { content_id: window.location.pathname });
+        }
+      });
+    }
+
+    // Article Reactions
+    const reactionButtons = document.querySelectorAll('.reaction-button');
+    reactionButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const reaction = button.dataset.reaction;
+        button.classList.toggle('active');
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'reaction', { reaction, content_id: window.location.pathname });
+        }
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'Reaction', { reaction, content_id: window.location.pathname });
+        }
+      });
+    });
+
+    // Cookie Consent
+    const cookieConsent = document.querySelector('.cookie-consent');
+    if (cookieConsent && !localStorage.getItem('cookieConsent')) {
+      cookieConsent.hidden = false;
+      document.querySelector('.cookie-accept').addEventListener('click', () => {
+        localStorage.setItem('cookieConsent', 'accepted');
+        cookieConsent.hidden = true;
+        if (typeof gtag !== 'undefined') {
+          gtag('consent', 'update', { ad_storage: 'granted', analytics_storage: 'granted' });
+        }
+      });
+      document.querySelector('.cookie-decline').addEventListener('click', () => {
+        localStorage.setItem('cookieConsent', 'declined');
+        cookieConsent.hidden = true;
+        if (typeof gtag !== 'undefined') {
+          gtag('consent', 'update', { ad_storage: 'denied', analytics_storage: 'denied' });
+        }
+      });
+    }
+
+    // Service Worker and Offline Indicator
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('Service Worker registered:', reg);
+      }).catch(err => {
+        console.error('Service Worker registration failed:', err);
+      });
+
+      window.addEventListener('offline', () => {
+        document.querySelector('.offline-indicator').hidden = false;
+      });
+      window.addEventListener('online', () => {
+        document.querySelector('.offline-indicator').hidden = true;
+      });
+    }
+  </script>
 
   <style>
     :root {
@@ -1686,175 +1876,4 @@ const shareCount = Math.floor(Math.random() * 500) + 50;
       }
     }
   </style>
-
-  <script>
-    // Reading Progress Bar
-    window.addEventListener('scroll', () => {
-      const article = document.querySelector('article');
-      const progressBar = document.getElementById('progress-bar');
-      if (article && progressBar) {
-        const articleHeight = article.offsetHeight;
-        const scrollTop = window.scrollY;
-        const windowHeight = window.innerHeight;
-        const maxScroll = articleHeight - windowHeight;
-        const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 100;
-        progressBar.style.width = `${Math.min(100, progress)}%`;
-      }
-    });
-
-    // Back to Top Button
-    const backToTop = document.querySelector('.back-to-top');
-    if (backToTop) {
-      window.addEventListener('scroll', () => {
-        backToTop.hidden = window.scrollY < 300;
-      });
-      backToTop.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-
-    // Copy Link Functionality
-    const copyLinkButton = document.querySelector('.copy-link');
-    if (copyLinkButton) {
-      copyLinkButton.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(copyLinkButton.dataset.url);
-          copyLinkButton.textContent = 'Link Copied!';
-          setTimeout(() => {
-            copyLinkButton.innerHTML = `
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-              </svg>
-              Copy Link
-            `;
-          }, 2000);
-          gtag('event', 'share', { method: 'copy_link', content_id: ${JSON.stringify(post.slug)} });
-          fbq('track', 'Share', { content_id: ${JSON.stringify(post.slug)} });
-        } catch (err) {
-          console.error('Failed to copy link:', err);
-        }
-      });
-    }
-
-    // Lazy Loading for Ads
-    const lazyAds = document.querySelectorAll('.ad-container[data-lazy]');
-    const adObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const ad = entry.target;
-          const script = ad.querySelector('script[defer]');
-          if (script) {
-            script.src = script.getAttribute('src');
-            observer.unobserve(ad);
-          }
-        }
-      });
-    }, { rootMargin: '200px' });
-    lazyAds.forEach(ad => adObserver.observe(ad));
-
-    // Table of Contents Generator
-    document.addEventListener('DOMContentLoaded', () => {
-      const tocList = document.getElementById('toc-list');
-      if (tocList) {
-        const headings = document.querySelectorAll('.article-wrapper h2, .article-wrapper h3');
-        if (headings.length > 0) {
-          headings.forEach((heading, index) => {
-            const id = `section-${index}`;
-            heading.id = id;
-            const li = document.createElement('li');
-            li.innerHTML = `<a href="#${id}">${heading.textContent}</a>`;
-            tocList.appendChild(li);
-          });
-        } else {
-          tocList.parentElement.style.display = 'none';
-        }
-      }
-    });
-
-    // Font Size Adjuster
-    const fontSizeAdjusters = document.querySelectorAll('.font-size-adjuster');
-    fontSizeAdjusters.forEach(button => {
-      button.addEventListener('click', () => {
-        const action = button.dataset.action;
-        const articleWrapper = document.querySelector('.article-wrapper');
-        let fontSize = parseFloat(getComputedStyle(articleWrapper).fontSize);
-        if (action === 'increase') {
-          fontSize = Math.min(fontSize + 2, 24);
-        } else {
-          fontSize = Math.max(fontSize - 2, 12);
-        }
-        articleWrapper.style.fontSize = `${fontSize}px`;
-        localStorage.setItem('fontSize', fontSize);
-        gtag('event', 'font_size_adjust', { action, font_size: fontSize });
-      });
-    });
-
-    // Restore Font Size
-    const savedFontSize = localStorage.getItem('fontSize');
-    if (savedFontSize) {
-      document.querySelector('.article-wrapper').style.fontSize = `${savedFontSize}px`;
-    }
-
-    // Reading Mode
-    const readingModeToggle = document.querySelector('.reading-mode-toggle');
-    if (readingModeToggle) {
-      readingModeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('reading-mode');
-        readingModeToggle.textContent = document.body.classList.contains('reading-mode') ? 'Exit Reading Mode' : 'Reading Mode';
-        gtag('event', 'reading_mode', { state: document.body.classList.contains('reading-mode') ? 'on' : 'off' });
-      });
-    }
-
-    // Print Button
-    const printButton = document.querySelector('.print-button');
-    if (printButton) {
-      printButton.addEventListener('click', () => {
-        window.print();
-        gtag('event', 'print', { content_id: ${JSON.stringify(post.slug)} });
-      });
-    }
-
-    // Article Reactions
-    const reactionButtons = document.querySelectorAll('.reaction-button');
-    reactionButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        const reaction = button.dataset.reaction;
-        button.classList.toggle('active');
-        gtag('event', 'reaction', { reaction, content_id: ${JSON.stringify(post.slug)} });
-        fbq('track', 'Reaction', { reaction, content_id: ${JSON.stringify(post.slug)} });
-      });
-    });
-
-    // Cookie Consent
-    const cookieConsent = document.querySelector('.cookie-consent');
-    if (cookieConsent && !localStorage.getItem('cookieConsent')) {
-      cookieConsent.hidden = false;
-      document.querySelector('.cookie-accept').addEventListener('click', () => {
-        localStorage.setItem('cookieConsent', 'accepted');
-        cookieConsent.hidden = true;
-        gtag('consent', 'update', { ad_storage: 'granted', analytics_storage: 'granted' });
-      });
-      document.querySelector('.cookie-decline').addEventListener('click', () => {
-        localStorage.setItem('cookieConsent', 'declined');
-        cookieConsent.hidden = true;
-        gtag('consent', 'update', { ad_storage: 'denied', analytics_storage: 'denied' });
-      });
-    }
-
-    // Service Worker and Offline Indicator
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(reg => {
-        console.log('Service Worker registered:', reg);
-      }).catch(err => {
-        console.error('Service Worker registration failed:', err);
-      });
-
-      window.addEventListener('offline', () => {
-        document.querySelector('.offline-indicator').hidden = false;
-      });
-      window.addEventListener('online', () => {
-        document.querySelector('.offline-indicator').hidden = true;
-      });
-    }
-  </script>
 </Layout>
