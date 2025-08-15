@@ -1,3 +1,4 @@
+---
 import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
@@ -35,10 +36,17 @@ const categoryUrl = `https://www.jonathanmwaniki.co.ke/category/${categorySlug}`
 const optimizedTitle = `${post.data.title || 'Untitled'} | ${post.data.category || 'Kenya News'} | Jonathan Mwaniki`;
 const optimizedDescription = `${post.data.description || ''} Latest news from Kenya about ${post.data.category || 'current events'}. Stay updated with Jonathan Mwaniki.`;
 
+const isoDate = new Date(post.data.date).toISOString();
+const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
 ---
 
 <Layout 
+  title={optimizedTitle}
+  description={optimizedDescription}
+  image={absoluteImageUrl}
+  canonical={postUrl}
   meta={[
+    { name: 'color-scheme', content: 'light dark' },
     { name: 'og:title', content: optimizedTitle },
     { name: 'og:description', content: optimizedDescription },
     { name: 'og:type', content: 'article' },
@@ -54,8 +62,40 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
     { name: 'twitter:image:alt', content: post.data.imageAlt || optimizedTitle },
     { name: 'twitter:site', content: '@maestropuns' },
     { name: 'twitter:creator', content: '@maestropuns' },
+    { name: 'article:published_time', content: isoDate },
+    { name: 'article:modified_time', content: modifiedDate },
+    { name: 'article:section', content: post.data.category || 'Uncategorized' },
+    { name: 'article:tag', content: (post.data.tags || []).join(', ') }
   ]}
 >
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      "headline": "{post.data.title || 'Untitled'}",
+      "image": "{absoluteImageUrl}",
+      "datePublished": "{isoDate}",
+      "dateModified": "{modifiedDate}",
+      "author": {
+        "@type": "Person",
+        "name": "{post.data.author || 'Jonathan Mwaniki'}"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Jonathan Mwaniki News",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.jonathanmwaniki.co.ke/logo.png"
+        }
+      },
+      "description": "{optimizedDescription}",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "{postUrl}"
+      }
+    }
+  </script>
+
   <div class="ad-container top-ad">
     <script type="text/javascript">
       atOptions = {
@@ -106,6 +146,12 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
       </svg>
       Back to Kenya News
     </a>
+    
+    {post.data.draft && (
+      <div class="draft-notice">
+        ⚠️ This is a draft article
+      </div>
+    )}
     
     <article class="post-card">
       <header class="post-header">
@@ -271,6 +317,8 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
       --border: #e2e8f0;
       --progress-bg: rgba(187, 25, 25, 0.2);
       --ad-bg: #f8f9fa;
+      --draft-bg: #fef3c7;
+      --draft-text: #b45309;
       --newsletter-bg: #BB1919;
       --scrollbar-thumb: #BB1919;
       --scrollbar-track: #f1f1f1;
@@ -287,6 +335,8 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
         --border: #444;
         --progress-bg: rgba(255, 77, 77, 0.2);
         --ad-bg: #333;
+        --draft-bg: #4a3b00;
+        --draft-text: #ffd700;
         --newsletter-bg: #2d2d2d;
         --scrollbar-thumb: #ff4d4d;
         --scrollbar-track: #333;
@@ -461,6 +511,17 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
 
     .back-link:hover svg {
       stroke: var(--accent-hover);
+    }
+
+    /* Draft Notice */
+    .draft-notice {
+      background: var(--draft-bg);
+      color: var(--draft-text);
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem;
+      text-align: center;
+      font-weight: 500;
     }
 
     /* Post Card */
@@ -787,6 +848,7 @@ const optimizedDescription = `${post.data.description || ''} Latest news from Ke
       .breadcrumb-nav,
       .category-nav,
       .back-link,
+      .draft-notice,
       .post-card,
       .related-articles,
       .newsletter-signup,
