@@ -6,10 +6,7 @@ import vercel from '@astrojs/vercel/serverless';
 export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
   output: 'hybrid',
-  adapter: vercel({
-    runtime: '18.x',
-    edgeMiddleware: false
-  }),
+  adapter: vercel(),
   integrations: [
     mdx(),
     sitemap()
@@ -23,7 +20,6 @@ export default defineConfig({
       'process.env.SITE_URL': JSON.stringify(
         process.env.SITE_URL || 'https://www.jonathanmwaniki.co.ke'
       )
-    },
-    plugins: []
+    }
   }
 });
