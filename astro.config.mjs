@@ -5,24 +5,18 @@ import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
-  output: 'hybrid', // Best for mixed static+dynamic sites
+  output: 'hybrid',
   adapter: vercel({
-    runtime: 'nodejs22.x',
-    edgeMiddleware: false,
-    functionPerRoute: true, // Better API route handling
-    includeFiles: ['google-credentials.json'] // If using file-based auth
+    runtime: 'nodejs18.x',
+    edgeMiddleware: false
   }),
   integrations: [
     mdx(),
-    sitemap({
-      // Your existing sitemap configuration
-    })
+    sitemap()
   ],
   vite: {
     define: {
-      // Client-side fallback (if needed)
       'import.meta.env.GOOGLE_CREDENTIALS': JSON.stringify(''),
-      // Server-side usage
       'process.env.GOOGLE_CREDENTIALS': JSON.stringify(
         process.env.GOOGLE_CREDENTIALS || ''
       ),
@@ -30,8 +24,6 @@ export default defineConfig({
         process.env.SITE_URL || 'https://www.jonathanmwaniki.co.ke'
       )
     },
-    plugins: [
-      // Your existing plugins
-    ]
+    plugins: []
   }
 });
