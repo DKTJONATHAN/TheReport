@@ -15,14 +15,14 @@ export default async function handler(req, res) {
 
     // Check sitemap status
     const sitemaps = await searchconsole.sitemaps.list({
-      siteUrl: 'https://www.jonathanmwaniki.co.ke'
+      siteUrl: 'https://jonathanmwaniki.co.ke'
     });
 
     // Check specific URL indexing status (example with your homepage)
     const urlInspection = await searchconsole.urlInspection.index.inspect({
       requestBody: {
-        inspectionUrl: 'https://www.jonathanmwaniki.co.ke/',
-        siteUrl: 'https://www.jonathanmwaniki.co.ke'
+        inspectionUrl: 'https://jonathanmwaniki.co.ke/',
+        siteUrl: 'https://jonathanmwaniki.co.ke'
       }
     });
 
