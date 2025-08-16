@@ -7,7 +7,7 @@ export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
   output: 'hybrid',
   adapter: vercel({
-    runtime: 'nodejs18.x',
+    runtime: '18.x',
     edgeMiddleware: false
   }),
   integrations: [
