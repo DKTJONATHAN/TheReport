@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     // Fetch sitemap
-    const sitemapUrl = 'https://www.jonathanmwaniki.co.ke/sitemap-0.xml';
+    const sitemapUrl = 'https://jonathanmwaniki.co.ke/sitemap-0.xml';
     const sitemapRes = await fetch(sitemapUrl);
     if (!sitemapRes.ok) {
       throw new Error(`Failed to fetch sitemap: ${sitemapRes.status}`);
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     // Update sitemap
     try {
       await searchconsole.sitemaps.delete({
-        siteUrl: 'https://www.jonathanmwaniki.co.ke',
+        siteUrl: 'https://jonathanmwaniki.co.ke',
         feedpath: '/sitemap-0.xml'
       });
     } catch (error) {
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     await searchconsole.sitemaps.submit({
-      siteUrl: 'https://www.jonathanmwaniki.co.ke',
+      siteUrl: 'https://jonathanmwaniki.co.ke',
       feedpath: '/sitemap-0.xml'
     });
 
@@ -70,12 +70,12 @@ export default async function handler(req, res) {
       return entry.url.includes('/posts/');
     });
 
-    // Filter for recent posts (last 7 days)
-    const lastWeek = new Date();
-    lastWeek.setDate(lastWeek.getDate() - 7);
+    // Filter for recent posts (last 30 days for testing)
+    const lastMonth = new Date();
+    lastMonth.setDate(lastMonth.getDate() - 30);
 
     const newPostUrls = postUrls
-      .filter(entry => entry.lastmod && entry.lastmod >= lastWeek)
+      .filter(entry => entry.lastmod && entry.lastmod >= lastMonth)
       .map(entry => entry.url);
 
     // Submit to Indexing API
