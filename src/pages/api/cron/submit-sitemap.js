@@ -1,45 +1,60 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { parseStringPromise } from 'xml2js';
+import pino from 'pino';
+
+const logger = pino();
 
 export default async function handler(req, res) {
-  // Verify this is a cron request
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    // 1. Get fresh sitemap content
+    // Fetch sitemap
     const sitemapUrl = 'https://www.jonathanmwaniki.co.ke/sitemap-0.xml';
     const sitemapRes = await fetch(sitemapUrl);
-    
     if (!sitemapRes.ok) {
       throw new Error(`Failed to fetch sitemap: ${sitemapRes.status}`);
     }
-
     const sitemapContent = await sitemapRes.text();
 
-    // 2. Initialize auth
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    // Validate credentials
+    let credentials;
+    try {
+      credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+      if (!credentials.client_email || !credentials.private_key) {
+        throw new Error('Missing client_email or private_key');
+      }
+    } catch (error) {
+      logger.error({ error }, 'Invalid Google credentials');
+      return res.status(500).json({ success: false, error: 'Invalid Google credentials' });
+    }
+
+    // Initialize auth
     const auth = new JWT({
       email: credentials.client_email,
       key: credentials.private_key,
-      scopes: ['https://www.googleapis.com/auth/webmasters']
+      scopes: [
+        'https://www.googleapis.com/auth/webmasters',
+        'https://www.googleapis.com/auth/indexing'
+      ]
     });
 
-    // 3. Initialize Search Console client
-    const searchconsole = google.searchconsole({ 
-      version: 'v1', 
-      auth: auth
-    });
+    // Initialize APIs
+    const searchconsole = google.searchconsole({ version: 'v1', auth });
+    const indexing = google.indexing({ version: 'v3', auth });
 
-    // 4. Update sitemap in Search Console
+    // Update sitemap
     try {
       await searchconsole.sitemaps.delete({
         siteUrl: 'https://www.jonathanmwaniki.co.ke',
         feedpath: '/sitemap-0.xml'
       });
     } catch (error) {
-      console.log('No existing sitemap to delete');
+      if (error.code !== 404) {
+        logger.warn({ error }, 'Sitemap deletion failed');
+      }
     }
 
     await searchconsole.sitemaps.submit({
@@ -47,74 +62,57 @@ export default async function handler(req, res) {
       feedpath: '/sitemap-0.xml'
     });
 
-    // 5. Extract and index new URLs
-    const urls = extractUrlsFromSitemap(sitemapContent);
+    // Extract and filter URLs
+    const urls = await extractUrlsFromSitemap(sitemapContent);
     const lastWeek = new Date();
     lastWeek.setDate(lastWeek.getDate() - 7);
-    
-    const newUrls = urls.filter(url => {
-      // Adjust this logic based on your URL structure
-      const urlDate = new Date(url.split('/').slice(-3).join('-'));
-      return urlDate >= lastWeek;
-    });
 
-    // 6. Submit to Google Indexing API
+    const newUrls = urls.filter(entry => entry.lastmod && entry.lastmod >= lastWeek).map(entry => entry.url);
+
+    // Submit to Indexing API
+    let results = [];
     if (newUrls.length > 0) {
-      const indexing = google.indexing({ 
-        version: 'v3',
-        auth: auth
-      });
-
-      const results = await Promise.all(
-        newUrls.slice(0, 200).map(async url => {
+      results = await Promise.all(
+        newUrls.slice(0, 200).map(async (url, index) => {
           try {
             const result = await indexing.urlNotifications.publish({
-              requestBody: { 
-                url, 
-                type: 'URL_UPDATED' 
-              }
+              requestBody: { url, type: 'URL_UPDATED' }
             });
             return { url, status: result.status, success: true };
           } catch (error) {
-            return { 
-              url, 
-              status: error.code || 500, 
-              error: error.message,
-              success: false 
-            };
+            if (error.code === 429) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (index + 1)));
+              return { url, status: 429, error: 'Rate limit exceeded', success: false };
+            }
+            logger.error({ error, url }, 'Indexing failed');
+            return { url, status: error.code || 500, error: error.message, success: false };
           }
         })
       );
-
-      return res.json({
-        success: true,
-        sitemap_updated: true,
-        urls_in_sitemap: urls.length,
-        new_urls_found: newUrls.length,
-        new_urls_indexed: results.length,
-        results
-      });
     }
 
     return res.json({
       success: true,
       sitemap_updated: true,
       urls_in_sitemap: urls.length,
-      new_urls_found: 0,
-      new_urls_indexed: 0
+      new_urls_found: newUrls.length,
+      new_urls_indexed: results.length,
+      results
     });
-
   } catch (error) {
-    console.error('Cron job error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    logger.error({ error }, 'Cron job failed');
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
 
-function extractUrlsFromSitemap(xmlContent) {
-  const urlPattern = /<loc>(.*?)<\/loc>/g;
-  const matches = xmlContent.match(urlPattern) || [];
-  return matches.map(match => match.replace(/<\/?loc>/g, ''));
+async function extractUrlsFromSitemap(xmlContent) {
+  try {
+    const result = await parseStringPromise(xmlContent);
+    return result.urlset.url.map(entry => ({
+      url: entry.loc[0],
+      lastmod: entry.lastmod ? new Date(entry.lastmod[0]) : null
+    }));
+  } catch (error) {
+    throw new Error(`Failed to parse sitemap XML: ${error.message}`);
+  }
 }
