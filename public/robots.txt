@@ -1,7 +1,20 @@
 User-agent: *
-Disallow: /tags/
-Disallow: /author/
-Disallow: /category/
 Allow: /
+Allow: /posts/
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
 
+# Block tag and category pages
+Disallow: /tags/
+Disallow: /category/
+Disallow: /authors/
+Disallow: /search
+
+# Block admin and API endpoints
+Disallow: /admin
+Disallow: /api/
+
+# Allow sitemap
 Sitemap: https://www.jonathanmwaniki.co.ke/sitemap-0.xml
