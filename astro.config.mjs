@@ -9,6 +9,16 @@ export default defineConfig({
   adapter: vercel(),
   integrations: [
     mdx(),
-    sitemap()
+    sitemap({
+      filter: (page) => {
+        // Only include posts and essential pages in sitemap
+        return page.includes('/posts/') || 
+               page.endsWith('/about/') ||
+               page.endsWith('/contact/') ||
+               page.endsWith('/privacy/') ||
+               page.endsWith('/terms/') ||
+               page === 'https://www.jonathanmwaniki.co.ke/';
+      }
+    })
   ]
 });
