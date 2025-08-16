@@ -6,10 +6,12 @@ Allow: /contact
 Allow: /privacy
 Allow: /terms
 
-# Block tag and category pages
+# Allow category and author pages for discovery
+Allow: /category/
+Allow: /author/
+
+# Block only non-essential pages
 Disallow: /tags/
-Disallow: /category/
-Disallow: /authors/
 Disallow: /search
 
 # Block admin and API endpoints
