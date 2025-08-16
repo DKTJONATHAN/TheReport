@@ -258,36 +258,44 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   </script>
 
   <style>
-    /* CSS Variables */
+    /* CSS Variables - Match Header Colors */
     :root {
-      --primary-color: #1a365d;
-      --secondary-color: #2c5282;
-      --accent-color: #e53e3e;
-      --text-color: #2d3748;
-      --text-light: #718096;
       --bg-color: #ffffff;
+      --text-color: #141414;
+      --subtext-color: #666666;
+      --accent-color: #BB1919;
+      --accent-hover: #991616;
+      --border-color: #E0E0E0;
+      --shadow-color: rgba(0, 0, 0, 0.1);
+      --primary-color: #BB1919;
+      --secondary-color: #991616;
+      --text-light: #666666;
       --bg-light: #f7fafc;
-      --border-color: #e2e8f0;
       --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-serif: Georgia, 'Times New Roman', serif;
-      --max-width: 1200px;
+      --font-sans: 'ReithSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-serif: 'ReithSerif', Georgia, 'Times New Roman', serif;
+      --max-width: 1280px;
       --transition: all 0.2s ease;
+      --focus-outline: #BB1919;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --primary-color: #90cdf4;
-        --secondary-color: #63b3ed;
-        --accent-color: #fc8181;
+        --bg-color: #1a1a1a;
         --text-color: #e2e8f0;
-        --text-light: #a0aec0;
-        --bg-color: #1a202c;
+        --subtext-color: #9ca3af;
+        --accent-color: #ef4444;
+        --accent-hover: #f87171;
+        --border-color: #4b5563;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --primary-color: #ef4444;
+        --secondary-color: #f87171;
+        --text-light: #9ca3af;
         --bg-light: #2d3748;
-        --border-color: #4a5568;
         --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.3);
+        --focus-outline: #f87171;
       }
     }
 
@@ -299,6 +307,8 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     body {
+      margin: 0;
+      padding: 0;
       font-family: var(--font-sans);
       line-height: 1.6;
       color: var(--text-color);
@@ -311,13 +321,18 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     a {
-      color: var(--primary-color);
+      color: var(--accent-color);
       text-decoration: none;
       transition: var(--transition);
     }
 
     a:hover {
-      color: var(--secondary-color);
+      color: var(--accent-hover);
+    }
+
+    a:focus {
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
     }
 
     /* Layout */
@@ -339,16 +354,23 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     .breadcrumb {
       grid-area: breadcrumb;
       font-size: 0.875rem;
-      color: var(--text-light);
-      padding: 0.5rem 0;
+      color: var(--subtext-color);
+      padding: 1rem 0;
+      font-family: var(--font-sans);
     }
 
     .breadcrumb a {
-      color: var(--primary-color);
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
     }
 
     .separator {
       margin: 0 0.5rem;
+      color: var(--subtext-color);
     }
 
     .current {
@@ -390,12 +412,18 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      font-family: var(--font-sans);
+    }
+
+    .category-badge:hover {
+      background: var(--accent-hover);
     }
 
     .publish-date,
     .reading-time {
-      color: var(--text-light);
+      color: var(--subtext-color);
       font-size: 0.875rem;
+      font-family: var(--font-sans);
     }
 
     .article-title {
@@ -409,14 +437,16 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     .article-lead {
       font-size: 1.125rem;
-      color: var(--text-light);
+      color: var(--subtext-color);
       line-height: 1.5;
       margin: 1rem 0;
+      font-family: var(--font-sans);
     }
 
     .author-byline {
-      color: var(--text-light);
+      color: var(--subtext-color);
       font-size: 0.875rem;
+      font-family: var(--font-sans);
     }
 
     .author-label {
@@ -499,17 +529,18 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     .share-btn {
-      background: var(--primary-color);
+      background: var(--accent-color);
       color: white;
       padding: 0.75rem 1.5rem;
       border-radius: 4px;
       font-weight: 500;
       text-decoration: none;
       transition: var(--transition);
+      font-family: var(--font-sans);
     }
 
     .share-btn:hover {
-      background: var(--secondary-color);
+      background: var(--accent-hover);
       color: white;
     }
 
@@ -546,13 +577,15 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     .bio-text p {
-      color: var(--text-light);
+      color: var(--subtext-color);
       margin-bottom: 1rem;
+      font-family: var(--font-sans);
     }
 
     .author-link {
       color: var(--accent-color);
       font-weight: 500;
+      font-family: var(--font-sans);
     }
 
     /* Related Articles */
@@ -621,8 +654,9 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     .card-date {
-      color: var(--text-light);
+      color: var(--subtext-color);
       font-size: 0.75rem;
+      font-family: var(--font-sans);
     }
 
     /* Sidebar */
@@ -644,9 +678,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     .newsletter p {
-      color: var(--text-light);
+      color: var(--subtext-color);
       margin-bottom: 1rem;
       font-size: 0.875rem;
+      font-family: var(--font-sans);
     }
 
     .newsletter-form {
@@ -662,6 +697,12 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-size: 0.875rem;
       background: var(--bg-color);
       color: var(--text-color);
+      font-family: var(--font-sans);
+    }
+
+    .newsletter-form input:focus {
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
     }
 
     .newsletter-form button {
@@ -673,10 +714,16 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 500;
       cursor: pointer;
       transition: var(--transition);
+      font-family: var(--font-sans);
     }
 
     .newsletter-form button:hover {
-      background: #c53030;
+      background: var(--accent-hover);
+    }
+
+    .newsletter-form button:focus {
+      outline: 2px solid var(--focus-outline);
+      outline-offset: 2px;
     }
 
     .ad-container {
