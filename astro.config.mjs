@@ -6,20 +6,11 @@ import vercel from '@astrojs/vercel/serverless';
 export default defineConfig({
   site: 'https://www.jonathanmwaniki.co.ke',
   output: 'hybrid',
-  adapter: vercel(),
+  adapter: vercel({
+    maxDuration: 60
+  }),
   integrations: [
     mdx(),
     sitemap()
-  ],
-  vite: {
-    define: {
-      'import.meta.env.GOOGLE_CREDENTIALS': JSON.stringify(''),
-      'process.env.GOOGLE_CREDENTIALS': JSON.stringify(
-        process.env.GOOGLE_CREDENTIALS || ''
-      ),
-      'process.env.SITE_URL': JSON.stringify(
-        process.env.SITE_URL || 'https://www.jonathanmwaniki.co.ke'
-      )
-    }
-  }
+  ]
 });
