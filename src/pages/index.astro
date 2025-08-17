@@ -29,6 +29,10 @@ const featuredPost = allPosts[0];
     <meta name="twitter:title" content="Breaking News Kenya Today | Jonathan Mwaniki" />
     <meta name="twitter:description" content="Latest breaking news from Kenya. Politics, entertainment, sports & trending stories." />
     
+    <!-- AdSense Script - Load once in head -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
+         crossorigin="anonymous"></script>
+    
     <!-- Structured Data for News Articles -->
     <script type="application/ld+json">
     {
@@ -42,33 +46,7 @@ const featuredPost = allPosts[0];
         "https://facebook.com/jonathanmwaniki"
       ]
     }
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
-     crossorigin="anonymous"></script>
-<!-- JonathanMwaniki -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-9291176772735390"
-     data-ad-slot="9950112753"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
     </script>
-
-    <!-- Top Ad Container -->
-    <div class="ad-container top-ad">
-        <script type="text/javascript">
-            atOptions = {
-                'key' : '1610960d9ced232cc76d8f5510ee4608',
-                'format' : 'iframe',
-                'height' : 60,
-                'width' : 468,
-                'params' : {}
-            };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
 
     <main class="main-container">
         <!-- Professional Header -->
@@ -83,18 +61,17 @@ const featuredPost = allPosts[0];
             </div>
         </header>
 
-        <!-- Post-Hero Ad Container -->
-        <div class="ad-container post-hero-ad">
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '1610960d9ced232cc76d8f5510ee4608',
-                    'format' : 'iframe',
-                    'height' : 60,
-                    'width' : 468,
-                    'params' : {}
-                };
+        <!-- TOP AD - Above the fold, high visibility -->
+        <div class="ad-container top-ad-adsense">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-9291176772735390"
+                 data-ad-slot="9950112753"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
             </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
         </div>
 
         <!-- Featured Post (Most Recent) -->
@@ -146,60 +123,91 @@ const featuredPost = allPosts[0];
                 </article>
             </section>
         )}
+
+        <!-- MID-CONTENT AD - After featured content -->
+        <div class="ad-container mid-content-ad">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '1610960d9ced232cc76d8f5510ee4608',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+        </div>
         
         <!-- Category Sections -->
-        {categories.map(category => {
+        {categories.map((category, index) => {
           const categoryPosts = allPosts
             .filter(post => post.data.category === category)
-            .slice(0, 3); // Limit to 3 posts per category
+            .slice(0, 3);
           return categoryPosts.length > 0 ? (
-            <section class="category-section" aria-label={`${category} News`}>
-              <h2 class="section-title">Latest {category} News</h2>
-              <div class="posts-grid">
-                {categoryPosts.map(post => (
-                  <article class="post-card">
-                    <a 
-                      href={`/posts/${post.slug}`} 
-                      class="post-link"
-                      aria-label={`Read article: ${post.data.title}`}
-                    >
-                      {post.data.image && (
-                        <div class="post-image-container">
-                          <img
-                            src={post.data.image}
-                            alt={post.data.imageAlt || post.data.title}
-                            class="post-image"
-                            loading="lazy"
-                            width="400"
-                            height="240"
-                          />
+            <div>
+              <section class="category-section" aria-label={`${category} News`}>
+                <h2 class="section-title">Latest {category} News</h2>
+                <div class="posts-grid">
+                  {categoryPosts.map(post => (
+                    <article class="post-card">
+                      <a 
+                        href={`/posts/${post.slug}`} 
+                        class="post-link"
+                        aria-label={`Read article: ${post.data.title}`}
+                      >
+                        {post.data.image && (
+                          <div class="post-image-container">
+                            <img
+                              src={post.data.image}
+                              alt={post.data.imageAlt || post.data.title}
+                              class="post-image"
+                              loading="lazy"
+                              width="400"
+                              height="240"
+                            />
+                          </div>
+                        )}
+                        <div class="post-content">
+                          <div class="post-meta">
+                            <span class="post-category">{post.data.category}</span>
+                            <time class="post-date" datetime={post.data.date}>
+                              {new Date(post.data.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </time>
+                          </div>
+                          <h3 class="post-title">{post.data.title}</h3>
+                          {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
+                          <div class="post-footer">
+                            <span class="read-more">Read Article</span>
+                          </div>
                         </div>
-                      )}
-                      <div class="post-content">
-                        <div class="post-meta">
-                          <span class="post-category">{post.data.category}</span>
-                          <time class="post-date" datetime={post.data.date}>
-                            {new Date(post.data.date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </time>
-                        </div>
-                        <h3 class="post-title">{post.data.title}</h3>
-                        {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
-                        <div class="post-footer">
-                          <span class="read-more">Read Article</span>
-                        </div>
-                      </div>
-                    </a>
-                  </article>
-                ))}
-              </div>
-              <p class="see-more">
-                <a href={`/category/${category.toLowerCase()}`} title={`More ${category} News Kenya`}>See more {category} stories</a>
-              </p>
-            </section>
+                      </a>
+                    </article>
+                  ))}
+                </div>
+                <p class="see-more">
+                  <a href={`/category/${category.toLowerCase()}`} title={`More ${category} News Kenya`}>See more {category} stories</a>
+                </p>
+              </section>
+              
+              {/* Insert ad after every 2nd category section */}
+              {index === 1 && (
+                <div class="ad-container between-categories-ad">
+                  <ins class="adsbygoogle"
+                       style="display:block"
+                       data-ad-client="ca-pub-9291176772735390"
+                       data-ad-slot="9950112753"
+                       data-ad-format="auto"
+                       data-full-width-responsive="true"></ins>
+                  <script>
+                       (adsbygoogle = window.adsbygoogle || []).push({});
+                  </script>
+                </div>
+              )}
+            </div>
           ) : null;
         })}
 
@@ -209,6 +217,20 @@ const featuredPost = allPosts[0];
                 <p>Check back soon for the latest Kenyan news and updates!</p>
             </div>
         )}
+
+        <!-- BOTTOM AD - End of content -->
+        <div class="ad-container bottom-ad">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '1610960d9ced232cc76d8f5510ee4608',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
+        </div>
     </main>
 
     <style>
@@ -330,37 +352,52 @@ const featuredPost = allPosts[0];
             opacity: 0.95;
         }
 
-        /* Ad Container Styles */
+        /* Improved Ad Container Styles */
         .ad-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 1.5rem auto;
-            padding: 1rem;
-            background: var(--ad-bg);
-            border-radius: 8px;
-            border: 1px solid var(--ad-border);
-            max-width: 500px;
-            overflow: hidden;
-        }
-
-        .top-ad {
-            margin-top: 0;
-            margin-bottom: 2rem;
-        }
-
-        .post-hero-ad {
             margin: 2rem auto;
+            padding: 1.5rem;
+            background: var(--ad-bg);
+            border-radius: 12px;
+            border: 2px solid var(--ad-border);
+            min-height: 120px;
+            overflow: hidden;
+            position: relative;
         }
 
-        .ad-container iframe {
-            max-width: 468px;
-            max-height: 60px;
+        /* Specific ad positioning */
+        .top-ad-adsense {
+            margin-top: 1rem;
+            margin-bottom: 2.5rem;
+            max-width: 100%;
+            background: linear-gradient(135deg, var(--ad-bg) 0%, rgba(220, 38, 38, 0.05) 100%);
+            border: 2px solid var(--category-bg);
         }
 
-        .ad-container script {
-            display: block;
-            max-width: 468px;
+        .mid-content-ad {
+            margin: 3rem auto;
+            max-width: 350px;
+            border-color: var(--category-bg);
+        }
+
+        .between-categories-ad {
+            margin: 3rem auto;
+            max-width: 100%;
+            background: linear-gradient(135deg, var(--ad-bg) 0%, rgba(220, 38, 38, 0.03) 100%);
+        }
+
+        .bottom-ad {
+            margin: 3rem auto 2rem auto;
+            max-width: 350px;
+            border-color: var(--category-bg);
+        }
+
+        /* AdSense responsive sizing */
+        .ad-container .adsbygoogle {
+            min-width: 250px;
+            min-height: 250px;
         }
 
         /* Section Titles */
@@ -700,6 +737,11 @@ const featuredPost = allPosts[0];
                 font-size: 1.75rem;
                 margin: 2rem 0 1rem 0;
             }
+
+            .ad-container {
+                margin: 1.5rem auto;
+                padding: 1rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -745,6 +787,10 @@ const featuredPost = allPosts[0];
             .post-card {
                 box-shadow: none !important;
                 border: 1px solid var(--card-border) !important;
+            }
+
+            .ad-container {
+                display: none !important;
             }
         }
     </style>
