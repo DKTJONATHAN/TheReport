@@ -138,6 +138,20 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
           <Article>
             <Content />
           </Article>
+          <div class="ad-section ad-section-incontent">
+            <span class="ad-label">Advertisement</span>
+            <div class="ad-container">
+              <ins class="adsbygoogle"
+                   style="display:block"
+                   data-ad-client="ca-pub-9291176772735390"
+                   data-ad-slot="YOUR_INCONTENT_AD_SLOT"
+                   data-ad-format="auto"
+                   data-full-width-responsive="true"></ins>
+              <script>
+                   (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </div>
+          </div>
         </div>
 
         <!-- Article Footer -->
@@ -165,6 +179,21 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
             >
               Share on Facebook
             </a>
+          </div>
+
+          <div class="ad-section ad-section-bottom">
+            <span class="ad-label">Advertisement</span>
+            <div class="ad-container">
+              <ins class="adsbygoogle"
+                   style="display:block"
+                   data-ad-client="ca-pub-9291176772735390"
+                   data-ad-slot="9950112753"
+                   data-ad-format="auto"
+                   data-full-width-responsive="true"></ins>
+              <script>
+                   (adsbygoogle = window.adsbygoogle || []).push({});
+              </script>
+            </div>
           </div>
         </footer>
       </article>
@@ -217,8 +246,8 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     <!-- Sidebar -->
     <aside class="sidebar">
-      <!-- Advertisement -->
       <section class="ad-section">
+        <span class="ad-label">Advertisement</span>
         <div class="ad-container">
           <script type="text/javascript">
             atOptions = {
@@ -235,6 +264,22 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     </aside>
   </div>
 
+  <!-- Sticky Footer Ad (Mobile Only) -->
+  <div class="ad-section ad-section-sticky">
+    <span class="ad-label">Advertisement</span>
+    <div class="ad-container">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-9291176772735390"
+           data-ad-slot="YOUR_STICKY_AD_SLOT"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+  </div>
+
   <!-- Minimal Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
   <script>
@@ -243,18 +288,22 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     gtag('js', new Date());
     gtag('config', 'G-W3FVP4FRPT');
   </script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
-     crossorigin="anonymous"></script>
-<!-- JonathanMwaniki -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-9291176772735390"
-     data-ad-slot="9950112753"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
+       crossorigin="anonymous"></script>
+
+  <!-- Dynamic In-Content Ad Placement -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const paragraphs = document.querySelectorAll('.article-body p');
+      const adSection = document.querySelector('.ad-section-incontent');
+      if (paragraphs.length >= 2 && adSection) {
+        paragraphs[1].after(adSection);
+      }
+    });
+  </script>
+
   <style>
     /* CSS Variables - Match Header Colors */
     :root {
@@ -702,7 +751,20 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       grid-area: sidebar;
     }
 
+    /* Ad Styles */
+    .ad-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-sans);
+      text-align: center;
+    }
+
     .ad-section {
+      position: sticky;
+      top: 1rem;
       background: var(--bg-light);
       border-radius: 8px;
       padding: 1.5rem;
@@ -710,15 +772,66 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     .ad-container {
-      text-align: center;
-      min-height: 250px;
+      padding: 0.5rem;
+      box-sizing: border-box;
       background: #f5f5f5;
       border-radius: 4px;
+      text-align: center;
+      min-height: 250px;
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
       max-width: 100%;
+    }
+
+    .ad-section-bottom {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    .ad-section-bottom .ad-container {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 0.5rem;
+      max-width: 100%;
+    }
+
+    .ad-section-bottom .adsbygoogle {
+      width: 100%;
+      max-width: 728px;
+      margin: 0 auto;
+    }
+
+    .ad-section-incontent {
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .ad-section-incontent .ad-container {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 0.5rem;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .ad-section-sticky {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: var(--bg-color);
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .ad-section-sticky .ad-container {
+      padding: 0.5rem;
+      max-width: 320px;
+      margin: 0 auto;
     }
 
     /* Footer */
@@ -788,6 +901,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       .articles-grid {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
       }
+
+      .ad-section {
+        position: static;
+      }
     }
 
     @media (max-width: 50rem) {
@@ -828,6 +945,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
         box-sizing: border-box;
         padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
       }
+
+      .ad-section-sticky {
+        display: block;
+      }
     }
 
     @media (max-width: 30rem) {
@@ -850,7 +971,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       .breadcrumb,
       .sidebar,
       .article-actions,
-      .related-articles {
+      .related-articles,
+      .ad-section,
+      .ad-section-incontent,
+      .ad-section-bottom,
+      .ad-section-sticky {
         display: none;
       }
 
