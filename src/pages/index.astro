@@ -159,7 +159,7 @@ const featuredPost = allPosts[0];
                         </div>
                       </a>
                     </article>
-                    {(index + 1) % 2 === 0 && index + 1 < categoryPosts.length || index + 1 === categoryPosts.length && categoryPosts.length >= 2) && (
+                    {((index + 1) % 2 === 0 && index + 1 < categoryPosts.length || index + 1 === categoryPosts.length && categoryPosts.length >= 2) && (
                       <div class="ad-container consented" aria-hidden="true">
                         <span class="ad-label">Advertisement</span>
                         <ins class="adsbygoogle"
@@ -194,7 +194,6 @@ const featuredPost = allPosts[0];
     </main>
 
     <style>
-        /* Define CSS variables for light and dark themes */
         :root {
             --bg-color: #ffffff;
             --text-color: #1a1a1a;
@@ -215,7 +214,6 @@ const featuredPost = allPosts[0];
             --focus-outline: #dc2626;
         }
 
-        /* Dark mode styles */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #1a1a1a;
@@ -238,7 +236,6 @@ const featuredPost = allPosts[0];
             }
         }
 
-        /* Global Styles */
         * {
             box-sizing: border-box;
         }
@@ -252,7 +249,6 @@ const featuredPost = allPosts[0];
             color: var(--text-color);
         }
 
-        /* Hero Section */
         .hero-section {
             background: var(--hero-bg);
             color: var(--hero-text);
@@ -312,7 +308,6 @@ const featuredPost = allPosts[0];
             opacity: 0.95;
         }
 
-        /* Ad Container Styles */
         .ad-container {
             display: none;
             width: auto;
@@ -321,6 +316,7 @@ const featuredPost = allPosts[0];
             margin: 0;
             max-width: 728px;
             overflow: hidden;
+            text-align: center;
         }
 
         .ad-container.consented {
@@ -338,7 +334,6 @@ const featuredPost = allPosts[0];
             max-width: 100%;
         }
 
-        /* Section Titles */
         .section-title {
             font-size: 2rem;
             font-weight: 700;
@@ -358,7 +353,6 @@ const featuredPost = allPosts[0];
             background: var(--title-underline);
         }
 
-        /* Featured Post Styles */
         .featured-section {
             margin: 2rem 0 4rem 0;
         }
@@ -502,7 +496,6 @@ const featuredPost = allPosts[0];
             transform: translateX(3px);
         }
 
-        /* Category Section */
         .category-section {
             margin: 4rem 0;
         }
@@ -634,7 +627,6 @@ const featuredPost = allPosts[0];
             text-decoration: underline;
         }
 
-        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
@@ -647,7 +639,6 @@ const featuredPost = allPosts[0];
             color: var(--text-color);
         }
 
-        /* Mobile Optimizations */
         @media (max-width: 768px) {
             .main-container {
                 padding: 0 0.75rem;
@@ -700,7 +691,6 @@ const featuredPost = allPosts[0];
             }
         }
 
-        /* Accessibility */
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -709,7 +699,6 @@ const featuredPost = allPosts[0];
             }
         }
 
-        /* Focus styles for keyboard navigation */
         .featured-link:focus,
         .post-link:focus,
         .see-more a:focus {
@@ -717,7 +706,6 @@ const featuredPost = allPosts[0];
             outline-offset: 2px;
         }
 
-        /* Print styles */
         @media print {
             .hero-section {
                 background: var(--bg-color) !important;
