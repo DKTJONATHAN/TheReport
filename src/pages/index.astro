@@ -61,19 +61,6 @@ const featuredPost = allPosts[0];
             </div>
         </header>
 
-        <!-- TOP AD - Above the fold, high visibility -->
-        <div class="ad-container top-ad-adsense">
-            <ins class="adsbygoogle"
-                 style="display:block"
-                 data-ad-client="ca-pub-9291176772735390"
-                 data-ad-slot="9950112753"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-            <script>
-                 (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-        </div>
-
         <!-- Featured Post (Most Recent) -->
         {featuredPost && (
             <section class="featured-section" aria-label="Featured Story">
@@ -124,31 +111,17 @@ const featuredPost = allPosts[0];
             </section>
         )}
 
-        <!-- MID-CONTENT AD - After featured content -->
-        <div class="ad-container mid-content-ad">
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '1610960d9ced232cc76d8f5510ee4608',
-                    'format' : 'iframe',
-                    'height' : 250,
-                    'width' : 300,
-                    'params' : {}
-                };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-        </div>
-        
-        <!-- Category Sections -->
-        {categories.map((category, index) => {
+        <!-- Category Sections with Ads After Every 2 Posts -->
+        {categories.map(category => {
           const categoryPosts = allPosts
             .filter(post => post.data.category === category)
             .slice(0, 3);
           return categoryPosts.length > 0 ? (
-            <div>
-              <section class="category-section" aria-label={`${category} News`}>
-                <h2 class="section-title">Latest {category} News</h2>
-                <div class="posts-grid">
-                  {categoryPosts.map(post => (
+            <section class="category-section" aria-label={`${category} News`}>
+              <h2 class="section-title">Latest {category} News</h2>
+              <div class="posts-grid">
+                {categoryPosts.map((post, index) => (
+                  <>
                     <article class="post-card">
                       <a 
                         href={`/posts/${post.slug}`} 
@@ -186,28 +159,29 @@ const featuredPost = allPosts[0];
                         </div>
                       </a>
                     </article>
-                  ))}
-                </div>
-                <p class="see-more">
-                  <a href={`/category/${category.toLowerCase()}`} title={`More ${category} News Kenya`}>See more {category} stories</a>
-                </p>
-              </section>
-              
-              {/* Insert ad after every 2nd category section */}
-              {index === 1 && (
-                <div class="ad-container between-categories-ad">
-                  <ins class="adsbygoogle"
-                       style="display:block"
-                       data-ad-client="ca-pub-9291176772735390"
-                       data-ad-slot="9950112753"
-                       data-ad-format="auto"
-                       data-full-width-responsive="true"></ins>
-                  <script>
-                       (adsbygoogle = window.adsbygoogle || []).push({});
-                  </script>
-                </div>
-              )}
-            </div>
+                    {(index + 1) % 2 === 0 && index + 1 < categoryPosts.length || index + 1 === categoryPosts.length && categoryPosts.length >= 2) && (
+                      <div class="ad-container consented" aria-hidden="true">
+                        <span class="ad-label">Advertisement</span>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-format="fluid"
+                             data-ad-layout-key="-ft+62+3a-cx+as"
+                             data-ad-client="ca-pub-9291176772735390"
+                             data-ad-slot="1358657931"></ins>
+                        <script is:inline>
+                             if (localStorage.getItem('cookieConsent') === 'accepted') {
+                                 (adsbygoogle = window.adsbygoogle || []).push({});
+                             }
+                        </script>
+                      </div>
+                    )}
+                  </>
+                ))}
+              </div>
+              <p class="see-more">
+                <a href={`/category/${category.toLowerCase()}`} title={`More ${category} News Kenya`}>See more {category} stories</a>
+              </p>
+            </section>
           ) : null;
         })}
 
@@ -217,20 +191,6 @@ const featuredPost = allPosts[0];
                 <p>Check back soon for the latest Kenyan news and updates!</p>
             </div>
         )}
-
-        <!-- BOTTOM AD - End of content -->
-        <div class="ad-container bottom-ad">
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '1610960d9ced232cc76d8f5510ee4608',
-                    'format' : 'iframe',
-                    'height' : 250,
-                    'width' : 300,
-                    'params' : {}
-                };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-        </div>
     </main>
 
     <style>
@@ -352,52 +312,30 @@ const featuredPost = allPosts[0];
             opacity: 0.95;
         }
 
-        /* Improved Ad Container Styles */
+        /* Ad Container Styles */
         .ad-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 2rem auto;
-            padding: 1.5rem;
-            background: var(--ad-bg);
-            border-radius: 12px;
-            border: 2px solid var(--ad-border);
-            min-height: 120px;
+            display: none;
+            width: auto;
+            height: auto;
+            padding: 0;
+            margin: 0;
+            max-width: 728px;
             overflow: hidden;
-            position: relative;
         }
 
-        /* Specific ad positioning */
-        .top-ad-adsense {
-            margin-top: 1rem;
-            margin-bottom: 2.5rem;
-            max-width: 100%;
-            background: linear-gradient(135deg, var(--ad-bg) 0%, rgba(220, 38, 38, 0.05) 100%);
-            border: 2px solid var(--category-bg);
+        .ad-container.consented {
+            display: block;
         }
 
-        .mid-content-ad {
-            margin: 3rem auto;
-            max-width: 350px;
-            border-color: var(--category-bg);
+        .ad-label {
+            font-size: 0.75rem;
+            color: var(--subtext-color);
+            text-transform: uppercase;
+            font-weight: 500;
         }
 
-        .between-categories-ad {
-            margin: 3rem auto;
-            max-width: 100%;
-            background: linear-gradient(135deg, var(--ad-bg) 0%, rgba(220, 38, 38, 0.03) 100%);
-        }
-
-        .bottom-ad {
-            margin: 3rem auto 2rem auto;
-            max-width: 350px;
-            border-color: var(--category-bg);
-        }
-
-        /* AdSense responsive sizing */
         .ad-container .adsbygoogle {
-            min-width: 250px;
-            min-height: 250px;
+            max-width: 100%;
         }
 
         /* Section Titles */
@@ -739,8 +677,7 @@ const featuredPost = allPosts[0];
             }
 
             .ad-container {
-                margin: 1.5rem auto;
-                padding: 1rem;
+                max-width: 468px;
             }
         }
 
@@ -756,6 +693,10 @@ const featuredPost = allPosts[0];
             .breaking-ticker {
                 font-size: 0.8rem;
                 padding: 0.4rem 1rem;
+            }
+
+            .ad-container {
+                max-width: 320px;
             }
         }
 
