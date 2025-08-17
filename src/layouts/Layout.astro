@@ -133,6 +133,10 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
     }
   </script>
   
+  <!-- Google AdSense Script -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
+     crossorigin="anonymous"></script>
+  
   <!-- Google Analytics (Loaded only if cookies accepted) -->
   <script is:inline>
     function loadGoogleAnalytics() {
@@ -154,6 +158,7 @@ const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   <!-- Preconnect to external domains -->
   <link rel="preconnect" href="https://www.google-analytics.com">
   <link rel="preconnect" href="https://www.googletagmanager.com">
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
   
   <!-- Global CSS -->
   <link rel="stylesheet" href="/styles/global.css">
