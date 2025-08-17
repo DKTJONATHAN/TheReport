@@ -59,354 +59,602 @@ const footerLinks = [
 ];
 ---
 
-<footer class="site-footer">
+<footer class="modern-footer">
+  <!-- Decorative top border -->
+  <div class="footer-top-accent"></div>
+  
   <div class="footer-container">
-    <!-- Main Footer Content -->
-    <div class="footer-main">
+    <!-- Header Section -->
+    <div class="footer-header">
       <div class="footer-brand">
         <a href="/" class="footer-logo">
           <img src="/Jonathan-Mwaniki-logo.png" alt="The Mwaniki's Report Logo" class="logo-image" />
+          <div class="logo-highlight"></div>
         </a>
-        <p class="footer-description">
-          Professional journalism and insightful commentary from Kenya. 
-          Committed to delivering accurate, timely, and comprehensive news coverage.
-        </p>
+        <div class="brand-content">
+          <h2 class="brand-title">The Mwaniki's Report</h2>
+          <p class="footer-tagline">
+            Professional journalism and insightful commentary from Kenya. 
+            Delivering truth through compelling storytelling.
+          </p>
+        </div>
       </div>
       
-      <!-- Footer Links -->
-      <div class="footer-links">
-        <div class="footer-links-left">
-          {footerLinks.filter(section => section.title === 'Legal').map(section => (
-            <div class="footer-section">
-              <h4 class="section-title">{section.title}</h4>
-              <ul class="section-links">
-                {section.links.map(link => (
-                  <li>
-                    <a href={link.url} class="footer-link">{link.name}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div class="footer-links-right">
-          {footerLinks.filter(section => section.title !== 'Legal').map(section => (
-            <div class="footer-section">
-              <h4 class="section-title">{section.title}</h4>
-              <ul class="section-links">
-                {section.links.map(link => (
-                  <li>
-                    <a href={link.url} class="footer-link">{link.name}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+      <div class="newsletter-signup">
+        <h3 class="newsletter-title">Stay Informed</h3>
+        <p class="newsletter-desc">Get our latest stories delivered to your inbox</p>
+        <div class="newsletter-form">
+          <input type="email" placeholder="Enter your email" class="email-input" />
+          <button class="subscribe-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Navigation Grid -->
+    <div class="footer-nav-grid">
+      {footerLinks.map(section => (
+        <div class="nav-column">
+          <div class="nav-header">
+            <h4 class="nav-title">{section.title}</h4>
+            <div class="nav-accent"></div>
+          </div>
+          <ul class="nav-list">
+            {section.links.map(link => (
+              <li class="nav-item">
+                <a href={link.url} class="nav-link">
+                  <span class="link-text">{link.name}</span>
+                  <svg class="link-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
+                  </svg>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
     
-    <!-- Footer Bottom -->
-    <div class="footer-bottom">
-      <div class="footer-bottom-left">
-        <p class="copyright">© {currentYear} The Mwaniki's Report. All rights reserved.</p>
+    <!-- Social & Bottom Section -->
+    <div class="footer-bottom-section">
+      <div class="social-section">
+        <h4 class="social-title">Connect With Us</h4>
+        <div class="social-grid">
+          {socialLinks.map(link => (
+            <a 
+              href={link.url} 
+              class="social-link" 
+              aria-label={`Follow us on ${link.name}`}
+              style={`--social-color: ${link.color}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div class="social-icon-wrapper">
+                <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d={link.icon} />
+                </svg>
+              </div>
+              <span class="social-name">{link.name}</span>
+            </a>
+          ))}
+        </div>
       </div>
       
-      <div class="footer-social">
-        <span class="social-label">Follow us:</span>
-        {socialLinks.map(link => (
-          <a 
-            href={link.url} 
-            class="social-link" 
-            aria-label={`Follow us on ${link.name}`}
-            style={`--social-color: ${link.color}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d={link.icon} />
-            </svg>
-          </a>
-        ))}
-      </div>
-      
-      <div class="back-to-top">
-        <button class="back-to-top-button" aria-label="Back to top">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 14l5-5 5 5"/>
+      <div class="footer-meta">
+        <div class="copyright-info">
+          <p class="copyright">© {currentYear} The Mwaniki's Report. All rights reserved.</p>
+          <p class="made-in">Crafted with ❤️ in Kenya</p>
+        </div>
+        
+        <button class="back-to-top" aria-label="Back to top">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 14l5-5 5 5"/>
           </svg>
+          <span>Top</span>
         </button>
       </div>
     </div>
   </div>
 
   <style>
-    /* BBC-Inspired Footer Styles */
-    .site-footer {
-      background: #1A1A1A;
+    .modern-footer {
+      background: linear-gradient(135deg, #1A1A1A 0%, #2d2d2d 100%);
       color: #F5F5F5;
-      padding: 2rem 0;
       position: relative;
-      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
+      overflow: hidden;
+    }
+
+    .footer-top-accent {
+      height: 4px;
+      background: linear-gradient(90deg, #BB1919 0%, #FF4444 50%, #BB1919 100%);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { background-position: 200% 0; }
+      50% { background-position: -200% 0; }
     }
 
     .footer-container {
-      max-width: 1280px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 0 1rem;
+      padding: 3rem 2rem 2rem;
     }
 
-    .footer-main {
+    /* Header Section */
+    .footer-header {
       display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
+      grid-template-columns: 2fr 1fr;
+      gap: 4rem;
+      align-items: start;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .footer-brand {
       display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
+      gap: 1.5rem;
+      align-items: flex-start;
     }
 
     .footer-logo {
+      position: relative;
       display: flex;
       align-items: center;
+      text-decoration: none;
+      min-width: fit-content;
     }
 
     .logo-image {
-      height: 32px;
+      height: 48px;
       width: auto;
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
     }
 
-    .footer-description {
-      font-size: 0.875rem;
-      color: #A1A1A1;
-      line-height: 1.5;
+    .footer-logo:hover .logo-image {
+      transform: scale(1.05);
     }
 
-    .footer-links {
-      display: flex;
-      gap: 1.5rem;
+    .logo-highlight {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, rgba(187, 25, 25, 0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .footer-links-left,
-    .footer-links-right {
+    .footer-logo:hover .logo-highlight {
+      opacity: 1;
+    }
+
+    .brand-content {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
     }
 
-    .footer-links-right {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #F5F5F5 0%, #BB1919 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .footer-section {
+    .footer-tagline {
+      font-size: 1rem;
+      color: #A1A1A1;
+      line-height: 1.6;
+      max-width: 400px;
+    }
+
+    /* Newsletter Section */
+    .newsletter-signup {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 2rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .newsletter-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #F5F5F5;
+    }
+
+    .newsletter-desc {
+      color: #A1A1A1;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .newsletter-form {
       display: flex;
-      flex-direction: column;
       gap: 0.5rem;
     }
 
-    .section-title {
-      font-size: 0.9375rem;
-      font-weight: 700;
+    .email-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #F5F5F5;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .email-input:focus {
+      outline: none;
+      border-color: #BB1919;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .email-input::placeholder {
+      color: #A1A1A1;
+    }
+
+    .subscribe-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: #BB1919;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .subscribe-btn:hover {
+      background: #8B0000;
+      transform: translateY(-2px);
+    }
+
+    /* Navigation Grid */
+    .footer-nav-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .nav-column {
+      position: relative;
+    }
+
+    .nav-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-title {
+      font-size: 1.1rem;
+      font-weight: 600;
       color: #F5F5F5;
       margin-bottom: 0.5rem;
     }
 
-    .section-links {
+    .nav-accent {
+      width: 30px;
+      height: 2px;
+      background: #BB1919;
+      border-radius: 1px;
+    }
+
+    .nav-list {
       list-style: none;
       padding: 0;
       margin: 0;
     }
 
-    .footer-link {
+    .nav-item {
+      margin-bottom: 0.75rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       color: #A1A1A1;
-      font-size: 0.875rem;
       text-decoration: none;
-      transition: color 0.3s ease;
+      font-size: 0.95rem;
+      padding: 0.5rem 0;
+      transition: all 0.3s ease;
+      border-radius: 4px;
+      position: relative;
     }
 
-    .footer-link:hover {
+    .nav-link:hover {
       color: #BB1919;
+      padding-left: 0.75rem;
     }
 
-    .footer-link:focus {
+    .nav-link:hover .link-arrow {
+      opacity: 1;
+      transform: translateX(4px);
+    }
+
+    .link-arrow {
+      opacity: 0;
+      transition: all 0.3s ease;
+      stroke: #BB1919;
+    }
+
+    .nav-link:focus {
       outline: 2px solid #BB1919;
       outline-offset: 2px;
-      border-radius: 4px;
     }
 
-    .footer-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 1rem;
-      border-top: 1px solid #4A4A4A;
+    /* Bottom Section */
+    .footer-bottom-section {
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .footer-bottom-left {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    .social-section {
+      margin-bottom: 2rem;
     }
 
-    .copyright {
-      font-size: 0.75rem;
-      color: #A1A1A1;
+    .social-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #F5F5F5;
     }
 
-    .footer-social {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .social-label {
-      font-size: 0.75rem;
-      color: #A1A1A1;
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
     }
 
     .social-link {
-      color: #A1A1A1;
-      transition: color 0.3s ease;
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      text-decoration: none;
+      color: #F5F5F5;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .social-link::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.6s;
+    }
+
+    .social-link:hover::before {
+      left: 100%;
     }
 
     .social-link:hover {
-      color: var(--social-color);
+      transform: translateY(-3px);
+      border-color: var(--social-color);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .social-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .social-link:hover .social-icon-wrapper {
+      background: var(--social-color);
+      color: white;
     }
 
     .social-icon {
-      width: 20px;
-      height: 20px;
-      fill: currentColor;
+      width: 18px;
+      height: 18px;
+    }
+
+    .social-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    /* Footer Meta */
+    .footer-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .copyright-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .copyright {
+      color: #A1A1A1;
+      font-size: 0.9rem;
+    }
+
+    .made-in {
+      color: #666;
+      font-size: 0.8rem;
     }
 
     .back-to-top {
       display: flex;
-    }
-
-    .back-to-top-button {
-      background: #BB1919;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      color: #F5F5F5;
+      font-size: 0.9rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.3s ease;
+      transition: all 0.3s ease;
     }
 
-    .back-to-top-button:hover {
-      background: #8B0000;
+    .back-to-top:hover {
+      background: #BB1919;
+      border-color: #BB1919;
+      transform: translateY(-2px);
     }
 
-    .back-to-top-button svg {
-      stroke: #FFFFFF;
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .footer-header {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .footer-nav-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+      }
+
+      .social-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     @media (max-width: 768px) {
-      .footer-main {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+      .footer-container {
+        padding: 2rem 1rem;
       }
 
-      .footer-links {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* Two columns: Legal on left, others on right */
-        gap: 1rem;
-      }
-
-      .footer-links-left {
-        grid-column: 1;
-      }
-
-      .footer-links-right {
-        grid-column: 2;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjust for smaller screens */
-      }
-
-      .footer-bottom {
+      .footer-brand {
         flex-direction: column;
-        align-items: flex-start;
         gap: 1rem;
+        text-align: center;
       }
 
-      .footer-social {
-        justify-content: flex-start;
+      .footer-nav-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .social-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .footer-meta {
+        flex-direction: column;
+        text-align: center;
       }
     }
 
     @media (max-width: 480px) {
-      .footer-links {
-        grid-template-columns: 1fr; /* Stack vertically on very small screens */
+      .brand-title {
+        font-size: 1.25rem;
       }
 
-      .footer-links-left,
-      .footer-links-right {
-        grid-column: auto;
+      .footer-tagline {
+        font-size: 0.9rem;
       }
 
-      .footer-links-right {
+      .newsletter-signup {
+        padding: 1.5rem;
+      }
+
+      .social-grid {
         grid-template-columns: 1fr;
-      }
-
-      .section-title {
-        font-size: 0.875rem;
-      }
-
-      .footer-link {
-        font-size: 0.8125rem;
       }
     }
 
+    /* Accessibility */
     @media (prefers-reduced-motion: reduce) {
-      .footer-link,
-      .social-link,
-      .back-to-top-button,
-      .footer-section {
-        transition: none;
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
       }
     }
   </style>
 
   <script is:inline>
-    // Footer Functionality
-    function initFooter() {
-      const backToTopButton = document.querySelector('.back-to-top-button');
+    function initModernFooter() {
+      // Back to top functionality
+      const backToTopBtn = document.querySelector('.back-to-top');
       
-      if (backToTopButton) {
-        function toggleBackToTop() {
-          const scrolled = window.scrollY > 300;
-          backToTopButton.style.opacity = scrolled ? '1' : '0.5';
-          backToTopButton.style.pointerEvents = scrolled ? 'auto' : 'auto';
-        }
-        
-        function scrollToTop() {
-          window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-          });
-        }
-        
-        backToTopButton.addEventListener('click', scrollToTop);
+      function toggleBackToTop() {
+        const scrolled = window.scrollY > 300;
+        backToTopBtn.style.opacity = scrolled ? '1' : '0.7';
+      }
+      
+      function scrollToTop() {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+      
+      if (backToTopBtn) {
+        backToTopBtn.addEventListener('click', scrollToTop);
         window.addEventListener('scroll', toggleBackToTop);
         toggleBackToTop();
       }
       
-      const socialLinks = document.querySelectorAll('.social-link');
-      socialLinks.forEach(link => {
-        link.addEventListener('click', function() {
-          const platform = this.getAttribute('aria-label');
-          console.log('Social link clicked:', platform);
-        });
-      });
+      // Newsletter form
+      const subscribeBtn = document.querySelector('.subscribe-btn');
+      const emailInput = document.querySelector('.email-input');
       
+      if (subscribeBtn && emailInput) {
+        subscribeBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const email = emailInput.value.trim();
+          
+          if (email && email.includes('@')) {
+            // Success animation
+            this.style.background = '#28a745';
+            this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            
+            setTimeout(() => {
+              this.style.background = '#BB1919';
+              this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>';
+              emailInput.value = '';
+            }, 2000);
+          } else {
+            emailInput.style.borderColor = '#dc3545';
+            setTimeout(() => {
+              emailInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }, 2000);
+          }
+        });
+      }
+      
+      // Intersection Observer for animations
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -421,19 +669,30 @@ const footerLinks = [
         });
       }, observerOptions);
       
-      const footerSections = document.querySelectorAll('.footer-section');
-      footerSections.forEach(section => {
-        section.style.opacity = '0';
-        section.style.transform = 'translateY(20px)';
-        section.style.transition = 'all 0.6s ease';
-        observer.observe(section);
+      // Animate elements on scroll
+      const animatedElements = document.querySelectorAll('.nav-column, .social-link');
+      animatedElements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(30px)';
+        element.style.transition = `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.1}s`;
+        observer.observe(element);
+      });
+      
+      // Social link tracking
+      const socialLinks = document.querySelectorAll('.social-link');
+      socialLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          const platform = this.getAttribute('aria-label');
+          console.log('Social link clicked:', platform);
+        });
       });
     }
     
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initFooter);
+      document.addEventListener('DOMContentLoaded', initModernFooter);
     } else {
-      initFooter();
+      initModernFooter();
     }
   </script>
 </footer>
