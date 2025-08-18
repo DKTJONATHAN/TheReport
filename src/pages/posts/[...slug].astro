@@ -60,6 +60,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   <meta name="twitter:site" content="@maestropuns" />
   <meta name="twitter:creator" content="@maestropuns" />
 
+  <!-- AdSense Script -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
+       crossorigin="anonymous"></script>
+
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -81,7 +85,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   })} />
 
   <div class="page-container">
-
     <!-- Breadcrumb -->
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a>
@@ -107,13 +110,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
             </time>
             <span class="reading-time">{readingTime} min read</span>
           </div>
-
           <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
-          
           {post.data.description && (
             <p class="article-lead" itemprop="description">{post.data.description}</p>
           )}
-
           <div class="author-byline" itemprop="author" itemscope itemtype="https://schema.org/Person">
             <span class="author-label">By</span>
             <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong>
@@ -147,7 +147,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
               <span class="tag">#{tag}</span>
             ))}
           </div>
-
           <div class="article-actions">
             <a 
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`}
@@ -215,23 +214,9 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       )}
     </main>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (No Ads) -->
     <aside class="sidebar">
-      <!-- Advertisement -->
-      <section class="ad-section">
-        <div class="ad-container">
-          <script type="text/javascript">
-            atOptions = {
-              'key': '1610960d9ced232cc76d8f5510ee4608',
-              'format': 'iframe',
-              'height': 250,
-              'width': 300,
-              'params': {}
-            };
-          </script>
-          <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-        </div>
-      </section>
+      <!-- Placeholder for potential future content -->
     </aside>
   </div>
 
@@ -243,20 +228,37 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     gtag('js', new Date());
     gtag('config', 'G-W3FVP4FRPT');
   </script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
-     crossorigin="anonymous"></script>
-<!-- JonathanMwaniki -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-9291176772735390"
-     data-ad-slot="9950112753"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+
+  <!-- Dynamic Ad Placement After Every 3 Paragraphs -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('cookieConsent') !== 'accepted') return;
+      const paragraphs = document.querySelectorAll('.article-body p');
+      if (paragraphs.length < 4) return; // Need at least 4 paragraphs for 1 ad
+      paragraphs.forEach((p, index) => {
+        if ((index + 1) % 3 === 0 && index + 1 < paragraphs.length) {
+          const adContainer = document.createElement('div');
+          adContainer.className = 'ad-container consented';
+          adContainer.setAttribute('aria-hidden', 'true');
+          adContainer.innerHTML = `
+            <span class="ad-label">Advertisement</span>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-format="fluid"
+                 data-ad-layout-key="-ft+62+3a-cx+as"
+                 data-ad-client="ca-pub-9291176772735390"
+                 data-ad-slot="1358657931"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+          `;
+          p.after(adContainer);
+        }
+      });
+    });
+  </script>
+
   <style>
-    /* CSS Variables - Match Header Colors */
     :root {
       --bg-color: #ffffff;
       --text-color: #141414;
@@ -297,7 +299,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       }
     }
 
-    /* Reset & Base Styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -305,8 +306,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     body {
-      margin: 0;
-      padding: 0;
       font-family: var(--font-sans);
       line-height: 1.6;
       color: var(--text-color);
@@ -333,7 +332,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       outline-offset: 2px;
     }
 
-    /* Layout - Fully Responsive */
     .page-container {
       min-height: 100vh;
       display: grid;
@@ -347,11 +345,8 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       margin: 0 auto;
       gap: clamp(1rem, 3vw, 2rem);
       padding: 0 clamp(0.5rem, 2vw, 1rem);
-      box-sizing: border-box;
-      overflow-x: hidden;
     }
 
-    /* Ensure all containers respect viewport */
     .main-content,
     .sidebar,
     .article,
@@ -363,18 +358,15 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       box-sizing: border-box;
     }
 
-    /* Breadcrumb */
     .breadcrumb {
       grid-area: breadcrumb;
       font-size: 0.875rem;
       color: var(--subtext-color);
       padding: 1rem 0;
-      font-family: var(--font-sans);
     }
 
     .breadcrumb a {
       color: var(--accent-color);
-      text-decoration: none;
     }
 
     .breadcrumb a:hover {
@@ -391,12 +383,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 500;
     }
 
-    /* Main Content */
     .main-content {
       grid-area: main;
     }
 
-    /* Article */
     .article {
       background: var(--bg-color);
       border-radius: 8px;
@@ -424,9 +414,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-size: clamp(0.65rem, 1.5vw, 0.75rem);
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-family: var(--font-sans);
-      white-space: nowrap;
     }
 
     .category-badge:hover {
@@ -437,8 +424,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     .reading-time {
       color: var(--subtext-color);
       font-size: clamp(0.75rem, 2vw, 0.875rem);
-      font-family: var(--font-sans);
-      white-space: nowrap;
     }
 
     .article-title {
@@ -447,7 +432,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 700;
       line-height: 1.2;
       margin: 1rem 0;
-      color: var(--text-color);
     }
 
     .article-lead {
@@ -466,7 +450,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       margin-right: 0.25rem;
     }
 
-    /* Featured Image - Fully Responsive */
     .featured-image {
       margin: clamp(1rem, 4vw, 2rem) 0;
       border-radius: clamp(4px, 1vw, 8px);
@@ -475,33 +458,25 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       width: 100%;
       aspect-ratio: 16/9;
       background: var(--bg-light);
-      max-width: 100%;
     }
 
     .featured-image-img {
       width: 100%;
-      max-width: 100%;
       height: auto;
       object-fit: cover;
       display: block;
     }
 
-    /* Article Body - Responsive */
     .article-body {
       padding: clamp(1rem, 4vw, 2rem) 0;
       font-size: clamp(1rem, 2.5vw, 1.125rem);
       line-height: 1.7;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
     }
 
     .article-body h2,
     .article-body h3 {
       font-family: var(--font-serif);
       margin: clamp(1.5rem, 4vw, 2rem) 0 clamp(0.75rem, 2vw, 1rem);
-      color: var(--text-color);
-      word-wrap: break-word;
     }
 
     .article-body h2 {
@@ -527,7 +502,34 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       border-bottom-color: var(--accent-color);
     }
 
-    /* Article Footer */
+    .ad-container {
+      display: none;
+      width: auto;
+      height: auto;
+      padding: 0;
+      margin: 0;
+      max-width: 728px;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .ad-container.consented {
+      display: block;
+    }
+
+    .ad-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--subtext-color);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-sans);
+    }
+
+    .ad-container .adsbygoogle {
+      max-width: 100%;
+    }
+
     .article-footer {
       padding: 2rem 0;
       border-top: 1px solid var(--border-color);
@@ -559,16 +561,12 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       padding: 0.75rem 1.5rem;
       border-radius: 4px;
       font-weight: 500;
-      text-decoration: none;
-      transition: var(--transition);
     }
 
     .share-btn:hover {
       background: var(--secondary-color);
-      color: white;
     }
 
-    /* Author Bio */
     .author-bio {
       background: var(--bg-light);
       border-radius: 8px;
@@ -579,7 +577,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     .author-bio h2 {
       font-size: 1.25rem;
       margin-bottom: 1rem;
-      color: var(--text-color);
     }
 
     .bio-content {
@@ -597,7 +594,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     .bio-text h3 {
       margin-bottom: 0.5rem;
-      color: var(--text-color);
     }
 
     .bio-text p {
@@ -610,7 +606,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 500;
     }
 
-    /* Related Articles */
     .related-articles {
       margin: 2rem 0;
     }
@@ -618,16 +613,12 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     .related-articles h2 {
       font-size: 1.5rem;
       margin-bottom: 1.5rem;
-      color: var(--text-color);
     }
 
-    /* Related Articles - Fully Responsive */
     .articles-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
       gap: clamp(0.75rem, 2vw, 1rem);
-      width: 100%;
-      max-width: 100%;
     }
 
     .related-card {
@@ -635,10 +626,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       border: 1px solid var(--border-color);
       border-radius: clamp(4px, 1vw, 8px);
       overflow: hidden;
-      transition: var(--transition);
       box-shadow: var(--shadow);
-      width: 100%;
-      max-width: 100%;
     }
 
     .related-card:hover {
@@ -651,17 +639,13 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       flex-direction: column;
       height: 100%;
       color: inherit;
-      text-decoration: none;
-      width: 100%;
     }
 
     .card-image {
       width: 100%;
-      max-width: 100%;
       height: clamp(120px, 20vw, 160px);
       object-fit: cover;
       background: var(--bg-light);
-      flex-shrink: 0;
     }
 
     .card-content {
@@ -670,8 +654,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      width: 100%;
-      box-sizing: border-box;
     }
 
     .card-category {
@@ -689,7 +671,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-weight: 600;
       line-height: 1.3;
       margin: 0.75rem 0 0.5rem;
-      color: var(--text-color);
     }
 
     .card-date {
@@ -697,79 +678,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-size: 0.75rem;
     }
 
-    /* Sidebar */
     .sidebar {
       grid-area: sidebar;
     }
 
-    .ad-section {
-      background: var(--bg-light);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .ad-container {
-      text-align: center;
-      min-height: 250px;
-      background: #f5f5f5;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      max-width: 100%;
-    }
-
-    /* Footer */
-    .site-footer {
-      grid-area: footer;
-      background: var(--bg-light);
-      border-top: 1px solid var(--border-color);
-      margin-top: 3rem;
-    }
-
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 2rem;
-      padding: 2rem 0;
-    }
-
-    .footer-section h4 {
-      margin-bottom: 1rem;
-      color: var(--text-color);
-    }
-
-    .footer-section p {
-      color: var(--text-light);
-      font-size: 0.875rem;
-    }
-
-    .footer-section ul {
-      list-style: none;
-    }
-
-    .footer-section ul li {
-      margin-bottom: 0.5rem;
-    }
-
-    .footer-section ul a {
-      color: var(--text-light);
-      font-size: 0.875rem;
-    }
-
-    .social-links {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .social-links a {
-      color: var(--text-light);
-      font-size: 0.875rem;
-    }
-
-    /* Responsive Design - Screen-Based Adaptation */
     @media (max-width: 75rem) {
       .page-container {
         grid-template-areas: 
@@ -787,6 +699,10 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
       .articles-grid {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      }
+
+      .ad-container {
+        max-width: 468px;
       }
     }
 
@@ -825,8 +741,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       .share-btn {
         width: 100%;
         text-align: center;
-        box-sizing: border-box;
         padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
+      }
+
+      .ad-container {
+        max-width: 320px;
       }
     }
 
@@ -836,21 +755,17 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
         gap: clamp(0.75rem, 2vw, 1rem);
       }
 
-      .related-card {
-        min-height: auto;
-      }
-
       .card-image {
         height: clamp(100px, 18vw, 120px);
       }
     }
 
-    /* Print Styles */
     @media print {
       .breadcrumb,
       .sidebar,
       .article-actions,
-      .related-articles {
+      .related-articles,
+      .ad-container {
         display: none;
       }
 
@@ -865,7 +780,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       }
     }
 
-    /* Performance Optimizations */
     .featured-image,
     .card-image,
     .author-avatar img {
@@ -873,7 +787,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       contain-intrinsic-size: 1px 200px;
     }
 
-    /* Prevent font loading shifts */
     @font-face {
       font-family: 'ReithSans';
       font-display: swap;
@@ -884,17 +797,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       font-display: swap;
     }
 
-    /* Accessibility */
     @media (prefers-reduced-motion: reduce) {
       * {
         transition: none !important;
         animation: none !important;
       }
-    }
-
-    :focus {
-      outline: 2px solid var(--accent-color);
-      outline-offset: 2px;
     }
 
     .sr-only {
