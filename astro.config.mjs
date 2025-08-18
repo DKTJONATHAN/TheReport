@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/static';
 
 export default defineConfig({
-  site: 'https://www.jonathanmwaniki.co.ke',
+  site: 'https://jonathanmwaniki.co.ke',
   output: 'static',
   adapter: vercel(),
   integrations: [
@@ -17,7 +17,7 @@ export default defineConfig({
                page.endsWith('/contact/') ||
                page.endsWith('/privacy/') ||
                page.endsWith('/terms/') ||
-               page === 'https://www.jonathanmwaniki.co.ke/';
+               page === 'https://jonathanmwaniki.co.ke/';
       }
     })
   ]
