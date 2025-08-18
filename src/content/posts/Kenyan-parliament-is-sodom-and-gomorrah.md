@@ -13,7 +13,7 @@ draft: false
 ---
 
 <figure class="featured-image">
-  <img src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1200&q=80" alt="Kenya Parliament buildings at dusk with dramatic sky" loading="lazy" width="1200" height="675" />
+  <img src="https://i.postimg.cc/HstVNLYB/images-10.jpg" alt="Kenya Parliament buildings at dusk with dramatic sky" loading="lazy" width="1200" height="675" />
   <figcaption>Nairobi Parliament building, where secrets simmer beneath the façade of lawmaking.</figcaption>
 </figure>
 
@@ -37,7 +37,7 @@ Aoko's confession wasn't just gossip, it was bomb-level. She laid out explicit d
 Not to be outdone, former Nairobi Governor Mike Sonko confessed, on live TV, about smoking marijuana in the very same toilets at Parliament buildings. Sonko, never one for subtlety, bragged that weed was "hidden in socks" for turbo-smoking breaks, right where MPs make the country's laws. Suddenly, Parliament's official motto seemed to be: "Pass the joint, then pass the bill."
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80" alt="Mike Sonko infamous drug confession Kenyan parliament" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/JnyXVC6t/images-12.jpg" alt="Mike Sonko infamous drug confession Kenyan parliament" loading="lazy" width="800" height="450" />
   <figcaption>Mike Sonko: From lawmaker to lawbreaker, his wild confessions dazed the nation</figcaption>
 </figure>
 
@@ -48,6 +48,11 @@ Sex isn't the only thing traded in Parliament's infamous loos. According to Hon.
 ## Sex, Drugs & Money: The Unholy Trifecta
 
 But the Parliament sex scandals go far deeper. From claims of "sex for work" and sexual harassment in government circles, to MPs embroiled in affairs, wild parties, and alleged rape charges, the institution's record reads like a Netflix binge special. Maverick Aoko's story was only the latest: previous years have seen politicians dragged into rape accusations, extramarital affairs, and abuse scandals that turn the august house into a tabloid punchline.
+
+<figure class="content-image">
+  <img src="https://i.postimg.cc/RFnWpQhH/images-11.jpg" alt="Mike Sonko infamous drug confession Kenyan parliament" loading="lazy" width="800" height="450" />
+  <figcaption>Aoko has claimed to have had sex with members of parliament in the Parliament's toilets</figcaption>
+</figure>
 
 Even bribe-taking is now normalized. Gatundu South MP Moses Kuria admitted on BBC being handed a $1,000 bribe in Parliament, with hundreds of fellow lawmakers soliciting payoffs for favorable votes. No wonder the Afrobarometer poll ranked nearly half of MPs as corrupt, a statistic rivaled only by allegations against the police.
 
@@ -60,7 +65,7 @@ An all-star cast of government institutions completes the picture: the Ministry 
 It's no surprise that most Kenyans now joke the only thing missing from Parliament is a neon "Sodom & Gomorrah" sign. From the memes to the headlines, Parliament's reputation has become a running punchline: "If you want to hide your sins, run for office!" joked one commenter.
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80" alt="Kenya Parliament corruption scandals exposing lawmakers" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/HstVNLYB/images-10.jpg" alt="Kenya Parliament corruption scandals exposing lawmakers" loading="lazy" width="800" height="450" />
   <figcaption>Kenyan Parliament: Where lawmaking is rumor and every day is another exposé</figcaption>
 </figure>
 
