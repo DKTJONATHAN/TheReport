@@ -93,7 +93,7 @@ I had the privilege of spending an afternoon with Andrew, diving deep into quest
 
 *"Oh my God, where do I start? People think we have supernatural hearing, like we're Daredevil or something. Yes, I hear well, but I can't hear your thoughts, Karen! Or they'll ask if I can see their hand waving in front of my face, like, bro, if I could see your hand, we wouldn't be having this conversation! Some people think we can't use phones, computers, or live independently. I have friends who are shocked that I cook, clean, have relationships, and hold down a job. The best one is when people think all blind people automatically know each other. 'Oh, you're blind? Do you know my cousin's friend who's also blind?' Like we all hang out at some secret blind person club!"*
 
-*"And don't get me started on people who pet my guide dog without asking or who grab my arm to 'help' me cross streets I cross every day. The road to hell is paved with good intentions, but sometimes I just want to buy groceries without someone treating me like I'm made of glass."*
+*"And don't get me started on people who pet my white stick without asking or who grab my arm to 'help' me cross streets I cross every day. The road to hell is paved with good intentions, but sometimes I just want to buy groceries without someone treating me like I'm made of glass."*
 
 **Jonathan:** What would you want sighted people to understand about your experience?
 
