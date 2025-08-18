@@ -3,7 +3,7 @@ title: "Kenyan Parliament Unmasked: Sex, Drugs, Money, and the Scandalous Sins I
 description: "Explosive exposé reveals mind-boggling sex, drug, and corruption scandals that have turned Kenyan government institutions into a den of infamy."
 date: "2025,08,18"
 author: "Investigative Scandal Team"
-image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1200&q=80"
+image: "https://i.postimg.cc/Sxt5DyCP/20250818-151126.jpg"
 imageCaption: "Nairobi Parliament building, where secrets simmer beneath the façade of lawmaking."
 imageAlt: "Kenya Parliament buildings at dusk with dramatic sky"
 category: "Governance & Scandals"
@@ -24,7 +24,7 @@ draft: false
 Forget what you heard about quiet lawmaking sessions and sober debates. Step inside Kenya's Parliament and you'll realize it's the nation's most scandalous stage, a place where sins of lust, drugs, bribery, and wild moral decay play out with mind-blowing regularity.
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" alt="Kenyan politicians in dramatic meme moments" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/Sxt5DyCP/20250818-151126.jpg" alt="Kenyan politicians in dramatic meme moments" loading="lazy" width="800" height="450" />
   <figcaption>How MPs break headlines: not with bills, but with bedroom stories and viral memes</figcaption>
 </figure>
 
