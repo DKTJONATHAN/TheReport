@@ -3,7 +3,7 @@ title: "Through Andrew's Eyes: A Mind-Blowing Interview with a Man Who Sees the 
 description: "Join Jonathan Mwaniki in this fascinating, hilarious, and deeply insightful interview with Andrew, exploring how a blind man experiences dreams, imagination, and the mysteries of a visual world he's never seen."
 date: "2025,08,18"
 author: "Jonathan Mwaniki"
-image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80"
+image: "https://i.postimg.cc/wjPLcQ00/grok-image-srizzx-1.jpg"
 imageCaption: "Andrew shares his incredible perspective on experiencing life without sight"
 imageAlt: "Thoughtful blind African man in interview setting"
 category: "Human Interest"
@@ -110,7 +110,7 @@ I had the privilege of spending an afternoon with Andrew, diving deep into quest
 *"And remember, perspective is everything. You see the world in colors and shapes; I experience it in sounds and textures. Neither is wrong, neither is better. They're just different ways of being human. Maybe if more people understood that, we'd all be a little more accepting of different ways of experiencing life."*
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1551731409-43eb3e517a1a?auto=format&fit=crop&w=800&q=80" alt="Close up of hands reading braille text" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/wjPLcQ00/grok-image-srizzx-1.jpg" alt="Close up of hands reading braille text" loading="lazy" width="800" height="450" />
   <figcaption>Every dot tells a story, Andrew's fingers dance across braille like a pianist reading sheet music</figcaption>
 </figure>
 
