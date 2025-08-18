@@ -22,7 +22,7 @@ const relatedPosts = allPosts
   .slice(0, 4);
 
 // Clean URLs and metadata
-const siteUrl = 'https://www.jonathanmwaniki.co.ke';
+const siteUrl = 'https://jonathanmwaniki.co.ke';
 const postUrl = `${siteUrl}/posts/${post.slug}`;
 const categoryUrl = `${siteUrl}/category/${(post.data.category || 'news').toLowerCase().replace(/\s+/g, '-')}`;
 const imageUrl = post.data.image?.startsWith('http') 
