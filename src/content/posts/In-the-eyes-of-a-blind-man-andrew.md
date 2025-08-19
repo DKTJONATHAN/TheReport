@@ -18,7 +18,7 @@ Picture this: You're sitting across from someone who has never seen a sunset, ne
 I had the privilege of spending an afternoon with Andrew, diving deep into questions I'd always wondered about but never dared ask. What emerged was a conversation so enlightening, so funny, and so profoundly moving that I knew I had to share it with you. Buckle up, you're about to see the world through completely different eyes.
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80" alt="Blind African man reading braille book in comfortable setting" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/rw2SvZ24/images-13.jpg" alt="Blind African man reading braille book in comfortable setting" loading="lazy" width="800" height="450" />
   <figcaption>Andrew reading his favorite braille novel, his gateway to countless imaginary worlds</figcaption>
 </figure>
 
@@ -37,7 +37,7 @@ I had the privilege of spending an afternoon with Andrew, diving deep into quest
 *"Oh, that's easier! Circles are friendly, they flow, no harsh edges, like running your hand around a ball. They feel infinite, peaceful. Squares are different, organized, structured, reliable. They have corners that my fingers can find and follow. Triangles are sharp, pointed, sometimes dangerous. I build entire mental maps using shapes, and every shape has its personality."*
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1551731409-43eb3e517a1a?auto=format&fit=crop&w=800&q=80" alt="Blind African man listening to music with headphones" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/rw2SvZ24/images-13.jpg" alt="Blind African man listening to music with headphones" loading="lazy" width="800" height="450" />
   <figcaption>Andrew's headphones are his cinema, where every song creates vivid mental movies</figcaption>
 </figure>
 
@@ -62,7 +62,7 @@ I had the privilege of spending an afternoon with Andrew, diving deep into quest
 *"Shadows! I understand shadows conceptually, areas where light doesn't hit, but actually seeing them? That would trip me out. How can darkness have a shape? And mirrors, man! Seeing my own reflection would be insane. I know what I feel like, but seeing how I look to others? That's mind-bending. Oh, and tears! I know I cry, I feel the wetness, but actually seeing tears roll down someone's face? That visual representation of emotion would probably make me emotional all over again."*
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?auto=format&fit=crop&w=800&q=80" alt="Blind African man using smartphone with voice technology" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/rw2SvZ24/images-13.jpg" alt="Blind African man using smartphone with voice technology" loading="lazy" width="800" height="450" />
   <figcaption>Technology is Andrew's superpower, his smartphone opens worlds through voice and sound</figcaption>
 </figure>
 
@@ -83,7 +83,7 @@ I had the privilege of spending an afternoon with Andrew, diving deep into quest
 *"Plus, I navigate the world through touch, sound, and intuition in ways that seem magical to sighted people. I can tell what mood someone is in by their footsteps. I can navigate my apartment in complete darkness better than you could with lights on. I hear conversations happening three tables away in restaurants. My other senses are supercharged. So maybe we're both missing different things, but experiencing different superpowers too."*
 
 <figure class="content-image">
-  <img src="https://images.unsplash.com/photo-1524863479829-916d8e77f114?auto=format&fit=crop&w=800&q=80" alt="Blind African man walking confidently with white cane" loading="lazy" width="800" height="450" />
+  <img src="https://i.postimg.cc/rsx1Gv9d/images-14.jpg" alt="Blind African man walking confidently with white cane" loading="lazy" width="800" height="450" />
   <figcaption>Andrew's white cane isn't just a tool, it's an extension of his senses, mapping the world step by step</figcaption>
 </figure>
 
