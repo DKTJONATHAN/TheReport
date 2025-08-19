@@ -3,7 +3,7 @@ title: "Raila vs. Scarface: The Rise and Fall of Two Legendary Kings—Will Keny
 description: "A masterful comparison between Scarface, the legendary Maasai Mara lion, and Raila Odinga's political journey—both fearless kings who dominated their territories for decades, but whose legacies now hang in the balance."
 date: 2025,08,19
 author: "Jonathan Mwaniki"
-image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80"
+image: "https://i.postimg.cc/ZnhJDxkT/20250819-215638.jpg"
 imageCaption: "Two legends, one destiny: Raila Odinga and Scarface the lion—kings of their respective territories"
 imageAlt: "Split image showing Raila Odinga and Scarface the legendary lion"
 category: "Opinion"
@@ -20,7 +20,7 @@ But here's where their stories diverge into a tale of destiny: Scarface died lik
 
 <figure class="content-image">
   <img 
-    src="https://images.unsplash.com/photo-1565802218991-4a3848cdeaae?auto=format&fit=crop&w=800&q=80" 
+    src="https://i.postimg.cc/8kyy4PLY/p0cmzbq8.jpg" 
     alt="Raila Odinga Kenya political leader portrait"
     loading="lazy"
     width="800"
@@ -51,7 +51,7 @@ But here's where the satire becomes delicious: while Scarface maintained his dig
 
 <figure class="content-image">
   <img 
-    src="https://images.unsplash.com/photo-1566315191207-6c4b3d4b0e6c?auto=format&fit=crop&w=800&q=80" 
+    src="https://i.postimg.cc/FRCjyzwg/main-qimg-09d0d9ed0903e791a46ce8460732deab.jpg" 
     alt="Scarface lion Maasai Mara legendary scar eye"
     loading="lazy"
     width="800"
