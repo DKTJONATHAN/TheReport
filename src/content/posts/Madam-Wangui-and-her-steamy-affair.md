@@ -56,7 +56,29 @@ Jonathan's breath hitched in his throat as he felt a wave of desire wash over hi
 
 As they pulled up to her house, Jonathan could feel the tension in the air. He turned to face her, his eyes locked onto hers. "Madam Wangui," he said, his voice hoarse with desire, "I can't deny that I want you. But I'm here to drive you, nothing more."
 
-She smiled, a slow, seductive smile that sent a shiver down his spine. "Oh, Jonathan," she said, her voice laced with desire, "I think you're lying to yourself. I think you want to fuck me just as much as I want to fuck you."
+She smiled, a slow, seductive smile that sent a shiver down his spine. "Oh, Jonathan," she said, her voice laced with desire, "I think you're lying to yourself. I think you want to fuck me just as much as I want to fuck you."She repeated. 
+
+Jonathan could not take it anymore, he was about to get back to the car and drive away when madam stopped him and asked him to listen just for a second. "Jonathan, don't think this is my character, I respect myself so much just to sleep with anybody but my husband is tormenting me sexually. I know you'd not understand because you are not a woman but you need to know women have desires. My body has been burning with desire. I can't think straight anymore. As you go home, just think about me and other women being deprived of something as simple as sex. Have a good night. Come to work early tomorrow. I have a meeting." She lamented as she walked away....
+
+## The Following Morning
+
+The car's engine hummed a steady rhythm, a soothing lullaby to the bustling streets of Nairobi's Westlands. Jonathan, his hands steady on the wheel, felt the familiar tension of the city's traffic ease into a comforting rhythm. Madam Wangui, her back to him, was lost in thought, her fingers drumming on the armrest. Jonathan stole a glance at her reflection in the rearview mirror. Her eyes were distant, her expression pensive. He knew that look well; it was the same one she wore when she talked about her husband, Mr. Omondi.
+
+"Always busy," she murmured, her voice barely above a whisper. "Always working for the people, she'd say. Always putting me last."
+
+Jonathan's grip tightened on the wheel. He knew the story all too well. Madam Wangui's marriage was a dance of political ambition and personal neglect. He had heard the whispers, the rumors of Mr. Omondi's infidelities, of his late-night meetings with women who weren't his wife. And Madam Wangui, she was a woman scorned, a woman deprived.
+
+She turned to him, her eyes meeting his in the mirror. "It's been a long time, Jonathan," she said, her voice low and husky. "Too long."
+
+Jonathan felt a shiver run down his spine. He knew what she was asking, what she wanted. He had seen the way she looked at him, the hunger in her eyes. He had felt the heat of her gaze on his body, the way it made him hard, made him want her. He had been a man of principle, a man of honor. But Madam Wangui was a woman of power, a woman of influence. And she was asking for his help, his assistance in her quest for vengeance.
+
+He took a deep breath, his heart pounding in his chest. He knew what he was getting into, the risks involved. But he also knew that he couldn't turn her down. Not when she looked at him like that, not when he felt the heat of her desire, the need for release. He was a man of flesh and blood, a man of desire. And Madam Wangui, she was a woman of passion, a woman of fire.
+
+He pulled the car over to the side of the road, his hands shaking slightly. He turned to face her, his eyes meeting hers. "Madam," he said, his voice steady and sure. "I will do as you ask."
+
+She smiled, a slow, seductive smile. She leaned forward, her hand reaching out to touch his cheek. "I knew you would," she whispered. "I knew you would understand."
+
+And so, Jonathan found himself in the back seat of the car, his hands on Madam Wangui's body, his mouth on her skin. He felt her hands on his body, her fingers tracing the lines of his muscles, her touch setting his skin on fire. He felt her breath on his neck, her lips on his ear, her whispered words of desire and need.
 
 <div class="article,meta">
   <p><strong>Published:</strong> August 20, 2025</p>
