@@ -1,3 +1,17 @@
+---
+title: "CHAPTER 1: Madam Esther and The Observertory"
+description: "A literature Lecturer finds herself in a tight spot with her student. The encounter is both steamy and very erotic"
+date: 2025-08-21
+author: "Jonathan Mwaniki"
+image: "https://i.postimg.cc/W1fTTJdQ/images-15.jpg"
+imageCaption: "Billy Mwangi at a political rally in Embu"
+imageAlt: "pulling Out a panty"
+category: "Erotica"
+tags: ["Erotica", "Sex Stories", "Smut", "Story", "Fiction"]
+featured: false
+draft: false
+---
+
 The dimly lit Egerton University Library was a sanctuary of silence, a place where the scent of aged parchment and leather-bound books filled the air. Jonathan Mwaniki, a tall, lean figure with an intelligent gaze, was engrossed in a dusty tome on the history of literature. His fingers traced the yellowed pages, his mind absorbed in the tales of old. The clock on the wall ticked away the seconds, each one a reminder of the time slipping through his fingers.
 
 Suddenly, a shadow fell across his desk. He looked up to see Madam Eshter Kamau, his lecturer, her eyes gleaming with an intensity that sent a shiver down his spine. She was elegant, her sharp mind and even sharper tongue a legend among the students. 'Jonathan,' she said, her voice a low purr, 'I've been looking for you.' He swallowed hard, his heart pounding in his chest. 'Madam Kamau,' he managed to say, his voice barely above a whisper. 'What can I do for you?' She leaned in, her breath hot on his ear. 'I have a proposition for you, Jonathan. A secret, if you will. One that could change your life.'
