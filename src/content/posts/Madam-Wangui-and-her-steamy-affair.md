@@ -114,10 +114,6 @@ He moved faster, his body controlling hers, his cock sliding in and out of her. 
 
 And then she came, her body convulsing under his touch, her moans filling the car. He felt her wetness, her desire, her need. He knew he had to have her, that he had to make her his.
 
-He moved faster, his body controlling hers, his cock sliding in and out of her. He felt her body tense, her hips moving against his, her body begging for release. He knew she was close, that she was on the edge. He moved faster, his body controlling hers, his cock sliding in and out of her.
-
-And then he came, his body convulsing under her touch, his moans filling the car. He felt her wetness, her desire, her need. He knew he had to have her, that he had to make her his.
-
 He collapsed on top of her, his body spent, his mind racing. He knew he had crossed a line, that he had played a dangerous game. But he also knew that he wouldn't regret it, that he wouldn't change it for the world.
 
 He looked into her eyes, saw the desire, the need, the satisfaction. He knew she felt the same way, that she wouldn't regret it either. He knew they had crossed a line, that they had played a dangerous game. But he also knew that they wouldn't regret it, that they wouldn't change it for the world.
