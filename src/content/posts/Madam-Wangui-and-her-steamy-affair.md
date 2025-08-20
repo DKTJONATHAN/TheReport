@@ -36,6 +36,28 @@ As she approached, Jonathan noticed the way her heels clicked against the paveme
 
 He started the engine, the SUV coming to life with a soft growl. As he pulled out of the parking lot, he felt a strange sense of freedom. He was a man who had always lived by his own rules, but tonight, he was at the mercy of Madam Wangui. And he was about to discover that her world was a dangerous one, filled with deceit and betrayal. But for now, he was just a driver, a man behind the wheel, navigating the bustling streets of Nairobi. And he was about to drive her crazy.
 
+"Jonathan," she said, her voice a low purr, "I couldn't help but overhear some... interesting noises coming from Sofi's office earlier. It sounded rather... passionate."
+
+Jonathan's grip tightened on the steering wheel, but his expression remained calm. He had expected this, had prepared for it. "Madam Wangui," he began, his voice steady, "I'm afraid Sofi had a bit of an accident. She hurt her finger, and I was just helping her clean it up."
+
+Madam Wangui's lips curled into a knowing smile. "Is that so?" she said, her voice laced with skepticism. "It sounded like so much more than that. Like... like you were fucking her."
+
+Jonathan felt a jolt of surprise, but he kept his composure. "Madam, I assure you, that's not what happened."
+
+Madam Wangui chuckled, a low, sultry sound that sent a shiver down Jonathan's spine. "You know, Jonathan, I've always had a bit of a wild streak. I like a man who knows how to handle himself in the bedroom."
+
+Jonathan's heart pounded in his chest as he tried to keep his eyes on the road. He could feel Madam Wangui's gaze on him, could feel the heat radiating from her body. He knew he was playing with fire, but he couldn't help the way his body responded to her.
+
+"Madam Wangui," he said, his voice barely above a whisper, "I'm here to drive you, nothing more."
+
+She laughed, a sound that was both seductive and dangerous. "Oh, Jonathan," she said, her voice laced with desire, "I think you're lying to yourself. I think you want to fuck me just as much as I want to fuck you."
+
+Jonathan's breath hitched in his throat as he felt a wave of desire wash over him. He knew he should resist, should keep his distance. But Madam Wangui was a woman who knew what she wanted, and she wanted him. And he couldn't deny the way his body responded to her.
+
+As they pulled up to her house, Jonathan could feel the tension in the air. He turned to face her, his eyes locked onto hers. "Madam Wangui," he said, his voice hoarse with desire, "I can't deny that I want you. But I'm here to drive you, nothing more."
+
+She smiled, a slow, seductive smile that sent a shiver down his spine. "Oh, Jonathan," she said, her voice laced with desire, "I think you're lying to yourself. I think you want to fuck me just as much as I want to fuck you."
+
 <div class="article,meta">
   <p><strong>Published:</strong> August 20, 2025</p>
   <p><strong>Updated:</strong> August 20, 2025</p>
