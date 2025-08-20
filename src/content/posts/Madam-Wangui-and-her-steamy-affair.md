@@ -121,6 +121,29 @@ He looked into her eyes, saw the desire, the need, the satisfaction. He knew she
 He kissed her, his lips finding hers, his tongue exploring her mouth. He felt her hands on his body, her fingers tracing the lines of his muscles, her touch setting his skin on fire. He felt her breath on his neck, her lips on his ear, her whispered words of desire and need.
 
 
+The door to Madam Wangui's office creaked open, and Sofi Bobo stepped in, her heels clicking against the hardwood floor. She glanced up, her eyes widening as she took in the scene before her. Jonathan and Madam Wangui were locked in an embrace, their bodies pressed tightly against each other. Jonathan's hands were roaming over Madam Wangui's curves, his fingers tracing the contours of her body. Madam Wangui's dress was hiked up, exposing her thighs, and Jonathan's hands were dangerously close to the hem of her skirt.
+
+Sofi Bobo's mouth fell open, her eyes darting between Jonathan and Madam Wangui. She knew that she should look away, that she should give them privacy, but she couldn't tear her gaze away from the sight before her. She had heard the rumors, the whispers of their affair, but she had never seen it with her own eyes. Now, here it was, right in front of her, a dance of desire and power.
+
+Jonathan's eyes flew open, his heart pounding in his chest as he realized that they had been caught. He turned to Sofi Bobo, his face flushing with embarrassment. "Sofi," he started, but Madam Wangui cut him off.
+
+"Sofi, this is not what it looks like," she said, her voice steady despite the flush in her cheeks. She stepped away from Jonathan, her dress falling back into place. Jonathan took a step back, his hands falling to his sides.
+
+Sofi Bobo's eyes narrowed, her gaze flicking between Jonathan and Madam Wangui. "It looks like you're both caught in a compromising position," she said, her voice cold. "And it's not the first time, is it?"
+
+Jonathan opened his mouth to speak, but Madam Wangui held up a hand, stopping him. "Sofi, we need to talk about this," she said, her voice firm. "In private."
+
+Sofi Bobo hesitated for a moment before nodding. "Fine," she said, her voice still cold. "But I want to know the truth. All of it."
+
+Madam Wangui nodded, her eyes never leaving Sofi Bobo's face. "We'll talk later," she said. "Right now, we need to focus on the meeting."
+
+Sofi Bobo nodded again, her eyes flicking back to Jonathan before she turned and walked out of the office, leaving Jonathan and Madam Wangui alone. Jonathan let out a sigh of relief, his body relaxing as the tension left his shoulders. He looked at Madam Wangui, his eyes filled with concern.
+
+"Are you okay?" he asked, his voice soft.
+
+Madam Wangui nodded, her eyes meeting his. "We'll be fine," she said, her voice steady. "But we need to be careful. Sofi is not the only one who might be watching."
+
+
 <div class="article,meta">
   <p><strong>Published:</strong> August 20, 2025</p>
   <p><strong>Updated:</strong> August 20, 2025</p>
