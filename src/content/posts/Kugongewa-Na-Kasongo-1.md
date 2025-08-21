@@ -1,5 +1,5 @@
 ---
-title: "Kugongewa Na Kasongo"
+title: "Burning The Bridges"
 description: "Caught in a web of betrayal, the narrator witnesses his girlfriend with another man and must confront the painful truth of her lies and infidelity."
 date: 2025-08-20
 author: "Jonathan Mwaniki"
@@ -13,7 +13,7 @@ draft: false
 ---
 
 
-I never thought I’d become the kind of man who’d stand in a doorway, phone in hand, recording his girlfriend getting railed by some short, long-nosed weasel with the audacity to call himself a businessman. But there I was, my thumb hovering over the record button like it was the detonator to my own life, watching Kendi’s thick, dark thighs tremble as Kasongo, fucking Kasongo humped her like a rabbit on espresso. The sofa, that goddamn two-seater I’d helped her pick out at that overpriced furniture store in Westlands, groaned under their combined weight, the springs whining in protest like they, too, were betrayed.
+I never thought I’d become the kind of man who’d stand in a doorway, phone in hand, recording his girlfriend getting railed by some short, long-nosed weasel with the audacity to call himself a politician. But there I was, my thumb hovering over the record button like it was the detonator to my own life, watching Kendi’s thick, dark thighs tremble as Kasongo, fucking Kasongo humped her like a rabbit on espresso. The sofa, that goddamn two-seater I’d helped her pick out at that overpriced furniture store in Westlands, groaned under their combined weight, the springs whining in protest like they, too, were betrayed.
 
 Kendi’s tits those glorious, heavy things I’d worshipped like sacred offerings bounced with every thrust, her nipples hard little pebbles begging for attention. Kasongo, in all his glory, had one hand clamped over her hip like he was steering a shopping cart, the other groping her ass like he was kneading dough. His dick because of course I noticed was pathetically small, but his balls swung like pendulums in a clock tower, slapping against her with every shallow pump. How the hell was she even feeling that? I wondered, before realizing she was probably faking it. Classic Kendi. Always a performer.
 
@@ -71,7 +71,7 @@ She flinched.
 
 Silence.
 
-Then, like the petty, vindictive goddess she was, she smirked. “You’re jealous. That’s what this is. You’re mad because he could make me cum and you—”
+Then, like the petty, vindictive goddess she was, she smirked. “You’re jealous. That’s what this is. You’re mad because he could make me cum and you”
 
 “Oh, so now it’s about orgasms?” I laughed, shaking my head. “Kendi, baby, I made you cum so hard you forgot your own name. But sure, keep telling yourself it’s about the dick and not the money he’s been slipping you.”
 
