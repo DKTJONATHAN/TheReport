@@ -93,7 +93,7 @@ Somewhere behind me, I heard the faint sound of Kendi screaming probably at Kaso
 
 I grinned.
 
-For the first time in months, the future looked bright.
+For the first time in months, the future looked bright. READ CHAPTER 2 [https://jonathanmwaniki.co.ke/posts/kugongewa-na-kasongo-2](HERE)
 
 <div class="article,meta">
   <p><strong>Published:</strong> August 20, 2025</p>
