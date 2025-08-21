@@ -3,10 +3,10 @@ title: "Kugongewa Na Kasongo"
 description: "Caught in a web of betrayal, the narrator witnesses his girlfriend with another man and must confront the painful truth of her lies and infidelity."
 date: 2025-08-20
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/W1fTTJdQ/images-15.jpg"
-imageCaption: "Billy Mwangi at a political rally in Embu"
+image: "https://i.postimg.cc/K8L3QtYs/burning-bridges-r-SKvk9rnk51-Vf-P8.png"
+imageCaption: "A man walking in a sad face"
 imageAlt: "pulling Out a panty"
-category: "Erotica"
+category: "Story Time"
 tags: ["Erotica", "Sex Stories", "Smut", "Story", "Fiction"]
 featured: false
 draft: false
