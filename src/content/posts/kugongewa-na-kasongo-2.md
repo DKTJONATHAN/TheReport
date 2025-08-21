@@ -1,5 +1,5 @@
 ---
-title: "Burning The Bridges"
+title: "Burning The Bridges: Chapter 2"
 description: "After a brutal breakup, he finds solace in a stranger’s dangerous proposition. But when revenge and desire collide, will he find the justice he craves?"
 date: 2025-08-20
 author: "Jonathan Mwaniki"
