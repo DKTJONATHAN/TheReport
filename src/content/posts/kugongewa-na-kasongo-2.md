@@ -12,3 +12,12 @@ featured: false
 draft: false
 ---
 
+
+<div class="article,meta">
+  <p><strong>Published:</strong> August 20, 2025</p>
+  <p><strong>Updated:</strong> August 21, 2025</p>
+  <p><strong>Tags:</strong>Sex Stories, Smut, Story, Fiction</p>
+</div>
+
+</div>
+
