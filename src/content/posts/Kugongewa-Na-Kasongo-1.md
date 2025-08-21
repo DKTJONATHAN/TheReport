@@ -94,3 +94,11 @@ Somewhere behind me, I heard the faint sound of Kendi screaming probably at Kaso
 I grinned.
 
 For the first time in months, the future looked bright.
+
+<div class="article,meta">
+  <p><strong>Published:</strong> August 20, 2025</p>
+  <p><strong>Updated:</strong> August 21, 2025</p>
+  <p><strong>Tags:</strong>Sex Stories, Smut, Story, Fiction</p>
+</div>
+
+</div>
