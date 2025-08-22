@@ -3,7 +3,7 @@ title: "What Happens When You Drink Snake Venom: Scientific Facts and Real-Life 
 description: "An in-depth exploration of the effects of ingesting snake venom, backed by scientific explanations and documented real-world incidents."
 date: 2025,08,22
 author: "Jonathan Mwaniki"
-image: "https://example.com/snake-venom-drink.jpg"
+image: "https://i.postimg.cc/MpVxfV2V/hq720.jpg"
 imageCaption: "Illustration of snake venom in a glass, representing the risks and myths of ingestion."
 imageAlt: "Snake venom being poured into a container"
 category: "Science and Health"
