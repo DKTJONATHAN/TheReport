@@ -9,10 +9,12 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && npm run index-posts",
+    "build-only": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "index-posts": "node scripts/index-posts.js"
   },
   "dependencies": {
     "astro": "^4.16.18",
