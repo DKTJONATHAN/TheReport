@@ -3,7 +3,7 @@ title: "Kenya's Harambee Stars and Tanzania's Taifa Stars Knocked Out of CHAN 20
 description: "CHAN 2024 results: Kenya Harambee Stars and Tanzania Taifa Stars eliminated in quarterfinals. Dive into the matches, fan rivalries, and viral online banter between Kenyan and Tanzanian football enthusiasts."
 date: 2025,08,22
 author: "Jonathan Mwaniki"
-image: "https://example.com/chan-2024-knockout.jpg"
+image: "https://i.postimg.cc/j5Dm7nLy/bracket.jpg"
 imageCaption: "Fans reacting to the CHAN 2024 quarterfinal matches between Kenya, Tanzania, and their opponents."
 imageAlt: "Football fans from Kenya and Tanzania during CHAN 2024"
 category: "Sports"
