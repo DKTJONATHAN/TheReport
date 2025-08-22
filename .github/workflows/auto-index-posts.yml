@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Fetch last 2 commits for git diff
+          fetch-depth: 0  # Fetch full git history
           
       - name: Wait for deployment
         run: sleep 45  # Give time for site to deploy after push
