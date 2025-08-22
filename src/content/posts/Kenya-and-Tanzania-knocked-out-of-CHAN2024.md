@@ -56,5 +56,3 @@ Harambee Stars vs Madagascar
 Tanzania Taifa Stars vs Morocco
 Kenya Tanzania football rivalry
 Online banter CHAN 2024
-East African football banter
-Taifa Stars elimination CHAN
