@@ -1,7 +1,9 @@
+// astro.config.mjs
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/static';
+import indexJumpIntegration from './integrations/indexjump.js';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
@@ -19,6 +21,7 @@ export default defineConfig({
                page.endsWith('/terms/') ||
                page === 'https://jonathanmwaniki.co.ke/';
       }
-    })
+    }),
+    indexJumpIntegration()
   ]
 });
