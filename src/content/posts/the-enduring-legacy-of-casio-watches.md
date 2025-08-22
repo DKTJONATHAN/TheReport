@@ -2,11 +2,11 @@
 title: "The Enduring Legacy of Casio Watches: A History of Resilience"
 description: "Explore the origin of Casio watches, from Tadao Kashio’s vision to the creation of the iconic G-SHOCK, and discover why Casio remains a timeless symbol of durability and purpose."
 date: 2025,08,22
-author: "Tadao Kashio Legacy Team"
+author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/8C6VN22v/main-qimg-8da25921d64b94bdb9a9abd208f101bd.jpg"
 imageCaption: "A classic Casio G-SHOCK watch, symbolizing durability and innovation."
 imageAlt: "Casio G-SHOCK watch on a rugged background"
-category: "Watch History"
+category: "History"
 tags: ["Casio Watch History", "G-SHOCK", "Digital Watch Innovation"]
 featured: true
 draft: false
