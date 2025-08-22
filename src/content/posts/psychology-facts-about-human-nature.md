@@ -3,7 +3,7 @@ title: "9 Mind-Blowing Psychology Facts That Will Change How You See Human Natur
 description: "Discover shocking psychological truths about suicide, self-perception, childhood trauma, and social media addiction that reveal the hidden workings of the human mind"
 date: 2025,08,22
 author: "Jonathan Mwaniki"
-image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1200&q=80"
+image: "https://i.postimg.cc/WpCJxyMr/main-qimg-be007568c65fc20dc95074bef3b50cc4.jpg"
 imageCaption: "The human mind holds secrets that psychology is only beginning to unlock"
 imageAlt: "Human brain psychology mental health awareness concept"
 category: "Psychology & Mental Health"
