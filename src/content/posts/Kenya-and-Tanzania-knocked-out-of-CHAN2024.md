@@ -49,10 +49,3 @@ Broader sentiments: Some posts highlighted mutual respect amid rivalry, while ot
 This CHAN edition showcased East Africa's growing football prowess, with both teams achieving historic milestones. Yet, the banter underscores deeper national pride and regional competition. As one analyst noted, matches between Kenya and Tanzania are "more than football," carrying bragging rights. Despite the losses, the tournament boosted local football, with record crowds and renewed interest.
 
 As the dust settles, fans look forward to future clashes, perhaps in AFCON or friendlies, where the rivalry will undoubtedly continue.
-
-## SEO Keywords
-CHAN 2024 Kenya elimination
-Harambee Stars vs Madagascar
-Tanzania Taifa Stars vs Morocco
-Kenya Tanzania football rivalry
-Online banter CHAN 2024
