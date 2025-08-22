@@ -62,14 +62,3 @@ In a world of fleeting trends, Casio endures because it was never about fashion�
 As Tadao Kashio once said, *“Time is precious. It deserves a watch that respects it.”*
 
 Casio doesn’t shine—it endures.
-
-## SEO Keywords
-- Casio watch history
-- Origin of Casio
-- Tadao Kashio
-- G-SHOCK creation
-- Digital watch innovation
-- Purpose-driven watches
-- Reliable everyday watch
-
----
