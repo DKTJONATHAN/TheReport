@@ -3,7 +3,7 @@ title: "UK to Pay KSh 500 Million in Compensation for Devastating 2021 Fire Caus
 description: "The British government agrees to pay KSh 500 million to thousands of Kenyans affected by a 2021 wildfire sparked by UK troops during training in Laikipia’s Lolldaiga Conservancy. Explore the fire’s impact, the legal battle, community struggles, and ongoing debates about foreign military presence."
 date: 2025,08,24
 author: "Jonathan Mwaniki"
-image: "https://example.com/lolldaiga-fire-compensation.jpg"
+image: "https://i.postimg.cc/qMV8yhHz/images-2.jpg"
 imageCaption: "Residents of Laikipia gather to discuss the 2021 Lolldaiga Conservancy fire caused by British troops, which led to a historic compensation settlement."
 imageAlt: "Community meeting in Laikipia addressing the 2021 wildfire aftermath"
 category: "News"
