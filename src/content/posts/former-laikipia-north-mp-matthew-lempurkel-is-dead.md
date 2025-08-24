@@ -2,8 +2,8 @@
 title: "Former Laikipia North MP Mathew Lempurkel Passes Away at Kenyatta National Hospital"
 description: "Mathew Lempurkel death: Former Laikipia North MP dies after road accident. Explore his life, political career, controversies, and lasting impact on Kenya's Maa community."
 date: 2025,08,24
-author: "Grok News Report"
-image: "https://example.com/mathew-lempurkel-obituary.jpg"
+author: "Jonathan Mwaniki"
+image: "https://i.postimg.cc/7hjccgHw/IMG-20250824-114400.jpg"
 imageCaption: "Portrait of Mathew Lempurkel, former MP for Laikipia North, remembered for his advocacy and political journey."
 imageAlt: "Mathew Lempurkel in traditional attire during a community event"
 category: "News"
