@@ -35,7 +35,7 @@ try {
   console.log(`🚀 Found ${newPostFiles.length} new posts, submitting...`);
   
   for (const file of newPostFiles) {
-    const slug = path.basename(file, '.md');
+    const slug = path.basename(file, '.md').toLowerCase(); // Convert slug to lowercase
     const url = `${SITE_URL}/posts/${slug}`;
     
     try {
