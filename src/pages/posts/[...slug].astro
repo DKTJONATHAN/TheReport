@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
 
+// Static paths for pre-rendering
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
   return posts.map(post => ({
@@ -14,17 +15,18 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// Get related posts
+// Related posts by category except current post
 const allPosts = await getCollection('posts');
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 4);
 
-// Clean URLs and metadata
+// Site URLs & metadata
 const siteUrl = 'https://jonathanmwaniki.co.ke';
 const postUrl = `${siteUrl}/posts/${post.slug}`;
-const categoryUrl = `${siteUrl}/category/${(post.data.category || 'news').toLowerCase().replace(/\s+/g, '-')}`;
+const categorySlug = (post.data.category || 'news').toLowerCase().replace(/\s+/g, '-');
+const categoryUrl = `${siteUrl}/category/${categorySlug}`;
 const imageUrl = post.data.image?.startsWith('http') 
   ? post.data.image 
   : `${siteUrl}${post.data.image || '/default-image.jpg'}`;
@@ -38,7 +40,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
   <meta name="robots" content="index, follow" />
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
@@ -51,7 +53,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   <meta property="article:author" content={post.data.author || 'Jonathan Mwaniki'} />
   <meta property="article:section" content={post.data.category || 'News'} />
   {post.data.tags && <meta property="article:tag" content={post.data.tags.join(', ')} />}
-  
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
@@ -60,10 +62,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   <meta name="twitter:site" content="@maestropuns" />
   <meta name="twitter:creator" content="@maestropuns" />
 
-  <!-- AdSense Script -->
+  <!-- Google AdSense Script -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
        crossorigin="anonymous"></script>
 
+  <!-- Structured Data -->
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -81,20 +84,28 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       logo: { '@type': 'ImageObject', url: `${siteUrl}/logo.png` }
     },
     description: description,
-    mainEntityOfPage: postUrl
+    mainEntityOfPage: postUrl,
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: post.data.category || "News", item: categoryUrl },
+        { '@type': 'ListItem', position: 3, name: post.data.title, item: postUrl }
+      ]
+    }
   })} />
 
   <div class="page-container">
     <!-- Breadcrumb -->
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a>
-      <span class="separator">›</span>
+      <span class="separator" aria-hidden="true">›</span>
       <a href={categoryUrl}>{post.data.category || 'News'}</a>
-      <span class="separator">›</span>
-      <span class="current">{post.data.title}</span>
+      <span class="separator" aria-hidden="true">›</span>
+      <span class="current" aria-current="page">{post.data.title}</span>
     </nav>
 
-    <!-- Ad After Breadcrumbs -->
+    <!-- Advertisement after breadcrumb -->
     <div class="ad-container" id="ad-breadcrumb" aria-hidden="true">
       <span class="ad-label">Advertisement</span>
       <ins class="adsbygoogle"
@@ -108,17 +119,16 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       </script>
     </div>
 
-    <!-- Main Content -->
-    <main class="main-content">
+    <!-- Main article content -->
+    <main id="maincontent" role="main" tabindex="-1" class="main-content">
       <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
-        <!-- Article Header -->
         <header class="article-header">
           <div class="article-meta">
             <a href={categoryUrl} class="category-badge">{post.data.category || 'News'}</a>
             <time datetime={publishedDate} itemprop="datePublished" class="publish-date">
               {new Date(post.data.date).toLocaleDateString('en-US', {
                 year: 'numeric',
-                month: 'long', 
+                month: 'long',
                 day: 'numeric'
               })}
             </time>
@@ -134,7 +144,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
           </div>
         </header>
 
-        <!-- Ad After Header -->
+        <!-- Advertisement after header -->
         <div class="ad-container" id="ad-header" aria-hidden="true">
           <span class="ad-label">Advertisement</span>
           <ins class="adsbygoogle"
@@ -148,7 +158,6 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
           </script>
         </div>
 
-        <!-- Featured Image -->
         {post.data.image && (
           <figure class="featured-image">
             <img 
@@ -156,23 +165,22 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
               alt={post.data.imageAlt || post.data.title}
               itemprop="image"
               loading="eager"
+              decoding="async"
               class="featured-image-img"
             />
           </figure>
         )}
 
-        <!-- Article Body -->
         <div class="article-body" itemprop="articleBody">
           <Article>
             <Content />
           </Article>
         </div>
 
-        <!-- Article Footer -->
         <footer class="article-footer">
           <div class="tags" itemProp="keywords">
             {post.data.tags?.map(tag => (
-              <span class="tag">#{tag}</span>
+              <span class="tag" key={tag}>#{tag}</span>
             ))}
           </div>
           <div class="article-actions">
@@ -181,6 +189,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
               target="_blank" 
               rel="noopener"
               class="share-btn"
+              aria-label="Share on Twitter"
             >
               Share on Twitter
             </a>
@@ -189,6 +198,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
               target="_blank" 
               rel="noopener"
               class="share-btn"
+              aria-label="Share on Facebook"
             >
               Share on Facebook
             </a>
@@ -196,7 +206,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
         </footer>
       </article>
 
-      <!-- Ad After Article -->
+      <!-- Advertisement after article -->
       <div class="ad-container" id="ad-article" aria-hidden="true">
         <span class="ad-label">Advertisement</span>
         <ins class="adsbygoogle"
@@ -220,25 +230,26 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
           <div class="bio-text">
             <h3>{post.data.author || 'Jonathan Mwaniki'}</h3>
             <p>Experienced journalist covering Kenya news, politics, and current affairs. Committed to delivering accurate and timely information to readers.</p>
-            <a href="/author" class="author-link">View all articles →</a>
+            <a href="/author" class="author-link" aria-label="View all articles by author">View all articles →</a>
           </div>
         </div>
       </section>
 
       <!-- Related Articles -->
       {relatedPosts.length > 0 && (
-        <section class="related-articles">
+        <section class="related-articles" aria-label="Related Articles">
           <h2>Related Articles</h2>
           <div class="articles-grid">
             {relatedPosts.map(related => (
-              <article class="related-card">
+              <article class="related-card" key={related.slug}>
                 <a href={`/posts/${related.slug}`} class="card-link">
                   {related.data.image && (
                     <img 
                       src={related.data.image} 
-                      alt={related.data.title}
+                      alt={related.data.imageAlt || related.data.title}
                       class="card-image"
                       loading="lazy"
+                      decoding="async"
                     />
                   )}
                   <div class="card-content">
@@ -256,13 +267,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       )}
     </main>
 
-    <!-- Sidebar (No Ads) -->
-    <aside class="sidebar">
-      <!-- Placeholder for potential future content -->
-    </aside>
+    <!-- Sidebar (reserved for future or ads) -->
+    <aside class="sidebar" aria-label="Sidebar content"></aside>
   </div>
 
-  <!-- Minimal Analytics -->
+  <!-- Google Analytics minimalist -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -271,7 +280,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     gtag('config', 'G-W3FVP4FRPT');
   </script>
 
-  <!-- Cookie Consent Logic for Ads -->
+  <!-- Cookie Consent For Ads -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', () => {
       if (localStorage.getItem('cookieConsent') === 'accepted') {
@@ -330,15 +339,11 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     }
 
     body {
-      font-family: var(--font-sans);
-      line-height: 1.6;
+      font-family: var(--font-serif);
+      line-height: 1.75;
+      font-size: 1.125rem;
       color: var(--text-color);
       background: var(--bg-color);
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
     }
 
     a {
@@ -347,230 +352,155 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       transition: var(--transition);
     }
 
-    a:hover {
+    a:hover,
+    a:focus {
       color: var(--accent-hover);
+      text-decoration: underline;
+      outline: none;
     }
 
-    a:focus {
-      outline: 2px solid var(--focus-outline);
-      outline-offset: 2px;
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
     }
 
     .page-container {
-      min-height: 100vh;
-      display: grid;
-      grid-template-areas: 
-        "breadcrumb breadcrumb"
-        "main sidebar";
-      grid-template-columns: minmax(0, 1fr) minmax(0, min(25vw, 300px));
-      grid-template-rows: auto 1fr;
-      width: 100%;
       max-width: var(--max-width);
       margin: 0 auto;
-      gap: clamp(1rem, 3vw, 2rem);
-      padding: 0 clamp(0.5rem, 2vw, 1rem);
-    }
-
-    .main-content,
-    .sidebar,
-    .article,
-    .featured-image,
-    .articles-grid,
-    .related-card,
-    .card-content {
-      max-width: 100%;
-      box-sizing: border-box;
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 300px);
+      grid-template-areas:
+        "breadcrumb breadcrumb"
+        "main sidebar";
+      gap: 2rem;
+      min-height: 100vh;
     }
 
     .breadcrumb {
       grid-area: breadcrumb;
       font-size: 0.875rem;
       color: var(--subtext-color);
-      padding: 1rem 0;
+      margin-bottom: 1.5rem;
     }
 
     .breadcrumb a {
-      color: var(--accent-color);
-    }
-
-    .breadcrumb a:hover {
-      text-decoration: underline;
+      font-weight: 600;
     }
 
     .separator {
       margin: 0 0.5rem;
-      color: var(--subtext-color);
     }
 
     .current {
+      font-weight: 700;
       color: var(--text-color);
-      font-weight: 500;
     }
 
     .main-content {
       grid-area: main;
     }
 
-    .article {
-      background: var(--bg-color);
-      border-radius: 8px;
-      overflow: hidden;
+    .sidebar {
+      grid-area: sidebar;
     }
 
     .article-header {
-      padding: 2rem 0;
-      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
     }
 
     .article-meta {
       display: flex;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 1rem;
       flex-wrap: wrap;
+      font-size: 0.875rem;
+      color: var(--subtext-color);
     }
 
     .category-badge {
-      background: var(--accent-color);
+      background-color: var(--accent-color);
       color: white;
-      padding: clamp(0.2rem, 1vw, 0.25rem) clamp(0.5rem, 2vw, 0.75rem);
-      border-radius: clamp(8px, 2vw, 12px);
-      font-size: clamp(0.65rem, 1.5vw, 0.75rem);
-      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-weight: 700;
       text-transform: uppercase;
-    }
-
-    .category-badge:hover {
-      background: var(--accent-hover);
     }
 
     .publish-date,
     .reading-time {
-      color: var(--subtext-color);
-      font-size: clamp(0.75rem, 2vw, 0.875rem);
+      white-space: nowrap;
     }
 
     .article-title {
-      font-family: var(--font-serif);
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-size: clamp(2rem, 4vw, 3rem);
       font-weight: 700;
-      line-height: 1.2;
-      margin: 1rem 0;
+      margin: 1rem 0 0.5rem 0;
+      line-height: 1.1;
     }
 
     .article-lead {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
       color: var(--text-light);
-      line-height: 1.5;
-      margin: 1rem 0;
+      margin-bottom: 1.5rem;
     }
 
     .author-byline {
-      color: var(--text-light);
-      font-size: 0.875rem;
+      font-size: 1rem;
+      color: var(--subtext-color);
+      margin-top: 0.5rem;
     }
 
     .author-label {
+      font-weight: 500;
       margin-right: 0.25rem;
     }
 
     .featured-image {
-      margin: clamp(1rem, 4vw, 2rem) 0;
-      border-radius: clamp(4px, 1vw, 8px);
+      margin: 1.5rem 0;
       overflow: hidden;
+      border-radius: 8px;
       box-shadow: var(--shadow);
-      width: 100%;
       aspect-ratio: 16/9;
       background: var(--bg-light);
     }
 
-    .featured-image-img {
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-      display: block;
-    }
-
     .article-body {
-      padding: clamp(1rem, 4vw, 2rem) 0;
-      font-size: clamp(1rem, 2.5vw, 1.125rem);
-      line-height: 1.7;
+      margin-bottom: 2rem;
+      max-width: 65ch;
     }
 
-    .article-body h2,
+    .article-body h2, 
     .article-body h3 {
-      font-family: var(--font-serif);
-      margin: clamp(1.5rem, 4vw, 2rem) 0 clamp(0.75rem, 2vw, 1rem);
-    }
-
-    .article-body h2 {
-      font-size: clamp(1.25rem, 3vw, 1.5rem);
-    }
-
-    .article-body h3 {
-      font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+      margin-top: 2rem;
+      color: var(--accent-color);
+      font-weight: 700;
     }
 
     .article-body p {
-      margin: clamp(0.75rem, 2vw, 1rem) 0;
+      margin: 1rem 0;
       word-wrap: break-word;
       hyphens: auto;
     }
 
-    .article-body a {
-      color: var(--accent-color);
-      border-bottom: 1px solid transparent;
-    }
-
-    .article-body a:hover {
-      border-bottom-color: var(--accent-color);
-    }
-
-    .ad-container {
-      display: none;
-      width: auto;
-      height: auto;
-      padding: 0;
-      margin: 0;
-      max-width: 728px;
-      overflow: hidden;
-      text-align: center;
-    }
-
-    .ad-container.consented {
-      display: block;
-    }
-
-    .ad-label {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--subtext-color);
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      font-family: var(--font-sans);
-    }
-
-    .ad-container .adsbygoogle {
-      max-width: 100%;
-    }
-
     .article-footer {
-      padding: 2rem 0;
+      padding-top: 1rem;
       border-top: 1px solid var(--border-color);
     }
 
     .tags {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .tag {
-      display: inline-block;
       background: var(--bg-light);
       color: var(--text-light);
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
-      font-size: 0.75rem;
-      margin: 0 0.5rem 0.5rem 0;
+      margin-right: 0.5rem;
+      font-size: 0.875rem;
+      display: inline-block;
     }
 
     .article-actions {
@@ -582,31 +512,25 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     .share-btn {
       background: var(--primary-color);
       color: white;
-      padding: 0.75rem 1.5rem;
-      border-radius: 4px;
-      font-weight: 500;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
     }
-
-    .share-btn:hover {
+    .share-btn:hover,
+    .share-btn:focus {
       background: var(--secondary-color);
+      outline-offset: 2px;
+      outline: 2px solid var(--focus-outline);
     }
 
     .author-bio {
-      background: var(--bg-light);
-      border-radius: 8px;
-      padding: 2rem;
-      margin: 2rem 0;
-    }
-
-    .author-bio h2 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .bio-content {
       display: flex;
       gap: 1rem;
-      align-items: flex-start;
+      padding: 2rem 1rem;
+      background: var(--bg-light);
+      border-radius: 8px;
+      margin-bottom: 3rem;
     }
 
     .author-avatar img {
@@ -627,34 +551,43 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     .author-link {
       color: var(--accent-color);
-      font-weight: 500;
+      font-weight: 600;
+    }
+
+    .author-link:hover,
+    .author-link:focus {
+      text-decoration: underline;
+      outline-offset: 2px;
+      outline: 2px solid var(--focus-outline);
     }
 
     .related-articles {
-      margin: 2rem 0;
+      margin-bottom: 3rem;
     }
 
     .related-articles h2 {
-      font-size: 1.5rem;
       margin-bottom: 1.5rem;
+      font-size: 1.75rem;
     }
 
     .articles-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-      gap: clamp(0.75rem, 2vw, 1rem);
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
     }
 
     .related-card {
       background: var(--bg-color);
       border: 1px solid var(--border-color);
-      border-radius: clamp(4px, 1vw, 8px);
+      border-radius: 8px;
       overflow: hidden;
       box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
     }
 
-    .related-card:hover {
-      transform: translateY(-2px);
+    .related-card:hover,
+    .related-card:focus-within {
+      transform: translateY(-5px);
       box-shadow: var(--shadow-lg);
     }
 
@@ -663,17 +596,21 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       flex-direction: column;
       height: 100%;
       color: inherit;
+      text-decoration: none;
+      outline-offset: 3px;
     }
 
     .card-image {
       width: 100%;
-      height: clamp(120px, 20vw, 160px);
+      aspect-ratio: 16 / 9;
       object-fit: cover;
       background: var(--bg-light);
+      display: block;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .card-content {
-      padding: clamp(0.75rem, 2vw, 1rem);
+      padding: 1rem;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -684,160 +621,77 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       background: var(--accent-color);
       color: white;
       padding: 0.125rem 0.5rem;
-      border-radius: 8px;
-      font-size: 0.625rem;
-      font-weight: 600;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 700;
       text-transform: uppercase;
+      align-self: flex-start;
     }
 
     .card-title {
       font-size: 1rem;
-      font-weight: 600;
-      line-height: 1.3;
+      font-weight: 700;
       margin: 0.75rem 0 0.5rem;
+      line-height: 1.3;
+      flex-grow: 1;
     }
 
     .card-date {
+      font-size: 0.875rem;
       color: var(--text-light);
+    }
+
+    .ad-container {
+      max-width: 728px;
+      margin: 2rem auto;
+    }
+
+    .ad-label {
       font-size: 0.75rem;
+      color: var(--subtext-color);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      display: block;
     }
 
-    .sidebar {
-      grid-area: sidebar;
-    }
-
-    @media (max-width: 75rem) {
+    @media (max-width: 900px) {
       .page-container {
-        grid-template-areas: 
+        grid-template-columns: 1fr;
+        grid-template-areas:
           "breadcrumb"
           "main"
           "sidebar";
-        grid-template-columns: minmax(0, 1fr);
-        gap: clamp(0.75rem, 2vw, 1.5rem);
       }
 
-      .sidebar,
-      .main-content {
+      .sidebar {
         max-width: 100%;
-      }
-
-      .articles-grid {
-        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-      }
-
-      .ad-container {
-        max-width: 468px;
+        margin-top: 2rem;
       }
     }
 
-    @media (max-width: 50rem) {
-      .page-container {
-        padding: 0 clamp(0.25rem, 1vw, 0.5rem);
-      }
-
-      .article-meta {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: clamp(0.5rem, 1.5vw, 0.75rem);
-      }
-
-      .bio-content {
-        flex-direction: column;
-        text-align: center;
-        gap: clamp(0.75rem, 2vw, 1rem);
-      }
-
-      .author-avatar img {
-        width: clamp(60px, 15vw, 80px);
-        height: clamp(60px, 15vw, 80px);
-        margin: 0 auto;
-      }
-
-      .articles-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .article-actions {
-        flex-direction: column;
-        gap: clamp(0.5rem, 2vw, 0.75rem);
-      }
-
-      .share-btn {
-        width: 100%;
-        text-align: center;
-        padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
-      }
-
-      .ad-container {
-        max-width: 320px;
-      }
-    }
-
-    @media (max-width: 30rem) {
-      .page-container {
-        padding: 0 clamp(0.25rem, 1vw, 0.5rem);
-        gap: clamp(0.75rem, 2vw, 1rem);
-      }
-
-      .card-image {
-        height: clamp(100px, 18vw, 120px);
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
       }
     }
 
     @media print {
-      .breadcrumb,
-      .sidebar,
-      .article-actions,
-      .related-articles,
-      .ad-container {
+      .breadcrumb, .sidebar, .article-actions, .related-articles, .ad-container {
         display: none;
       }
 
       .page-container {
         grid-template-areas: "main";
         grid-template-columns: 1fr;
+        max-width: 100%;
       }
 
-      .article-body {
+      body {
         font-size: 12pt;
         line-height: 1.5;
       }
-    }
-
-    .featured-image,
-    .card-image,
-    .author-avatar img {
-      content-visibility: auto;
-      contain-intrinsic-size: 1px 200px;
-    }
-
-    @font-face {
-      font-family: 'ReithSans';
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: 'ReithSerif';
-      font-display: swap;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        transition: none !important;
-        animation: none !important;
-      }
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
     }
   </style>
 </Layout>
