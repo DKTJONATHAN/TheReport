@@ -12,16 +12,15 @@ const categories = [...new Set(allPosts.map(post => post.data.category))].filter
 // Get the most recent post for featured display
 const featuredPost = allPosts[0];
 
-// Get top 5 popular posts (here using recency as proxy)
+// Get top 5 popular posts (using recency)
 const popularPosts = allPosts.slice(0, 5);
 
-// Latest news for ticker (limit 10 items)
-const latestTickerPosts = allPosts.slice(0, 10);
-
-// Related articles helper by category excluding featured post
+// Related articles helper by category (excluding featured post)
 const relatedArticlesByCategory = {};
 for (const category of categories) {
-  relatedArticlesByCategory[category] = allPosts.filter(post => post.data.category === category && post.slug !== featuredPost?.slug).slice(0, 3);
+  relatedArticlesByCategory[category] = allPosts
+    .filter(post => post.data.category === category && post.slug !== featuredPost?.slug)
+    .slice(0, 3);
 }
 ---
 
@@ -44,19 +43,19 @@ for (const category of categories) {
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
          crossorigin="anonymous"></script>
 
-  <!-- Structured Data for News -->
+  <!-- Structured Data -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    "name": "Jonathan Mwaniki News",
-    "url": "https://jonathanmwaniki.co.ke",
-    "description": "Kenya's premier source for breaking news, politics, entertainment, and trending stories",
-    "sameAs": [
-      "https://twitter.com/maestropuns",
-      "https://facebook.com/jonathanmwaniki"
-    ]
-  }
+    {
+      "@context": "https://schema.org",
+      "@type": "NewsMediaOrganization",
+      "name": "Jonathan Mwaniki News",
+      "url": "https://jonathanmwaniki.co.ke",
+      "description": "Kenya's premier source for breaking news, politics, entertainment, and trending stories",
+      "sameAs": [
+        "https://twitter.com/maestropuns",
+        "https://facebook.com/jonathanmwaniki"
+      ]
+    }
   </script>
 
   <main class="main-container">
@@ -65,22 +64,6 @@ for (const category of categories) {
       <div class="hero-content">
         <h1 class="hero-title">Trending News Kenya</h1>
         <p class="hero-subtitle">Your trusted source for the latest Kenyan news, politics, entertainment, and trending stories</p>
-        <!-- Latest News Ticker -->
-        <div class="news-ticker" aria-label="Latest news ticker">
-          <span class="ticker-label">LATEST NEWS:</span>
-          <div class="ticker-scroll" role="list">
-            {latestTickerPosts.map(post => (
-              <a 
-                href={`/posts/${post.slug}`} 
-                class="ticker-item" 
-                role="listitem"
-                aria-label={`Latest news headline: ${post.data.title}`}
-              >
-                {post.data.title}
-              </a>
-            ))}
-          </div>
-        </div>
       </div>
     </header>
 
@@ -121,7 +104,7 @@ for (const category of categories) {
               <h3 class="featured-title">{featuredPost.data.title}</h3>
               <p class="featured-excerpt">{featuredPost.data.description}</p>
               <div class="featured-footer">
-                <span class="read-more-featured" role="button" tabindex="0">
+                <span class="btn btn-primary read-more-featured" role="button" tabindex="0">
                   Read Full Story
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -140,7 +123,7 @@ for (const category of categories) {
         <h2 class="section-title">Popular News</h2>
         <div class="posts-grid popular-grid">
           {popularPosts.map(post => (
-            <article class="post-card popular-post">
+            <article class="post-card popular-post" key={post.slug}>
               <a href={`/posts/${post.slug}`} class="post-link" aria-label={`Read popular article: ${post.data.title}`}>
                 {post.data.image && (
                   <div class="post-image-container popular-image-container">
@@ -182,16 +165,16 @@ for (const category of categories) {
 
       const relatedArticles = relatedArticlesByCategory[category];
       return categoryPosts.length > 0 ? (
-        <section class="category-section" aria-label={`${category} News`}>
+        <section class="category-section" aria-label={`${category} News`} key={category}>
           <div class="category-header">
             <h2 class="section-title">Latest {category} News</h2>
-            <a href={`/category/${category.toLowerCase()}`} class="category-more" aria-label={`More ${category} news`}>
+            <a href={`/category/${category.toLowerCase()}`} class="btn btn-secondary category-more" aria-label={`More ${category} news`}>
               See more
             </a>
           </div>
 
           <div class="posts-grid">
-            {categoryPosts.map((post, index) => (
+            {categoryPosts.map(post => (
               <article class="post-card" key={post.slug}>
                 <a 
                   href={`/posts/${post.slug}`} 
@@ -224,7 +207,7 @@ for (const category of categories) {
                     <h3 class="post-title">{post.data.title}</h3>
                     {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
                     <div class="post-footer">
-                      <span class="read-more">Read Article</span>
+                      <span class="btn btn-outline read-more">Read Article</span>
                     </div>
                   </div>
                 </a>
@@ -268,58 +251,339 @@ for (const category of categories) {
   </main>
 
   <style>
-    /* Root variables and Dark mode, unchanged from your original. */
-    /* ... keep your existing variables and dark mode styles ... */
-
-    /* Additional styles for ticker */
-    .news-ticker {
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-      background: var(--category-bg);
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      margin-top: 1rem;
-      gap: 1rem;
-      color: var(--category-text);
-      font-weight: 600;
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #1a1a1a;
+      --subtext-color: #4a5568;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --hero-bg: #dc2626;
+      --hero-text: #ffffff;
+      --category-bg: #dc2626;
+      --category-text: #ffffff;
+      --btn-primary-bg: #dc2626;
+      --btn-primary-hover-bg: #b91c1c;
+      --btn-secondary-bg: #ffffff;
+      --btn-secondary-border: #dc2626;
+      --btn-secondary-color: #dc2626;
+      --btn-secondary-hover-bg: #dc2626;
+      --btn-secondary-hover-color: #ffffff;
+      --btn-outline-border: #dc2626;
+      --btn-outline-color: #dc2626;
+      --btn-outline-hover-bg: #dc2626;
+      --btn-outline-hover-color: #ffffff;
+      --shadow-color: rgba(0, 0, 0, 0.08);
+      --date-color: #64748b;
+      --ad-bg: #f8f9fa;
+      --ad-border: #e2e8f0;
+      --title-underline: #dc2626;
+      --focus-outline: #dc2626;
     }
 
-    .ticker-label {
-      flex-shrink: 0;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e2e8f0;
+        --subtext-color: #9ca3af;
+        --card-bg: #2d2d2d;
+        --card-border: #4b5563;
+        --hero-bg: #ef4444;
+        --hero-text: #ffffff;
+        --category-bg: #ef4444;
+        --category-text: #ffffff;
+        --btn-primary-bg: #ef4444;
+        --btn-primary-hover-bg: #f87171;
+        --btn-secondary-bg: #2d2d2d;
+        --btn-secondary-border: #ef4444;
+        --btn-secondary-color: #ef4444;
+        --btn-secondary-hover-bg: #ef4444;
+        --btn-secondary-hover-color: #ffffff;
+        --btn-outline-border: #ef4444;
+        --btn-outline-color: #ef4444;
+        --btn-outline-hover-bg: #ef4444;
+        --btn-outline-hover-color: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --date-color: #9ca3af;
+        --ad-bg: #2d2d2d;
+        --ad-border: #4b5563;
+        --title-underline: #ef4444;
+        --focus-outline: #f87171;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .hero-section {
+      background: var(--hero-bg);
+      color: var(--hero-text);
+      padding: 3rem 2rem;
+      margin: -1rem -1rem 2rem -1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 900;
+      margin: 0 0 1rem 0;
+      letter-spacing: -0.02em;
+      text-shadow: 2px 2px 4px var(--shadow-color);
+      color: var(--hero-text);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      opacity: 0.9;
+      margin: 0 0 2rem 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
+      color: var(--hero-text);
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 3rem 0 1.5rem 0;
+      color: var(--text-color);
+      position: relative;
+      padding-bottom: 0.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: var(--title-underline);
+    }
+
+    /* Button styles */
+    .btn {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.5rem 1.5rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-    }
-
-    .ticker-scroll {
-      white-space: nowrap;
-      overflow: hidden;
-      flex-grow: 1;
-      animation: ticker-scroll 20s linear infinite;
-      display: flex;
-      gap: 3rem;
-    }
-
-    .ticker-item {
-      color: var(--category-text);
-      text-decoration: none;
-      font-size: 0.9rem;
       user-select: none;
-      display: inline-block;
+      border: 2px solid transparent;
+      text-decoration: none;
+      justify-content: center;
     }
 
-    .ticker-item:hover,
-    .ticker-item:focus {
-      text-decoration: underline;
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s ease;
+      stroke-width: 3;
+    }
+
+    .btn-primary {
+      background: var(--btn-primary-bg);
+      color: var(--category-text);
+      border-color: var(--btn-primary-bg);
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background: var(--btn-primary-hover-bg);
+      border-color: var(--btn-primary-hover-bg);
+      outline: none;
+      transform: translateX(5px);
+    }
+
+    .btn-primary:hover svg,
+    .btn-primary:focus svg {
+      transform: translateX(3px);
+    }
+
+    .btn-secondary {
+      background: var(--btn-secondary-bg);
+      color: var(--btn-secondary-color);
+      border: 2px solid var(--btn-secondary-border);
+      font-weight: 700;
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover,
+    .btn-secondary:focus {
+      background: var(--btn-secondary-hover-bg);
+      color: var(--btn-secondary-hover-color);
       outline: none;
     }
 
-    @keyframes ticker-scroll {
-      0%   { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
+    .btn-outline {
+      background: transparent;
+      color: var(--btn-outline-color);
+      border: 2px solid var(--btn-outline-border);
+      font-weight: 600;
+      padding: 0.35rem 1rem;
+      font-size: 0.9rem;
+      border-radius: 20px;
+      text-transform: none;
     }
 
-    /* Popular posts styling */
+    .btn-outline:hover,
+    .btn-outline:focus {
+      background: var(--btn-outline-hover-bg);
+      color: var(--btn-outline-hover-color);
+      outline: none;
+    }
+
+    /* Featured post styles */
+    .featured-section {
+      margin: 2rem 0 4rem 0;
+    }
+
+    .featured-post {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px var(--shadow-color);
+      transition: all 0.3s ease;
+      border: 3px solid var(--category-bg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .featured-link {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      height: 100%;
+    }
+
+    .featured-image-container {
+      position: relative;
+      height: 450px;
+      overflow: hidden;
+      flex-shrink: 0;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .featured-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .featured-post:hover .featured-image {
+      transform: scale(1.05);
+    }
+
+    .breaking-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: var(--category-bg);
+      color: var(--category-text);
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 4px;
+      animation: flash 1.5s infinite;
+      z-index: 2;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .featured-content {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .featured-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .featured-category {
+      background: var(--category-bg);
+      color: var(--category-text);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .featured-date {
+      color: var(--date-color);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .featured-title {
+      font-size: clamp(1.75rem, 3vw, 2.75rem);
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+      line-height: 1.1;
+      color: var(--text-color);
+      flex-grow: 1;
+    }
+
+    .featured-excerpt {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: var(--subtext-color);
+      margin: 0 0 2rem 0;
+    }
+
+    .featured-footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    /* Posts grid styling */
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+
+    /* Popular Posts specific */
     .popular-section {
       margin: 3rem 0;
     }
@@ -331,13 +595,126 @@ for (const category of categories) {
 
     .popular-post .post-image-container {
       height: 180px;
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
     }
 
-    .popular-post .post-title {
-      font-size: 1.15rem;
+    /* Post card design */
+    .post-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px var(--shadow-color);
+      transition: all 0.3s ease;
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
-    /* Category header with 'See more' aligned right */
+    .post-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px var(--shadow-color);
+      border-color: var(--category-bg);
+    }
+
+    .post-link {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      height: 100%;
+    }
+
+    .post-image-container {
+      height: 200px;
+      overflow: hidden;
+      border-radius: 12px 12px 0 0;
+      flex-shrink: 0;
+    }
+
+    .post-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+      display: block;
+    }
+
+    .post-card:hover .post-image {
+      transform: scale(1.05);
+    }
+
+    .post-content {
+      padding: 1rem 1.25rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .post-category {
+      background: var(--category-bg);
+      color: var(--category-text);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .post-date {
+      color: var(--date-color);
+      font-size: 0.85rem;
+    }
+
+    .post-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.2;
+      color: var(--text-color);
+      flex-grow: 1;
+    }
+
+    .post-excerpt {
+      color: var(--subtext-color);
+      line-height: 1.5;
+      margin: 0 0 1rem 0;
+      font-size: 0.95rem;
+      flex-grow: 1;
+    }
+
+    .post-footer {
+      margin-top: auto;
+    }
+
+    .read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--btn-outline-color);
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .read-more:hover,
+    .read-more:focus {
+      color: var(--btn-outline-hover-color);
+      outline: none;
+      text-decoration: underline;
+    }
+
+    /* Category header with 'See more' button */
     .category-header {
       display: flex;
       justify-content: space-between;
@@ -345,20 +722,7 @@ for (const category of categories) {
       margin-bottom: 1rem;
     }
 
-    .category-more {
-      font-weight: 600;
-      color: var(--read-more);
-      text-decoration: none;
-    }
-
-    .category-more:hover,
-    .category-more:focus {
-      color: var(--read-more-hover);
-      text-decoration: underline;
-      outline: none;
-    }
-
-    /* Related articles small image list */
+    /* Related articles with small images */
     .related-articles {
       margin-top: 2rem;
       padding-top: 1rem;
@@ -393,23 +757,102 @@ for (const category of categories) {
     }
 
     .related-image {
-      border-radius: 6px;
+      border-radius: 8px;
       object-fit: cover;
       width: 120px;
       height: 75px;
       margin-bottom: 0.5rem;
+      display: block;
     }
 
     .related-title-text {
       font-size: 0.9rem;
       font-weight: 500;
       line-height: 1.2;
-      height: 2.4em; /* two lines clamp */
+      height: 2.4em; /* clamp 2 lines */
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Retain your existing styles for hero, featured posts, posts-grid, etc., unchanged */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--subtext-color);
+    }
 
+    .empty-state h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+
+    /* Accessibility & focus */
+    .featured-link:focus,
+    .post-link:focus,
+    .btn:focus,
+    .category-more:focus {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 768px) {
+      .main-container {
+        padding: 0 0.75rem;
+      }
+
+      .hero-section {
+        padding: 2rem 1rem;
+        margin: -0.75rem -0.75rem 1.5rem -0.75rem;
+      }
+
+      .featured-content {
+        padding: 1.5rem;
+      }
+
+      .posts-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .section-title {
+        font-size: 1.75rem;
+        margin: 2rem 0 1rem 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .featured-image-container {
+        height: 250px;
+      }
+
+      .post-image-container {
+        height: 180px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media print {
+      .hero-section {
+        background: var(--bg-color) !important;
+        color: var(--text-color) !important;
+      }
+
+      .featured-post,
+      .post-card {
+        box-shadow: none !important;
+        border: 1px solid var(--card-border) !important;
+      }
+
+      .ad-container {
+        display: none !important;
+      }
+    }
   </style>
 </Layout>
