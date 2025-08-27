@@ -3,7 +3,7 @@ title: "Ruto's And Friends Ksh2.1 Trillion Theft: Auditor General Exposes Bigges
 description: "Explosive investigation reveals how Ruto's administration has overseen the systematic looting of over Ksh2.1 trillion from national government, Parliament, and counties since 2022 elections"
 date: 2025,08,27
 author: "Jonathan Mwaniki"
-image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80"
+image: "https://i.postimg.cc/T25r0sSw/images-18.jpg"
 imageCaption: "Empty government coffers tell the story of Kenya's biggest corruption scandal under Ruto's watch"
 imageAlt: "Empty vault symbolizing Kenya's massive government corruption under Ruto administration"
 category: "Government"
