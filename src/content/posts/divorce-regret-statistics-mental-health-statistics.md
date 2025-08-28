@@ -1,13 +1,17 @@
----
+--
 title: "The Divorce Trap: Why 80% of People Regret Leaving Their Marriage (And What We Can Learn From Their Pain)"
-Description:"A devastating look at divorce statistics reveals shocking truths about regret, mental health destruction, and the hidden costs of walking away from marriage" date:2025,08,28
-Author:"Jonathan Mwaniki" Image:"https://images.unsplash.com/photo-1494707924616-dd7a5a8f6462?auto=format&fit=crop&w=1200&q=80" ImageCaption:"The aftermath of divorce: empty spaces where love once lived"
-ImageAlt:"Empty wedding rings on divorce papers symbolizing marriage breakdown"
-Category:"Relationships"
-Tags:["Divorce Statistics", "Marriage Crisis", "Mental Health", "Relationship Psychology", "Family Impact", "Divorce Regret"]
-Featured:true 
-Draft:false
+description: "A devastating look at divorce statistics reveals shocking truths about regret, mental health destruction, and the hidden costs of walking away from marriage"
+date: 2025,08,28
+author: "Jonathan Mwaniki"
+image: "https://images.unsplash.com/photo-1494707924616-dd7a5a8f6462?auto=format&fit=crop&w=1200&q=80"
+imageCaption: "The aftermath of divorce: empty spaces where love once lived"
+imageAlt: "Empty wedding rings on divorce papers symbolizing marriage breakdown"
+category: "Relationships"
+tags: ["Divorce Statistics", "Marriage Crisis", "Mental Health", "Relationship Psychology", "Family Impact", "Divorce Regret"]
+featured: true
+draft: false
 ---
+
 <div class="article-content">
 
 The Silent Epidemic: When "Freedom" Becomes a Prison
