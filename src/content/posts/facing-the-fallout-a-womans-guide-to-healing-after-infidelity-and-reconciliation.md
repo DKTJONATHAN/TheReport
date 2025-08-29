@@ -4,7 +4,7 @@ title: "Facing the Fallout, A Woman’s Guide to Healing After Infidelity and Re
 description: "Explore the complex journey of women who cheated and are now trying to rebuild relationships. Learn surprising psychological insights, emotional challenges, and keys to genuine healing."
 date: 2025,08,29
 author: Jonathan Mwaniki
-image: https://images.unsplash.com/photo-1494707924616-dd7a5a8f6462?auto=format&fit=crop&w=1200&q=80
+image:https://i.postimg.cc/NMm8Z7WG/grok-image-d34w6l.jpg
 imageCaption: "After the storm, navigating the emotional aftermath of infidelity"
 imageAlt: "Empty wedding rings on divorce papers symbolizing relationship breakdown"
 category: Relationships
