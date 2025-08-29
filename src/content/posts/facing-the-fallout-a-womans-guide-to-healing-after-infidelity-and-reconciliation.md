@@ -1,3 +1,5 @@
+---
+
 title: "Facing the Fallout, A Woman’s Guide to Healing After Infidelity and Reconciliation"
 description: "Explore the complex journey of women who cheated and are now trying to rebuild relationships. Learn surprising psychological insights, emotional challenges, and keys to genuine healing."
 date: 2025,08,29
@@ -9,6 +11,8 @@ category: Relationships
 tags: ["Infidelity Recovery", "Women and Affairs", "Relationship Healing", "Emotional Healing After Cheating", "Reconciliation Challenges", "Mental Health and Infidelity"]
 featured: true
 draft: false
+
+---
 
 <div class="article-content">
 
