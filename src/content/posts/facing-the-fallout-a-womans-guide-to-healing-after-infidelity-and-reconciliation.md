@@ -1,18 +1,15 @@
 ---
-
 title: "Facing the Fallout, A Woman’s Guide to Healing After Infidelity and Reconciliation"
 description: "Explore the complex journey of women who cheated and are now trying to rebuild relationships. Learn surprising psychological insights, emotional challenges, and keys to genuine healing."
 date: 2025,08,29
 author: Jonathan Mwaniki
-image:
-https://i.postimg.cc/NMm8Z7WG/grok-image-d34w6l.jpg
+image: "https://i.postimg.cc/NMm8Z7WG/grok-image-d34w6l.jpg"
 imageCaption: "After the storm, navigating the emotional aftermath of infidelity"
 imageAlt: "Empty wedding rings on divorce papers symbolizing relationship breakdown"
-category: Relationships
+category: Health
 tags: ["Infidelity Recovery", "Women and Affairs", "Relationship Healing", "Emotional Healing After Cheating", "Reconciliation Challenges", "Mental Health and Infidelity"]
 featured: true
 draft: false
-
 ---
 
 <div class="article-content">
