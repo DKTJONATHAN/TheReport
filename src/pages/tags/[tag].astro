@@ -4,17 +4,46 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
-  // Get unique tags and categories
-  const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))]
-    .filter(tag => typeof tag === 'string' && tag.trim() !== ''); // Filter out invalid tags
-  const allCategories = [...new Set(posts.map(post => post.data.category || 'Uncategorized'))];
+  
+  // Helper function to safely extract and validate tags
+  function extractValidTags(post) {
+    const tags = post.data.tags;
+    if (!tags) return [];
+    
+    // Handle different tag formats
+    if (Array.isArray(tags)) {
+      return tags.filter(tag => 
+        tag && 
+        typeof tag === 'string' && 
+        tag.trim() !== ''
+      ).map(tag => tag.trim());
+    } else if (typeof tags === 'string') {
+      return [tags.trim()].filter(tag => tag !== '');
+    }
+    
+    return [];
+  }
+
+  // Get unique tags with proper validation
+  const allTags = [...new Set(
+    posts.flatMap(post => extractValidTags(post))
+  )].filter(tag => tag && typeof tag === 'string' && tag.trim() !== '');
+
+  // Get unique categories with validation
+  const allCategories = [...new Set(
+    posts.map(post => {
+      const category = post.data.category;
+      return (category && typeof category === 'string') ? category.trim() : 'Uncategorized';
+    }).filter(cat => cat !== '')
+  )];
 
   // Generate tag routes, avoiding exact matches with categories
   const tagPaths = allTags.map(tag => {
-    const tagSlug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); // Sanitize slug
+    const tagSlug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
     // Check if tag matches a category slug
     const isCategory = allCategories
-      .map(cat => cat.toLowerCase().replace(/\s+/g, '-'))
+      .map(cat => cat.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
       .includes(tagSlug);
 
     return {
@@ -41,9 +70,37 @@ if (redirectToCategory) {
   return Astro.redirect(redirectToCategory);
 }
 
+// Helper function to safely extract and validate tags for filtering
+function extractValidTags(post) {
+  const tags = post.data.tags;
+  if (!tags) return [];
+  
+  if (Array.isArray(tags)) {
+    return tags.filter(t => 
+      t && 
+      typeof t === 'string' && 
+      t.trim() !== ''
+    ).map(t => t.trim());
+  } else if (typeof tags === 'string') {
+    return [tags.trim()].filter(t => t !== '');
+  }
+  
+  return [];
+}
+
+// Filter posts by tag with proper validation
 const posts = (await getCollection('posts'))
-  .filter(post => (post.data.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-')).includes(tag.toLowerCase().replace(/\s+/g, '-')))
-  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+  .filter(post => {
+    const postTags = extractValidTags(post);
+    const tagSlugs = postTags.map(t => t.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+    const targetTagSlug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return tagSlugs.includes(targetTagSlug);
+  })
+  .sort((a, b) => {
+    const dateA = a.data.date ? new Date(a.data.date).getTime() : 0;
+    const dateB = b.data.date ? new Date(b.data.date).getTime() : 0;
+    return dateB - dateA;
+  });
 
 // Redirect to 404 if no posts and no redirect
 if (!posts.length && !redirectToCategory) {
@@ -52,7 +109,12 @@ if (!posts.length && !redirectToCategory) {
 
 // Get unique categories for navigation
 const allPosts = await getCollection('posts');
-const categories = [...new Set(allPosts.map(p => p.data.category || 'Uncategorized'))];
+const categories = [...new Set(
+  allPosts.map(p => {
+    const category = p.data.category;
+    return (category && typeof category === 'string') ? category.trim() : 'Uncategorized';
+  }).filter(cat => cat !== '')
+)];
 
 // SEO optimizations
 const formattedTag = tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -132,16 +194,22 @@ const competitiveKeywords = [
       "description": "${optimizedDescription}",
       "url": "${canonicalUrl}",
       "mainEntity": [
-        ${posts.map(post => `{
-          "@type": "NewsArticle",
-          "headline": "${post.data.title?.replace(/"/g, '\\"') || 'Untitled'}",
-          "datePublished": "${post.data.date?.toISOString() || new Date().toISOString()}",
-          "author": {
-            "@type": "Person",
-            "name": "Jonathan Mwaniki"
-          },
-          "url": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
-        }`).join(',')}
+        ${posts.map(post => {
+          const title = post.data.title || 'Untitled';
+          const date = post.data.date ? new Date(post.data.date).toISOString() : new Date().toISOString();
+          const escapedTitle = title.replace(/"/g, '\\"');
+          
+          return `{
+            "@type": "NewsArticle",
+            "headline": "${escapedTitle}",
+            "datePublished": "${date}",
+            "author": {
+              "@type": "Person",
+              "name": "Jonathan Mwaniki"
+            },
+            "url": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
+          }`;
+        }).join(',')}
       ]
     }
   </script>
@@ -175,7 +243,7 @@ const competitiveKeywords = [
         {categories.map(category => (
           <li>
             <a 
-              href={`/category/${category.toLowerCase().replace(/\s+/g, '-')}`} 
+              href={`/category/${category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`} 
               title={`${category} News Kenya`} 
               style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
             >
@@ -199,31 +267,39 @@ const competitiveKeywords = [
         <>
           <p>Latest updates and stories related to {formattedTag} in Kenya.</p>
           <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
-            {posts.map(post => (
-              <li>
-                <a 
-                  href={`/posts/${post.slug}`} 
-                  title={`${post.data.title || 'Untitled'} - Jonathan Mwaniki`} 
-                  style="text-decoration: none; color: #2d3748; font-weight: 600;"
-                >
-                  {post.data.title || 'Untitled'}
-                </a>
-                <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
-                  {post.data.description || 'No description available'}
-                </p>
-                <span style="color: #666; font-size: 0.9rem;">
+            {posts.map(post => {
+              const title = post.data.title || 'Untitled';
+              const description = post.data.description || 'No description available';
+              const category = post.data.category || 'Uncategorized';
+              const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+              const date = post.data.date ? new Date(post.data.date) : new Date();
+              
+              return (
+                <li>
                   <a 
-                    href={`/category/${post.data.category ? post.data.category.toLowerCase().replace(/\s+/g, '-') : 'uncategorized'}`} 
-                    title={`${post.data.category || 'Uncategorized'} News Kenya`}
-                    style="color: #BB1919; text-decoration: none;"
+                    href={`/posts/${post.slug}`} 
+                    title={`${title} - Jonathan Mwaniki`} 
+                    style="text-decoration: none; color: #2d3748; font-weight: 600;"
                   >
-                    {post.data.category || 'Uncategorized'}
+                    {title}
                   </a>
-                  &nbsp;•&nbsp;
-                  {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
-              </li>
-            ))}
+                  <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
+                    {description}
+                  </p>
+                  <span style="color: #666; font-size: 0.9rem;">
+                    <a 
+                      href={`/category/${categorySlug}`} 
+                      title={`${category} News Kenya`}
+                      style="color: #BB1919; text-decoration: none;"
+                    >
+                      {category}
+                    </a>
+                    &nbsp;•&nbsp;
+                    {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </>
       ) : (
@@ -432,12 +508,12 @@ const competitiveKeywords = [
     }
   </style>
 
-  <script is:client="load">
+  <script is:inline>
     // Newsletter signup functionality
     function handleNewsletterSignup() {
       const button = document.querySelector('.newsletter-signup button');
       const input = document.querySelector('.newsletter-signup input');
-      
+
       if (button && input) {
         button.addEventListener('click', function(e) {
           e.preventDefault();
@@ -461,10 +537,6 @@ const competitiveKeywords = [
         });
       }
     }
-
-    // Debug tag and posts
-    console.log('Tag:', '${tag}');
-    console.log('Posts found:', ${posts.length});
 
     window.addEventListener('load', handleNewsletterSignup);
   </script>
