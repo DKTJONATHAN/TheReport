@@ -3,7 +3,7 @@ title: "The Anatomy of a Political Assassination: How Baltasar Engonga's Fall Re
 description: "The shocking downfall of Equatorial Guinea's anti-corruption chief exposes the brutal reality of power politics, elite impunity, and systemic corruption across Africa."
 date: 2025-08-29
 author: Jonathan Mwaniki
-image: "https://i.postimg.cc/NMm8Z7WG/grok-image-d34w6l.jpg"
+image: "[https://i.postimg.cc/NMm8Z7WG/grok-image-d34w6l.jpg](https://i.postimg.cc/qvzkN1kJ/images.webp)"
 imageCaption: "The dramatic unraveling of Baltasar Engonga's career reveals the fragile nature of political power in Africa's oil-rich states"
 imageAlt: "Empty handcuffs on government documents symbolizing corruption and justice"
 category: "Politics"
