@@ -16,7 +16,6 @@ tags:
   - "Political Succession"
 featured: true
 draft: false
-canonical: "https://yourblogdomain.com/path-to-this-article"
 ---
 
 <div class="article-content">
