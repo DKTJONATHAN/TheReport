@@ -1,251 +1,300 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 
-export async function getStaticPaths() {
-  const posts = await getCollection('posts');
-  
-  // Helper function to safely extract and validate tags
-  function extractValidTags(post) {
-    const tags = post.data.tags;
+// Define types for better type safety
+type Post = CollectionEntry<'posts'>;
+
+// Helper function to safely extract tags with comprehensive validation
+function safeGetTags(post: Post): string[] {
+  try {
+    const tags = post.data?.tags;
+    
+    // Handle null/undefined
     if (!tags) return [];
     
-    // Handle different tag formats
+    // Handle array of tags
     if (Array.isArray(tags)) {
-      return tags.filter(tag => 
-        tag && 
-        typeof tag === 'string' && 
-        tag.trim() !== ''
-      ).map(tag => tag.trim());
-    } else if (typeof tags === 'string') {
-      return [tags.trim()].filter(tag => tag !== '');
+      return tags
+        .filter((tag): tag is string => {
+          return typeof tag === 'string' && tag.trim().length > 0;
+        })
+        .map(tag => tag.trim());
+    }
+    
+    // Handle single string tag
+    if (typeof tags === 'string') {
+      const trimmed = tags.trim();
+      return trimmed.length > 0 ? [trimmed] : [];
+    }
+    
+    // Handle comma-separated string
+    if (typeof tags === 'string' && tags.includes(',')) {
+      return tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
     }
     
     return [];
+  } catch (error) {
+    console.warn('Error extracting tags from post:', post.slug, error);
+    return [];
   }
+}
 
-  // Get unique tags with proper validation
-  const allTags = [...new Set(
-    posts.flatMap(post => extractValidTags(post))
-  )].filter(tag => tag && typeof tag === 'string' && tag.trim() !== '');
+// Helper function to create URL-safe slugs
+function createSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
 
-  // Get unique categories with validation
-  const allCategories = [...new Set(
-    posts.map(post => {
-      const category = post.data.category;
-      return (category && typeof category === 'string') ? category.trim() : 'Uncategorized';
-    }).filter(cat => cat !== '')
-  )];
+// Helper function to safely get category
+function safeGetCategory(post: Post): string {
+  try {
+    const category = post.data?.category;
+    if (typeof category === 'string' && category.trim().length > 0) {
+      return category.trim();
+    }
+    return 'Uncategorized';
+  } catch (error) {
+    console.warn('Error extracting category from post:', post.slug, error);
+    return 'Uncategorized';
+  }
+}
 
-  // Generate tag routes, avoiding exact matches with categories
-  const tagPaths = allTags.map(tag => {
-    const tagSlug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+export async function getStaticPaths() {
+  try {
+    // Get all posts with error handling
+    const allPosts = await getCollection('posts');
     
-    // Check if tag matches a category slug
-    const isCategory = allCategories
-      .map(cat => cat.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
-      .includes(tagSlug);
+    if (!Array.isArray(allPosts) || allPosts.length === 0) {
+      console.warn('No posts found or posts is not an array');
+      return [];
+    }
 
-    return {
-      params: { tag: tagSlug },
-      props: { 
-        tag, 
-        redirectToCategory: isCategory ? `/category/${tagSlug}` : null 
-      },
-    };
-  });
+    // Extract all unique tags safely
+    const allTags = new Set<string>();
+    const allCategories = new Set<string>();
+    
+    for (const post of allPosts) {
+      // Add tags
+      const tags = safeGetTags(post);
+      tags.forEach(tag => allTags.add(tag));
+      
+      // Add categories
+      const category = safeGetCategory(post);
+      allCategories.add(category);
+    }
 
-  return tagPaths;
-}
+    // Convert to arrays and create slugs
+    const tagArray = Array.from(allTags);
+    const categoryArray = Array.from(allCategories);
+    
+    // Create paths for each tag
+    const paths = tagArray.map(tag => {
+      const tagSlug = createSlug(tag);
+      
+      // Skip if slug is empty
+      if (!tagSlug) {
+        console.warn('Empty slug generated for tag:', tag);
+        return null;
+      }
+      
+      // Check if this tag slug conflicts with any category slug
+      const categorySlug = categoryArray
+        .map(cat => createSlug(cat))
+        .find(slug => slug === tagSlug);
+      
+      return {
+        params: { 
+          tag: tagSlug 
+        },
+        props: { 
+          originalTag: tag,
+          tagSlug,
+          conflictsWithCategory: !!categorySlug,
+          categoryRedirect: categorySlug ? `/category/${categorySlug}` : null
+        }
+      };
+    }).filter((path): path is NonNullable<typeof path> => path !== null);
 
-const { tag, redirectToCategory } = Astro.props;
-
-// Redirect to 404 if tag is invalid
-if (!tag || typeof tag !== 'string' || tag.trim() === '') {
-  return Astro.redirect('/404');
-}
-
-// If tag matches a category, redirect to the category page
-if (redirectToCategory) {
-  return Astro.redirect(redirectToCategory);
-}
-
-// Helper function to safely extract and validate tags for filtering
-function extractValidTags(post) {
-  const tags = post.data.tags;
-  if (!tags) return [];
-  
-  if (Array.isArray(tags)) {
-    return tags.filter(t => 
-      t && 
-      typeof t === 'string' && 
-      t.trim() !== ''
-    ).map(t => t.trim());
-  } else if (typeof tags === 'string') {
-    return [tags.trim()].filter(t => t !== '');
+    console.log(`Generated ${paths.length} tag paths from ${tagArray.length} unique tags`);
+    return paths;
+    
+  } catch (error) {
+    console.error('Error in getStaticPaths:', error);
+    return [];
   }
-  
-  return [];
 }
 
-// Filter posts by tag with proper validation
-const posts = (await getCollection('posts'))
-  .filter(post => {
-    const postTags = extractValidTags(post);
-    const tagSlugs = postTags.map(t => t.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
-    const targetTagSlug = tag.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    return tagSlugs.includes(targetTagSlug);
-  })
-  .sort((a, b) => {
-    const dateA = a.data.date ? new Date(a.data.date).getTime() : 0;
-    const dateB = b.data.date ? new Date(b.data.date).getTime() : 0;
-    return dateB - dateA;
-  });
+// Get props from Astro
+const { originalTag, tagSlug, conflictsWithCategory, categoryRedirect } = Astro.props;
 
-// Redirect to 404 if no posts and no redirect
-if (!posts.length && !redirectToCategory) {
+// Validate required props
+if (!originalTag || !tagSlug) {
+  console.error('Missing required props:', { originalTag, tagSlug });
   return Astro.redirect('/404');
 }
 
-// Get unique categories for navigation
-const allPosts = await getCollection('posts');
-const categories = [...new Set(
-  allPosts.map(p => {
-    const category = p.data.category;
-    return (category && typeof category === 'string') ? category.trim() : 'Uncategorized';
-  }).filter(cat => cat !== '')
-)];
+// Redirect if tag conflicts with category
+if (conflictsWithCategory && categoryRedirect) {
+  return Astro.redirect(categoryRedirect);
+}
 
-// SEO optimizations
-const formattedTag = tag.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const optimizedTitle = `${formattedTag} News | Jonathan Mwaniki`;
-const optimizedDescription = `Explore the latest ${formattedTag} news and updates from Kenya. Stay informed with breaking stories, trends, and insights from Nairobi and beyond.`;
-const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tag.toLowerCase().replace(/\s+/g, '-')}`;
-const breadcrumbName = `${formattedTag} News Kenya`;
-const competitiveKeywords = [
-  'Kenya news today',
-  'breaking news Kenya',
-  'Nairobi news',
-  tag.replace(/-/g, ' '),
-  'Kenya trending stories',
-  'Nairobi updates',
-  'East Africa news',
-  'Kenya viral news',
-].filter(Boolean).join(', ');
+// Get all posts and filter by current tag
+let filteredPosts: Post[] = [];
+let allCategories: string[] = [];
+
+try {
+  const allPosts = await getCollection('posts');
+  
+  // Filter posts that have the current tag
+  filteredPosts = allPosts
+    .filter(post => {
+      const postTags = safeGetTags(post);
+      const postTagSlugs = postTags.map(tag => createSlug(tag));
+      return postTagSlugs.includes(tagSlug);
+    })
+    .sort((a, b) => {
+      const dateA = a.data?.date ? new Date(a.data.date).getTime() : 0;
+      const dateB = b.data?.date ? new Date(b.data.date).getTime() : 0;
+      return dateB - dateA; // Most recent first
+    });
+
+  // Get all categories for navigation
+  allCategories = Array.from(new Set(
+    allPosts.map(post => safeGetCategory(post))
+  )).sort();
+
+} catch (error) {
+  console.error('Error loading posts:', error);
+  return Astro.redirect('/404');
+}
+
+// Redirect to 404 if no posts found
+if (filteredPosts.length === 0) {
+  console.warn(`No posts found for tag: ${originalTag}`);
+  return Astro.redirect('/404');
+}
+
+// SEO and meta data
+const pageTitle = `${originalTag} News & Articles`;
+const pageDescription = `Discover the latest ${originalTag} news, articles, and updates from Kenya. Stay informed with comprehensive coverage and insights.`;
+const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tagSlug}`;
+
+// Schema.org data
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.jonathanmwaniki.co.ke"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Tags",
+      "item": "https://www.jonathanmwaniki.co.ke/tags"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": `${originalTag} News`,
+      "item": canonicalUrl
+    }
+  ]
+};
+
+const collectionSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": pageTitle,
+  "description": pageDescription,
+  "url": canonicalUrl,
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": filteredPosts.length,
+    "itemListElement": filteredPosts.map((post, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "NewsArticle",
+        "headline": post.data?.title || 'Untitled',
+        "description": post.data?.description || '',
+        "datePublished": post.data?.date?.toISOString() || new Date().toISOString(),
+        "author": {
+          "@type": "Person",
+          "name": "Jonathan Mwaniki"
+        },
+        "url": `https://www.jonathanmwaniki.co.ke/posts/${post.slug}`
+      }
+    }))
+  }
+};
 ---
 
 <Layout
-  title={optimizedTitle}
-  description={optimizedDescription}
+  title={pageTitle}
+  description={pageDescription}
   canonical={canonicalUrl}
   image="https://www.jonathanmwaniki.co.ke/default-og-image.jpg"
   meta={[
-    { name: 'og:title', content: optimizedTitle },
-    { name: 'og:description', content: optimizedDescription },
+    { name: 'og:title', content: pageTitle },
+    { name: 'og:description', content: pageDescription },
     { name: 'og:type', content: 'website' },
     { name: 'og:url', content: canonicalUrl },
     { name: 'og:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
-    { name: 'og:image:alt', content: `${formattedTag} News - Jonathan Mwaniki` },
-    { name: 'og:site_name', content: 'Jonathan Mwaniki - Kenya News' },
-    { name: 'og:locale', content: 'en_KE' },
+    { name: 'og:site_name', content: 'Jonathan Mwaniki' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: optimizedTitle },
-    { name: 'twitter:description', content: optimizedDescription },
+    { name: 'twitter:title', content: pageTitle },
+    { name: 'twitter:description', content: pageDescription },
     { name: 'twitter:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
-    { name: 'twitter:image:alt', content: `${formattedTag} News - Jonathan Mwaniki` },
-    { name: 'twitter:site', content: '@maestropuns' },
-    { name: 'keywords', content: competitiveKeywords },
-    { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
-    { name: 'geo.region', content: 'KE' },
-    { name: 'geo.country', content: 'Kenya' },
-    { name: 'geo.placename', content: 'Nairobi' },
-    { name: 'ICBM', content: '-1.286389, 36.817223' },
-    { name: 'theme-color', content: '#dc2626' },
+    { name: 'keywords', content: `${originalTag}, Kenya news, ${originalTag} articles, breaking news` },
+    { name: 'robots', content: 'index, follow' },
   ]}
 >
-  <!-- Breadcrumb Schema -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Kenya News Home",
-          "item": "https://www.jonathanmwaniki.co.ke"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "${breadcrumbName}",
-          "item": "${canonicalUrl}"
-        }
-      ]
-    }
-  </script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
+  <script type="application/ld+json" set:html={JSON.stringify(collectionSchema)}></script>
 
-  <!-- CollectionPage Schema for Tag Page -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      "name": "${formattedTag} News",
-      "description": "${optimizedDescription}",
-      "url": "${canonicalUrl}",
-      "mainEntity": [
-        ${posts.map(post => {
-          const title = post.data.title || 'Untitled';
-          const date = post.data.date ? new Date(post.data.date).toISOString() : new Date().toISOString();
-          const escapedTitle = title.replace(/"/g, '\\"');
-          
-          return `{
-            "@type": "NewsArticle",
-            "headline": "${escapedTitle}",
-            "datePublished": "${date}",
-            "author": {
-              "@type": "Person",
-              "name": "Jonathan Mwaniki"
-            },
-            "url": "https://www.jonathanmwaniki.co.ke/posts/${post.slug}"
-          }`;
-        }).join(',')}
-      ]
-    }
-  </script>
-
-  <!-- Top Ad -->
-  <div class="ad-container">
-    <script type="text/javascript">
-      atOptions = {
-        'key': '1610960d9ced232cc76d8f5510ee4608',
-        'format': 'iframe',
-        'height': 60,
-        'width': 468,
-        'params': {}
-      };
-    </script>
-    <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-  </div>
-
-  <div class="post-container">
-    <nav aria-label="Breadcrumb">
-      <ol class="breadcrumb">
-        <li><a href="/" title="Kenya News Home">Home</a></li>
-        <li aria-current="page">{formattedTag}</li>
+  <main class="container">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/tags">Tags</a></li>
+        <li aria-current="page">{originalTag}</li>
       </ol>
     </nav>
 
-    <!-- Category Navigation Bar -->
-    <nav class="category-nav" aria-label="Category Navigation">
-      <h3 style="margin: 0.5rem 0; color: #1a202c;">Explore Kenya News Categories</h3>
-      <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        {categories.map(category => (
+    <!-- Page Header -->
+    <header class="page-header">
+      <h1>{originalTag} News & Articles</h1>
+      <p class="subtitle">
+        Explore {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''} 
+        tagged with "{originalTag}"
+      </p>
+    </header>
+
+    <!-- Category Navigation -->
+    <nav class="category-nav" aria-label="Categories">
+      <h2 class="nav-title">Explore Categories</h2>
+      <ul class="category-list">
+        {allCategories.map(category => (
           <li>
             <a 
-              href={`/category/${category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`} 
-              title={`${category} News Kenya`} 
-              style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; text-decoration: none;"
+              href={`/category/${createSlug(category)}`}
+              class="category-link"
+              title={`Browse ${category} articles`}
             >
               {category}
             </a>
@@ -254,151 +303,114 @@ const competitiveKeywords = [
       </ul>
     </nav>
 
-    <a href="/" class="back-link" title="Back to Kenya Breaking News">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-      </svg>
-      Back to Kenya News
-    </a>
-
-    <section class="tag-posts">
-      <h1>{formattedTag} News</h1>
-      {posts.length > 0 ? (
-        <>
-          <p>Latest updates and stories related to {formattedTag} in Kenya.</p>
-          <ul style="list-style: none; padding: 0; display: grid; gap: 1rem;">
-            {posts.map(post => {
-              const title = post.data.title || 'Untitled';
-              const description = post.data.description || 'No description available';
-              const category = post.data.category || 'Uncategorized';
-              const categorySlug = category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-              const date = post.data.date ? new Date(post.data.date) : new Date();
-              
-              return (
-                <li>
-                  <a 
-                    href={`/posts/${post.slug}`} 
-                    title={`${title} - Jonathan Mwaniki`} 
-                    style="text-decoration: none; color: #2d3748; font-weight: 600;"
-                  >
+    <!-- Posts Grid -->
+    <section class="posts-section" aria-label="Articles">
+      <h2 class="section-title">Latest Articles</h2>
+      <div class="posts-grid">
+        {filteredPosts.map(post => {
+          const title = post.data?.title || 'Untitled';
+          const description = post.data?.description || 'No description available';
+          const category = safeGetCategory(post);
+          const date = post.data?.date || new Date();
+          const categorySlug = createSlug(category);
+          
+          return (
+            <article class="post-card">
+              <header class="post-header">
+                <h3 class="post-title">
+                  <a href={`/posts/${post.slug}`} title={`Read: ${title}`}>
                     {title}
                   </a>
-                  <p style="color: #4a5568; line-height: 1.6; margin: 0.5rem 0 0 0;">
-                    {description}
-                  </p>
-                  <span style="color: #666; font-size: 0.9rem;">
-                    <a 
-                      href={`/category/${categorySlug}`} 
-                      title={`${category} News Kenya`}
-                      style="color: #BB1919; text-decoration: none;"
-                    >
-                      {category}
-                    </a>
-                    &nbsp;•&nbsp;
-                    {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      ) : (
-        <p>No posts found for this tag. Explore other <a href="/categories" title="Kenya News Categories">categories</a> or check back for updates.</p>
-      )}
+                </h3>
+              </header>
+              
+              <div class="post-content">
+                <p class="post-description">{description}</p>
+              </div>
+              
+              <footer class="post-meta">
+                <span class="post-category">
+                  <a 
+                    href={`/category/${categorySlug}`}
+                    title={`Browse ${category} articles`}
+                  >
+                    {category}
+                  </a>
+                </span>
+                <time 
+                  class="post-date"
+                  datetime={date.toISOString()}
+                  title={`Published on ${date.toLocaleDateString()}`}
+                >
+                  {date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </time>
+              </footer>
+            </article>
+          );
+        })}
+      </div>
     </section>
 
-    <!-- Newsletter Signup -->
-    <div class="newsletter-signup" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: center;">
-      <h3 style="margin: 0 0 1rem 0;">Stay Updated with Kenya News</h3>
-      <p style="margin: 0 0 1.5rem 0;">Get breaking news from Kenya delivered to your inbox. Politics, entertainment, business & trending stories.</p>
-      <div style="display: flex; gap: 0.5rem; max-width: 400px; margin: 0 auto;">
-        <input type="email" placeholder="Enter your email" style="flex: 1; padding: 0.75rem; border: none; border-radius: 6px;">
-        <button style="background: white; color: #dc2626; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer;">Subscribe</button>
-      </div>
-    </div>
-
-    <!-- Bottom Ad -->
-    <div class="ad-container">
-      <script type="text/javascript">
-        atOptions = {
-          'key': '1610960d9ced232cc76d8f5510ee4608',
-          'format': 'iframe',
-          'height': 60,
-          'width': 468,
-          'params': {}
-        };
-      </script>
-      <script type="text/javascript" src="//www.highperformanceformat.com/1610960d9ced232cc76d8f5510ee4608/invoke.js"></script>
-    </div>
-  </div>
+    <!-- Back Navigation -->
+    <nav class="back-nav">
+      <a href="/tags" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"></polyline>
+        </svg>
+        View All Tags
+      </a>
+      <a href="/" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9,22 9,12 15,12 15,22"></polyline>
+        </svg>
+        Back to Home
+      </a>
+    </nav>
+  </main>
 
   <style>
-    .post-container {
-      max-width: 900px;
+    .container {
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 2rem;
-    }
-
-    .tag-posts h1 {
-      font-size: 2.5rem;
-      color: #1a202c;
-      margin-bottom: 1rem;
-    }
-
-    .tag-posts p {
-      font-size: 1.25rem;
-      color: #4a5568;
+      padding: 2rem 1rem;
       line-height: 1.6;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
       margin-bottom: 2rem;
     }
 
-    .tag-posts ul {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .tag-posts li {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .tag-posts li:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      border-color: #dc2626;
-    }
-
-    .tag-posts a:hover {
-      color: #dc2626;
-    }
-
-    .breadcrumb {
+    .breadcrumb ol {
       list-style: none;
-      padding: 0.75rem 1rem;
-      margin: 0.5rem 0;
-      font-size: 0.875rem;
+      padding: 0;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
       background: #f8f9fa;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
     }
 
-    .breadcrumb li {
-      display: inline;
-    }
-
-    .breadcrumb li + li:before {
-      content: " › ";
-      padding: 0 0.5rem;
+    .breadcrumb li::after {
+      content: '→';
+      margin-left: 0.5rem;
       color: #666;
     }
 
+    .breadcrumb li:last-child::after {
+      display: none;
+    }
+
     .breadcrumb a {
+      color: #dc2626;
       text-decoration: none;
-      color: #BB1919;
       font-weight: 500;
     }
 
@@ -406,138 +418,223 @@ const competitiveKeywords = [
       text-decoration: underline;
     }
 
-    .category-nav {
-      margin: 1rem 0;
+    /* Page Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid #e5e7eb;
     }
 
-    .category-nav h3 {
+    .page-header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    /* Category Navigation */
+    .category-nav {
+      margin-bottom: 3rem;
+    }
+
+    .nav-title {
       font-size: 1.25rem;
-      color: #1a202c;
+      color: #374151;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .category-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .category-link {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #dc2626;
+      color: white;
+      text-decoration: none;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .category-link:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+    }
+
+    /* Posts Section */
+    .posts-section {
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      color: #1f2937;
+      margin-bottom: 2rem;
+      font-weight: 600;
+    }
+
+    .posts-grid {
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+
+    /* Post Cards */
+    .post-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .post-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border-color: #dc2626;
+    }
+
+    .post-title {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      line-height: 1.3;
+    }
+
+    .post-title a {
+      color: #1f2937;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .post-title a:hover {
+      color: #dc2626;
+    }
+
+    .post-description {
+      color: #4b5563;
+      margin: 0 0 1.5rem 0;
+      font-size: 0.95rem;
+    }
+
+    .post-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid #f3f4f6;
+      font-size: 0.875rem;
+    }
+
+    .post-category a {
+      color: #dc2626;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .post-category a:hover {
+      text-decoration: underline;
+    }
+
+    .post-date {
+      color: #6b7280;
+    }
+
+    /* Back Navigation */
+    .back-nav {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e5e7eb;
     }
 
     .back-link {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #BB1919;
-      border-radius: 4px;
-      background: #FFFFFF;
-      color: #BB1919;
-      font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-      font-size: 0.875rem;
-      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      background: white;
+      border: 2px solid #dc2626;
+      color: #dc2626;
       text-decoration: none;
-      cursor: pointer;
-      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-      margin: 1rem 0;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s ease;
     }
 
     .back-link:hover {
-      background: #BB1919;
-      color: #FFFFFF;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      background: #dc2626;
+      color: white;
     }
 
-    .back-link:focus {
-      outline: 2px solid #BB1919;
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-
-    .back-link svg {
-      width: 16px;
-      height: 16px;
-      stroke: currentColor;
-    }
-
-    .ad-container {
-      display: flex;
-      justify-content: center;
-      margin: 2rem 0;
-      padding: 1rem;
-      background: #fafafa;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-
+    /* Responsive Design */
     @media (max-width: 768px) {
-      .post-container {
+      .container {
         padding: 1rem;
       }
 
-      .tag-posts h1 {
-        font-size: 1.75rem;
+      .posts-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
       }
 
-      .tag-posts p {
-        font-size: 1rem;
-      }
-
-      .category-nav ul {
+      .breadcrumb ol {
         flex-direction: column;
-        gap: 0.75rem;
+        align-items: flex-start;
+        gap: 0.25rem;
       }
 
-      .newsletter-signup div {
+      .breadcrumb li::after {
+        content: '↓';
+      }
+
+      .back-nav {
         flex-direction: column;
-        gap: 1rem;
+        align-items: center;
+      }
+
+      .category-list {
+        justify-content: center;
       }
     }
 
-    @media print {
-      .ad-container,
-      .back-link,
-      .category-nav,
-      .newsletter-signup {
-        display: none !important;
-      }
-
-      .post-container {
-        max-width: none;
-        padding: 0;
-      }
-    }
-
-    .breadcrumb a:focus,
-    .back-link:focus,
-    .category-nav a:focus {
+    /* Focus Styles for Accessibility */
+    a:focus,
+    button:focus {
       outline: 2px solid #dc2626;
       outline-offset: 2px;
-      border-radius: 4px;
     }
-  </style>
 
-  <script is:inline>
-    // Newsletter signup functionality
-    function handleNewsletterSignup() {
-      const button = document.querySelector('.newsletter-signup button');
-      const input = document.querySelector('.newsletter-signup input');
-
-      if (button && input) {
-        button.addEventListener('click', function(e) {
-          e.preventDefault();
-          const email = input.value.trim();
-          if (email && email.includes('@')) {
-            button.textContent = 'Subscribed!';
-            button.style.background = '#10b981';
-            input.value = '';
-            setTimeout(() => {
-              button.textContent = 'Subscribe';
-              button.style.background = 'white';
-            }, 3000);
-          } else {
-            button.textContent = 'Invalid Email';
-            button.style.background = '#ef4444';
-            setTimeout(() => {
-              button.textContent = 'Subscribe';
-              button.style.background = 'white';
-            }, 2000);
-          }
-        });
+    /* Print Styles */
+    @media print {
+      .category-nav,
+      .back-nav {
+        display: none;
+      }
+      
+      .post-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
       }
     }
-
-    window.addEventListener('load', handleNewsletterSignup);
-  </script>
+  </style>
 </Layout>
