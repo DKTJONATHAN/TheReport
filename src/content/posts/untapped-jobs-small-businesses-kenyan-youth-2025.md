@@ -3,7 +3,7 @@ title: "10 Untapped Jobs and Small Businesses Kenyan Youth Can Start in 2025-202
 description: "Explore 10 promising, low-skill jobs and small businesses that Kenyan youth can start now, with detailed capital needs and growth potential for 2025 and beyond."
 date: 2025-09-17
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/XvMtkKxt/kenyan-youth-jobs-2025.jpg"
+image: "https://i.postimg.cc/50CpxWDk/grok-image-anrcjs.jpg"
 imageCaption: "Kenyan youth exploring business opportunities"
 imageAlt: "Kenyan youths starting small business"
 category: "Lifestyle"
