@@ -1,5 +1,4 @@
-
----
+untapped-jobs-small-businesses-kenyan-youth-2025---
 title: "10 Untapped Jobs and Small Businesses Kenyan Youth Can Start in 2025-2026"
 description: "Explore 10 promising, low-skill jobs and small businesses that Kenyan youth can start now, with detailed capital needs and growth potential for 2025 and beyond."
 date: 2025-09-17
@@ -12,7 +11,6 @@ tags: ["Jobs", "Kenyan Youth", "Small Business", "Entrepreneurship", "2025"]
 featured: false
 draft: false
 ---
-
 # Tackling Joblessness: New Small Business Ideas for Kenyan Youth
 
 Kenya faces a growing crisis of youth unemployment in 2025. As the crime rate rises, many young people struggle to find income opportunities. You don't have to wait for government changes. You can start small businesses and jobs that need little to no formal skills or certificates, but fill meaningful gaps in the market.
