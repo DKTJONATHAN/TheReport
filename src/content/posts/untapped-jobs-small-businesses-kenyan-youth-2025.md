@@ -1,4 +1,4 @@
-untapped-jobs-small-businesses-kenyan-youth-2025---
+---
 title: "10 Untapped Jobs and Small Businesses Kenyan Youth Can Start in 2025-2026"
 description: "Explore 10 promising, low-skill jobs and small businesses that Kenyan youth can start now, with detailed capital needs and growth potential for 2025 and beyond."
 date: 2025-09-17
@@ -11,13 +11,14 @@ tags: ["Jobs", "Kenyan Youth", "Small Business", "Entrepreneurship", "2025"]
 featured: false
 draft: false
 ---
+
 # Tackling Joblessness: New Small Business Ideas for Kenyan Youth
 
 Kenya faces a growing crisis of youth unemployment in 2025. As the crime rate rises, many young people struggle to find income opportunities. You don't have to wait for government changes. You can start small businesses and jobs that need little to no formal skills or certificates, but fill meaningful gaps in the market.
 
 This article highlights **10 untapped jobs and small business ideas** you can start now. Each comes with clear startup costs and practical details so you can dive in confidently and create steady income.
 
-***
+---
 
 ## 1. Waste Collection and Recycling Business
 
@@ -27,7 +28,7 @@ Kenya struggles with waste management, especially in urban and peri-urban areas.
 - **Why It Works:** Many neighborhoods lack reliable waste services. You provide convenience and improve hygiene.
 - **Growth Tip:** Partner with recycling firms or sell compost locally.
 
-***
+---
 
 ## 2. Water Vending and Refilling Stations
 
@@ -36,7 +37,7 @@ Access to clean water remains limited in many areas. Purifying and vending clean
 - **Startup Capital:** 40,000–70,000 KES for water tanks, filters, containers, and licensing.
 - **Tip:** Offer delivery services using a bicycle or motorbike to widen your client base.
 
-***
+---
 
 ## 3. Street and Mobile Car Wash Services
 
@@ -45,7 +46,7 @@ Vehicle owners and boda boda riders want convenient, low-cost washing options. O
 - **Startup Capital:** About 20,000 KES for buckets, water, soap, and sponges.
 - **Extra Income:** Add interior cleaning or waxing as you grow.
 
-***
+---
 
 ## 4. Airtime and Data Reselling (Mini ISP Model)
 
@@ -54,7 +55,7 @@ Many Kenyans struggle to buy small amounts of airtime and data conveniently. Bec
 - **Startup Capital:** 10,000–30,000 KES for registration, a smartphone, and an initial stock of bundles.
 - **Expansion:** Sell WiFi access at a profit to renters or small shops.
 
-***
+---
 
 ## 5. Urban and Herbal Plant Nursery
 
@@ -63,7 +64,7 @@ More people want fresh organic produce and herbal remedies. Grow fast-maturing h
 - **Startup Capital:** 15,000–25,000 KES for seeds, pots, soil, and simple tools.
 - **Market:** Sell to hawkers, restaurants, and health-focused shops.
 
-***
+---
 
 ## 6. Motorcycle Spare Parts Kiosk
 
@@ -72,7 +73,7 @@ The boda boda industry grows daily but lacks affordable parts in many suburbs. S
 - **Startup Capital:** 50,000–80,000 KES for initial stock and a kiosk space.
 - **Tip:** Build strong supplier relationships for better prices.
 
-***
+---
 
 ## 7. Phone Accessories and Basic Repairs
 
@@ -81,7 +82,7 @@ Phones break often. Sell chargers, earphones, and covers with basic repair servi
 - **Startup Capital:** 30,000–50,000 KES for stock and tools.
 - **Learn:** Self-train online for simple repairs.
 
-***
+---
 
 ## 8. Delivery and Errand Services
 
@@ -90,7 +91,7 @@ Small businesses and busy people need errands done fast. Use a bicycle or motorb
 - **Startup Capital:** Your existing bike or minimal transport rental.
 - **Strategy:** Build reliable client relationships for referrals.
 
-***
+---
 
 ## 9. Local Event DJ and Music Services
 
@@ -99,7 +100,7 @@ Events need music and sound. Own or rent speakers and equipment to offer DJ serv
 - **Startup Capital:** 60,000–100,000 KES for basic sound gear.
 - **Learn:** Pick up DJ basics from free online tutorials.
 
-***
+---
 
 ## 10. Healthy Juices and Snacks Kiosks
 
@@ -108,7 +109,7 @@ Consumers want healthier fast food alternatives. Offer fresh fruit juices, nuts,
 - **Startup Capital:** 40,000–60,000 KES for fruits, blenders, and stall setup.
 - **Growth:** Provide catering for local events to boost sales.
 
-***
+---
 
 # Why These Jobs Fit You
 
@@ -120,7 +121,7 @@ Consumers want healthier fast food alternatives. Offer fresh fruit juices, nuts,
 
 You can start these now. Get ahead of rising unemployment, build your income, and survive the tough economy under the current government. The key is to act fast, stay consistent, and expand your hustle.
 
-***
+---
 
 <div class="article,meta">
   <p><strong>Published:</strong> September 17, 2025</p>
