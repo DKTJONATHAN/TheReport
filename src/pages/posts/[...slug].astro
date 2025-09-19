@@ -319,7 +319,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
       --font-sans: 'ReithSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-serif: 'ReithSerif', Georgia, 'Times New Roman', serif;
-      --max-width: 1280px;
+      --max-width: 1400px;
       --transition: all 0.2s ease;
       --focus-outline: #BB1919;
     }
@@ -374,6 +374,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       max-width: 100%;
       height: auto;
       display: block;
+      object-fit: contain; /* Prevent cropping for all images by default */
     }
 
     .page-container {
@@ -381,7 +382,7 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
       margin: 0 auto;
       padding: 1rem;
       display: grid;
-      grid-template-columns: 1fr minmax(0, 300px);
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
       grid-template-areas:
         "breadcrumb breadcrumb"
         "main sidebar";
@@ -470,11 +471,19 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     .featured-image {
       margin: 1.5rem 0;
-      overflow: hidden;
+      overflow: visible; /* Allow full image display */
       border-radius: 8px;
       box-shadow: var(--shadow);
-      aspect-ratio: 16/9;
       background: var(--bg-light);
+      aspect-ratio: auto; /* Remove fixed aspect ratio */
+    }
+
+    .featured-image-img {
+      width: 100%;
+      height: auto;
+      object-fit: contain !important; /* Force full image display without cropping */
+      border-radius: 8px;
+      display: block;
     }
 
     .article-body {
@@ -623,11 +632,12 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
 
     .card-image {
       width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain !important; /* Show full related post images without cropping */
       background: var(--bg-light);
       display: block;
       border-bottom: 1px solid var(--border-color);
+      aspect-ratio: auto; /* Remove fixed aspect ratio */
     }
 
     .card-content {
