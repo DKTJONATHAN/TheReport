@@ -3,7 +3,7 @@ title: "The Girl’s Paradox: Why Women Seem More Interested When You’re Taken
 description: "Exploring the curious pattern where women show more interest when you have a girlfriend than when you’re single, with real-world observations and psychological insights."
 date: 2025-09-19
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/4x8L9Zts/girls-paradox.jpg"
+image: "https://i.postimg.cc/VNXhQwSG/grok-image-2m25jn-1.jpg"
 imageCaption: "A man caught between attention from women"
 imageAlt: "Man observing women's reactions"
 category: "Lifestyle"
