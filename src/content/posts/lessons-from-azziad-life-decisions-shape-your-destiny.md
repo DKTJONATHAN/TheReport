@@ -10,7 +10,7 @@ category: "Celebrities"
 tags: ["Azziad Nasenya", "Lessons", "Scandals", "Celebrities", "Decisions"]
 featured: false
 draft: false
-slug: lessons-from-azziad-life-decisions-shape-your-destiny
+---
 
 # Lessons from Azziad: How Life Decisions Shape Your Destiny
 
