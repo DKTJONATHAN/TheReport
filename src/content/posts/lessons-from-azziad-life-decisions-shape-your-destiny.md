@@ -3,7 +3,7 @@ title: "Lessons from Azziad: How Life Decisions Shape Your Destiny"
 description: "Azziad Nasenya’s rise and fall offer real lessons on the repercussions of choices, fame, finances, and the weight of public scrutiny. Learn what her story can teach you about protecting your future."
 date: 2025-09-24
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/vmfr6qdM/azziad-lessons.jpg"
+image: "https://i.postimg.cc/Dz2CW4T9/20250924-192321.jpg"
 imageCaption: "Azziad Nasenya at the height of her fame"
 imageAlt: "Azziad Nasenya in stylish outfit"
 category: "Celebrities"
