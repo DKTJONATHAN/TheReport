@@ -3,7 +3,7 @@ title: "Kenya's HIV Surge 2025: Reckless Sex, Low Condom Use, and a Vaccine on t
 description: "HIV cases in Kenya are surging in 2025, with Gen Z abandoning condoms and college students engaging in high-risk behaviors. Here’s what’s happening, what youth are saying, and what new vaccines may change."
 date: 2025-10-03
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/KvHq6r5S/hiv-kenya-genz.jpg"
+image: "https://i.postimg.cc/k4nr81dg/generated-image.jpg"
 imageCaption: "Young Kenyans at a campus event"
 imageAlt: "Kenyan youth social event"
 category: "Health"
