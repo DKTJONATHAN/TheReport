@@ -3,7 +3,7 @@ title: "10 Mind-Blowing Facts About Safaricom That You Didn’t Know"
 description: "Safaricom isn’t just Kenya’s telco giant—its numbers, reach, and power will shock you. Here are 10 insane facts about Safaricom, from daily billions to the impact of a single cent on the whole country."
 date: 2025-10-08
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/8PbGBgyg/safaricom-mindblowing.jpg"
+image: "https://i.postimg.cc/fyDDLmHM/grok-image-xi1tvvh-1.jpg"
 imageCaption: "Safaricom CEO Peter Ndegwa"
 imageAlt: "Peter Ndegwa, CEO of Safaricom, during an interview"
 category: "Business"
