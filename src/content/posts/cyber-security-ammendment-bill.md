@@ -3,7 +3,7 @@ title: "Surveillance Disguised as Protection: Why Kenya's New Internet Law Threa
 description: "Signed quietly as the nation mourned Raila Odinga, Kenya's new internet metering law opens the door to mass surveillance, illegal detention, and state control. Here's why this law is dangerous for every Kenyan."
 date: 2025-10-24
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/j2XNvQpG/kenya-surveillance-law.jpg"
+image: "https://i.postimg.cc/CLdzx2cs/Screenshot-20251024-140423.png"
 imageCaption: "Kenya's new internet law threatens digital freedom"
 imageAlt: "Kenya digital surveillance concept"
 category: "Politics"
