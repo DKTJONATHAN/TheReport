@@ -3,7 +3,7 @@ title: "Inside Transsion’s Digital Empire: How Chinese Phones Took Over Africa
 description: "From Tecno to Itel, and from Boomplay to Oraimo, Transsion has conquered Africa’s phone market using cheap devices, aggressive localization, and silent data collection. Here’s how this Chinese tech giant built an African empire — and why it’s a privacy nightmare."
 date: 2025-10-24
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/2yKvXqpM/transsion-africa-surveillance.jpg"
+image: "https://i.postimg.cc/6qxxT4MC/Screen-Shot-2019-08-10-at-12-18-47.png"
 imageCaption: "Transsion phones dominate African markets"
 imageAlt: "African youth using Transsion phones"
 category: "Technology"
