@@ -1,5 +1,3 @@
-
-
 ---
 title: "The Stone Sentinel: A History of the Kenyan Parliament Building"
 description: "Explore the rich history, architectural significance, and evolving role of the Kenyan Parliament building, a symbol of sovereignty born from colonial roots and shaped by independence."
@@ -13,6 +11,7 @@ tags: ["Kenyan Parliament", "Kenya", "Architecture", "Colonial History", "Indepe
 featured: false
 draft: false
 slug: stone-sentinel-history-kenyan-parliament
+---
 
 # The Stone Sentinel: A History of the Kenyan Parliament Building
 
