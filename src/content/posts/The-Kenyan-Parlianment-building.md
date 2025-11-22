@@ -3,7 +3,7 @@ title: "The Stone Sentinel: A History of the Kenyan Parliament Building"
 description: "Explore the rich history, architectural significance, and evolving role of the Kenyan Parliament building, a symbol of sovereignty born from colonial roots and shaped by independence."
 date: 2025-11-22
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/pTY0MHFx/Gemini-Generated-Image-f1bov4f1bov4f1bo-(1).png"
 imageCaption: "The iconic Kenyan Parliament building standing tall in Nairobi"
 imageAlt: "Kenyan Parliament building in Nairobi under bright blue sky"
 category: "History"
