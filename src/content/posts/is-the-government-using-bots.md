@@ -1,5 +1,5 @@
-
 ---
+
 title: "EXPOSED: How Gava is Using Your Taxes to Pay ‘Keyboard Warriors’ to Silence You (While the Cybercrime Bill Waits to Finish the Job)"
 description: "A fearless exposé of the Kenyan government’s state-sponsored digital harassment campaign—and how the proposed Cybercrime Bill threatens to turn soft intimidation into legal jail time for dissenters."
 date: 2025-11-22
