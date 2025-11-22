@@ -4,7 +4,7 @@ title: "EXPOSED: How Gava is Using Your Taxes to Pay ‘Keyboard Warriors’ to 
 description: "A fearless exposé of the Kenyan government’s state-sponsored digital harassment campaign—and how the proposed Cybercrime Bill threatens to turn soft intimidation into legal jail time for dissenters."
 date: 2025-11-22
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/zDP8hS4M/Gemini-Generated-Image-20edx720edx720ed.png"
 imageCaption: "Kenyan citizens facing digital surveillance and coordinated online harassment"
 imageAlt: "Symbolic image of data, harassment, and censorship"
 category: "Investigation"
