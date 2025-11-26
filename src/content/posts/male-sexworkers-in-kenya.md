@@ -1,95 +1,3 @@
-Here is the updated article with the revised title, formatted as a complete newspaper feature.
-
-***
-
-# THE MWANIKI REPORT
-**NAIROBI'S INDEPENDENT VOICE | EST. 2025 | JONATHANMWANIKI.CO.KE**
-
----
-
-# THE SILENT FELONY: The Legal Architecture That Hunts Male Sex Workers for Sport
-
-### **EXCLUSIVE: While female workers battle city bylaws, a loophole in the Penal Code has been weaponized to make the survival of male sex workers a guaranteed felony.**
-
-**By Jonathan Mwaniki** *Special Investigation*
-
-**NAIROBI** — It is an open secret in this city. By day, Nairobi is the pulse of East African business. By night, the neon lights of Westlands and the shadowed corridors of River Road conceal a thriving illicit trade. But beneath the surface of this nocturnal economy lies a stark, ignored legal reality.
-
-While female sex workers navigate a complex system of county *askaris* and harassment for "loitering," their male counterparts face a different beast: a Penal Code weaponized to make their very existence a crime.
-
-In this exclusive investigation, *The Mwaniki Report* dismantles the legal framework clause by clause, exposing a deliberate double standard. We reveal a system that doesn't just criminalize the act, but creates an inescapable trap for male sex workers, leaving them vulnerable to state-sanctioned extortion with absolutely no recourse.
-
-### **Part I: The Gendered Trap**
-
-Most Kenyans assume the law is blind. The text of the **Penal Code, Cap 63**, proves otherwise. When examined through the lens of gender, the primary legal weapon against sex workers reveals a disturbing pattern.
-
-**THE TALE OF TWO SECTIONS**
-
-| **Feature** | **Section 153 (Targets Male Sex Workers)** | **Section 154 (Targets Women)** |
-| :--- | :--- | :--- |
-| **The Subject** | "Every **male person** who..." | "Every **woman** who..." |
-| **The Crime** | "...knowingly lives wholly or in part on the earnings of prostitution." | "...knowingly lives wholly or in part on the earnings of prostitution." |
-| **Severity** | **Felony** (Serious Crime) | **Misdemeanor** (Minor Offense) |
-| **The Reality** | Interpreted literally to criminalize the male worker spending his *own* money. | Historically interpreted to target "Madams" or pimps controlling others. |
-| **Penalty** | Prison sentences (up to 14 years for related acts) or high-value extortion. | Small fines (e.g., KSh 1,000), community service, or short holding. |
-
-**The Legal Noose:** Section 153(1)(a) criminalizes the survival of the male sex worker. The moment a man uses money earned from sex work to pay rent, buy food, or board a *matatu*, he has committed a felony. He doesn't need to exploit anyone else; he is criminalized for supporting himself.
-
----
-
-### **Part II: The Anatomy of the Trap**
-
-The law is designed to ensure that a male sex worker is committing a crime at every single stage of his operation. There is no legal way to exist in this space.
-
-* **TRAP 1: THE PROMOTION (Soliciting)**
-    You cannot advertise. A website, a social media profile, or even standing on a street corner is a felony under **Section 153(b)**: *"Soliciting for Immoral Purposes."*
-* **TRAP 2: THE ACT (Unnatural Offenses)**
-    Unlike heterosexual sex work where the act itself is rarely the primary charge, for male sex workers, the sexual acts are classified as felonies under **Sections 162 and 165**, carrying sentences of up to **14 years**.
-* **TRAP 3: THE LIVELIHOOD (Living on Earnings)**
-    You cannot spend the money. The very act of surviving on your income is a felony under **Section 153(a)**.
-
-This creates a "perfect storm" where police do not need to catch a man in the act; they only need evidence of his lifestyle to charge him with a serious crime.
-
----
-
-### **Part III: Voices from the Shadows**
-
-To understand the human cost, we spoke to male sex workers operating in Nairobi. Their names have been changed.
-
-**"Kevin," 26 – The Westlands Freelancer**
-Kevin turned to sex work through online apps after failing to find formal employment.
-> "The police and the DCI know the law better than any lawyer," Kevin says, scanning the coffee shop nervously. "They don't want to arrest us; that's too much paperwork. They want M-Pesa."
->
-> He recounts a recent setup: "I met a 'client' at a lodging in Ngara. It was a trap. Three men burst in. They quoted Section 153. They said, 'You are a male living on earnings of prostitution. That is 14 years.' They demanded KSh 50,000. I sent KSh 20,000. They left, laughing. We are not citizens to them; we are walking ATMs."
-
-**"John," 32 – The CBD Veteran**
-John contrasts his experience with the women he works alongside.
-> "If one of the girls on Koinange gets picked up by the *kanjo*, it's a nuisance. They pay a KSh 1,000 fine for loitering. It's a business expense. For me? If I stand on that same corner, I am charged with a felony. If a client beats me, who do I call? If I walk into a police station bleeding, I become the criminal. The person who assaulted me goes free."
-
----
-
-### **Part IV: The Constitutional Crisis**
-
-This targeted criminalization flies in the face of the **Constitution of Kenya (2010)**.
-
-* **Article 27(4):** *"The State shall not discriminate directly or indirectly against any person on any ground, including... sex."*
-* **Article 28:** *"Every person has inherent dignity and the right to have that dignity respected and protected."*
-
-**THE HUMAN COST OF CRIMINALIZATION**
-
-| **Impact Area** | **The Reality on the Ground** |
-| :--- | :--- |
-| **Police Violence** | Male sex workers report significantly higher rates of physical assault by police than female workers. |
-| **Blackmail** | The primary threat for over 70% of male workers is extortion by gangs posing as clients. |
-| **Health Access** | Fear of arrest creates a barrier to HIV testing and treatment, driving up prevalence rates. |
-
-### **The Verdict**
-
-The hypocrisy is glaring. While society debates morality, the law has decided that gender determines the severity of the crime. For male sex workers in this trade, the danger is not just the dark alleyways; it is the black-and-white text of the Kenyan law. As long as Section 153 remains, they are not workers—they are walking felonies, waiting to be cashed in by a corrupt system.
-
----
-* **Disclaimer:** *This article is for investigative and educational purposes only. The Mwaniki Report does not condone illegal activities. Readers are advised to uphold the laws of Kenya.*
-
 ---
 title: "The Silent Felony: How Kenya’s Penal Code Hunts Male Sex Workers for Sport"
 description: "An investigative breakdown of how Sections 153, 154, 162, and 165 of Kenya’s Penal Code create a gendered legal trap that turns male sex workers into permanent felons and easy targets for extortion."
@@ -102,6 +10,7 @@ category: "Investigation"
 tags: ["Kenya", "Penal Code", "Male Sex Workers", "Human Rights", "Extortion", "Police Abuse"]
 featured: true
 draft: false
+---
 
 # The Silent Felony: The Legal Architecture That Hunts Male Sex Workers for Sport
 
