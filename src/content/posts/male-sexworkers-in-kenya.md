@@ -3,7 +3,7 @@ title: "The Silent Felony: How Kenya’s Penal Code Hunts Male Sex Workers for S
 description: "An investigative breakdown of how Sections 153, 154, 162, and 165 of Kenya’s Penal Code create a gendered legal trap that turns male sex workers into permanent felons and easy targets for extortion."
 date: 2025-11-26
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/Qx1s89yq/Gemini-Generated-Image-ud06vcud06vcud06.png"
 imageCaption: "A silhouetted figure under Nairobi’s city lights, symbolising criminalisation and surveillance."
 imageAlt: "Shadow of a man walking alone in a city at night"
 category: "Investigation"
