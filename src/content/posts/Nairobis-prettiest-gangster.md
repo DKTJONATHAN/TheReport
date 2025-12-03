@@ -3,7 +3,7 @@ title: "Nairobi's Prettiest Gangster: The Rise and Fall of Claire Njoki Kibia"
 description: "A deep dive into the life, choices, and legacy of Claire Njoki Kibia, Nairobi’s most infamous female gangster, and the enduring questions about youth, crime, and justice in Kenya."
 date: 2025-12-03
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/9XZ5BY7Y/unnamed-(10).jpg"
 imageCaption: "A symbolic representation of Nairobi’s urban life and crime"
 imageAlt: "Nairobi skyline with shadowy figures"
 category: "Investigation"
