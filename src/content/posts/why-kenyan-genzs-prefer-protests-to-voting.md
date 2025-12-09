@@ -3,7 +3,7 @@ title: "Gen Z’s Protest Playbook: Why Kenyan Youth Prefer the Streets Over the
 description: "A detailed exploration of why Kenya’s Gen Z has abandoned faith in voting and embraced protest as their primary tool for change, with deep dives into their activism, digital strategies, and the government’s response."
 date: 2025-12-09
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/90mvGgYJ/unnamed-(15).jpg"
 imageCaption: "Kenyan youth protesting in the streets with digital devices"
 imageAlt: "Gen Z protesters holding phones and banners"
 category: "Politics"
