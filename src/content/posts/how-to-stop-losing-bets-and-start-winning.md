@@ -3,7 +3,7 @@ title: "SportPesa Is Not Your Side Hustle: How Kenyans Can Stop Bleeding Money t
 description: "A hard-hitting guide for Kenyan bettors on SportPesa, Betika, Odibets, Mozzart and 22Bet – exposing how the house really wins, how your brain helps them, and how to protect yourself, your money and your peace."
 date: 2025-12-09
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/wMyk86w0/unnamed-(14).jpg"
 imageCaption: "Kenyan youth scrolling betting apps under the glow of city lights"
 imageAlt: "Silhouettes of people on phones with betting icons floating around"
 category: "Lifestyle"
