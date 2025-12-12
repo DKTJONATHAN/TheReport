@@ -3,7 +3,7 @@ title: "KJSEA 2025: How 1.13 Million Kenyan Teens Navigated the Transition in Ju
 description: "An in-depth analysis of Kenya’s first Grade 9 assessment under CBC, highlighting the scoring system, performance outcomes, and the maiden transition to senior school. A comprehensive look at what the results mean for students, parents, and the future of education reform."
 date: 2025-12-12
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/25rNwjX0/unnamed-(16).jpg"
 imageCaption: "Kenyan students anxiously awaiting KJSEA results"
 imageAlt: "Students checking results on their mobile phones"
 category: "Education"
