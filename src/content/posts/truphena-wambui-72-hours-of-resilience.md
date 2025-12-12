@@ -3,7 +3,7 @@ title: "Truphena Muthoni: The 72-Hour Revolution That Exposed Kenya's Institutio
 description: "How a 22-year-old Gen Z activist was grounded by bureaucrats, mocked by TV hosts, and turned her humiliation into a global symbol of resilience. The inside story of Nyeri's most defiant tree-hugger."
 date: 2025-12-12
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/KvFPnX0z/unnamed-(17).jpg"
 imageCaption: "Truphena Muthoni hugging a tree for 72 hours in Nyeri"
 imageAlt: "A young woman hugging a tree in the rain"
 category: "Investigation"
