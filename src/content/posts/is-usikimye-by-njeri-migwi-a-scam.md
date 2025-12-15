@@ -3,7 +3,7 @@ title: "The Usikimye Investigation: What the Internet Already Knows (But Nobodyâ
 description: "An investigative deep dive into the unanswered questions, financial opacity, and platform-wide skepticism surrounding Njeri Migwi and Usikimyeâ€”connecting the dots from Reddit, X, YouTube, and Facebook."
 date: 2025-12-15
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/76Y0q7LY/unnamed-(18).jpg"
 imageCaption: "Digital screen with social media posts about Usikimye and Njeri Migwi"
 imageAlt: "Illustration of social media skepticism"
 category: "Investigation"
