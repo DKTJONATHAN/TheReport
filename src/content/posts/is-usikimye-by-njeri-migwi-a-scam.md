@@ -12,7 +12,6 @@ featured: true
 draft: false
 slug: usikimye-investigation-transparency-questions
 ---
-
 # The Usikimye Investigation: What the Internet Already Knows (But Nobody’s Saying Out Loud)
 
 I’ve spent the last week knee-deep in Reddit threads, X posts, YouTube comments, and Facebook discussions about Njeri Migwi and Usikimye. What I found wasn’t just noise. It was a pattern—questions, inconsistencies, and red flags that keep popping up, from people who don’t know each other, but keep asking the same things. Nobody’s connecting the dots. So I did.
@@ -42,7 +41,7 @@ On Reddit, users consistently ask:
 
 The pattern is clear: someone asks directly. Either they get no answer, or they get a response that doesn’t address the actual question. Then the thread moves on.
 
-On X/Twitter, the conversation is faster, more fragmented. Critics tweet specific concerns: “No transparency on funds.” “Story changed between tweets.” “@NjeriWaMigwi when will you release audited accounts?”
+On X/Twitter, the conversation is faster, more fragmented. Critics tweet specific concerns: “No transparency on funds.” “Story changed between tweets.” “@NjeriWaMigwi when will you release audited accounts?” Some, like **Wordsmith (Ole Pundit)**, have faced backlash for questioning her work, but the core doubts remain[1][2].
 
 Supporters fire back: “You’re attacking a survivor.” “This is misogyny.” “You don’t understand GBV work.”
 
@@ -50,7 +49,7 @@ The original question gets buried. The accuser gets called names. The money ques
 
 On YouTube, documentary-style videos about Usikimye get thousands of views. The comments split into camps. Some praise the heroic work. Others point to specific moments where something doesn’t add up. “That timeline doesn’t match what she said before.” “Where are the official reports?” These comments get buried by algorithmic sorting or, sometimes, deleted.
 
-On Facebook, groups and pages dedicated to Kenyan social issues host longer threads where people share their skepticism. “I’ve been following this for months and something feels off.” “Why won’t she answer basic questions about where the money goes?” “A real organization would have a transparent website with financial reports.”
+On Facebook, groups and pages dedicated to Kenyan social issues host longer threads where people share their skepticism. **Mercy Mwende** wrote: “I've watched Usikimye's story with horror as it has unfolded for weeks now wondering, is this how this helpful organisation will go down?”[3]. **Nyar Ovaseas** asked: “What will it take for the leaders at Usikimye to step aside to allow investigations into the allegations being presented against them?”[4].
 
 ***
 
@@ -132,4 +131,3 @@ That’s not misogyny. That’s how trust works.
   <p><strong>Author:</strong> Jonathan Mwaniki</p>
   <p><strong>Tags:</strong> Usikimye, Njeri Migwi, Kenya, Transparency, Accountability, GBV, NGO</p>
 </div>
-
