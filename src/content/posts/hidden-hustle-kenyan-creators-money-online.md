@@ -3,7 +3,7 @@ title: "The Hidden Hustle: How Kenyan Creators Are Making Serious Money Online"
 description: "An in-depth look at the rise of adult content creation in Kenya, the financial realities, the tech that makes it possible, and the challenges faced by those living a double life."
 date: 2025-12-18
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/ZKmmS65w/Gemini-Generated-Image-4l5pxs4l5pxs4l5p.png"
+image: "https://i.postimg.cc/L5Ny9p8W/unnamed-(20)-2.jpg"
 imageCaption: "A Kenyan creator working behind the scenes"
 imageAlt: "Portrait of a young Kenyan woman with a laptop and phone"
 category: "Lifestyle"
