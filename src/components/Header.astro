@@ -5,14 +5,12 @@ import { getCollection } from 'astro:content';
 const posts = await getCollection('posts');
 const categories = [...new Set(posts.map(post => post.data.category))].filter(Boolean);
 
-// 2. OPTIMIZED Serialization (Removed 'content' to prevent HTML bloat)
-// Search will now scan Title, Description, Tags, and Keywords only.
+// 2. Search Index (Optimized)
 const serializedPosts = posts.map(post => ({
   slug: post.slug,
   title: post.data.title,
   category: post.data.category || 'Uncategorized',
   tags: post.data.tags || [],
-  keywords: post.data.keywords || [],
   date: post.data.date,
   description: post.data.description || ''
 }));
@@ -31,10 +29,10 @@ const navItems = [
 
 <header class="site-header" id="site-header">
   
-  {/* --- TOP NEWS TICKER --- */}
+  {/* --- TOP STORY TICKER --- */}
   <div class="ticker-wrap">
     <div class="ticker-label">
-      <span class="pulse-dot"></span> BREAKING
+      <span class="pulse-dot"></span> TOP STORY
     </div>
     <div class="ticker-content">
       {topStory ? (
@@ -43,7 +41,7 @@ const navItems = [
           {topStory.data.title}
         </a>
       ) : (
-         <span>Welcome to The Mwaniki Report. Stay tuned for updates.</span>
+         <span>Welcome to The Mwaniki Report.</span>
       )}
     </div>
   </div>
@@ -51,16 +49,16 @@ const navItems = [
   <div class="header-main">
     <div class="header-inner">
       
-      {/* 1. Mobile Hamburger (Hidden on Desktop) */}
+      {/* 1. Mobile Hamburger Button */}
       <button class="menu-toggle" id="menu-toggle" aria-label="Open Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
 
-      {/* 2. BRAND LOGO & TITLE (Now Fully Clickable) */}
+      {/* 2. BRAND LOGO & TITLE */}
       <a href="/" class="brand-link" aria-label="Go to Homepage">
         <img src="/Jonathan-Mwaniki-logo.png" alt="JM Logo" class="logo-img" />
         <div class="brand-text">
@@ -69,7 +67,7 @@ const navItems = [
         </div>
       </a>
 
-      {/* 3. Desktop Navigation (Visible on Large Screens) */}
+      {/* 3. Desktop Navigation */}
       <nav class="desktop-nav">
         {navItems.map(item => (
           <a href={item.href} class="d-nav-link">{item.text}</a>
@@ -78,7 +76,7 @@ const navItems = [
 
       {/* 4. Search Icon */}
       <button class="search-toggle" id="search-toggle" aria-label="Search">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
@@ -87,33 +85,45 @@ const navItems = [
     </div>
   </div>
 
-  {/* --- MOBILE DRAWER (Slide Out) --- */}
+  {/* --- MOBILE DRAWER (HAMBURGER MENU) --- */}
   <div class="mobile-drawer" id="mobile-drawer">
     <div class="drawer-header">
       <span class="drawer-title">Menu</span>
-      <button id="close-menu" aria-label="Close Menu">&times;</button>
+      <button id="close-menu" aria-label="Close Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
-    <nav class="mobile-nav-list">
-      {navItems.map(item => (
-        <a href={item.href} class="m-nav-link">{item.text}</a>
-      ))}
-      <div class="drawer-divider"></div>
-      <span class="drawer-subtitle">Categories</span>
-      {categories.map(cat => (
-        <a href={`/category/${cat.toLowerCase()}`} class="m-nav-sublink">{cat}</a>
-      ))}
-    </nav>
+    <div class="drawer-content">
+      <nav class="mobile-nav-list">
+        {navItems.map(item => (
+          <a href={item.href} class="m-nav-link">{item.text}</a>
+        ))}
+        <div class="drawer-divider"></div>
+        <span class="drawer-subtitle">Categories</span>
+        <div class="mobile-cat-grid">
+          {categories.map(cat => (
+            <a href={`/category/${cat.toLowerCase()}`} class="m-cat-pill">{cat}</a>
+          ))}
+        </div>
+      </nav>
+    </div>
   </div>
+  
+  {/* Dark Overlay for Menu/Search */}
   <div class="overlay" id="site-overlay"></div>
 
   {/* --- SEARCH OVERLAY --- */}
   <div class="search-modal" id="search-modal">
-    <div class="search-box">
+    <div class="search-wrap">
       <div class="search-header">
-        <input type="text" id="search-input" placeholder="Search news, politics, sports..." autocomplete="off" />
-        <button id="close-search">Esc</button>
+        <input type="text" id="search-input" placeholder="Type to search..." autocomplete="off" />
+        <button id="close-search">
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
-      <div id="search-results" class="search-results"></div>
+      <div id="search-results" class="search-results">
+        {/* Results injected via JS */}
+      </div>
     </div>
   </div>
 
@@ -121,25 +131,42 @@ const navItems = [
 
 <style>
   :root {
-    --primary: #dc2626; /* Kenyan Red */
+    /* Light Mode Defaults */
+    --primary: #dc2626; 
     --primary-dark: #b91c1c;
-    --dark: #111827;
-    --light: #f3f4f6;
-    --white: #ffffff;
+    --bg-header: rgba(255, 255, 255, 0.98);
+    --text-main: #1a1a1a; /* Black/Dark Grey */
+    --text-muted: #6b7280;
     --border: #e5e7eb;
+    --drawer-bg: #ffffff;
+    
+    /* Font Settings */
     --font-serif: 'Georgia', serif;
     --font-sans: system-ui, -apple-system, sans-serif;
   }
 
-  /* --- 1. TICKER --- */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dark Mode Overrides */
+      --bg-header: rgba(17, 24, 39, 0.95);
+      --text-main: #ffffff; /* White text on dark */
+      --text-muted: #9ca3af;
+      --border: #374151;
+      --drawer-bg: #1f2937;
+    }
+  }
+
+  /* --- 1. TICKER STYLES --- */
   .ticker-wrap {
-    background: var(--dark);
+    background: #111827; /* Always dark bg for ticker */
     color: white;
     font-size: 0.75rem;
     display: flex;
     align-items: center;
-    height: 32px;
+    height: 36px;
     overflow: hidden;
+    position: relative;
+    z-index: 1002;
   }
   .ticker-label {
     background: var(--primary);
@@ -151,10 +178,11 @@ const navItems = [
     letter-spacing: 0.05em;
     z-index: 2;
     font-family: var(--font-sans);
+    flex-shrink: 0;
   }
   .pulse-dot {
     width: 6px; height: 6px; background: white; border-radius: 50%;
-    margin-right: 6px; animation: pulse 1.5s infinite;
+    margin-right: 8px; animation: pulse 1.5s infinite;
   }
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
   
@@ -169,11 +197,12 @@ const navItems = [
     display: inline-block;
     color: #e5e7eb;
     text-decoration: none;
-    animation: marquee 20s linear infinite;
+    animation: marquee 25s linear infinite;
     font-family: var(--font-sans);
+    font-weight: 500;
   }
   .ticker-link:hover { text-decoration: underline; animation-play-state: paused; }
-  .ticker-time { color: var(--primary); font-weight: bold; margin-right: 5px; }
+  .ticker-time { color: var(--primary); font-weight: bold; margin-right: 8px; }
   
   @keyframes marquee {
     0% { transform: translateX(0); }
@@ -183,125 +212,187 @@ const navItems = [
   /* --- 2. HEADER MAIN --- */
   .site-header {
     position: sticky; top: 0; z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    width: 100%;
   }
   
+  .header-main {
+    background: var(--bg-header);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s, border-color 0.3s;
+  }
+
   .header-inner {
     max-width: 1280px; margin: 0 auto;
     height: 70px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
   }
 
-  /* BRAND (LOGO + TITLE CLICKABLE) */
+  /* BRAND STYLING (Color Logic Applied) */
   .brand-link {
     display: flex; 
     align-items: center; 
     gap: 0.75rem; 
     text-decoration: none; 
-    color: var(--dark);
     cursor: pointer;
   }
-  .brand-link:hover .brand-title { color: var(--primary); transition: color 0.2s; }
   
   .logo-img { height: 45px; width: auto; display: block; }
   
   .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-  .brand-title { font-family: var(--font-serif); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; margin: 0; }
+  
+  /* "The" and "Report" follow --text-main (Black/White), "Mwaniki" is always Red */
+  .brand-title { 
+    font-family: var(--font-serif); 
+    font-weight: 800; 
+    font-size: 1.4rem; 
+    letter-spacing: -0.5px; 
+    margin: 0; 
+    color: var(--text-main); 
+  }
   .highlight { color: var(--primary); }
-  .brand-tagline { font-family: var(--font-sans); font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .brand-tagline { 
+    font-family: var(--font-sans); 
+    font-size: 0.75rem; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    font-weight: 600;
+  }
 
   /* DESKTOP NAV */
-  .desktop-nav { display: none; gap: 1.5rem; }
+  .desktop-nav { display: none; gap: 2rem; }
   .d-nav-link {
-    font-family: var(--font-sans); font-weight: 600; font-size: 0.95rem;
-    color: var(--dark); text-decoration: none;
+    font-family: var(--font-sans); font-weight: 700; font-size: 0.95rem;
+    color: var(--text-main); text-decoration: none;
     padding: 0.5rem 0; border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    text-transform: uppercase;
   }
   .d-nav-link:hover, .d-nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-  /* CONTROLS */
+  /* BUTTONS */
   .menu-toggle, .search-toggle {
     background: none; border: none; cursor: pointer; padding: 0.5rem;
-    color: var(--dark); border-radius: 50%; transition: background 0.2s;
+    color: var(--text-main); border-radius: 50%; transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center;
   }
-  .menu-toggle:hover, .search-toggle:hover { background: var(--light); color: var(--primary); }
+  .menu-toggle:hover, .search-toggle:hover { background: rgba(0,0,0,0.05); color: var(--primary); }
   
-  /* --- 3. MOBILE DRAWER --- */
+  /* --- 3. MOBILE DRAWER STYLING --- */
   .mobile-drawer {
-    position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
-    background: white; z-index: 1002;
-    transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    position: fixed; top: 0; left: 0; bottom: 0; width: 85%; max-width: 300px;
+    background: var(--drawer-bg); 
+    z-index: 2000;
+    transform: translateX(-100%); 
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
   }
   .mobile-drawer.active { transform: translateX(0); }
   
   .drawer-header {
-    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    height: 70px; display: flex; align-items: center; justify-content: space-between;
     padding: 0 1.5rem; border-bottom: 1px solid var(--border);
-    background: var(--dark); color: white;
   }
-  .drawer-title { font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-  #close-menu { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+  .drawer-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; }
+  #close-menu { background: none; border: none; color: var(--text-main); cursor: pointer; padding: 0.5rem; }
 
-  .mobile-nav-list { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; height: calc(100% - 60px); }
-  .m-nav-link { font-size: 1.1rem; font-weight: 700; color: var(--dark); padding: 0.5rem 0; text-decoration: none; border-bottom: 1px solid var(--light); }
-  .m-nav-sublink { font-size: 0.95rem; color: #555; padding: 0.4rem 0 0.4rem 1rem; text-decoration: none; border-left: 2px solid var(--light); }
-  .m-nav-sublink:hover { border-left-color: var(--primary); color: var(--primary); }
-  .drawer-divider { height: 1px; background: var(--border); margin: 1rem 0; }
-  .drawer-subtitle { font-size: 0.8rem; text-transform: uppercase; color: #888; margin-bottom: 0.5rem; font-weight: 700; }
+  .drawer-content { padding: 1.5rem; overflow-y: auto; flex: 1; }
+  .mobile-nav-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  
+  .m-nav-link { 
+    font-size: 1.1rem; font-weight: 700; color: var(--text-main); 
+    padding: 0.75rem 0; text-decoration: none; 
+    border-bottom: 1px solid var(--border); 
+  }
+  .m-nav-link:hover { color: var(--primary); padding-left: 5px; transition: 0.2s; }
 
+  .drawer-divider { height: 2rem; }
+  .drawer-subtitle { 
+    font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); 
+    margin-bottom: 1rem; font-weight: 700; display: block; 
+  }
+
+  .mobile-cat-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .m-cat-pill {
+    background: rgba(0,0,0,0.05); color: var(--text-main);
+    padding: 0.4rem 0.8rem; border-radius: 99px;
+    font-size: 0.85rem; text-decoration: none; font-weight: 500;
+  }
+  .m-cat-pill:hover { background: var(--primary); color: white; }
+
+  /* OVERLAY */
   .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1001;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1001;
     opacity: 0; visibility: hidden; transition: opacity 0.3s;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
   }
   .overlay.active { opacity: 1; visibility: visible; }
 
-  /* --- 4. SEARCH MODAL --- */
+  /* --- 4. SEARCH MODAL STYLING --- */
   .search-modal {
-    position: fixed; inset: 0; z-index: 1003;
-    background: rgba(255,255,255,0.98);
-    display: none; align-items: flex-start; justify-content: center;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    z-index: 3000;
+    background: var(--bg-header); /* Matches theme bg */
+    display: none; flex-direction: column; align-items: center;
     padding-top: 100px;
   }
   .search-modal.active { display: flex; }
   
-  .search-box { width: 100%; max-width: 700px; padding: 0 1rem; }
-  .search-header { display: flex; align-items: center; border-bottom: 2px solid var(--dark); padding-bottom: 0.5rem; }
+  .search-wrap { width: 100%; max-width: 700px; padding: 0 1.5rem; }
+  
+  .search-header { 
+    display: flex; align-items: center; 
+    border-bottom: 3px solid var(--primary); 
+    padding-bottom: 0.5rem; 
+    position: relative;
+  }
+  
   #search-input {
     width: 100%; border: none; background: transparent;
-    font-size: 1.5rem; outline: none; font-weight: bold;
-    color: var(--dark);
+    font-size: 2rem; outline: none; font-weight: 700;
+    color: var(--text-main); font-family: var(--font-serif);
   }
-  #close-search { background: var(--light); border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; color: #666; }
+  #search-input::placeholder { color: var(--text-muted); opacity: 0.5; }
   
-  .search-results { margin-top: 1.5rem; max-height: 60vh; overflow-y: auto; }
-  .result-item { padding: 1rem; border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  .result-item:hover { background: var(--light); }
-  .result-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; margin-bottom: 0.2rem; }
-  .result-meta { font-size: 0.8rem; color: #666; }
+  #close-search { 
+    background: none; border: none; color: var(--text-main); 
+    cursor: pointer; padding: 0.5rem; 
+  }
+  
+  .search-results { margin-top: 2rem; max-height: 60vh; overflow-y: auto; }
+  
+  .result-item { 
+    display: block; padding: 1rem; 
+    border-bottom: 1px solid var(--border); 
+    text-decoration: none; 
+    transition: background 0.1s; 
+  }
+  .result-item:hover { background: rgba(0,0,0,0.03); border-left: 4px solid var(--primary); }
+  
+  .result-title { font-weight: 700; color: var(--text-main); font-size: 1.2rem; margin-bottom: 0.3rem; }
+  .result-meta { font-size: 0.85rem; color: var(--text-muted); }
 
-  /* RESPONSIVE */
+  /* RESPONSIVE BREAKPOINTS */
   @media (min-width: 900px) {
     .menu-toggle { display: none; }
     .desktop-nav { display: flex; }
   }
   
   @media (max-width: 480px) {
-      .logo-img { height: 35px; }
-      .brand-title { font-size: 1rem; }
-      .brand-tagline { font-size: 0.6rem; }
-      .ticker-wrap { font-size: 0.65rem; }
+      .logo-img { height: 32px; }
+      .brand-title { font-size: 1.1rem; }
+      .brand-tagline { display: none; } /* Hide tagline on tiny screens to save space */
+      .header-inner { padding: 0 1rem; }
+      #search-input { font-size: 1.5rem; }
   }
 </style>
 
 <script is:inline define:vars={{posts: serializedPosts}}>
-  // === 1. Navigation Logic ===
+  // === LOGIC ===
   const menuBtn = document.getElementById('menu-toggle');
   const drawer = document.getElementById('mobile-drawer');
   const overlay = document.getElementById('site-overlay');
@@ -326,7 +417,7 @@ const navItems = [
     toggleSearch(false);
   });
 
-  // === 2. Search Logic ===
+  // Search
   const searchBtn = document.getElementById('search-toggle');
   const searchModal = document.getElementById('search-modal');
   const closeSearchBtn = document.getElementById('close-search');
@@ -341,7 +432,7 @@ const navItems = [
     } else {
       searchModal.classList.remove('active');
       document.body.style.overflow = '';
-      searchInput.value = ''; // Reset
+      searchInput.value = '';
       searchResults.innerHTML = '';
     }
   }
@@ -349,7 +440,6 @@ const navItems = [
   searchBtn?.addEventListener('click', () => toggleSearch(true));
   closeSearchBtn?.addEventListener('click', () => toggleSearch(false));
   
-  // Close on ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       toggleMenu(false);
@@ -357,33 +447,29 @@ const navItems = [
     }
   });
 
-  // === 3. Search Algorithm (Optimized) ===
+  // Search Logic
   searchInput?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     searchResults.innerHTML = '';
 
     if (query.length < 2) return;
 
-    // Filter Posts
     const hits = posts.filter(post => {
       return post.title.toLowerCase().includes(query) ||
              post.tags.some(tag => tag.toLowerCase().includes(query));
-    }).slice(0, 5); // Limit to 5 results
+    }).slice(0, 5);
 
     if(hits.length === 0) {
-      searchResults.innerHTML = '<div style="color:#666; padding:1rem;">No results found.</div>';
+      searchResults.innerHTML = '<div style="color:var(--text-muted); padding:1rem; font-style:italic;">No results found.</div>';
     } else {
       hits.forEach(hit => {
         const item = document.createElement('a');
         item.href = `/posts/${hit.slug}`;
         item.className = 'result-item';
-        item.style.display = 'block';
-        item.style.textDecoration = 'none';
         item.innerHTML = `
           <div class="result-title">${hit.title}</div>
           <div class="result-meta">
-             <span style="color:#dc2626; font-weight:bold;">${hit.category}</span> • 
-             ${new Date(hit.date).toLocaleDateString()}
+             <span style="color:var(--primary); font-weight:bold; text-transform:uppercase;">${hit.category}</span>
           </div>
         `;
         searchResults.appendChild(item);
@@ -391,10 +477,10 @@ const navItems = [
     }
   });
 
-  // === 4. Active Link Highlighting ===
+  // Active Link
   const currentPath = window.location.pathname;
   document.querySelectorAll('.d-nav-link').forEach(link => {
-    if(link.getAttribute('href') === currentPath || (currentPath.includes(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
+    if(link.getAttribute('href') === currentPath) {
       link.classList.add('active');
     }
   });
