@@ -7,8 +7,8 @@ const socialLinks = [
     name: 'X (Twitter)', 
     url: 'https://x.com/maestropuns', 
     icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-    color: '#ffffff', // X is white on dark bg
-    bg: '#000000'
+    color: '#ffffff', // White icon on dark bg
+    bg: '#000000'     // Brand color on hover
   },
   { 
     name: 'Facebook', 
@@ -65,10 +65,10 @@ const footerLinks = [
     
     <div class="footer-grid">
       
-      {/* 1. BRAND COLUMN */}
+      {/* 1. BRAND COLUMN (With Image Logo) */}
       <div class="footer-col brand-col">
-        <a href="/" class="footer-logo">
-          <div class="logo-circle">JM</div>
+        <a href="/" class="footer-logo" aria-label="Jonathan Mwaniki Home">
+          <img src="/Jonathan-Mwaniki-logo.png" alt="JM Logo" class="footer-logo-img" />
           <div class="logo-text">
             <span>The</span>
             <span class="highlight">Mwaniki</span>
@@ -104,7 +104,7 @@ const footerLinks = [
       <div class="footer-col newsletter-col">
         <h3 class="col-title">Stay Informed</h3>
         <p class="newsletter-text">Get the latest breaking news delivered to your inbox.</p>
-        <form class="newsletter-form" onsubmit="event.preventDefault();">
+        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Newsletter subscription demo - replace with real backend logic.');">
           <input type="email" placeholder="Your email address" required />
           <button type="submit" aria-label="Subscribe">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -114,7 +114,7 @@ const footerLinks = [
 
     </div>
 
-    {/* BOTTOM BAR */}
+    {/* BOTTOM BAR & BACK TO TOP */}
     <div class="footer-bottom">
       <div class="copyright">
         &copy; {currentYear} Jonathan Mwaniki. All rights reserved.
@@ -130,10 +130,11 @@ const footerLinks = [
 </footer>
 
 <script>
-  // Back to Top Logic
+  // --- Back to Top Functionality ---
   const backToTopBtn = document.getElementById('back-to-top');
   
   if (backToTopBtn) {
+    // Show button after scrolling 400px
     window.addEventListener('scroll', () => {
       if (window.scrollY > 400) {
         backToTopBtn.classList.add('visible');
@@ -142,6 +143,7 @@ const footerLinks = [
       }
     });
 
+    // Smooth scroll to top on click
     backToTopBtn.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -150,19 +152,21 @@ const footerLinks = [
 
 <style>
   :root {
-    --f-bg: #111827; /* Dark Gray/Black */
-    --f-text: #9ca3af; /* Muted Gray */
-    --f-white: #f3f4f6;
+    --f-bg: #111827; /* Dark Gray/Black background for footer */
+    --f-text: #9ca3af; /* Muted Gray text */
+    --f-white: #ffffff;
     --f-accent: #dc2626; /* Kenyan Red */
     --f-border: #1f2937;
+    --font-serif: 'Georgia', serif;
+    --font-sans: system-ui, -apple-system, sans-serif;
   }
 
   .site-footer {
     background-color: var(--f-bg);
     color: var(--f-text);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     position: relative;
-    margin-top: auto; /* Pushes footer to bottom */
+    margin-top: auto; /* Pushes footer to bottom of page */
   }
 
   /* Decorative Top Border */
@@ -181,33 +185,34 @@ const footerLinks = [
   /* GRID LAYOUT */
   .footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.5fr; /* Brand is wider */
+    grid-template-columns: 2fr 1fr 1fr 1.5fr; /* Brand column is wider */
     gap: 3rem;
     margin-bottom: 4rem;
   }
 
-  /* BRAND COLUMN */
+  /* BRAND COLUMN (Updated with Image) */
   .footer-logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
     text-decoration: none;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
-  .logo-circle {
-    width: 40px; height: 40px;
-    background: var(--f-accent);
-    color: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 1rem; letter-spacing: -1px;
+  
+  .footer-logo-img {
+    height: 50px; /* Adjusted size for footer balance */
+    width: auto;
+    display: block;
   }
+
   .logo-text {
-    font-family: 'Georgia', serif;
+    font-family: var(--font-serif);
     font-size: 1.25rem;
     font-weight: 700;
-    color: white;
-    line-height: 1;
+    color: var(--f-white);
+    line-height: 1.1;
+    display: flex;
+    flex-direction: column;
   }
   .logo-text .highlight { color: var(--f-accent); }
 
@@ -223,7 +228,7 @@ const footerLinks = [
   .social-btn {
     width: 36px; height: 36px;
     background: rgba(255,255,255,0.05);
-    color: white;
+    color: var(--f-white);
     display: flex; align-items: center; justify-content: center;
     border-radius: 8px;
     transition: all 0.2s ease;
@@ -235,7 +240,7 @@ const footerLinks = [
 
   /* NAVIGATION COLUMNS */
   .col-title {
-    color: white;
+    color: var(--f-white);
     font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -252,6 +257,7 @@ const footerLinks = [
     text-decoration: none;
     font-size: 0.95rem;
     transition: color 0.2s, padding-left 0.2s;
+    display: inline-block;
   }
   .footer-nav a:hover {
     color: var(--f-accent);
@@ -270,18 +276,19 @@ const footerLinks = [
     border: 1px solid var(--f-border);
     padding: 0.7rem 1rem;
     border-radius: 6px;
-    color: white;
+    color: var(--f-white);
     font-size: 0.9rem;
   }
-  .newsletter-form input:focus { outline: 1px solid var(--f-accent); border-color: var(--f-accent); }
+  .newsletter-form input:focus { outline: none; border-color: var(--f-accent); }
   .newsletter-form button {
     background: var(--f-accent);
     border: none;
-    color: white;
+    color: var(--f-white);
     padding: 0 1rem;
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center;
   }
   .newsletter-form button:hover { background: #b91c1c; }
 
@@ -295,6 +302,7 @@ const footerLinks = [
     font-size: 0.85rem;
   }
 
+  /* Back to Top Button Styling */
   .back-to-top {
     background: transparent;
     border: 1px solid var(--f-border);
@@ -303,12 +311,14 @@ const footerLinks = [
     border-radius: 20px;
     cursor: pointer;
     display: flex; align-items: center; gap: 0.5rem;
-    opacity: 0;
+    opacity: 0; /* Hidden by default */
     visibility: hidden;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    font-family: var(--font-sans);
   }
+  /* Class added by JS when scrolling */
   .back-to-top.visible { opacity: 1; visibility: visible; }
-  .back-to-top:hover { border-color: var(--f-accent); color: var(--f-accent); }
+  .back-to-top:hover { border-color: var(--f-accent); color: var(--f-accent); background: rgba(220, 38, 38, 0.1); }
 
   /* RESPONSIVE */
   @media (max-width: 1024px) {
@@ -319,6 +329,6 @@ const footerLinks = [
   @media (max-width: 640px) {
     .footer-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     .brand-col { grid-column: span 1; }
-    .footer-bottom { flex-direction: column-reverse; gap: 1rem; }
+    .footer-bottom { flex-direction: column-reverse; gap: 1rem; align-items: center; }
   }
 </style>
