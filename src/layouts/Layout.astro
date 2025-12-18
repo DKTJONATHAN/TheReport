@@ -1,462 +1,357 @@
 ---
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import Navigation from '../components/Navigation.astro';
-export interface Props {
-  title: string;
-  description?: string;
-  image?: string;
-  canonical?: string;
+import Layout from '../../layouts/Layout.astro';
+import Article from '../../components/Article.astro';
+import { getCollection } from 'astro:content';
+
+// 1. Static paths for pre-rendering
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
 }
 
-const { 
-  title, 
-  description = "Professional news and insights from The Mwaniki Report", 
-  image, 
-  canonical 
-} = Astro.props;
+const { post } = Astro.props;
+const { Content } = await post.render();
 
-// Site configuration
-const siteName = "The Mwaniki Report";
-const siteUrl = "https://jonathanmwaniki.co.ke";
-const twitterHandle = "@maestropuns";
-const defaultImage = "/Jonathan-Mwaniki-logo.png";
-
-// Handle image URLs
-const socialImage = image || defaultImage;
-const fullImage = socialImage.startsWith('http') 
-  ? socialImage 
-  : `${siteUrl}${socialImage}`;
-
-// Determine image type from URL
-function getImageType(url: string): string {
-  if (!url) return 'image/jpeg';
-  const extension = url.split('.').pop()?.toLowerCase();
-  switch (extension) {
-    case 'png': return 'image/png';
-    case 'gif': return 'image/gif';
-    case 'webp': return 'image/webp';
-    case 'svg': return 'image/svg+xml';
-    case 'jpg':
-    case 'jpeg':
-    default: return 'image/jpeg';
-  }
+// 2. Helper function to create URL-safe slugs for tags
+function createTagSlug(tag) {
+  return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-const imageType = getImageType(fullImage);
-const pageUrl = canonical || Astro.url.href;
-const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+// 3. Related posts logic (Same Category, excluding current)
+const allPosts = await getCollection('posts');
+const relatedPosts = allPosts
+  .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 5); 
+
+// 4. Site URLs & metadata construction
+const siteUrl = 'https://jonathanmwaniki.co.ke';
+const postUrl = `${siteUrl}/posts/${post.slug}`;
+const categorySlug = (post.data.category || 'news').toLowerCase().replace(/\s+/g, '-');
+const categoryUrl = `${siteUrl}/category/${categorySlug}`;
+const imageUrl = post.data.image?.startsWith('http') 
+  ? post.data.image 
+  : `${siteUrl}${post.data.image || '/default-image.jpg'}`;
+
+const title = `${post.data.title} - Jonathan Mwaniki`;
+const description = post.data.description || `Latest news and updates about ${post.data.title}`;
+const publishedDate = new Date(post.data.date).toISOString();
+const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
+const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
+
+const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{fullTitle}</title>
-  <meta name="description" content={description}>
+<Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
   
-  <!-- Canonical URL -->
-  <link rel="canonical" href={pageUrl}>
-  
-  <!-- Favicons -->
-  <link rel="icon" href="/favicon.ico" sizes="32x32">
-  <link rel="icon" href="/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  
-  <!-- Theme -->
-  <meta name="theme-color" content="#BB1919">
-  <meta name="msapplication-TileColor" content="#BB1919">
-  
-  <!-- Author and Publisher -->
-  <meta name="author" content="Jonathan Mwaniki">
-  <meta name="publisher" content="The Mwaniki Report">
-  <link rel="author" href="https://jonathanmwaniki.co.ke/about">
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content={pageUrl}>
-  <meta property="og:site_name" content={siteName}>
-  <meta property="og:title" content={title}>
-  <meta property="og:description" content={description}>
-  <meta property="og:image" content={fullImage}>
-  <meta property="og:image:secure_url" content={fullImage}>
-  <meta property="og:image:type" content={imageType}>
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content={`${title} - ${siteName}`}>
-  <meta property="og:locale" content="en_US">
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content={twitterHandle}>
-  <meta name="twitter:creator" content={twitterHandle}>
-  <meta name="twitter:url" content={pageUrl}>
-  <meta name="twitter:title" content={title}>
-  <meta name="twitter:description" content={description}>
-  <meta name="twitter:image" content={fullImage}>
-  <meta name="twitter:image:alt" content={`${title} - ${siteName}`}>
-  
-  <!-- LinkedIn -->
-  <meta property="linkedin:owner" content={siteName}>
-  
-  <!-- Additional SEO -->
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-  <meta name="googlebot" content="index, follow">
-  
-  <!-- JSON-LD Structured Data -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "The Mwaniki Report",
-      "alternateName": "Mwaniki Report",
-      "url": "https://jonathanmwaniki.co.ke",
-      "description": "Professional news and insights from The Mwaniki Report",
-      "publisher": {
-        "@type": "Person",
-        "name": "Jonathan Mwaniki",
-        "url": "https://jonathanmwaniki.co.ke/about"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://jonathanmwaniki.co.ke/search?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      },
-      "sameAs": [
-        "https://x.com/maestropuns"
-      ]
-    }
-  </script>
-  
-  <!-- Google Analytics (Loaded only if cookies accepted) -->
-  <script is:inline>
-    function loadGoogleAnalytics() {
-      const script = document.createElement('script');
-      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT';
-      script.async = true;
-      document.head.appendChild(script);
+  {/* SEO META TAGS */}
+  <meta name="robots" content="index, follow" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={imageUrl} />
+  <meta property="og:url" content={postUrl} />
+  <meta property="og:site_name" content="Jonathan Mwaniki" />
+  <meta property="article:published_time" content={publishedDate} />
+  <meta property="article:modified_time" content={modifiedDate} />
+  <meta property="article:author" content={post.data.author || 'Jonathan Mwaniki'} />
+  <meta property="article:section" content={post.data.category || 'News'} />
+  {post.data.tags && <meta property="article:tag" content={post.data.tags.join(', ')} />}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={imageUrl} />
+  <meta name="twitter:site" content="@maestropuns" />
+
+  {/* AD SCRIPT */}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
+
+  {/* JSON-LD SCHEMA (Structured Data) */}
+  <script type="application/ld+json" set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: post.data.title,
+    image: imageUrl,
+    datePublished: publishedDate,
+    dateModified: modifiedDate,
+    author: { '@type': 'Person', name: post.data.author || 'Jonathan Mwaniki' },
+    publisher: { '@type': 'Organization', name: 'Jonathan Mwaniki', logo: { '@type': 'ImageObject', url: `${siteUrl}/logo.png` } },
+    description: description,
+    mainEntityOfPage: postUrl
+  })} />
+
+  {/* READING PROGRESS BAR */}
+  <div id="progress-container"><div id="progress-bar"></div></div>
+
+  <div class="page-container">
+    
+    {/* Breadcrumbs */}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a><span class="separator">/</span>
+      <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
+      <span class="current">{post.data.title}</span>
+    </nav>
+
+    {/* MAIN CONTENT GRID */}
+    <div class="article-grid">
       
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-W3FVP4FRPT', {
-        page_title: document.title,
-        page_location: window.location.href,
-      });
-    }
-  </script>
-  
-  <!-- Preconnect to external domains -->
-  <link rel="preconnect" href="https://www.google-analytics.com">
-  <link rel="preconnect" href="https://www.googletagmanager.com">
-  
-  <!-- Global CSS -->
-  <link rel="stylesheet" href="/styles/global.css">
-</head>
-<body>
-  <Header />
-  <main id="main-content">
-    <slot />
-  </main>
-  <Footer />
-  
-  <!-- Skip to content link for accessibility -->
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-  
-  <!-- Cookie Consent Popup -->
-  <div class="cookie-consent" id="cookie-consent" role="dialog" aria-live="polite" aria-hidden="true">
-    <div class="cookie-content">
-      <h2>We Use Cookies</h2>
-      <p>We use cookies to enhance your experience and analyze site usage. By clicking "Accept," you consent to our use of cookies as described in our <a href="/cookies">Cookies Policy</a>. You can decline non-essential cookies or manage preferences via your browser.</p>
-      <div class="cookie-buttons">
-        <button class="cookie-accept" id="cookie-accept">Accept</button>
-        <button class="cookie-decline" id="cookie-decline">Decline</button>
-      </div>
+      {/* --- LEFT COLUMN: CONTENT --- */}
+      <main id="maincontent" class="main-column">
+        <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
+          
+          <header class="article-header">
+            <span class="category-pill">{post.data.category || 'News'}</span>
+            <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
+            
+            <div class="article-meta">
+               <div class="meta-left">
+                 <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+                 <span class="meta-dot">•</span>
+                 <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
+               </div>
+               <span class="reading-time">{readingTime} min read</span>
+            </div>
+            
+            <div class="share-row">
+               <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
+               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
+            </div>
+          </header>
+
+          {post.data.image && (
+            <figure class="featured-image">
+              <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
+              {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
+            </figure>
+          )}
+
+          {post.data.description && (
+            <div class="key-takeaways">
+              <h3>In Brief</h3>
+              <p>{post.data.description}</p>
+            </div>
+          )}
+
+          {/* Ad Block 1 (Inside Content) */}
+          <div class="ad-container">
+            <span class="ad-label">Advertisement</span>
+            <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          </div>
+
+          <div class="article-body" itemprop="articleBody">
+            <Article>
+              <Content />
+            </Article>
+          </div>
+
+          <footer class="article-footer">
+            <div class="tags">
+              {post.data.tags?.map(tag => (
+                <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
+              ))}
+            </div>
+            
+            <div class="author-box">
+               <div class="author-avatar">
+                 <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
+               </div>
+               <div class="author-info">
+                 <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
+                 <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+               </div>
+            </div>
+          </footer>
+        </article>
+      </main>
+
+      {/* --- RIGHT COLUMN: STICKY SIDEBAR --- */}
+      <aside class="sidebar-column">
+        <div class="sticky-wrapper">
+          
+          <div class="sidebar-ad">
+            <span class="ad-label">Advertisement</span>
+            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          </div>
+
+          {relatedPosts.length > 0 && (
+            <div class="related-widget">
+              <h3 class="widget-title">More in {post.data.category}</h3>
+              <div class="widget-list">
+                {relatedPosts.map(related => (
+                  <a href={`/posts/${related.slug}`} class="widget-item">
+                    <div class="widget-img">
+                      <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
+                    </div>
+                    <div class="widget-content">
+                      <h4>{related.data.title}</h4>
+                      <time>{new Date(related.data.date).toLocaleDateString()}</time>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
     </div>
   </div>
-  
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-W3FVP4FRPT');
+
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      const bar = document.getElementById("progress-bar");
+      if(bar) bar.style.width = scrolled + "%";
+    });
+  </script>
+
   <style>
-    /* Define CSS variables for light and dark themes */
     :root {
       --bg-color: #ffffff;
-      --text-color: #141414;
-      --subtext-color: #333333;
-      --accent-color: #BB1919;
-      --accent-hover: #991616;
-      --border-color: #E0E0E0;
-      --shadow-color: rgba(0, 0, 0, 0.15);
-      --button-bg: #BB1919;
-      --button-text: #ffffff;
-      --button-bg-hover: #991616;
-      --decline-bg: #E0E0E0;
-      --decline-text: #141414;
-      --decline-bg-hover: #D0D0D0;
-      --focus-outline: #BB1919;
-      --bg-light: #f7fafc;
-      --font-sans: 'ReithSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --text-color: #1a1a1a;
+      --text-light: #555;
+      --accent: #dc2626; 
+      --accent-hover: #b91c1c;
+      --border: #e5e7eb;
+      --bg-light: #f3f4f6;
+      --font-body: 'Georgia', serif;
+      --font-head: system-ui, -apple-system, sans-serif;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #1a1a1a;
-        --text-color: #e2e8f0;
-        --subtext-color: #9ca3af;
-        --accent-color: #ef4444;
-        --accent-hover: #f87171;
-        --border-color: #4b5563;
-        --shadow-color: rgba(0, 0, 0, 0.3);
-        --button-bg: #ef4444;
-        --button-text: #ffffff;
-        --button-bg-hover: #f87171;
-        --decline-bg: #4b5563;
-        --decline-text: #e2e8f0;
-        --decline-bg-hover: #6b7280;
-        --focus-outline: #f87171;
-        --bg-light: #2d3748;
+        --bg-color: #111827;
+        --text-color: #f3f4f6;
+        --text-light: #9ca3af;
+        --accent: #ef4444;
+        --border: #374151;
+        --bg-light: #1f2937;
       }
     }
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: var(--font-sans);
-      background: var(--bg-color);
-      color: var(--text-color);
+    /* GLOBAL RESETS */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-color); color: var(--text-color); font-family: var(--font-body); line-height: 1.6; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; transition: color 0.2s; }
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* PROGRESS BAR */
+    #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
+    #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
+
+    /* CONTAINER */
+    .page-container { 
+      width: 100%;
+      max-width: 1150px; 
+      margin: 0 auto; 
+      padding: 0 1.5rem; 
     }
 
-    .skip-link {
-      position: absolute;
-      top: -40px;
-      left: 6px;
-      background: var(--button-bg);
-      color: var(--button-text);
-      padding: 8px;
-      text-decoration: none;
-      z-index: 9999;
-      border-radius: 4px;
-      font-weight: 600;
+    /* BREADCRUMBS */
+    .breadcrumb { font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 2rem 0; }
+    .breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
+    .separator { margin: 0 0.5rem; color: #ccc; }
+    .current { font-weight: 600; color: var(--text-color); }
+
+    /* --- THE GRID FIX --- */
+    /* Default to stacked (Mobile) */
+    .article-grid { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 2rem; 
     }
+
+    /* Desktop: Sidebar is fixed 300px, Content fills the rest */
+    @media (min-width: 1024px) { 
+      .article-grid { 
+        display: grid; 
+        grid-template-columns: minmax(0, 1fr) 300px; 
+        gap: 3rem; 
+        align-items: start;
+      }
+    }
+
+    /* HEADER */
+    .article-header { margin-bottom: 2rem; font-family: var(--font-head); }
+    .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
+    .article-title { font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; color: var(--text-color); word-wrap: break-word; }
     
-    .skip-link:focus {
-      top: 6px;
-      outline: 2px solid var(--focus-outline);
-      outline-offset: 2px;
-    }
+    .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
+    .meta-left { display: flex; align-items: center; flex-wrap: wrap; }
+    .meta-dot { margin: 0 0.5rem; }
+    .author-name strong { color: var(--text-color); }
 
-    .cookie-consent {
-      position: fixed;
-      bottom: 1rem;
-      left: 1rem;
-      right: 1rem;
-      background: var(--bg-color);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 4px 12px var(--shadow-color);
-      border-radius: 8px;
-      z-index: 1000;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      display: none;
-    }
+    .share-row { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+    .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); white-space: nowrap; }
+    .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-    .cookie-consent.active {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
+    /* FEATURED IMAGE */
+    .featured-image { margin-bottom: 2rem; width: 100%; }
+    .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; }
+    .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
 
-    .cookie-content h2 {
-      font-family: 'ReithSerif', 'Georgia', 'Times', serif;
-      font-size: 1.5rem;
-      color: var(--text-color);
-      margin: 0 0 0.5rem;
-    }
+    /* KEY TAKEAWAYS */
+    .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
+    .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
+    .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
 
-    .cookie-content p {
-      font-family: var(--font-sans);
-      font-size: 0.875rem;
-      color: var(--subtext-color);
-      margin: 0 0 1rem;
-      line-height: 1.5;
-    }
+    /* CONTENT BODY */
+    .article-body { font-size: 1.15rem; line-height: 1.8; color: var(--text-color); width: 100%; overflow-wrap: break-word; }
+    .article-body :global(p) { margin-bottom: 1.5rem; }
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); line-height: 1.2; }
+    .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+    .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
+    .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 1rem; overflow-x: auto; }
 
-    .cookie-content a {
-      color: var(--accent-color);
-      text-decoration: none;
-    }
+    /* FOOTER */
+    .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+    .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); }
+    .tag:hover { background: var(--accent); color: white; }
 
-    .cookie-content a:hover,
-    .cookie-content a:focus {
-      color: var(--accent-hover);
-      text-decoration: underline;
-    }
+    .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 1.5rem; border-radius: 8px; align-items: center; }
+    .author-avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+    .author-info h3 { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 0.3rem; }
+    .author-info p { font-size: 0.95rem; color: var(--text-light); margin: 0; }
 
-    .cookie-content a:focus {
-      outline: 2px solid var(--focus-outline);
-      outline-offset: 2px;
-    }
+    /* SIDEBAR */
+    .sidebar-column { width: 100%; max-width: 100%; } 
+    .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
+    
+    .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; letter-spacing: 1px; }
+    .ad-container, .sidebar-ad { margin: 2rem 0; background: var(--bg-light); padding: 1rem; border-radius: 8px; text-align: center; overflow: hidden; }
+    .sidebar-ad { min-height: 250px; margin: 0; }
 
-    .cookie-buttons {
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-    }
+    .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
+    .widget-list { display: flex; flex-direction: column; gap: 1rem; }
+    .widget-item { display: flex; gap: 1rem; align-items: start; }
+    .widget-item:hover h4 { color: var(--accent); }
+    .widget-img { width: 80px; height: 60px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
+    .widget-img img { width: 100%; height: 100%; object-fit: cover; }
+    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin-bottom: 0.3rem; color: var(--text-color); }
+    .widget-content time { font-size: 0.75rem; color: var(--text-light); }
 
-    .cookie-accept,
-    .cookie-decline {
-      font-family: var(--font-sans);
-      font-size: 0.875rem;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      border: none;
-      transition: background 0.3s ease;
-    }
-
-    .cookie-accept {
-      background: var(--button-bg);
-      color: var(--button-text);
-    }
-
-    .cookie-accept:hover {
-      background: var(--button-bg-hover);
-    }
-
-    .cookie-decline {
-      background: var(--decline-bg);
-      color: var(--decline-text);
-    }
-
-    .cookie-decline:hover {
-      background: var(--decline-bg-hover);
-    }
-
-    .cookie-accept:focus,
-    .cookie-decline:focus {
-      outline: 2px solid var(--focus-outline);
-      outline-offset: 2px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Responsive Design */
-    @media (min-width: 769px) {
-      body {
-        padding: 0 1rem;
-      }
-
-      .cookie-consent {
-        bottom: 1rem;
-        left: 1rem;
-        right: 1rem;
-        padding: 1.5rem;
-      }
-    }
-
+    /* RESPONSIVE */
     @media (max-width: 768px) {
-      .cookie-consent {
-        bottom: 0.5rem;
-        left: 0;
-        right: 0;
-        padding: 0.5rem;
-        border-radius: 0;
-        box-shadow: none;
-        border-left: none;
-        border-right: none;
-      }
-
-      .cookie-content h2 {
-        font-size: 1.25rem;
-      }
-
-      .cookie-content p {
-        font-size: 0.8rem;
-      }
-
-      .cookie-buttons {
-        flex-direction: column;
-        gap: 0.4rem;
-      }
-
-      .cookie-accept,
-      .cookie-decline {
-        font-size: 0.8rem;
-        padding: 0.4rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .cookie-consent {
-        bottom: 0.5rem;
-        padding: 0.5rem;
-      }
-
-      .cookie-content h2 {
-        font-size: 1.125rem;
-      }
-
-      .cookie-content p {
-        font-size: 0.75rem;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .cookie-consent.active {
-        animation: none;
-      }
+      .author-box { flex-direction: column; text-align: center; }
+      .article-title { font-size: 2rem; }
+      .page-container { padding: 0 1rem; }
+      .ad-container, .sidebar-ad { padding: 0.5rem; }
     }
   </style>
-
-  <script is:inline>
-    function initCookieConsent() {
-      const consentPopup = document.getElementById('cookie-consent');
-      const acceptButton = document.getElementById('cookie-accept');
-      const declineButton = document.getElementById('cookie-decline');
-
-      if (!consentPopup || !acceptButton || !declineButton) return;
-
-      // Check if user has already made a choice
-      const cookieChoice = localStorage.getItem('cookieConsent');
-      if (!cookieChoice) {
-        consentPopup.classList.add('active');
-        consentPopup.setAttribute('aria-hidden', 'false');
-        acceptButton.focus();
-      }
-
-      function hideConsentPopup(choice) {
-        localStorage.setItem('cookieConsent', choice);
-        consentPopup.classList.remove('active');
-        consentPopup.setAttribute('aria-hidden', 'true');
-      }
-
-      acceptButton.addEventListener('click', () => {
-        hideConsentPopup('accepted');
-        loadGoogleAnalytics();
-      });
-
-      declineButton.addEventListener('click', () => {
-        hideConsentPopup('declined');
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && consentPopup.classList.contains('active')) {
-          hideConsentPopup('declined');
-        }
-      });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initCookieConsent);
-    } else {
-      initCookieConsent();
-    }
-  </script>
-</body>
-</html>
+</Layout>
