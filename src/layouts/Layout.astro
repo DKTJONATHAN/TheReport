@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
 
-// 1. Static paths for pre-rendering
+// 1. Static paths
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
   return posts.map(post => ({
@@ -15,12 +15,12 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// 2. Helper function to create URL-safe slugs for tags
+// 2. Slug Helper
 function createTagSlug(tag) {
   return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// 3. Related posts logic
+// 3. Related posts
 const allPosts = await getCollection('posts');
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
@@ -48,7 +48,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
   
-  {/* SEO META TAGS */}
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
@@ -67,10 +66,8 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   <meta name="twitter:image" content={imageUrl} />
   <meta name="twitter:site" content="@maestropuns" />
 
-  {/* AD SCRIPT */}
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
-  {/* JSON-LD SCHEMA */}
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -84,126 +81,127 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     mainEntityOfPage: postUrl
   })} />
 
-  {/* READING PROGRESS BAR */}
   <div id="progress-container"><div id="progress-bar"></div></div>
 
-  <div class="page-container">
-    
-    {/* Breadcrumbs */}
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Home</a><span class="separator">/</span>
-      <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
-      <span class="current">{post.data.title}</span>
-    </nav>
-
-    {/* MAIN CONTENT GRID */}
-    <div class="article-grid">
+  <div class="page-wrapper-outer">
+    <div class="page-container">
       
-      {/* --- LEFT COLUMN: CONTENT --- */}
-      <main id="maincontent" class="main-column">
-        <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
-          
-          <header class="article-header">
-            <span class="category-pill">{post.data.category || 'News'}</span>
-            <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
+      {/* Breadcrumbs */}
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span class="separator">/</span>
+        <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
+        <span class="current">{post.data.title}</span>
+      </nav>
+
+      {/* MAIN CONTENT GRID */}
+      <div class="article-grid">
+        
+        {/* --- LEFT COLUMN: CONTENT --- */}
+        <main id="maincontent" class="main-column">
+          <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
             
-            <div class="article-meta">
-               <div class="meta-left">
-                 <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
-                 <span class="meta-dot">•</span>
-                 <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
-               </div>
-               <span class="reading-time">{readingTime} min read</span>
-            </div>
-            
-            <div class="share-row">
-               <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
-               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
-            </div>
-          </header>
+            <header class="article-header">
+              <span class="category-pill">{post.data.category || 'News'}</span>
+              <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
+              
+              <div class="article-meta">
+                <div class="meta-left">
+                  <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+                  <span class="meta-dot">•</span>
+                  <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
+                </div>
+                <span class="reading-time">{readingTime} min read</span>
+              </div>
+              
+              <div class="share-row">
+                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
+                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
+              </div>
+            </header>
 
-          {post.data.image && (
-            <figure class="featured-image">
-              <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
-              {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
-            </figure>
-          )}
+            {post.data.image && (
+              <figure class="featured-image">
+                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
+                {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
+              </figure>
+            )}
 
-          {post.data.description && (
-            <div class="key-takeaways">
-              <h3>In Brief</h3>
-              <p>{post.data.description}</p>
-            </div>
-          )}
+            {post.data.description && (
+              <div class="key-takeaways">
+                <h3>In Brief</h3>
+                <p>{post.data.description}</p>
+              </div>
+            )}
 
-          {/* Ad Block 1 */}
-          <div class="ad-wrapper">
-            <div class="ad-container">
+            {/* Ad Block 1 (Protected) */}
+            <div class="ad-wrapper">
               <span class="ad-label">Advertisement</span>
-              <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
-              <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-          </div>
-
-          <div class="article-body" itemprop="articleBody">
-            <Article>
-              <Content />
-            </Article>
-          </div>
-
-          <footer class="article-footer">
-            <div class="tags">
-              {post.data.tags?.map(tag => (
-                <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
-              ))}
-            </div>
-            
-            <div class="author-box">
-               <div class="author-avatar">
-                 <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
-               </div>
-               <div class="author-info">
-                 <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
-                 <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
-               </div>
-            </div>
-          </footer>
-        </article>
-      </main>
-
-      {/* --- RIGHT COLUMN: SIDEBAR --- */}
-      <aside class="sidebar-column">
-        <div class="sticky-wrapper">
-          
-          <div class="ad-wrapper">
-            <div class="sidebar-ad">
-              <span class="ad-label">Advertisement</span>
-              <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-              <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-          </div>
-
-          {relatedPosts.length > 0 && (
-            <div class="related-widget">
-              <h3 class="widget-title">More in {post.data.category}</h3>
-              <div class="widget-list">
-                {relatedPosts.map(related => (
-                  <a href={`/posts/${related.slug}`} class="widget-item">
-                    <div class="widget-img">
-                      <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
-                    </div>
-                    <div class="widget-content">
-                      <h4>{related.data.title}</h4>
-                      <time>{new Date(related.data.date).toLocaleDateString()}</time>
-                    </div>
-                  </a>
-                ))}
+              <div class="ad-scroll-container">
+                <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
               </div>
             </div>
-          )}
-        </div>
-      </aside>
 
+            <div class="article-body" itemprop="articleBody">
+              <Article>
+                <Content />
+              </Article>
+            </div>
+
+            <footer class="article-footer">
+              <div class="tags">
+                {post.data.tags?.map(tag => (
+                  <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
+                ))}
+              </div>
+              
+              <div class="author-box">
+                <div class="author-avatar">
+                  <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
+                </div>
+                <div class="author-info">
+                  <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
+                  <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+                </div>
+              </div>
+            </footer>
+          </article>
+        </main>
+
+        {/* --- RIGHT COLUMN: SIDEBAR --- */}
+        <aside class="sidebar-column">
+          <div class="sticky-wrapper">
+            
+            <div class="ad-wrapper sidebar-ad-wrapper">
+              <span class="ad-label">Advertisement</span>
+              <div class="ad-scroll-container">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+              </div>
+            </div>
+
+            {relatedPosts.length > 0 && (
+              <div class="related-widget">
+                <h3 class="widget-title">More in {post.data.category}</h3>
+                <div class="widget-list">
+                  {relatedPosts.map(related => (
+                    <a href={`/posts/${related.slug}`} class="widget-item">
+                      <div class="widget-img">
+                        <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
+                      </div>
+                      <div class="widget-content">
+                        <h4>{related.data.title}</h4>
+                        <time>{new Date(related.data.date).toLocaleDateString()}</time>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+
+      </div>
     </div>
   </div>
 
@@ -248,53 +246,51 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       }
     }
 
-    /* GLOBAL RESETS & SAFETY */
+    /* GLOBAL RESETS - AGGRESSIVE */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body { 
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden; /* STOP SCROLL */
       background: var(--bg-color); 
       color: var(--text-color); 
       font-family: var(--font-body); 
       line-height: 1.6;
-      overflow-x: hidden; /* Stops horizontal scrolling */
-      width: 100%;
     }
 
-    /* Images & Media Safety */
+    /* Outer Wrapper to catch spills */
+    .page-wrapper-outer {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
     img, iframe, video { max-width: 100%; height: auto; display: block; }
-    
-    /* Links */
     a { text-decoration: none; color: inherit; transition: color 0.2s; }
 
-    /* PROGRESS BAR */
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
     #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
 
-    /* PAGE CONTAINER */
     .page-container { 
       width: 100%;
       max-width: 1150px; 
       margin: 0 auto; 
-      padding: 0 1rem; /* Reduced to 1rem to handle ad width better */
+      padding: 0 1rem; 
     }
 
-    /* BREADCRUMBS */
     .breadcrumb { font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 2rem 0; }
     .breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
     .separator { margin: 0 0.5rem; color: #ccc; }
     .current { font-weight: 600; color: var(--text-color); }
 
-    /* --- THE GRID --- */
-    /* Mobile First: Stacked */
+    /* --- SMART GRID --- */
     .article-grid { 
       display: flex; 
       flex-direction: column; 
       gap: 2rem; 
       width: 100%;
-      max-width: 100%; /* Safety */
+      min-width: 0; /* Important for flex child overflow */
     }
 
-    /* Desktop: Sidebar fixed 300px, content fills rest */
     @media (min-width: 1024px) { 
       .article-grid { 
         display: grid; 
@@ -310,7 +306,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
     
     .article-title { 
-      font-size: clamp(2rem, 3.5vw, 3rem); 
+      font-size: clamp(1.8rem, 3.5vw, 3rem); 
       font-weight: 800; 
       line-height: 1.2; 
       margin-bottom: 1rem; 
@@ -328,12 +324,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); white-space: nowrap; }
     .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-    /* FEATURED IMAGE */
     .featured-image { margin-bottom: 2rem; width: 100%; }
     .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; }
     .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
 
-    /* KEY TAKEAWAYS */
     .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
     .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
     .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
@@ -345,8 +339,8 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       color: var(--text-color); 
       width: 100%; 
       overflow-wrap: break-word; 
-      word-wrap: break-word;
-      word-break: break-word;
+      word-wrap: break-word; 
+      min-width: 0;
     }
     .article-body :global(p) { margin-bottom: 1.5rem; }
     .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); line-height: 1.2; }
@@ -366,38 +360,35 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .author-info p { font-size: 0.95rem; color: var(--text-light); margin: 0; }
 
     /* SIDEBAR */
-    .sidebar-column { width: 100%; max-width: 100%; }
+    .sidebar-column { width: 100%; min-width: 0; }
     .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
     
+    /* --- AD WRAPPERS (The Fix) --- */
     .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; letter-spacing: 1px; }
 
-    /* --- AD CONSTRAINTS (THE FIX) --- */
     .ad-wrapper {
+      margin: 2rem 0;
+      background: var(--bg-light);
+      padding: 1rem 0; /* Remove side padding */
+      border-radius: 8px;
+      text-align: center;
       width: 100%;
-      overflow: hidden; /* Force cut off if ad is too big */
+    }
+    
+    .ad-scroll-container {
+      width: 100%;
+      overflow-x: auto; /* Allow AD ONLY to scroll */
+      overflow-y: hidden;
       display: flex;
       justify-content: center;
+      min-height: 100px;
     }
-    .ad-container, .sidebar-ad { 
-      margin: 2rem 0; 
-      background: var(--bg-light); 
-      padding: 1rem; 
-      border-radius: 8px; 
-      text-align: center; 
-      width: 100%;
-      max-width: 100%; 
-      overflow: hidden; /* Inner containment */
-    }
-    .sidebar-ad { min-height: 250px; margin: 0; }
-    
-    /* Force AdSense to behave */
-    ins.adsbygoogle {
-       display: block !important;
-       min-width: 0 !important;
-       width: 100% !important;
-       max-width: 100% !important;
-       overflow: hidden !important;
-    }
+
+    /* Hide scrollbar on ad container */
+    .ad-scroll-container::-webkit-scrollbar { display: none; }
+    .ad-scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .sidebar-ad-wrapper { margin-top: 0; min-height: 250px; }
 
     /* WIDGETS */
     .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
@@ -412,8 +403,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     /* MOBILE SPECIFIC */
     @media (max-width: 768px) {
       .author-box { flex-direction: column; text-align: center; }
-      .article-title { font-size: 1.8rem; }
-      .ad-container, .sidebar-ad { padding: 0.5rem; } /* Gives ad more room */
+      .page-container { padding: 0 1rem; }
     }
   </style>
 </Layout>
