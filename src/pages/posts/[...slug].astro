@@ -17,21 +17,15 @@ const { Content } = await post.render();
 
 // Helper function to create URL-safe slugs for tags
 function createTagSlug(tag) {
-  return tag
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// Related posts by category except current post
+// Related posts logic
 const allPosts = await getCollection('posts');
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
-  .slice(0, 4);
+  .slice(0, 5); // Increased to 5 for the sidebar
 
 // Site URLs & metadata
 const siteUrl = 'https://jonathanmwaniki.co.ke';
@@ -43,16 +37,21 @@ const imageUrl = post.data.image?.startsWith('http')
   : `${siteUrl}${post.data.image || '/default-image.jpg'}`;
 
 const title = `${post.data.title} - Jonathan Mwaniki`;
-const description = post.data.description || `Latest news and updates about ${post.data.title} from Jonathan Mwaniki, Kenya's trusted news source.`;
+const description = post.data.description || `Latest news and updates about ${post.data.title}`;
 const publishedDate = new Date(post.data.date).toISOString();
 const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
 const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
+
+// Format date nicely
+const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
 ---
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
+  
+  {/* SEO META */}
   <meta name="robots" content="index, follow" />
-
-  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
@@ -64,20 +63,16 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
   <meta property="article:author" content={post.data.author || 'Jonathan Mwaniki'} />
   <meta property="article:section" content={post.data.category || 'News'} />
   {post.data.tags && <meta property="article:tag" content={post.data.tags.join(', ')} />}
-
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={imageUrl} />
   <meta name="twitter:site" content="@maestropuns" />
-  <meta name="twitter:creator" content="@maestropuns" />
 
-  <!-- Google AdSense Script -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
-       crossorigin="anonymous"></script>
+  {/* AD SCRIPT */}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
-  <!-- Structured Data -->
+  {/* JSON-LD SCHEMA */}
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -85,670 +80,265 @@ const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
     image: imageUrl,
     datePublished: publishedDate,
     dateModified: modifiedDate,
-    author: {
-      '@type': 'Person',
-      name: post.data.author || 'Jonathan Mwaniki'
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Jonathan Mwaniki',
-      logo: { '@type': 'ImageObject', url: `${siteUrl}/logo.png` }
-    },
+    author: { '@type': 'Person', name: post.data.author || 'Jonathan Mwaniki' },
+    publisher: { '@type': 'Organization', name: 'Jonathan Mwaniki', logo: { '@type': 'ImageObject', url: `${siteUrl}/logo.png` } },
     description: description,
-    mainEntityOfPage: postUrl,
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: post.data.category || "News", item: categoryUrl },
-        { '@type': 'ListItem', position: 3, name: post.data.title, item: postUrl }
-      ]
-    }
+    mainEntityOfPage: postUrl
   })} />
 
+  {/* READING PROGRESS BAR */}
+  <div id="progress-container"><div id="progress-bar"></div></div>
+
   <div class="page-container">
-    <!-- Breadcrumb -->
+    
+    {/* Breadcrumbs */}
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Home</a>
-      <span class="separator" aria-hidden="true">›</span>
-      <a href={categoryUrl}>{post.data.category || 'News'}</a>
-      <span class="separator" aria-hidden="true">›</span>
-      <span class="current" aria-current="page">{post.data.title}</span>
+      <a href="/">Home</a><span class="separator">/</span>
+      <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
+      <span class="current">{post.data.title}</span>
     </nav>
 
-    <!-- Advertisement after breadcrumb -->
-    <div class="ad-container" id="ad-breadcrumb" aria-hidden="true">
-      <span class="ad-label">Advertisement</span>
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-format="fluid"
-           data-ad-layout-key="-ft+62+3a-cx+as"
-           data-ad-client="ca-pub-9291176772735390"
-           data-ad-slot="1358657931"></ins>
-      <script is:inline>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </div>
+    <div class="article-grid">
+      
+      {/* --- LEFT COLUMN: CONTENT --- */}
+      <main id="maincontent" class="main-column">
+        <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
+          
+          <header class="article-header">
+            <span class="category-pill">{post.data.category || 'News'}</span>
+            <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
+            
+            <div class="article-meta">
+               <div class="meta-left">
+                 <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+                 <span class="meta-dot">•</span>
+                 <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
+               </div>
+               <span class="reading-time">{readingTime} min read</span>
+            </div>
+            
+            {/* Social Share (Top) */}
+            <div class="share-row">
+               <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
+               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
+            </div>
+          </header>
 
-    <!-- Main article content -->
-    <main id="maincontent" role="main" tabindex="-1" class="main-content">
-      <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
-        <header class="article-header">
-          <div class="article-meta">
-            <a href={categoryUrl} class="category-badge">{post.data.category || 'News'}</a>
-            <time datetime={publishedDate} itemprop="datePublished" class="publish-date">
-              {new Date(post.data.date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </time>
-            <span class="reading-time">{readingTime} min read</span>
-          </div>
-          <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
-          {post.data.description && (
-            <p class="article-lead" itemprop="description">{post.data.description}</p>
+          {/* Featured Image */}
+          {post.data.image && (
+            <figure class="featured-image">
+              <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
+              {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
+            </figure>
           )}
-          <div class="author-byline" itemprop="author" itemscope itemtype="https://schema.org/Person">
-            <span class="author-label">By</span>
-            <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong>
-          </div>
-        </header>
 
-        <!-- Advertisement after header -->
-        <div class="ad-container" id="ad-header" aria-hidden="true">
-          <span class="ad-label">Advertisement</span>
-          <ins class="adsbygoogle"
-               style="display:block"
-               data-ad-format="fluid"
-               data-ad-layout-key="-ft+62+3a-cx+as"
-               data-ad-client="ca-pub-9291176772735390"
-               data-ad-slot="1358657931"></ins>
-          <script is:inline>
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          </script>
+          {/* Key Takeaways Box (New Feature) */}
+          {post.data.description && (
+            <div class="key-takeaways">
+              <h3>In Brief</h3>
+              <p>{post.data.description}</p>
+            </div>
+          )}
+
+          {/* Ad Block 1 */}
+          <div class="ad-container">
+            <span class="ad-label">Advertisement</span>
+            <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          </div>
+
+          <div class="article-body" itemprop="articleBody">
+            <Article>
+              <Content />
+            </Article>
+          </div>
+
+          <footer class="article-footer">
+            <div class="tags">
+              {post.data.tags?.map(tag => (
+                <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
+              ))}
+            </div>
+            
+            {/* Author Box */}
+            <div class="author-box">
+               <div class="author-avatar">
+                 <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
+               </div>
+               <div class="author-info">
+                 <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
+                 <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+               </div>
+            </div>
+          </footer>
+        </article>
+      </main>
+
+      {/* --- RIGHT COLUMN: STICKY SIDEBAR --- */}
+      <aside class="sidebar-column">
+        <div class="sticky-wrapper">
+          
+          {/* Ad Block Sidebar */}
+          <div class="sidebar-ad">
+            <span class="ad-label">Advertisement</span>
+            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          </div>
+
+          {/* Related News Widget */}
+          {relatedPosts.length > 0 && (
+            <div class="related-widget">
+              <h3 class="widget-title">More in {post.data.category}</h3>
+              <div class="widget-list">
+                {relatedPosts.map(related => (
+                  <a href={`/posts/${related.slug}`} class="widget-item">
+                    <div class="widget-img">
+                      <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
+                    </div>
+                    <div class="widget-content">
+                      <h4>{related.data.title}</h4>
+                      <time>{new Date(related.data.date).toLocaleDateString()}</time>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      </aside>
 
-        {post.data.image && (
-          <figure class="featured-image">
-            <img 
-              src={imageUrl}
-              alt={post.data.imageAlt || post.data.title}
-              itemprop="image"
-              loading="eager"
-              decoding="async"
-              class="featured-image-img"
-            />
-          </figure>
-        )}
-
-        <div class="article-body" itemprop="articleBody">
-          <Article>
-            <Content />
-          </Article>
-        </div>
-
-        <footer class="article-footer">
-          <div class="tags" itemProp="keywords">
-            {post.data.tags?.map(tag => (
-              <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag} title={`View all posts tagged with ${tag}`}>#{tag}</a>
-            ))}
-          </div>
-          <div class="article-actions">
-            <a 
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`}
-              target="_blank" 
-              rel="noopener"
-              class="share-btn"
-              aria-label="Share on Twitter"
-            >
-              Share on Twitter
-            </a>
-            <a 
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`}
-              target="_blank" 
-              rel="noopener"
-              class="share-btn"
-              aria-label="Share on Facebook"
-            >
-              Share on Facebook
-            </a>
-          </div>
-        </footer>
-      </article>
-
-      <!-- Advertisement after article -->
-      <div class="ad-container" id="ad-article" aria-hidden="true">
-        <span class="ad-label">Advertisement</span>
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-format="fluid"
-             data-ad-layout-key="-ft+62+3a-cx+as"
-             data-ad-client="ca-pub-9291176772735390"
-             data-ad-slot="1358657931"></ins>
-        <script is:inline>
-          (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-      </div>
-
-      <!-- Author Bio -->
-      <section class="author-bio">
-        <h2>About the Author</h2>
-        <div class="bio-content">
-          <div class="author-avatar">
-            <img src="/Jonathan-Mwaniki-logo.png" alt={post.data.author || 'Jonathan Mwaniki'} width="80" height="80" loading="lazy" />
-          </div>
-          <div class="bio-text">
-            <h3>{post.data.author || 'Jonathan Mwaniki'}</h3>
-            <p>Experienced journalist covering Kenya news, politics, and current affairs. Committed to delivering accurate and timely information to readers.</p>
-            <a href="/author" class="author-link" aria-label="View all articles by author">View all articles →</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- Related Articles -->
-      {relatedPosts.length > 0 && (
-        <section class="related-articles" aria-label="Related Articles">
-          <h2>Related Articles</h2>
-          <div class="articles-grid">
-            {relatedPosts.map(related => (
-              <article class="related-card" key={related.slug}>
-                <a href={`/posts/${related.slug}`} class="card-link">
-                  {related.data.image && (
-                    <img 
-                      src={related.data.image} 
-                      alt={related.data.imageAlt || related.data.title}
-                      class="card-image"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )}
-                  <div class="card-content">
-                    <span class="card-category">{related.data.category}</span>
-                    <h3 class="card-title">{related.data.title}</h3>
-                    <time class="card-date">
-                      {new Date(related.data.date).toLocaleDateString()}
-                    </time>
-                  </div>
-                </a>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-    </main>
+    </div>
   </div>
 
-  <!-- Google Analytics minimalist -->
+  {/* Scripts */}
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-W3FVP4FRPT');
-  </script>
 
-  <!-- Cookie Consent For Ads -->
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem('cookieConsent') === 'accepted') {
-        document.querySelectorAll('.ad-container').forEach(container => {
-          container.classList.add('consented');
-        });
-      }
+    // Scroll Progress Logic
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      const bar = document.getElementById("progress-bar");
+      if(bar) bar.style.width = scrolled + "%";
     });
   </script>
 
   <style>
     :root {
       --bg-color: #ffffff;
-      --text-color: #141414;
-      --subtext-color: #666666;
-      --accent-color: #BB1919;
-      --accent-hover: #991616;
-      --border-color: #E0E0E0;
-      --shadow-color: rgba(0, 0, 0, 0.1);
-      --primary-color: #BB1919;
-      --secondary-color: #991616;
-      --text-light: #666666;
-      --bg-light: #f7fafc;
-      --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
-      --font-sans: 'ReithSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-serif: 'ReithSerif', Georgia, 'Times New Roman', serif;
-      --max-width: 800px;
-      --transition: all 0.2s ease;
-      --focus-outline: #BB1919;
+      --text-color: #1a1a1a;
+      --text-light: #555;
+      --accent: #dc2626; /* Kenyan Red */
+      --accent-hover: #b91c1c;
+      --border: #e5e7eb;
+      --bg-light: #f3f4f6;
+      --font-body: 'Georgia', serif;
+      --font-head: system-ui, -apple-system, sans-serif;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #1a1a1a;
-        --text-color: #e2e8f0;
-        --subtext-color: #9ca3af;
-        --accent-color: #ef4444;
-        --accent-hover: #f87171;
-        --border-color: #4b5563;
-        --shadow-color: rgba(0, 0, 0, 0.3);
-        --primary-color: #ef4444;
-        --secondary-color: #f87171;
+        --bg-color: #111827;
+        --text-color: #f3f4f6;
         --text-light: #9ca3af;
-        --bg-light: #2d3748;
-        --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.3);
-        --focus-outline: #f87171;
+        --accent: #ef4444;
+        --border: #374151;
+        --bg-light: #1f2937;
       }
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-color); color: var(--text-color); font-family: var(--font-body); line-height: 1.6; }
+    a { text-decoration: none; color: inherit; transition: color 0.2s; }
+    img { max-width: 100%; display: block; }
+
+    /* Progress Bar */
+    #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
+    #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
+
+    .page-container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+
+    /* Breadcrumb */
+    .breadcrumb { font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin-bottom: 2rem; }
+    .breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
+    .separator { margin: 0 0.5rem; color: #ccc; }
+    .current { font-weight: 600; color: var(--text-color); }
+
+    /* GRID LAYOUT */
+    .article-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+      .article-grid { grid-template-columns: 2.5fr 1fr; }
     }
 
-    body {
-      font-family: var(--font-serif);
-      line-height: 1.75;
-      font-size: 1.125rem;
-      color: var(--text-color);
-      background: var(--bg-color);
-    }
-
-    a {
-      color: var(--accent-color);
-      text-decoration: none;
-      transition: var(--transition);
-    }
-
-    a:hover,
-    a:focus {
-      color: var(--accent-hover);
-      text-decoration: underline;
-      outline: none;
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      object-fit: contain;
-    }
-
-    .page-container {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding: 1rem;
-      display: block;
-      min-height: 100vh;
-    }
-
-    .breadcrumb {
-      font-size: 0.875rem;
-      color: var(--subtext-color);
-      margin-bottom: 1.5rem;
-    }
-
-    .breadcrumb a {
-      font-weight: 600;
-    }
-
-    .separator {
-      margin: 0 0.5rem;
-    }
-
-    .current {
-      font-weight: 700;
-      color: var(--text-color);
-    }
-
-    .main-content {
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .article-header {
-      margin-bottom: 2rem;
-    }
-
-    .article-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      font-size: 0.875rem;
-      color: var(--subtext-color);
-    }
-
-    .category-badge {
-      background-color: var(--accent-color);
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .publish-date,
-    .reading-time {
-      white-space: nowrap;
-    }
-
-    .article-title {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 700;
-      margin: 1rem 0 0.5rem 0;
-      line-height: 1.1;
-    }
-
-    .article-lead {
-      font-size: 1.25rem;
-      color: var(--text-light);
-      margin-bottom: 1.5rem;
-    }
-
-    .author-byline {
-      font-size: 1rem;
-      color: var(--subtext-color);
-      margin-top: 0.5rem;
-    }
-
-    .author-label {
-      font-weight: 500;
-      margin-right: 0.25rem;
-    }
-
-    .featured-image {
-      margin: 1.5rem 0;
-      overflow: visible;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      background: var(--bg-light);
-      aspect-ratio: auto;
-    }
-
-    .featured-image-img {
-      width: 100%;
-      height: auto;
-      object-fit: contain !important;
-      border-radius: 8px;
-      display: block;
-    }
-
-    .article-body {
-      margin-bottom: 2rem;
-      max-width: 65ch;
-    }
-
-    .article-body h2, 
-    .article-body h3 {
-      margin-top: 2rem;
-      color: var(--accent-color);
-      font-weight: 700;
-    }
-
-    .article-body p {
-      margin: 1rem 0;
-      word-wrap: break-word;
-      hyphens: auto;
-    }
-
-    .article-footer {
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .tags {
-      margin-bottom: 1rem;
-    }
-
-    .tag {
-      background: var(--bg-light);
-      color: var(--text-light);
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      margin-right: 0.5rem;
-      font-size: 0.875rem;
-      display: inline-block;
-      transition: all 0.2s ease;
-    }
+    /* HEADER */
+    .article-header { margin-bottom: 2rem; font-family: var(--font-head); }
+    .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
+    .article-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; color: var(--text-color); }
     
-    .tag:hover,
-    .tag:focus {
-      background: var(--accent-color);
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-      outline: none;
-    }
+    .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); }
+    .meta-left { display: flex; align-items: center; }
+    .meta-dot { margin: 0 0.5rem; }
+    .author-name strong { color: var(--text-color); }
 
-    .article-actions {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
+    .share-row { display: flex; gap: 1rem; margin-top: 1rem; }
+    .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); }
+    .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-    .share-btn {
-      background: var(--primary-color);
-      color: white;
-      padding: 0.75rem 1.25rem;
-      border-radius: 6px;
-      font-weight: 600;
-      transition: background-color 0.3s ease;
-    }
+    /* FEATURED IMAGE */
+    .featured-image { margin-bottom: 2rem; }
+    .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; } /* Modern 'Cover' look */
+    .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
 
-    .share-btn:hover,
-    .share-btn:focus {
-      background: var(--secondary-color);
-      outline-offset: 2px;
-      outline: 2px solid var(--focus-outline);
-    }
+    /* KEY TAKEAWAYS */
+    .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
+    .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
+    .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
 
-    .author-bio {
-      display: flex;
-      gap: 1rem;
-      padding: 2rem 1rem;
-      background: var(--bg-light);
-      border-radius: 8px;
-      margin-bottom: 3rem;
-    }
+    /* ARTICLE BODY */
+    .article-body { font-size: 1.15rem; line-height: 1.8; color: var(--text-color); }
+    .article-body :global(p) { margin-bottom: 1.5rem; }
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); }
+    .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+    .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
 
-    .bio-content {
-      display: flex;
-      gap: 1rem;
-      width: 100%;
-    }
+    /* FOOTER & AUTHOR */
+    .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+    .tags { margin-bottom: 2rem; }
+    .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; margin-right: 0.5rem; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); }
+    .tag:hover { background: var(--accent); color: white; }
 
-    .author-avatar img {
-      border-radius: 50%;
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-    }
+    .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 1.5rem; border-radius: 8px; align-items: center; }
+    .author-avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+    .author-info h3 { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 0.3rem; }
+    .author-info p { font-size: 0.95rem; color: var(--text-light); margin: 0; }
 
-    .bio-text h3 {
-      margin-bottom: 0.5rem;
-    }
+    /* SIDEBAR (Sticky) */
+    .sidebar-column { margin-top: 1rem; }
+    .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
+    
+    .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; letter-spacing: 1px; }
+    .ad-container { margin: 2rem 0; background: var(--bg-light); padding: 1rem; border-radius: 8px; text-align: center; }
+    .sidebar-ad { background: var(--bg-light); padding: 1rem; border-radius: 8px; text-align: center; min-height: 250px; }
 
-    .bio-text p {
-      color: var(--text-light);
-      margin-bottom: 1rem;
-    }
+    /* RELATED WIDGET */
+    .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
+    .widget-list { display: flex; flex-direction: column; gap: 1rem; }
+    .widget-item { display: flex; gap: 1rem; align-items: start; }
+    .widget-item:hover h4 { color: var(--accent); }
+    .widget-img { width: 80px; height: 60px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
+    .widget-img img { width: 100%; height: 100%; object-fit: cover; }
+    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin-bottom: 0.3rem; color: var(--text-color); }
+    .widget-content time { font-size: 0.75rem; color: var(--text-light); }
 
-    .author-link {
-      color: var(--accent-color);
-      font-weight: 600;
-    }
-
-    .author-link:hover,
-    .author-link:focus {
-      text-decoration: underline;
-      outline-offset: 2px;
-      outline: 2px solid var(--focus-outline);
-    }
-
-    .related-articles {
-      margin-bottom: 3rem;
-    }
-
-    .related-articles h2 {
-      margin-bottom: 1.5rem;
-      font-size: 1.75rem;
-    }
-
-    .articles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .related-card {
-      background: var(--bg-color);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      transition: transform 0.2s ease, box-shadow 0.3s ease;
-    }
-
-    .related-card:hover,
-    .related-card:focus-within {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .card-link {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      color: inherit;
-      text-decoration: none;
-      outline-offset: 3px;
-    }
-
-    .card-image {
-      width: 100%;
-      height: auto;
-      object-fit: contain !important;
-      background: var(--bg-light);
-      display: block;
-      border-bottom: 1px solid var(--border-color);
-      aspect-ratio: auto;
-    }
-
-    .card-content {
-      padding: 1rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .card-category {
-      background: var(--accent-color);
-      color: white;
-      padding: 0.125rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      align-self: flex-start;
-    }
-
-    .card-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin: 0.75rem 0 0.5rem;
-      line-height: 1.3;
-      flex-grow: 1;
-    }
-
-    .card-date {
-      font-size: 0.875rem;
-      color: var(--text-light);
-    }
-
-    .ad-container {
-      max-width: 728px;
-      margin: 2rem auto;
-    }
-
-    .ad-label {
-      font-size: 0.75rem;
-      color: var(--subtext-color);
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      font-family: var(--font-sans);
-      display: block;
-    }
-
-    @media (max-width: 900px) {
-      .page-container {
-        max-width: 98vw;
-        padding: 1rem 0.5rem;
-      }
-
-      .main-content {
-        margin: 0 auto;
-        width: 100%;
-      }
-
-      .author-bio {
-        padding: 1.5rem 1rem;
-      }
-
-      .bio-content {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .author-avatar {
-        align-self: center;
-      }
-
-      .articles-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .page-container {
-        padding: 0.5rem;
-      }
-
-      .article-meta {
-        gap: 0.5rem;
-      }
-
-      .article-title {
-        font-size: 1.75rem;
-      }
-
-      .share-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        transition: none !important;
-      }
-    }
-
-    @media print {
-      .breadcrumb, .article-actions, .related-articles, .ad-container {
-        display: none;
-      }
-
-      .page-container {
-        max-width: 100%;
-      }
-
-      body {
-        font-size: 12pt;
-        line-height: 1.5;
-      }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .author-box { flex-direction: column; text-align: center; }
+      .article-title { font-size: 2rem; }
     }
   </style>
 </Layout>
