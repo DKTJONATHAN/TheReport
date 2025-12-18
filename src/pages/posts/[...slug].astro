@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
 
-// Static paths for pre-rendering
+// 1. Static paths
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
   return posts.map(post => ({
@@ -15,19 +15,19 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// Helper function to create URL-safe slugs for tags
+// 2. Helper function
 function createTagSlug(tag) {
   return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// Related posts logic
+// 3. Related posts
 const allPosts = await getCollection('posts');
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 5); 
 
-// Site URLs & metadata
+// 4. Metadata
 const siteUrl = 'https://jonathanmwaniki.co.ke';
 const postUrl = `${siteUrl}/posts/${post.slug}`;
 const categorySlug = (post.data.category || 'news').toLowerCase().replace(/\s+/g, '-');
@@ -49,7 +49,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
   
-  {/* SEO META */}
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
@@ -68,10 +67,8 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   <meta name="twitter:image" content={imageUrl} />
   <meta name="twitter:site" content="@maestropuns" />
 
-  {/* AD SCRIPT */}
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
-  {/* JSON-LD SCHEMA */}
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -85,12 +82,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     mainEntityOfPage: postUrl
   })} />
 
-  {/* READING PROGRESS BAR */}
   <div id="progress-container"><div id="progress-bar"></div></div>
 
   <div class="page-container">
     
-    {/* Breadcrumbs */}
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a><span class="separator">/</span>
       <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
@@ -136,11 +131,13 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
             </div>
           )}
 
-          {/* Ad Block 1 */}
-          <div class="ad-container">
-            <span class="ad-label">Advertisement</span>
-            <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
-            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          {/* --- PROTECTED AD WRAPPER --- */}
+          <div class="ad-outer-wrapper">
+             <span class="ad-label">Advertisement</span>
+             <div class="ad-scroll-container">
+                <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+             </div>
           </div>
 
           <div class="article-body" itemprop="articleBody">
@@ -169,14 +166,16 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         </article>
       </main>
 
-      {/* --- RIGHT COLUMN: STICKY SIDEBAR --- */}
+      {/* --- RIGHT COLUMN: SIDEBAR --- */}
       <aside class="sidebar-column">
         <div class="sticky-wrapper">
           
-          <div class="sidebar-ad">
-            <span class="ad-label">Advertisement</span>
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          <div class="ad-outer-wrapper sidebar-ad-wrapper">
+             <span class="ad-label">Advertisement</span>
+             <div class="ad-scroll-container">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+             </div>
           </div>
 
           {relatedPosts.length > 0 && (
@@ -243,37 +242,69 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       }
     }
 
+    /* 1. NUCLEAR OVERFLOW PROTECTION */
+    html, body {
+        width: 100%;
+        overflow-x: hidden; /* Force Stop Horizontal Scroll */
+        background: var(--bg-color); 
+        color: var(--text-color); 
+        font-family: var(--font-body); 
+        line-height: 1.6;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg-color); color: var(--text-color); font-family: var(--font-body); line-height: 1.6; }
-    a { text-decoration: none; color: inherit; transition: color 0.2s; }
     img { max-width: 100%; display: block; height: auto; }
+    a { text-decoration: none; color: inherit; transition: color 0.2s; }
 
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
     #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
 
-    /* CONTAINER FIXES */
+    /* CONTAINER */
     .page-container { 
       width: 100%;
-      max-width: 1120px; /* Reduced from 1200px to prevent spill */
+      max-width: 1120px; 
       margin: 0 auto; 
-      padding: 0 1.5rem; /* Ensure gaps on sides */
-      overflow-x: hidden; /* Safety net against scrolling */
+      padding: 0 1.5rem; 
     }
 
+    /* BREADCRUMBS */
     .breadcrumb { font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 2rem 0; }
     .breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
     .separator { margin: 0 0.5rem; color: #ccc; }
     .current { font-weight: 600; color: var(--text-color); }
 
-    /* GRID FIXES */
-    .article-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
-    @media (min-width: 960px) { /* Breakpoint logic */
-      .article-grid { grid-template-columns: 2.2fr 1fr; gap: 3rem; }
+    /* 2. FLEX COLUMN FOR MOBILE (Avoids Grid Overflow) */
+    .article-grid { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 2rem; 
+      width: 100%;
+      min-width: 0; /* Flex child shrink fix */
     }
 
+    /* Desktop Grid (Only above 1024px) */
+    @media (min-width: 1024px) { 
+      .article-grid { 
+        display: grid; 
+        grid-template-columns: minmax(0, 1fr) 300px; /* Safe column sizing */
+        gap: 3rem; 
+        align-items: start;
+      }
+    }
+
+    /* HEADER */
     .article-header { margin-bottom: 2rem; font-family: var(--font-head); }
     .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
-    .article-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; color: var(--text-color); word-wrap: break-word; }
+    
+    .article-title { 
+      font-size: clamp(2rem, 4vw, 3rem); 
+      font-weight: 800; 
+      line-height: 1.1; 
+      margin-bottom: 1rem; 
+      color: var(--text-color); 
+      overflow-wrap: break-word; /* Forces line breaks */
+      word-wrap: break-word;
+    }
     
     .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
     .meta-left { display: flex; align-items: center; flex-wrap: wrap; }
@@ -292,15 +323,48 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
     .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
 
-    .article-body { font-size: 1.15rem; line-height: 1.8; color: var(--text-color); width: 100%; overflow-wrap: break-word; }
+    /* CONTENT BODY */
+    .article-body { 
+        font-size: 1.15rem; 
+        line-height: 1.8; 
+        color: var(--text-color); 
+        width: 100%; 
+        overflow-wrap: break-word; 
+        word-wrap: break-word; 
+    }
     .article-body :global(p) { margin-bottom: 1.5rem; }
     .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); }
     .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
     .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
-    
-    /* Make sure Content rendering doesn't overflow */
     .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; }
 
+    /* 3. AD WRAPPER FIX (Internal Scrolling) */
+    .ad-outer-wrapper {
+        margin: 2rem 0;
+        background: var(--bg-light);
+        border-radius: 8px;
+        text-align: center;
+        width: 100%;
+        padding: 1rem 0; /* Vertical padding only */
+    }
+    
+    .ad-label { 
+        font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); 
+        text-transform: uppercase; display: block; margin-bottom: 0.5rem; 
+        text-align: center; letter-spacing: 1px; 
+    }
+
+    .ad-scroll-container {
+        width: 100%;
+        overflow-x: auto; /* ALLOWS AD TO SCROLL INSIDE IF TOO BIG */
+        display: flex;
+        justify-content: center;
+        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+    }
+
+    .sidebar-ad-wrapper { margin-top: 0; min-height: 250px; }
+
+    /* FOOTER */
     .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
     .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); }
@@ -313,10 +377,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
     .sidebar-column { margin-top: 1rem; width: 100%; }
     .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
-    
-    .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; letter-spacing: 1px; }
-    .ad-container { margin: 2rem 0; background: var(--bg-light); padding: 1rem; border-radius: 8px; text-align: center; overflow: hidden; }
-    .sidebar-ad { background: var(--bg-light); padding: 1rem; border-radius: 8px; text-align: center; min-height: 250px; overflow: hidden; }
 
     .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
     .widget-list { display: flex; flex-direction: column; gap: 1rem; }
@@ -330,7 +390,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     @media (max-width: 768px) {
       .author-box { flex-direction: column; text-align: center; }
       .article-title { font-size: 2rem; }
-      .page-container { padding: 0 1rem; } /* Less padding on mobile */
+      .page-container { padding: 0 1rem; }
     }
   </style>
 </Layout>
