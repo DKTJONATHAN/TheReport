@@ -1,11 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
 
-// Fetch categories and posts dynamically
+// 1. Fetch Data
 const posts = await getCollection('posts');
 const categories = [...new Set(posts.map(post => post.data.category))].filter(Boolean);
 
-// Serialize posts data for client-side JavaScript
+// 2. OPTIMIZED Serialization (Removed 'content' to prevent HTML bloat)
+// Search will now scan Title, Description, Tags, and Keywords only.
 const serializedPosts = posts.map(post => ({
   slug: post.slug,
   title: post.data.title,
@@ -13,1205 +14,388 @@ const serializedPosts = posts.map(post => ({
   tags: post.data.tags || [],
   keywords: post.data.keywords || [],
   date: post.data.date,
-  description: post.data.description || '',
-  content: post.body.replace(/"/g, '\\"').replace(/\n/g, ' ').substring(0, 500)
+  description: post.data.description || ''
 }));
 
-// Fetch latest post for top story ticker
+// 3. Get Top Story
 const topStory = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())[0];
 
 const navItems = [
   { href: '/', text: 'Home' },
+  { href: '/category/politics', text: 'Politics' },
+  { href: '/category/business', text: 'Business' },
+  { href: '/category/sports', text: 'Sports' },
   { href: '/about', text: 'About' },
-  { href: '/contact', text: 'Contact' },
 ];
 ---
 
-<header class="site-header" role="banner">
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-
-  <!-- Top Story Ticker -->
-  {topStory && (
-    <div class="top-story-ticker" role="region" aria-live="polite">
-      <span class="ticker-label">TOP STORY</span>
-      <a href={`/posts/${topStory.slug}`} class="ticker-link" aria-label={`Top Story: ${topStory.data.title}`}>
-        <span class="ticker-text">{topStory.data.title}</span>
-      </a>
+<header class="site-header" id="site-header">
+  
+  {/* --- TOP NEWS TICKER --- */}
+  <div class="ticker-wrap">
+    <div class="ticker-label">
+      <span class="pulse-dot"></span> BREAKING
     </div>
-  )}
-  {!topStory && (
-    <div class="top-story-ticker" role="region" aria-live="polite">
-      <span class="ticker-label">TOP STORY</span>
-      <span class="ticker-text">Stay tuned for the latest news!</span>
-    </div>
-  )}
-
-  <div class="header-container">
-    <div class="logo-title-section">
-      <a href="/" class="site-logo" aria-label="Jonathan Mwaniki News Home">
-        <img src="/Jonathan-Mwaniki-logo.png" alt="Jonathan Mwaniki News Logo" class="logo-image" />
-      </a>
-      <div class="title-tagline">
-        <h1 class="site-title">
-          The <span class="highlight">Mwaniki</span> Report
-        </h1>
-        <p class="site-tagline">Kenya’s Premier News Source</p>
-      </div>
-    </div>
-
-    <div class="mobile-controls">
-      <button class="mobile-menu-button" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hamburger-icon" aria-hidden="true">
-          <line x1="3" y1="6" x2="21" y2="6" class="hamburger-line"/>
-          <line x1="3" y1="12" x2="21" y2="12" class="hamburger-line"/>
-          <line x1="3" y1="18" x2="21" y2="18" class="hamburger-line"/>
-        </svg>
-      </button>
-      <button class="search-button" id="search-toggle" aria-label="Toggle search" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </button>
+    <div class="ticker-content">
+      {topStory ? (
+        <a href={`/posts/${topStory.slug}`} class="ticker-link">
+          <span class="ticker-time">{new Date(topStory.data.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}:</span>
+          {topStory.data.title}
+        </a>
+      ) : (
+         <span>Welcome to The Mwaniki Report. Stay tuned for updates.</span>
+      )}
     </div>
   </div>
 
-  <nav class="main-nav" id="main-nav" aria-label="Main navigation" aria-hidden="true">
-    <ul class="nav-list">
+  <div class="header-main">
+    <div class="header-inner">
+      
+      {/* 1. Mobile Hamburger (Hidden on Desktop) */}
+      <button class="menu-toggle" id="menu-toggle" aria-label="Open Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      {/* 2. BRAND LOGO & TITLE (Now Fully Clickable) */}
+      <a href="/" class="brand-link" aria-label="Go to Homepage">
+        <img src="/Jonathan-Mwaniki-logo.png" alt="JM Logo" class="logo-img" />
+        <div class="brand-text">
+          <h1 class="brand-title">The <span class="highlight">Mwaniki</span> Report</h1>
+          <span class="brand-tagline">Kenya's Premier News Source</span>
+        </div>
+      </a>
+
+      {/* 3. Desktop Navigation (Visible on Large Screens) */}
+      <nav class="desktop-nav">
+        {navItems.map(item => (
+          <a href={item.href} class="d-nav-link">{item.text}</a>
+        ))}
+      </nav>
+
+      {/* 4. Search Icon */}
+      <button class="search-toggle" id="search-toggle" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
+    </div>
+  </div>
+
+  {/* --- MOBILE DRAWER (Slide Out) --- */}
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title">Menu</span>
+      <button id="close-menu" aria-label="Close Menu">&times;</button>
+    </div>
+    <nav class="mobile-nav-list">
       {navItems.map(item => (
-        <li class="nav-item">
-          <a href={item.href} class="nav-link">{item.text}</a>
-        </li>
+        <a href={item.href} class="m-nav-link">{item.text}</a>
       ))}
-      <li class="nav-item category-nav">
-        <button class="category-toggle" aria-expanded="false" aria-controls="category-menu">
-          Categories
-          <svg width="16" height="16" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" class="chevron">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        <ul class="category-menu" id="category-menu">
-          {categories.map(category => (
-            <li>
-              <a href={`/category/${category.toLowerCase()}`} class="category-link">{category}</a>
-            </li>
-          ))}
-        </ul>
-      </li>
-    </ul>
+      <div class="drawer-divider"></div>
+      <span class="drawer-subtitle">Categories</span>
+      {categories.map(cat => (
+        <a href={`/category/${cat.toLowerCase()}`} class="m-nav-sublink">{cat}</a>
+      ))}
+    </nav>
+  </div>
+  <div class="overlay" id="site-overlay"></div>
 
-    <div class="contact-info">
-      <a href="mailto:info@jonathanmwaniki.co.ke" class="contact-link" title="Email us" aria-label="Email Jonathan Mwaniki News">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
-        </svg>
-        <span class="contact-text">info@jonathanmwaniki.co.ke</span>
-      </a>
-      <a href="https://x.com/maestropuns" class="contact-link" title="Follow on X" aria-label="Follow Jonathan Mwaniki on X" target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-        <span class="contact-text">@maestropuns</span>
-      </a>
-      <a href="https://facebook.com/jonathanmwaniki" class="contact-link" title="Follow on Facebook" aria-label="Follow Jonathan Mwaniki on Facebook" target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="currentColor">
-          <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
-        </svg>
-        <span class="contact-text">Jonathan Mwaniki</span>
-      </a>
-      <a href="https://instagram.com/jonathanmwaniki" class="contact-link" title="Follow on Instagram" aria-label="Follow Jonathan Mwaniki on Instagram" target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="currentColor">
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849s-.012 3.584-.069 4.849c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849s.012-3.584.07-4.849c.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.668.072 4.948c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.668-.014 4.948-.072c4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-        </svg>
-        <span class="contact-text">@jonathanmwaniki</span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- Search Overlay -->
-  <div class="search-overlay" id="search-overlay" aria-hidden="true">
-    <div class="search-container">
-      <form class="search-form" id="search-form" role="search" action="/search">
-        <label for="search-input" class="visually-hidden">Search articles</label>
-        <input
-          type="text"
-          id="search-input"
-          name="query"
-          placeholder="Search articles..."
-          class="search-input"
-          aria-label="Search articles"
-          autocomplete="off"
-        />
-        <button type="submit" class="search-submit" aria-label="Submit search">
-          <svg width="20" height="20" viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
-      </form>
-      <div class="search-results" id="search-results" aria-live="polite">
-        <!-- Results will be populated by JavaScript -->
+  {/* --- SEARCH OVERLAY --- */}
+  <div class="search-modal" id="search-modal">
+    <div class="search-box">
+      <div class="search-header">
+        <input type="text" id="search-input" placeholder="Search news, politics, sports..." autocomplete="off" />
+        <button id="close-search">Esc</button>
       </div>
+      <div id="search-results" class="search-results"></div>
     </div>
-    <button class="search-close" id="search-close" aria-label="Close search">
-      <svg width="24" height="24" viewBox="0 0 24 24" focusable="false" fill="none" stroke="var(--text-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
   </div>
 
-  <div class="overlay" id="overlay"></div>
 </header>
 
 <style>
-  /* Define CSS variables for light and dark themes */
   :root {
-    --bg-color: #ffffff;
-    --text-color: #141414;
-    --subtext-color: #666666;
-    --accent-color: #BB1919;
-    --accent-hover: #991616;
-    --border-color: #E0E0E0;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --ticker-bg: #BB1919;
-    --ticker-text: #ffffff;
-    --ticker-label-bg: #ffffff;
-    --ticker-label-text: #BB1919;
-    --focus-outline: #BB1919;
+    --primary: #dc2626; /* Kenyan Red */
+    --primary-dark: #b91c1c;
+    --dark: #111827;
+    --light: #f3f4f6;
+    --white: #ffffff;
+    --border: #e5e7eb;
+    --font-serif: 'Georgia', serif;
+    --font-sans: system-ui, -apple-system, sans-serif;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg-color: #1a1a1a;
-      --text-color: #e2e8f0;
-      --subtext-color: #9ca3af;
-      --accent-color: #ef4444;
-      --accent-hover: #f87171;
-      --border-color: #4b5563;
-      --shadow-color: rgba(0, 0, 0, 0.3);
-      --ticker-bg: #ef4444;
-      --ticker-text: #ffffff;
-      --ticker-label-bg: #2d2d2d;
-      --ticker-label-text: #ef4444;
-      --focus-outline: #f87171;
-    }
-  }
-
-  .site-header {
-    background: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    transition: box-shadow 0.3s ease;
-  }
-
-  .site-header.scrolled {
-    box-shadow: 0 2px 4px var(--shadow-color);
-  }
-
-  .header-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 1rem;
+  /* --- 1. TICKER --- */
+  .ticker-wrap {
+    background: var(--dark);
+    color: white;
+    font-size: 0.75rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    position: relative;
-  }
-
-  .logo-title-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
-  }
-
-  .site-logo {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    flex-shrink: 0;
-    z-index: 2;
-  }
-
-  .logo-image {
-    height: 48px;
-    width: auto;
-    transition: height 0.3s ease;
-  }
-
-  .site-header.scrolled .logo-image {
-    height: 40px;
-  }
-
-  .title-tagline {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    width: auto;
-    max-width: 400px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .site-title {
-    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0;
-    color: var(--text-color);
-    letter-spacing: -0.02em;
-    pointer-events: auto;
-  }
-
-  .site-title .highlight {
-    color: var(--accent-color);
-  }
-
-  .site-tagline {
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.875rem;
-    color: var(--subtext-color);
-    margin: 0;
-    line-height: 1.2;
-    pointer-events: auto;
-  }
-
-  .main-nav {
-    display: block;
-    visibility: hidden;
-    opacity: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 80%;
-    max-width: 320px;
-    height: 100%;
-    background: var(--bg-color);
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    padding: 3rem 1.5rem 2rem;
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s ease, visibility 0s linear 0.3s;
-  }
-
-  .main-nav.active {
-    visibility: visible;
-    opacity: 1;
-    transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s ease, visibility 0s linear;
-  }
-
-  .nav-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
-    margin-bottom: 1.5rem;
-  }
-
-  .nav-item {
-    position: relative;
-  }
-
-  .nav-link, .category-link {
-    color: var(--text-color);
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    padding: 0.8rem 0.5rem;
-    display: block;
-    border-bottom: 1px solid var(--border-color);
-    transition: color 0.3s ease;
-  }
-
-  .nav-link:hover, .nav-link.active,
-  .category-link:hover, .category-link.active {
-    color: var(--accent-color);
-  }
-
-  .nav-link:focus, .category-link:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .category-nav {
-    margin-bottom: 1.5rem;
-  }
-
-  .category-toggle {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0.8rem 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    transition: color 0.3s ease;
-  }
-
-  .category-toggle:hover, .category-toggle.active {
-    color: var(--accent-color);
-  }
-
-  .category-toggle:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .category-menu {
-    display: none;
-    background: var(--bg-color);
-    list-style: none;
-    padding: 0.5rem 0;
-    margin: 0;
-  }
-
-  .category-menu.active {
-    display: block;
-  }
-
-  .category-menu li {
-    padding: 0.6rem 1rem;
-  }
-
-  .category-link {
-    font-size: 0.9rem;
-    border-bottom: none;
-  }
-
-  .contact-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-    padding: 1.5rem 0 0;
-    border-top: 2px solid var(--border-color);
-    width: 100%;
-  }
-
-  .contact-link {
-    color: var(--subtext-color);
-    padding: 0.6rem 0.5rem;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-decoration: none;
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .contact-link:hover {
-    color: var(--accent-color);
-    background: rgba(187, 25, 25, 0.05);
-  }
-
-  .contact-link:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .contact-text {
-    display: inline;
-  }
-
-  .mobile-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    z-index: 2;
-  }
-
-  .mobile-menu-button, .search-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: background-color 0.3s ease;
-  }
-
-  .mobile-menu-button:hover, .search-button:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .mobile-menu-button:focus, .search-button:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .hamburger-icon, .search-icon {
-    width: 24px;
-    height: 24px;
-    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-  }
-
-  .mobile-menu-button.active .hamburger-line:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-  }
-
-  .mobile-menu-button.active .hamburger-line:nth-child(2) {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  .mobile-menu-button.active .hamburger-line:nth-child(3) {
-    transform: rotate(-45deg) translate(7px, -7px);
-  }
-
-  .overlay {
-    display: block;
-    visibility: hidden;
-    opacity: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 999;
-    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
-  }
-
-  .overlay.active {
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 0.3s ease, visibility 0s linear;
-  }
-
-  .search-overlay {
-    display: flex;
-    visibility: hidden;
-    opacity: 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1001;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
-  }
-
-  .search-overlay.active {
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 0.3s ease, visibility 0s linear;
-  }
-
-  .search-container {
-    background: var(--bg-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px var(--shadow-color);
-    max-width: 600px;
-    width: 90%;
-    padding: 1.5rem;
-    position: relative;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-
-  .search-form {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .search-input {
-    flex: 1;
-    padding: 0.75rem;
-    font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    color: var(--text-color);
-    background: var(--bg-color);
-  }
-
-  .search-input:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .search-submit {
-    background: var(--accent-color);
-    border: none;
-    padding: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s ease;
-  }
-
-  .search-submit:hover {
-    background: var(--accent-hover);
-  }
-
-  .search-submit:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .search-results {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .results-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .result-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .result-link {
-    text-decoration: none;
-    color: var(--text-color);
-    display: block;
-  }
-
-  .result-link:hover,
-  .result-link:focus {
-    color: var(--accent-color);
-  }
-
-  .result-link:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .result-title {
-    font-family: 'ReithSerif', 'Georgia', 'Times', serif;
-    font-size: 1.25rem;
-    margin: 0 0 0.25rem;
-  }
-
-  .result-meta {
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.8rem;
-    color: var(--subtext-color);
-    margin: 0 0 0.25rem;
-  }
-
-  .result-description {
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.875rem;
-    color: var(--text-color);
-    margin: 0;
-  }
-
-  .see-more-button {
-    display: block;
-    text-align: center;
-    padding: 0.5rem;
-    background: var(--accent-color);
-    color: var(--ticker-text);
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.875rem;
-    border-radius: 4px;
-    text-decoration: none;
-    margin-top: 1rem;
-    transition: background-color 0.3s ease;
-  }
-
-  .see-more-button:hover {
-    background: var(--accent-hover);
-  }
-
-  .see-more-button:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .no-results {
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.875rem;
-    color: var(--subtext-color);
-    text-align: center;
-    margin: 1rem 0;
-  }
-
-  .search-close {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-
-  .search-close:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .search-close:focus {
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
+    height: 32px;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
   }
-
-  .top-story-ticker {
-    background: var(--ticker-bg);
-    color: var(--ticker-text);
-    padding: 0.2rem 0.2rem 0.2rem 0.4rem;
-    font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 600;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 0.3rem;
-    overflow: hidden;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
   .ticker-label {
-    background: var(--ticker-label-bg);
-    color: var(--ticker-label-text);
-    padding: 0.1rem 0.2rem;
-    border-radius: 4px;
-    font-size: 0.5rem;
-    text-transform: uppercase;
-    flex-shrink: 0;
+    background: var(--primary);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    z-index: 2;
+    font-family: var(--font-sans);
   }
-
-  .ticker-link {
-    color: var(--ticker-text);
-    text-decoration: none;
-    display: inline-block;
-    max-width: 80%;
+  .pulse-dot {
+    width: 6px; height: 6px; background: white; border-radius: 50%;
+    margin-right: 6px; animation: pulse 1.5s infinite;
   }
-
-  .ticker-link:hover {
-    text-decoration: underline;
-  }
-
-  .ticker-text {
-    display: inline-block;
-    animation: marquee 15s linear infinite;
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+  
+  .ticker-content {
+    flex: 1;
     white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+    padding-left: 1rem;
   }
-
-  .ticker-link:hover .ticker-text {
-    animation-play-state: paused;
+  .ticker-link {
+    display: inline-block;
+    color: #e5e7eb;
+    text-decoration: none;
+    animation: marquee 20s linear infinite;
+    font-family: var(--font-sans);
   }
-
+  .ticker-link:hover { text-decoration: underline; animation-play-state: paused; }
+  .ticker-time { color: var(--primary); font-weight: bold; margin-right: 5px; }
+  
   @keyframes marquee {
-    0% { transform: translateX(100%); }
+    0% { transform: translateX(0); }
     100% { transform: translateX(-100%); }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ticker-text {
-      animation: none;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 80%;
-    }
+  /* --- 2. HEADER MAIN --- */
+  .site-header {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+  
+  .header-inner {
+    max-width: 1280px; margin: 0 auto;
+    height: 70px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1rem;
   }
 
-  .skip-link {
-    position: absolute;
-    top: -1000px;
-    left: 0;
-    background: var(--accent-color);
-    color: var(--ticker-text);
-    padding: 0.5rem;
-    z-index: 1001;
+  /* BRAND (LOGO + TITLE CLICKABLE) */
+  .brand-link {
+    display: flex; 
+    align-items: center; 
+    gap: 0.75rem; 
+    text-decoration: none; 
+    color: var(--dark);
+    cursor: pointer;
   }
+  .brand-link:hover .brand-title { color: var(--primary); transition: color 0.2s; }
+  
+  .logo-img { height: 45px; width: auto; display: block; }
+  
+  .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-title { font-family: var(--font-serif); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.5px; margin: 0; }
+  .highlight { color: var(--primary); }
+  .brand-tagline { font-family: var(--font-sans); font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .skip-link:focus {
-    top: 0;
-    outline: 2px solid var(--focus-outline);
-    outline-offset: 2px;
+  /* DESKTOP NAV */
+  .desktop-nav { display: none; gap: 1.5rem; }
+  .d-nav-link {
+    font-family: var(--font-sans); font-weight: 600; font-size: 0.95rem;
+    color: var(--dark); text-decoration: none;
+    padding: 0.5rem 0; border-bottom: 2px solid transparent;
+    transition: all 0.2s;
   }
+  .d-nav-link:hover, .d-nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-  @media (max-width: 768px) {
-    .header-container {
-      padding: 0.4rem 0.5rem;
-    }
-
-    .logo-title-section {
-      gap: 0.4rem;
-      justify-content: flex-start;
-    }
-
-    .site-logo {
-      z-index: 2;
-    }
-
-    .title-tagline {
-      max-width: 300px;
-    }
-
-    .site-title {
-      font-size: 1.25rem;
-    }
-
-    .site-tagline {
-      font-size: 0.7rem;
-    }
-
-    .logo-image {
-      height: 20px;
-    }
-
-    .site-header.scrolled .logo-image {
-      height: 18px;
-    }
-
-    .main-nav {
-      width: 85%;
-    }
-
-    .search-container {
-      width: 95%;
-      padding: 1rem;
-    }
-
-    .search-input {
-      font-size: 0.9rem;
-      padding: 0.5rem;
-    }
-
-    .search-submit {
-      padding: 0.5rem;
-    }
-
-    .result-title {
-      font-size: 1.125rem;
-    }
-
-    .result-meta {
-      font-size: 0.75rem;
-    }
-
-    .result-description {
-      font-size: 0.8rem;
-    }
-
-    .see-more-button {
-      font-size: 0.8rem;
-      padding: 0.4rem;
-    }
-
-    .top-story-ticker {
-      font-size: 0.65rem;
-      gap: 0.3rem;
-    }
-
-    .ticker-label {
-      font-size: 0.5rem;
-    }
-
-    .ticker-text {
-      max-width: 70%;
-    }
+  /* CONTROLS */
+  .menu-toggle, .search-toggle {
+    background: none; border: none; cursor: pointer; padding: 0.5rem;
+    color: var(--dark); border-radius: 50%; transition: background 0.2s;
   }
+  .menu-toggle:hover, .search-toggle:hover { background: var(--light); color: var(--primary); }
+  
+  /* --- 3. MOBILE DRAWER --- */
+  .mobile-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+    background: white; z-index: 1002;
+    transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+  .mobile-drawer.active { transform: translateX(0); }
+  
+  .drawer-header {
+    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1.5rem; border-bottom: 1px solid var(--border);
+    background: var(--dark); color: white;
+  }
+  .drawer-title { font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  #close-menu { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
+  .mobile-nav-list { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; height: calc(100% - 60px); }
+  .m-nav-link { font-size: 1.1rem; font-weight: 700; color: var(--dark); padding: 0.5rem 0; text-decoration: none; border-bottom: 1px solid var(--light); }
+  .m-nav-sublink { font-size: 0.95rem; color: #555; padding: 0.4rem 0 0.4rem 1rem; text-decoration: none; border-left: 2px solid var(--light); }
+  .m-nav-sublink:hover { border-left-color: var(--primary); color: var(--primary); }
+  .drawer-divider { height: 1px; background: var(--border); margin: 1rem 0; }
+  .drawer-subtitle { font-size: 0.8rem; text-transform: uppercase; color: #888; margin-bottom: 0.5rem; font-weight: 700; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1001;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s;
+    backdrop-filter: blur(2px);
+  }
+  .overlay.active { opacity: 1; visibility: visible; }
+
+  /* --- 4. SEARCH MODAL --- */
+  .search-modal {
+    position: fixed; inset: 0; z-index: 1003;
+    background: rgba(255,255,255,0.98);
+    display: none; align-items: flex-start; justify-content: center;
+    padding-top: 100px;
+  }
+  .search-modal.active { display: flex; }
+  
+  .search-box { width: 100%; max-width: 700px; padding: 0 1rem; }
+  .search-header { display: flex; align-items: center; border-bottom: 2px solid var(--dark); padding-bottom: 0.5rem; }
+  #search-input {
+    width: 100%; border: none; background: transparent;
+    font-size: 1.5rem; outline: none; font-weight: bold;
+    color: var(--dark);
+  }
+  #close-search { background: var(--light); border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; color: #666; }
+  
+  .search-results { margin-top: 1.5rem; max-height: 60vh; overflow-y: auto; }
+  .result-item { padding: 1rem; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  .result-item:hover { background: var(--light); }
+  .result-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; margin-bottom: 0.2rem; }
+  .result-meta { font-size: 0.8rem; color: #666; }
+
+  /* RESPONSIVE */
+  @media (min-width: 900px) {
+    .menu-toggle { display: none; }
+    .desktop-nav { display: flex; }
+  }
+  
   @media (max-width: 480px) {
-    .title-tagline {
-      max-width: 200px;
-    }
-
-    .site-title {
-      font-size: 1rem;
-    }
-
-    .site-tagline {
-      font-size: 0.65rem;
-    }
-
-    .logo-image {
-      height: 18px;
-    }
-
-    .site-header.scrolled .logo-image {
-      height: 16px;
-    }
-
-    .main-nav {
-      padding: 2.5rem 1rem 2rem;
-      width: 90%;
-    }
-
-    .nav-link, .category-toggle {
-      font-size: 0.9rem;
-      padding: 0.6rem 0.5rem;
-    }
-
-    .category-link {
-      font-size: 0.85rem;
-      padding: 0.5rem 1rem;
-    }
-
-    .contact-link {
-      font-size: 0.85rem;
-      padding: 0.5rem 0.5rem;
-    }
-
-    .search-container {
-      padding: 0.75rem;
-    }
-
-    .search-input {
-      font-size: 0.85rem;
-    }
-
-    .search-submit {
-      padding: 0.4rem;
-    }
-
-    .result-title {
-      font-size: 1rem;
-    }
-
-    .result-meta {
-      font-size: 0.7rem;
-    }
-
-    .result-description {
-      font-size: 0.75rem;
-    }
-
-    .see-more-button {
-      font-size: 0.75rem;
-    }
-
-    .top-story-ticker {
-      font-size: 0.6rem;
-    }
-
-    .ticker-label {
-      font-size: 0.45rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .site-header,
-    .nav-link,
-    .category-link,
-    .category-toggle,
-    .hamburger-line,
-    .main-nav,
-    .overlay,
-    .search-overlay,
-    .ticker-text {
-      transition: none;
-      animation: none;
-    }
+      .logo-img { height: 35px; }
+      .brand-title { font-size: 1rem; }
+      .brand-tagline { font-size: 0.6rem; }
+      .ticker-wrap { font-size: 0.65rem; }
   }
 </style>
 
 <script is:inline define:vars={{posts: serializedPosts}}>
-  function initHeader() {
-    // DOM elements
-    const menuButton = document.getElementById('mobile-menu-toggle');
-    const nav = document.getElementById('main-nav');
-    const overlay = document.getElementById('overlay');
-    const header = document.querySelector('.site-header');
-    const categoryToggle = document.querySelector('.category-toggle');
-    const categoryMenu = document.getElementById('category-menu');
-    const searchButton = document.getElementById('search-toggle');
-    const searchOverlay = document.getElementById('search-overlay');
-    const searchClose = document.getElementById('search-close');
-    const searchForm = document.getElementById('search-form');
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
+  // === 1. Navigation Logic ===
+  const menuBtn = document.getElementById('menu-toggle');
+  const drawer = document.getElementById('mobile-drawer');
+  const overlay = document.getElementById('site-overlay');
+  const closeMenuBtn = document.getElementById('close-menu');
 
-    // Comprehensive DOM element checking
-    const requiredElements = {
-      menuButton: !!menuButton,
-      nav: !!nav,
-      overlay: !!overlay,
-      header: !!header,
-      searchButton: !!searchButton,
-      searchOverlay: !!searchOverlay,
-      searchClose: !!searchClose,
-      searchForm: !!searchForm,
-      searchInput: !!searchInput,
-      searchResults: !!searchResults
-    };
-    if (Object.values(requiredElements).some(v => !v)) {
-      console.error('Missing required DOM elements:', requiredElements);
-      return;
+  function toggleMenu(show) {
+    if(show) {
+      drawer.classList.add('active');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    } else {
+      drawer.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
     }
+  }
 
-    let isMenuOpen = false;
-    let isCategoryOpen = false;
-    let isSearchOpen = false;
+  menuBtn?.addEventListener('click', () => toggleMenu(true));
+  closeMenuBtn?.addEventListener('click', () => toggleMenu(false));
+  overlay?.addEventListener('click', () => {
+    toggleMenu(false);
+    toggleSearch(false);
+  });
 
-    // Menu Toggle
-    function toggleMenu() {
-      isMenuOpen = !isMenuOpen;
-      menuButton.classList.toggle('active', isMenuOpen);
-      menuButton.setAttribute('aria-expanded', isMenuOpen);
-      nav.classList.toggle('active', isMenuOpen);
-      nav.setAttribute('aria-hidden', !isMenuOpen);
-      overlay.classList.toggle('active', isMenuOpen);
-      document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+  // === 2. Search Logic ===
+  const searchBtn = document.getElementById('search-toggle');
+  const searchModal = document.getElementById('search-modal');
+  const closeSearchBtn = document.getElementById('close-search');
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
 
-      if (isMenuOpen) {
-        const firstNavLink = nav.querySelector('.nav-link');
-        if (firstNavLink) setTimeout(() => firstNavLink.focus(), 100);
-        if (isSearchOpen) toggleSearch();
-      } else {
-        menuButton.focus();
-        if (isCategoryOpen) toggleCategoryMenu();
-      }
-    }
-
-    function closeMenu() {
-      if (isMenuOpen) toggleMenu();
-    }
-
-    menuButton.addEventListener('click', toggleMenu);
-    overlay.addEventListener('click', () => {
-      closeMenu();
-      closeSearch();
-    });
-
-    // Category Menu Toggle
-    function toggleCategoryMenu() {
-      if (!categoryToggle || !categoryMenu) return;
-      isCategoryOpen = !isCategoryOpen;
-      categoryToggle.setAttribute('aria-expanded', isCategoryOpen);
-      categoryToggle.classList.toggle('active', isCategoryOpen);
-      categoryMenu.classList.toggle('active', isCategoryOpen);
-    }
-
-    if (categoryToggle && categoryMenu) {
-      categoryToggle.addEventListener('click', toggleCategoryMenu);
-    }
-
-    // Search Toggle
-    function toggleSearch() {
-      isSearchOpen = !isSearchOpen;
-      searchButton.setAttribute('aria-expanded', isSearchOpen);
-      searchOverlay.classList.toggle('active', isSearchOpen);
-      searchOverlay.setAttribute('aria-hidden', !isSearchOpen);
-      overlay.classList.toggle('active', isSearchOpen);
-      document.body.style.overflow = isSearchOpen ? 'hidden' : '';
-
-      if (isSearchOpen) {
-        setTimeout(() => searchInput.focus(), 100);
-        if (isMenuOpen) closeMenu();
-      } else {
-        searchButton.focus();
-        searchInput.value = '';
-        searchResults.innerHTML = '';
-      }
-    }
-
-    function closeSearch() {
-      if (isSearchOpen) toggleSearch();
-    }
-
-    searchButton.addEventListener('click', toggleSearch);
-    searchClose.addEventListener('click', closeSearch);
-
-    // Search Functionality
-    function performSearch(query) {
+  function toggleSearch(show) {
+    if(show) {
+      searchModal.classList.add('active');
+      setTimeout(() => searchInput.focus(), 100);
+      document.body.style.overflow = 'hidden';
+    } else {
+      searchModal.classList.remove('active');
+      document.body.style.overflow = '';
+      searchInput.value = ''; // Reset
       searchResults.innerHTML = '';
-      if (!query) {
-        searchResults.innerHTML = '<p class="no-results">Enter a search term to find articles.</p>';
-        return;
-      }
+    }
+  }
 
-      const words = query.toLowerCase().trim().split(' ').filter(Boolean);
-      const results = posts
-        .filter(post => {
-          const titleWords = (post.title || '').toLowerCase().split(' ');
-          const categoryWords = (post.category || '').toLowerCase().split(' ');
-          const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
-          const keywordWords = (post.keywords || []).join(' ').toLowerCase().split(' ');
-          const contentWords = (post.content || '').toLowerCase().split(' ').filter(word => word.length > 2);
-          return words.some(q =>
-            titleWords.some(w => w.includes(q)) ||
-            categoryWords.some(w => w.includes(q)) ||
-            tagWords.some(w => w.includes(q)) ||
-            keywordWords.some(w => w.includes(q)) ||
-            contentWords.some(w => w.includes(q))
-          );
-        })
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 3); // Limit to 3 results
+  searchBtn?.addEventListener('click', () => toggleSearch(true));
+  closeSearchBtn?.addEventListener('click', () => toggleSearch(false));
+  
+  // Close on ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      toggleMenu(false);
+      toggleSearch(false);
+    }
+  });
 
-      if (results.length === 0) {
-        searchResults.innerHTML = `<p class="no-results">No results found for "${query}". Try a different search term.</p>`;
-        return;
-      }
+  // === 3. Search Algorithm (Optimized) ===
+  searchInput?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    searchResults.innerHTML = '';
 
-      const resultsList = document.createElement('ul');
-      resultsList.className = 'results-list';
-      resultsList.style.listStyle = 'none';
-      resultsList.style.padding = '0';
-      resultsList.style.margin = '0';
-      results.forEach(post => {
-        const li = document.createElement('li');
-        li.className = 'result-item';
-        li.style.padding = '0.5rem 0';
-        li.style.borderBottom = '1px solid var(--border-color)';
-        li.innerHTML = `
-          <a href="/posts/${post.slug}" class="result-link" style="text-decoration: none; color: var(--text-color); display: block;">
-            <h2 class="result-title" style="font-family: 'ReithSerif', 'Georgia', 'Times', serif; font-size: 1.25rem; margin: 0 0 0.25rem;">${post.title}</h2>
-            <p class="result-meta" style="font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif; font-size: 0.8rem; color: var(--subtext-color); margin: 0 0 0.25rem;">${post.category} | ${new Date(post.date).toLocaleDateString()}</p>
-            ${post.description ? `<p class="result-description" style="font-family: 'ReithSans', 'Helvetica', 'Arial', sans-serif; font-size: 0.875rem; color: var(--text-color); margin: 0;">${post.description}</p>` : ''}
-          </a>
+    if (query.length < 2) return;
+
+    // Filter Posts
+    const hits = posts.filter(post => {
+      return post.title.toLowerCase().includes(query) ||
+             post.tags.some(tag => tag.toLowerCase().includes(query));
+    }).slice(0, 5); // Limit to 5 results
+
+    if(hits.length === 0) {
+      searchResults.innerHTML = '<div style="color:#666; padding:1rem;">No results found.</div>';
+    } else {
+      hits.forEach(hit => {
+        const item = document.createElement('a');
+        item.href = `/posts/${hit.slug}`;
+        item.className = 'result-item';
+        item.style.display = 'block';
+        item.style.textDecoration = 'none';
+        item.innerHTML = `
+          <div class="result-title">${hit.title}</div>
+          <div class="result-meta">
+             <span style="color:#dc2626; font-weight:bold;">${hit.category}</span> • 
+             ${new Date(hit.date).toLocaleDateString()}
+          </div>
         `;
-        resultsList.appendChild(li);
-      });
-      searchResults.appendChild(resultsList);
-
-      const totalResults = posts.filter(post => {
-        const titleWords = (post.title || '').toLowerCase().split(' ');
-        const categoryWords = (post.category || '').toLowerCase().split(' ');
-        const tagWords = (post.tags || []).join(' ').toLowerCase().split(' ');
-        const keywordWords = (post.keywords || []).join(' ').toLowerCase().split(' ');
-        const contentWords = (post.content || '').toLowerCase().split(' ').filter(word => word.length > 2);
-        return words.some(q =>
-          titleWords.some(w => w.includes(q)) ||
-          categoryWords.some(w => w.includes(q)) ||
-          tagWords.some(w => w.includes(q)) ||
-          keywordWords.some(w => w.includes(q)) ||
-          contentWords.some(w => w.includes(q))
-        );
-      }).length;
-
-      if (totalResults > 3) {
-        const seeMore = document.createElement('a');
-        seeMore.className = 'see-more-button';
-        seeMore.href = `/search?query=${encodeURIComponent(query)}`;
-        seeMore.textContent = 'See More';
-        seeMore.style.display = 'block';
-        seeMore.style.textAlign = 'center';
-        seeMore.style.padding = '0.5rem';
-        seeMore.style.background = 'var(--accent-color)';
-        seeMore.style.color = 'var(--ticker-text)';
-        seeMore.style.fontFamily = "'ReithSans', 'Helvetica', 'Arial', sans-serif";
-        seeMore.style.fontSize = '0.875rem';
-        seeMore.style.borderRadius = '4px';
-        seeMore.style.textDecoration = 'none';
-        seeMore.style.marginTop = '1rem';
-        searchResults.appendChild(seeMore);
-      }
-    }
-
-    searchForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const query = searchInput.value;
-      if (query) {
-        window.location.href = `/search?query=${encodeURIComponent(query)}`;
-      }
-    });
-
-    searchInput.addEventListener('input', () => {
-      performSearch(searchInput.value);
-    });
-
-    // Close menus and search on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (isCategoryOpen) toggleCategoryMenu();
-        if (isMenuOpen) closeMenu();
-        if (isSearchOpen) closeSearch();
-      }
-    });
-
-    // Header Scroll Effect
-    let lastScrollY = window.scrollY;
-
-    function handleScroll() {
-      const currentScrollY = window.scrollY;
-      header.classList.toggle('scrolled', currentScrollY > 50);
-      lastScrollY = currentScrollY;
-    }
-
-    let scrollTimeout;
-    window.addEventListener('scroll', () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, 50);
-    });
-
-    // Set Active Nav and Category Links
-    function setActiveLinks() {
-      const currentPath = window.location.pathname;
-      const navLinks = document.querySelectorAll('.nav-link');
-      const categoryLinks = document.querySelectorAll('.category-link');
-
-      navLinks.forEach(link => {
-        link.classList.remove('active');
-        const linkPath = link.getAttribute('href');
-        if (linkPath === currentPath || (currentPath === '/' && linkPath === '/')) {
-          link.classList.add('active');
-        }
-      });
-
-      categoryLinks.forEach(link => {
-        link.classList.remove('active');
-        const linkPath = link.getAttribute('href');
-        if (currentPath.startsWith(linkPath)) {
-          link.classList.add('active');
-          if (categoryToggle) categoryToggle.classList.add('active');
-        }
+        searchResults.appendChild(item);
       });
     }
+  });
 
-    setActiveLinks();
-    window.addEventListener('popstate', setActiveLinks);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHeader);
-  } else {
-    initHeader();
-  }
+  // === 4. Active Link Highlighting ===
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.d-nav-link').forEach(link => {
+    if(link.getAttribute('href') === currentPath || (currentPath.includes(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
+      link.classList.add('active');
+    }
+  });
 </script>
