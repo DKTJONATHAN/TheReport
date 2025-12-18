@@ -102,16 +102,22 @@ for (const category of categories) {
       </section>
     )}
 
-    {/* --- TRENDING BAR --- */}
+    {/* --- TRENDING BAR (UPDATED WITH GRAPH ICON & IMAGES) --- */}
     {trendingPosts.length > 0 && (
       <section class="trending-section">
         <div class="section-header">
-          <h2 class="section-heading"><span class="icon">🔥</span> Trending Now</h2>
+          <h2 class="section-heading">
+            {/* Graph Icon SVG */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-graph"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            Trending Now
+          </h2>
         </div>
         <div class="trending-grid">
           {trendingPosts.map(post => (
             <a href={`/posts/${post.slug}`} class="trending-card" key={post.slug}>
-              <div class="trending-num"></div>
+              <div class="trending-img-wrap">
+                 <img src={post.data.image} alt={post.data.title} loading="lazy" />
+              </div>
               <div class="trending-info">
                 <span class="trending-cat">{post.data.category}</span>
                 <h4 class="trending-title">{post.data.title}</h4>
@@ -230,7 +236,7 @@ for (const category of categories) {
   <style>
     /* VARIABLES */
     :root {
-      --bg-color: #f8f9fa; /* Slightly lighter gray for modern feel */
+      --bg-color: #f8f9fa;
       --text-color: #1a1a1a;
       --subtext-color: #555;
       --accent: #dc2626; /* Kenyan Red */
@@ -347,37 +353,47 @@ for (const category of categories) {
     .badge-primary { background: var(--accent); color: white; }
     .badge-secondary { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: white; border: 1px solid rgba(255,255,255,0.3); }
 
-    /* --- 2. TRENDING SECTION --- */
+    /* --- 2. TRENDING SECTION (UPDATED) --- */
     .trending-section { margin-bottom: 4rem; }
     .section-header { border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; display: flex; align-items: center; }
-    .section-heading { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; color: var(--text-color); display: flex; align-items: center; gap: 0.5rem; }
+    .section-heading { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; color: var(--text-color); display: flex; align-items: center; gap: 0.75rem; }
+    .icon-graph { stroke: var(--accent); }
     
     .trending-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Slightly wider minimum */
       gap: 1.5rem;
     }
     
     .trending-card {
       background: var(--card-bg);
-      padding: 1rem;
+      padding: 0.75rem;
       border-radius: 12px;
       border: 1px solid var(--border-color);
       display: flex;
       gap: 1rem;
-      align-items: flex-start;
+      align-items: center; /* Center items vertically */
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .trending-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent); }
-    .trending-num {
-      width: 4px;
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
+    
+    /* New Trending Image Styles */
+    .trending-img-wrap {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
     }
+    .trending-img-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
     .trending-info { flex: 1; }
     .trending-cat { font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
-    .trending-title { font-size: 1rem; font-weight: 600; line-height: 1.4; }
+    .trending-title { font-size: 0.95rem; font-weight: 700; line-height: 1.3; }
 
     /* --- 3. STANDARD GRID (Categories) --- */
     .category-block { margin-bottom: 4rem; }
@@ -416,7 +432,7 @@ for (const category of categories) {
       .hero-sub { height: 200px; }
       
       .hero-headline { font-size: 1.75rem; }
-      .hero-desc { display: none; } /* Hide description on mobile to save space */
+      .hero-desc { display: none; }
       .category-heading { font-size: 1.4rem; }
     }
     
@@ -424,6 +440,7 @@ for (const category of categories) {
       .hero-side { flex-direction: column; }
       .hero-sub { height: 180px; }
       .trending-grid { grid-template-columns: 1fr; }
+      .trending-img-wrap { width: 70px; height: 70px; } /* Slightly smaller on very small screens */
     }
 
     /* --- BETTING WIDGET STYLES (PRESERVED) --- */
