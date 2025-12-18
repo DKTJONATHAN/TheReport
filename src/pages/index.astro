@@ -2,24 +2,28 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// Get all posts sorted by date (newest first)
+// 1. Get all posts sorted by date (newest first)
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-// Get unique categories
+// 2. Data Slicing for the "Bento" Layout
+// Main Featured Story (Big Left)
+const mainStory = allPosts[0];
+
+// Secondary Stories (Right Side Stack) - Next 2 posts
+const subStories = allPosts.slice(1, 3);
+
+// Trending Strip - Next 4 posts
+const trendingPosts = allPosts.slice(3, 7);
+
+// 3. Unique Categories for the rest of the page
 const categories = [...new Set(allPosts.map(post => post.data.category))].filter(Boolean);
 
-// Get the most recent post for featured display
-const featuredPost = allPosts[0];
-
-// Get top 5 popular posts (using recency)
-const popularPosts = allPosts.slice(0, 5);
-
-// Related articles helper by category (excluding featured post)
+// Related articles helper
 const relatedArticlesByCategory = {};
 for (const category of categories) {
   relatedArticlesByCategory[category] = allPosts
-    .filter(post => post.data.category === category && post.slug !== featuredPost?.slug)
+    .filter(post => post.data.category === category && post.slug !== mainStory?.slug)
     .slice(0, 3);
 }
 ---
@@ -39,8 +43,7 @@ for (const category of categories) {
   <meta name="twitter:title" content="Breaking News Kenya Today | Jonathan Mwaniki" />
   <meta name="twitter:description" content="Latest breaking news from Kenya including trending stories from Nairobi and across the country." />
 
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390"
-         crossorigin="anonymous"></script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
   <script type="application/ld+json">
     {
@@ -57,93 +60,40 @@ for (const category of categories) {
   </script>
 
   <main class="main-container">
-    <header class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Trending News Kenya</h1>
-        <p class="hero-subtitle">Your trusted source for the latest Kenyan news, politics, entertainment, and trending stories</p>
-      </div>
-    </header>
-
-    {featuredPost && (
-      <section class="featured-section" aria-label="Top Story">
-        <h2 class="section-title">Top Story</h2>
-        <article class="featured-post">
-          <a 
-            href={`/posts/${featuredPost.slug}`} 
-            class="featured-link"
-            aria-label={`Read breaking story: ${featuredPost.data.title}`}
-          >
-            <div class="featured-image-container">
-              <img
-                src={featuredPost.data.image}
-                alt={featuredPost.data.imageAlt || featuredPost.data.title}
-                class="featured-image"
-                loading="eager"
-                width="800"
-                height="450"
-              />
-              <div class="breaking-badge">TOP STORY</div>
+    
+    {/* --- MODERN MAGAZINE HERO GRID (BENTO STYLE) --- */}
+    {mainStory && (
+      <section class="hero-grid">
+        {/* Main Left Article */}
+        <article class="hero-main">
+          <a href={`/posts/${mainStory.slug}`} class="hero-link" aria-label={`Top story: ${mainStory.data.title}`}>
+            <div class="hero-img-wrap">
+              <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
+              <div class="hero-overlay"></div>
             </div>
-            <div class="featured-content">
-              <div class="featured-meta">
-                <span class="featured-category">{featuredPost.data.category}</span>
-                <time class="featured-date" datetime={featuredPost.data.date}>
-                  {new Date(featuredPost.data.date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                  })}
-                </time>
-              </div>
-              <h3 class="featured-title">{featuredPost.data.title}</h3>
-              <p class="featured-excerpt">{featuredPost.data.description}</p>
-              <div class="featured-footer">
-                <span class="btn btn-primary read-more-featured" role="button" tabindex="0">
-                  Read Full Story
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </div>
+            <div class="hero-content">
+              <span class="badge badge-primary">Top Story</span>
+              <h1 class="hero-headline">{mainStory.data.title}</h1>
+              <p class="hero-desc">{mainStory.data.description}</p>
+              <span class="hero-time">
+                {new Date(mainStory.data.date).toLocaleDateString('en-US', { hour: '2-digit', minute:'2-digit' })}
+              </span>
             </div>
           </a>
         </article>
-      </section>
-    )}
 
-    {popularPosts.length > 0 && (
-      <section class="popular-section" aria-label="Popular News Stories">
-        <h2 class="section-title">Popular News</h2>
-        <div class="posts-grid popular-grid">
-          {popularPosts.map(post => (
-            <article class="post-card popular-post" key={post.slug}>
-              <a href={`/posts/${post.slug}`} class="post-link" aria-label={`Read popular article: ${post.data.title}`}>
-                {post.data.image && (
-                  <div class="post-image-container popular-image-container">
-                    <img
-                      src={post.data.image}
-                      alt={post.data.imageAlt || post.data.title}
-                      class="post-image"
-                      loading="lazy"
-                      width="300"
-                      height="180"
-                    />
-                  </div>
-                )}
-                <div class="post-content">
-                  <div class="post-meta">
-                    <span class="post-category">{post.data.category}</span>
-                    <time class="post-date" datetime={post.data.date}>
-                      {new Date(post.data.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </time>
-                  </div>
-                  <h3 class="post-title">{post.data.title}</h3>
+        {/* Right Side Stack */}
+        <div class="hero-side">
+          {subStories.map(post => (
+            <article class="hero-sub" key={post.slug}>
+              <a href={`/posts/${post.slug}`} class="hero-link">
+                <div class="hero-img-wrap">
+                  <img src={post.data.image} alt={post.data.title} loading="eager" />
+                  <div class="hero-overlay"></div>
+                </div>
+                <div class="hero-content-small">
+                  <span class="badge badge-secondary">{post.data.category}</span>
+                  <h3 class="hero-sub-title">{post.data.title}</h3>
                 </div>
               </a>
             </article>
@@ -152,86 +102,58 @@ for (const category of categories) {
       </section>
     )}
 
+    {/* --- TRENDING BAR --- */}
+    {trendingPosts.length > 0 && (
+      <section class="trending-section">
+        <div class="section-header">
+          <h2 class="section-heading"><span class="icon">🔥</span> Trending Now</h2>
+        </div>
+        <div class="trending-grid">
+          {trendingPosts.map(post => (
+            <a href={`/posts/${post.slug}`} class="trending-card" key={post.slug}>
+              <div class="trending-num"></div>
+              <div class="trending-info">
+                <span class="trending-cat">{post.data.category}</span>
+                <h4 class="trending-title">{post.data.title}</h4>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* --- CATEGORY SECTIONS --- */}
     {categories.map(category => {
       const categoryPosts = allPosts
         .filter(post => post.data.category === category)
-        .slice(0, 3);
+        .slice(0, 3); // Limit to 3 per category block
 
       const relatedArticles = relatedArticlesByCategory[category];
+      
       return categoryPosts.length > 0 ? (
-        <section class="category-section" aria-label={`${category} News`} key={category}>
-          <div class="category-header">
-            <h2 class="section-title">Latest {category} News</h2>
-            <a href={`/category/${category.toLowerCase()}`} class="btn btn-secondary category-more" aria-label={`More ${category} news`}>
-              See more
-            </a>
+        <section class="category-block" key={category}>
+          <div class="category-header-wrap">
+            <h2 class="category-heading">{category} News</h2>
+            <a href={`/category/${category.toLowerCase()}`} class="see-more-link">See All &rarr;</a>
           </div>
 
-          <div class="posts-grid">
+          <div class="standard-grid">
             {categoryPosts.map(post => (
-              <article class="post-card" key={post.slug}>
-                <a 
-                  href={`/posts/${post.slug}`} 
-                  class="post-link"
-                  aria-label={`Read article: ${post.data.title}`}
-                >
-                  {post.data.image && (
-                    <div class="post-image-container">
-                      <img
-                        src={post.data.image}
-                        alt={post.data.imageAlt || post.data.title}
-                        class="post-image"
-                        loading="lazy"
-                        width="400"
-                        height="240"
-                      />
+              <article class="std-card" key={post.slug}>
+                <a href={`/posts/${post.slug}`} class="std-link">
+                  <div class="std-img-wrap">
+                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                  </div>
+                  <div class="std-content">
+                    <div class="std-meta">
+                      <span class="std-date">{new Date(post.data.date).toLocaleDateString()}</span>
                     </div>
-                  )}
-                  <div class="post-content">
-                    <div class="post-meta">
-                      <span class="post-category">{post.data.category}</span>
-                      <time class="post-date" datetime={post.data.date}>
-                        {new Date(post.data.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </time>
-                    </div>
-                    <h3 class="post-title">{post.data.title}</h3>
-                    {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
-                    <div class="post-footer">
-                      <span class="btn btn-outline read-more">Read Article</span>
-                    </div>
+                    <h3 class="std-title">{post.data.title}</h3>
                   </div>
                 </a>
               </article>
             ))}
           </div>
-
-          {/* Related Articles Section with small images */}
-          {relatedArticles?.length > 0 && (
-            <aside class="related-articles" aria-label={`Related articles in ${category}`}>
-              <h3 class="related-title">Related {category} Stories</h3>
-              <div class="related-list">
-                {relatedArticles.map(post => (
-                  <a href={`/posts/${post.slug}`} key={post.slug} class="related-article">
-                    {post.data.image && (
-                      <img 
-                        src={post.data.image} 
-                        alt={post.data.imageAlt || post.data.title} 
-                        loading="lazy" 
-                        width="120" 
-                        height="75" 
-                        class="related-image" 
-                      />
-                    )}
-                    <span class="related-title-text">{post.data.title}</span>
-                  </a>
-                ))}
-              </div>
-            </aside>
-          )}
         </section>
       ) : null;
     })}
@@ -244,6 +166,7 @@ for (const category of categories) {
     )}
   </main>
 
+  {/* --- BETTING WIDGET (Preserved) --- */}
   <div id="betting-widget" class="betting-widget-hidden">
     <div class="bet-header">
       <div class="bet-title">
@@ -256,9 +179,7 @@ for (const category of categories) {
         <div class="spinner"></div> Loading odds...
       </div>
     </div>
-    <div class="bet-footer">
-      Powered by API-Football
-    </div>
+    <div class="bet-footer">Powered by API-Football</div>
   </div>
 
   <script is:inline>
@@ -268,12 +189,11 @@ for (const category of categories) {
       .then(data => {
         const widget = document.getElementById('betting-widget');
         const list = document.getElementById('bet-matches-list');
-        
-        // Only show if data exists and user hasn't closed it this session
+
         if(data.length > 0 && !sessionStorage.getItem('widgetClosed')) {
           widget.classList.remove('betting-widget-hidden');
           let html = '';
-          
+
           data.forEach(match => {
             html += `
               <div class="bet-match-row">
@@ -299,12 +219,8 @@ for (const category of categories) {
           list.innerHTML = html;
         }
       })
-      .catch(err => {
-        console.log('Widget error:', err);
-        // Keep hidden on error
-      });
+      .catch(err => { console.log('Widget error:', err); });
 
-    // Close Button Logic (Remembers close state per session)
     document.getElementById('close-bet-widget').addEventListener('click', () => {
       document.getElementById('betting-widget').classList.add('betting-widget-hidden');
       sessionStorage.setItem('widgetClosed', 'true');
@@ -312,164 +228,212 @@ for (const category of categories) {
   </script>
 
   <style>
-    /* ... YOUR EXISTING STYLES ... */
+    /* VARIABLES */
     :root {
-      --bg-color: #ffffff;
+      --bg-color: #f8f9fa; /* Slightly lighter gray for modern feel */
       --text-color: #1a1a1a;
-      --subtext-color: #4a5568;
+      --subtext-color: #555;
+      --accent: #dc2626; /* Kenyan Red */
       --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --hero-bg: #dc2626;
-      --hero-text: #ffffff;
-      --category-bg: #dc2626;
-      --category-text: #ffffff;
-      --btn-primary-bg: #dc2626;
-      --btn-primary-hover-bg: #b91c1c;
-      --btn-secondary-bg: #ffffff;
-      --btn-secondary-border: #dc2626;
-      --btn-secondary-color: #dc2626;
-      --btn-secondary-hover-bg: #dc2626;
-      --btn-secondary-hover-color: #ffffff;
-      --btn-outline-border: #dc2626;
-      --btn-outline-color: #dc2626;
-      --btn-outline-hover-bg: #dc2626;
-      --btn-outline-hover-color: #ffffff;
-      --shadow-color: rgba(0, 0, 0, 0.08);
-      --date-color: #64748b;
-      --ad-bg: #f8f9fa;
-      --ad-border: #e2e8f0;
-      --title-underline: #dc2626;
-      --focus-outline: #dc2626;
+      --border-color: #e5e7eb;
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
+      --font-main: system-ui, -apple-system, sans-serif;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #1a1a1a;
-        --text-color: #e2e8f0;
+        --bg-color: #111827;
+        --text-color: #f3f4f6;
         --subtext-color: #9ca3af;
-        --card-bg: #2d2d2d;
-        --card-border: #4b5563;
-        --hero-bg: #ef4444;
-        --hero-text: #ffffff;
-        --category-bg: #ef4444;
-        --category-text: #ffffff;
-        --btn-primary-bg: #ef4444;
-        --btn-primary-hover-bg: #f87171;
-        --btn-secondary-bg: #2d2d2d;
-        --btn-secondary-border: #ef4444;
-        --btn-secondary-color: #ef4444;
-        --btn-secondary-hover-bg: #ef4444;
-        --btn-secondary-hover-color: #ffffff;
-        --btn-outline-border: #ef4444;
-        --btn-outline-color: #ef4444;
-        --btn-outline-hover-bg: #ef4444;
-        --btn-outline-hover-color: #ffffff;
-        --shadow-color: rgba(0, 0, 0, 0.3);
-        --date-color: #9ca3af;
-        --ad-bg: #2d2d2d;
-        --ad-border: #4b5563;
-        --title-underline: #ef4444;
-        --focus-outline: #f87171;
+        --accent: #ef4444;
+        --card-bg: #1f2937;
+        --border-color: #374151;
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
       }
     }
 
-    * { box-sizing: border-box; }
-    .main-container { max-width: 1400px; margin: 0 auto; padding: 0 1rem; font-family: system-ui, sans-serif; background: var(--bg-color); color: var(--text-color); }
-    .hero-section { background: var(--hero-bg); color: var(--hero-text); padding: 3rem 2rem; margin: -1rem -1rem 2rem -1rem; text-align: center; position: relative; }
-    .hero-title { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; margin: 0 0 1rem 0; letter-spacing: -0.02em; text-shadow: 2px 2px 4px var(--shadow-color); color: var(--hero-text); }
-    .hero-subtitle { font-size: clamp(1.1rem, 2.5vw, 1.5rem); opacity: 0.9; margin: 0 0 2rem 0; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5; color: var(--hero-text); }
-    .section-title { font-size: 2rem; font-weight: 700; margin: 3rem 0 1.5rem 0; color: var(--text-color); position: relative; padding-bottom: 0.5rem; }
-    .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 60px; height: 3px; background: var(--title-underline); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-main); background: var(--bg-color); color: var(--text-color); }
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; transition: color 0.2s; }
+
+    .main-container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+
+    /* --- 1. HERO GRID (BENTO) --- */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      height: 500px;
+      margin-bottom: 3rem;
+    }
+
+    .hero-link { display: block; height: 100%; width: 100%; position: relative; overflow: hidden; border-radius: 16px; }
     
-    /* Button styles */
-    .btn { cursor: pointer; font-weight: 600; font-size: 1rem; padding: 0.5rem 1.5rem; border-radius: 6px; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; user-select: none; border: 2px solid transparent; text-decoration: none; justify-content: center; }
-    .btn svg { width: 18px; height: 18px; transition: transform 0.3s ease; stroke-width: 3; }
-    .btn-primary { background: var(--btn-primary-bg); color: var(--category-text); border-color: var(--btn-primary-bg); }
-    .btn-primary:hover, .btn-primary:focus { background: var(--btn-primary-hover-bg); border-color: var(--btn-primary-hover-bg); outline: none; transform: translateX(5px); }
-    .btn-primary:hover svg, .btn-primary:focus svg { transform: translateX(3px); }
-    .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-color); border: 2px solid var(--btn-secondary-border); font-weight: 700; padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 9999px; white-space: nowrap; transition: all 0.3s ease; }
-    .btn-secondary:hover, .btn-secondary:focus { background: var(--btn-secondary-hover-bg); color: var(--btn-secondary-hover-color); outline: none; }
-    .btn-outline { background: transparent; color: var(--btn-outline-color); border: 2px solid var(--btn-outline-border); font-weight: 600; padding: 0.35rem 1rem; font-size: 0.9rem; border-radius: 20px; text-transform: none; }
-    .btn-outline:hover, .btn-outline:focus { background: var(--btn-outline-hover-bg); color: var(--btn-outline-hover-color); outline: none; }
-
-    /* Featured & Posts */
-    .featured-section { margin: 2rem 0 4rem 0; }
-    .featured-post { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px var(--shadow-color); transition: all 0.3s ease; border: 3px solid var(--category-bg); position: relative; display: flex; flex-direction: column; }
-    .featured-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; height: 100%; }
-    .featured-image-container { position: relative; height: 450px; overflow: hidden; flex-shrink: 0; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
-    .featured-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
-    .featured-post:hover .featured-image { transform: scale(1.05); }
-    .breaking-badge { position: absolute; top: 1rem; left: 1rem; background: var(--category-bg); color: var(--category-text); padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 4px; animation: flash 1.5s infinite; z-index: 2; }
-    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-    .featured-content { padding: 2rem; display: flex; flex-direction: column; flex-grow: 1; }
-    .featured-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .featured-category { background: var(--category-bg); color: var(--category-text); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
-    .featured-date { color: var(--date-color); font-size: 0.9rem; font-weight: 500; }
-    .featured-title { font-size: clamp(1.75rem, 3vw, 2.75rem); font-weight: 700; margin: 0 0 1rem 0; line-height: 1.1; color: var(--text-color); flex-grow: 1; }
-    .featured-excerpt { font-size: 1.15rem; line-height: 1.6; color: var(--subtext-color); margin: 0 0 2rem 0; }
-    .featured-footer { margin-top: auto; display: flex; justify-content: flex-start; }
-    .posts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 1rem; }
-    .popular-section { margin: 3rem 0; }
-    .popular-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-    .popular-post .post-image-container { height: 180px; border-radius: 12px 12px 0 0; overflow: hidden; }
-    .post-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px var(--shadow-color); transition: all 0.3s ease; border: 1px solid var(--card-border); display: flex; flex-direction: column; height: 100%; }
-    .post-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px var(--shadow-color); border-color: var(--category-bg); }
-    .post-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; height: 100%; }
-    .post-image-container { height: 200px; overflow: hidden; border-radius: 12px 12px 0 0; flex-shrink: 0; }
-    .post-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block; }
-    .post-card:hover .post-image { transform: scale(1.05); }
-    .post-content { padding: 1rem 1.25rem; flex-grow: 1; display: flex; flex-direction: column; }
-    .post-meta { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .post-category { background: var(--category-bg); color: var(--category-text); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; flex-shrink: 0; }
-    .post-date { color: var(--date-color); font-size: 0.85rem; }
-    .post-title { font-size: 1.2rem; font-weight: 700; margin: 0 0 0.5rem 0; line-height: 1.2; color: var(--text-color); flex-grow: 1; }
-    .post-excerpt { color: var(--subtext-color); line-height: 1.5; margin: 0 0 1rem 0; font-size: 0.95rem; flex-grow: 1; }
-    .post-footer { margin-top: auto; }
-    .read-more { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--btn-outline-color); font-size: 0.9rem; font-weight: 600; transition: all 0.3s ease; }
-    .read-more:hover, .read-more:focus { color: var(--btn-outline-hover-color); outline: none; text-decoration: underline; }
-    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .related-articles { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--card-border); }
-    .related-title { font-size: 1.25rem; margin-bottom: 1rem; font-weight: 700; color: var(--text-color); }
-    .related-list { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-    .related-article { display: flex; flex-direction: column; width: 120px; text-decoration: none; color: var(--text-color); }
-    .related-article:hover .related-title-text, .related-article:focus .related-title-text { text-decoration: underline; outline: none; }
-    .related-image { border-radius: 8px; object-fit: cover; width: 120px; height: 75px; margin-bottom: 0.5rem; display: block; }
-    .related-title-text { font-size: 0.9rem; font-weight: 500; line-height: 1.2; height: 2.4em; overflow: hidden; text-overflow: ellipsis; }
-    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--subtext-color); }
-    .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-color); }
-
-    /* MEDIA QUERIES */
-    @media (max-width: 768px) {
-      .main-container { padding: 0 0.75rem; }
-      .hero-section { padding: 2rem 1rem; margin: -0.75rem -0.75rem 1.5rem -0.75rem; }
-      .featured-content { padding: 1.5rem; }
-      .posts-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-      .section-title { font-size: 1.75rem; margin: 2rem 0 1rem 0; }
-    }
-    @media (max-width: 480px) {
-      .featured-image-container { height: 250px; }
-      .post-image-container { height: 180px; }
+    .hero-img-wrap { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
+    .hero-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+    .hero-link:hover .hero-img-wrap img { transform: scale(1.05); }
+    
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
+      z-index: 2;
     }
 
-    /* ========================================= */
-    /* ULTRA MODERN BETTING WIDGET STYLES        */
-    /* ========================================= */
-    #betting-widget {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 320px;
-      background: rgba(22, 22, 22, 0.95); /* Dark Glass */
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-      z-index: 10000;
-      font-family: 'Segoe UI', sans-serif;
-      color: #fff;
+    /* Main Story Specifics */
+    .hero-main { height: 100%; }
+    .hero-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      padding: 2.5rem;
+      z-index: 3;
+      width: 100%;
+      color: white;
+    }
+    
+    .hero-headline {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .hero-desc {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: rgba(255,255,255,0.9);
+      max-width: 90%;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Side Stories Specifics */
+    .hero-side { display: flex; flex-direction: column; gap: 1.5rem; height: 100%; }
+    .hero-sub { flex: 1; position: relative; min-height: 0; }
+    
+    .hero-content-small {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      padding: 1.5rem;
+      z-index: 3;
+      color: white;
+    }
+    
+    .hero-sub-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.3;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+    }
+    .badge-primary { background: var(--accent); color: white; }
+    .badge-secondary { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: white; border: 1px solid rgba(255,255,255,0.3); }
+
+    /* --- 2. TRENDING SECTION --- */
+    .trending-section { margin-bottom: 4rem; }
+    .section-header { border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; display: flex; align-items: center; }
+    .section-heading { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; color: var(--text-color); display: flex; align-items: center; gap: 0.5rem; }
+    
+    .trending-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .trending-card {
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .trending-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+    .trending-num {
+      width: 4px;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .trending-info { flex: 1; }
+    .trending-cat { font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+    .trending-title { font-size: 1rem; font-weight: 600; line-height: 1.4; }
+
+    /* --- 3. STANDARD GRID (Categories) --- */
+    .category-block { margin-bottom: 4rem; }
+    .category-header-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-left: 5px solid var(--accent); padding-left: 1rem; }
+    .category-heading { font-size: 1.75rem; font-weight: 700; color: var(--text-color); }
+    .see-more-link { font-size: 0.9rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.25rem; }
+    .see-more-link:hover { text-decoration: underline; }
+
+    .standard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    
+    .std-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
+    .std-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+    .std-img-wrap { height: 200px; overflow: hidden; }
+    .std-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .std-card:hover .std-img-wrap img { transform: scale(1.1); }
+    
+    .std-content { padding: 1.25rem; }
+    .std-meta { font-size: 0.8rem; color: var(--subtext-color); margin-bottom: 0.5rem; }
+    .std-title { font-size: 1.25rem; font-weight: 700; line-height: 1.3; color: var(--text-color); }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 768px) {
+      .main-container { padding: 1rem; }
+      
+      .hero-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1rem;
+      }
+      .hero-main { height: 400px; }
+      .hero-side { height: auto; flex-direction: row; gap: 1rem; }
+      .hero-sub { height: 200px; }
+      
+      .hero-headline { font-size: 1.75rem; }
+      .hero-desc { display: none; } /* Hide description on mobile to save space */
+      .category-heading { font-size: 1.4rem; }
+    }
+    
+    @media (max-width: 480px) {
+      .hero-side { flex-direction: column; }
+      .hero-sub { height: 180px; }
+      .trending-grid { grid-template-columns: 1fr; }
+    }
+
+    /* --- BETTING WIDGET STYLES (PRESERVED) --- */
+    #betting-widget {
+      position: fixed; bottom: 20px; right: 20px; width: 320px;
+      background: rgba(22, 22, 22, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 10000;
+      font-family: 'Segoe UI', sans-serif; color: #fff;
+      overflow: hidden; animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .betting-widget-hidden { display: none !important; }
     @keyframes slideIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -478,18 +442,14 @@ for (const category of categories) {
     .live-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #fff; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     #close-bet-widget { background: none; border: none; color: rgba(255,255,255,0.8); font-size: 24px; cursor: pointer; line-height: 1; padding: 0; }
-    #close-bet-widget:hover { color: #fff; }
     .bet-body { padding: 0; max-height: 380px; overflow-y: auto; }
-    .bet-body::-webkit-scrollbar { width: 4px; }
-    .bet-body::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     .bet-match-row { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-    .bet-match-row:last-child { border-bottom: none; }
     .bet-match-row:hover { background: rgba(255,255,255,0.03); }
     .bet-teams { flex: 1; }
     .bet-team { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
     .bet-meta { font-size: 0.7rem; color: #888; margin-top: 4px; }
     .bet-odds { display: flex; gap: 4px; }
-    .odd-box { background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4px 6px; text-align: center; min-width: 32px; cursor: pointer; transition: background 0.2s; }
+    .odd-box { background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4px 6px; text-align: center; min-width: 32px; cursor: pointer; }
     .odd-box:hover { background: #dc2626; }
     .odd-box span { display: block; font-size: 0.65rem; color: #aaa; margin-bottom: 2px; }
     .odd-box b { display: block; font-size: 0.8rem; color: #fff; }
