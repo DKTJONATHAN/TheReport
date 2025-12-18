@@ -137,10 +137,12 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
           )}
 
           {/* Ad Block 1 */}
-          <div class="ad-container">
-            <span class="ad-label">Advertisement</span>
-            <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
-            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          <div class="ad-wrapper">
+            <div class="ad-container">
+              <span class="ad-label">Advertisement</span>
+              <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+              <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
           </div>
 
           <div class="article-body" itemprop="articleBody">
@@ -173,10 +175,12 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       <aside class="sidebar-column">
         <div class="sticky-wrapper">
           
-          <div class="sidebar-ad">
-            <span class="ad-label">Advertisement</span>
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-            <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+          <div class="ad-wrapper">
+            <div class="sidebar-ad">
+              <span class="ad-label">Advertisement</span>
+              <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+              <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
           </div>
 
           {relatedPosts.length > 0 && (
@@ -252,7 +256,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       color: var(--text-color); 
       font-family: var(--font-body); 
       line-height: 1.6;
-      overflow-x: hidden; /* CRITICAL: Prevents horizontal scroll on mobile */
+      overflow-x: hidden; /* Stops horizontal scrolling */
       width: 100%;
     }
 
@@ -266,12 +270,12 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
     #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
 
-    /* PAGE CONTAINER - Responsive & Safe */
+    /* PAGE CONTAINER */
     .page-container { 
       width: 100%;
       max-width: 1150px; 
       margin: 0 auto; 
-      padding: 0 1.5rem; /* Safe padding for Desktop */
+      padding: 0 1rem; /* Reduced to 1rem to handle ad width better */
     }
 
     /* BREADCRUMBS */
@@ -280,16 +284,17 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .separator { margin: 0 0.5rem; color: #ccc; }
     .current { font-weight: 600; color: var(--text-color); }
 
-    /* --- THE SMART GRID --- */
+    /* --- THE GRID --- */
     /* Mobile First: Stacked */
     .article-grid { 
       display: flex; 
       flex-direction: column; 
       gap: 2rem; 
       width: 100%;
+      max-width: 100%; /* Safety */
     }
 
-    /* Desktop (Laptops+): Sidebar fixed 300px, content fills rest */
+    /* Desktop: Sidebar fixed 300px, content fills rest */
     @media (min-width: 1024px) { 
       .article-grid { 
         display: grid; 
@@ -297,6 +302,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         gap: 3rem; 
         align-items: start;
       }
+      .page-container { padding: 0 1.5rem; }
     }
 
     /* HEADER */
@@ -309,9 +315,8 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       line-height: 1.2; 
       margin-bottom: 1rem; 
       color: var(--text-color); 
-      overflow-wrap: break-word; /* CRITICAL: Breaks long words/titles */
+      overflow-wrap: break-word; 
       word-wrap: break-word;
-      hyphens: auto;
     }
     
     .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
@@ -333,13 +338,13 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
     .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
 
-    /* CONTENT BODY - CRITICAL FIXES FOR CHOPPING */
+    /* CONTENT BODY */
     .article-body { 
       font-size: 1.15rem; 
       line-height: 1.8; 
       color: var(--text-color); 
       width: 100%; 
-      overflow-wrap: break-word; /* Breaks long URLS */
+      overflow-wrap: break-word; 
       word-wrap: break-word;
       word-break: break-word;
     }
@@ -347,17 +352,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); line-height: 1.2; }
     .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: break-word; }
     .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
-    
-    /* Code Blocks Overflow Fix */
-    .article-body :global(pre) { 
-      white-space: pre-wrap; 
-      word-wrap: break-word; 
-      background: #f5f5f5; 
-      padding: 1rem; 
-      overflow-x: auto; 
-      border-radius: 6px;
-      max-width: 100%;
-    }
+    .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 6px; max-width: 100%; }
 
     /* FOOTER */
     .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
@@ -375,18 +370,34 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
     
     .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; letter-spacing: 1px; }
-    
-    /* Ad Containers - Forced Constraint */
+
+    /* --- AD CONSTRAINTS (THE FIX) --- */
+    .ad-wrapper {
+      width: 100%;
+      overflow: hidden; /* Force cut off if ad is too big */
+      display: flex;
+      justify-content: center;
+    }
     .ad-container, .sidebar-ad { 
       margin: 2rem 0; 
       background: var(--bg-light); 
       padding: 1rem; 
       border-radius: 8px; 
       text-align: center; 
-      max-width: 100%;
-      overflow: hidden; 
+      width: 100%;
+      max-width: 100%; 
+      overflow: hidden; /* Inner containment */
     }
     .sidebar-ad { min-height: 250px; margin: 0; }
+    
+    /* Force AdSense to behave */
+    ins.adsbygoogle {
+       display: block !important;
+       min-width: 0 !important;
+       width: 100% !important;
+       max-width: 100% !important;
+       overflow: hidden !important;
+    }
 
     /* WIDGETS */
     .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
@@ -398,14 +409,11 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin-bottom: 0.3rem; color: var(--text-color); }
     .widget-content time { font-size: 0.75rem; color: var(--text-light); }
 
-    /* MOBILE SPECIFIC OVERRIDES */
+    /* MOBILE SPECIFIC */
     @media (max-width: 768px) {
-      .page-container { 
-        padding: 0 1rem; /* Smaller padding on mobile to save space */
-      }
       .author-box { flex-direction: column; text-align: center; }
-      .article-title { font-size: 1.8rem; } /* Slightly smaller title on mobile */
-      .ad-container, .sidebar-ad { padding: 0.5rem; } /* Less padding around ads */
+      .article-title { font-size: 1.8rem; }
+      .ad-container, .sidebar-ad { padding: 0.5rem; } /* Gives ad more room */
     }
   </style>
 </Layout>
