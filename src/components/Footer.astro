@@ -1,698 +1,324 @@
 ---
 const currentYear = new Date().getFullYear();
+
+// Social Links Data
 const socialLinks = [
   { 
-    name: 'X', 
-    url: 'https://x.com/maestropuns', // Updated Twitter/X handle
+    name: 'X (Twitter)', 
+    url: 'https://x.com/maestropuns', 
     icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-    color: '#000000'
-  },
-  { 
-    name: 'LinkedIn', 
-    url: 'https://linkedin.com/in/jonathanmwaniki', 
-    icon: 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2zM4 2a2 2 0 11-2 2 2 2 0 012-2z',
-    color: '#0077b5'
+    color: '#ffffff', // X is white on dark bg
+    bg: '#000000'
   },
   { 
     name: 'Facebook', 
     url: 'https://facebook.com/jonathanmwaniki', 
     icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z',
-    color: '#1877f2'
+    color: '#ffffff',
+    bg: '#1877f2'
   },
-  {
-    name: 'Instagram',
-    url: 'https://instagram.com/jonathanmwaniki',
+  { 
+    name: 'Instagram', 
+    url: 'https://instagram.com/jonathanmwaniki', 
     icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z',
-    color: '#e4405f'
+    color: '#ffffff',
+    bg: '#e1306c'
+  },
+  { 
+    name: 'LinkedIn', 
+    url: 'https://linkedin.com/in/jonathanmwaniki', 
+    icon: 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2zM4 2a2 2 0 11-2 2 2 2 0 012-2z',
+    color: '#ffffff',
+    bg: '#0077b5'
   }
 ];
 
 const footerLinks = [
   {
-    title: 'Quick Links',
-    links: [
-      { name: 'Home', url: '/' },
-      { name: 'About', url: '/about' },
-      { name: 'Contact', url: '/contact' },
-      { name: 'Archives', url: '/archives' },
-      { name: 'Sitemap', url: 'https://jonathanmwaniki/sitemap-0.xml' }
-    ]
-  },
-  {
-    title: 'Categories',
+    title: 'Sections',
     links: [
       { name: 'Politics', url: '/category/politics' },
       { name: 'Business', url: '/category/business' },
-      { name: 'Technology', url: '/category/technology' },
-      { name: 'Opinion', url: '/category/opinion' }
+      { name: 'Sports', url: '/category/sports' },
+      { name: 'Opinion', url: '/category/opinion' },
+      { name: 'Lifestyle', url: '/category/lifestyle' }
     ]
   },
   {
-    title: 'Legal',
+    title: 'Company',
     links: [
+      { name: 'About Us', url: '/about' },
+      { name: 'Contact', url: '/contact' },
       { name: 'Privacy Policy', url: '/privacy' },
-      { name: 'Terms of Service', url: '/terms' },
-      { name: 'Cookie Policy', url: '/cookies' },
-      { name: 'Editorial Guidelines', url: '/guidelines' }
+      { name: 'Terms of Service', url: '/terms' }
     ]
   }
 ];
 ---
 
-<footer class="modern-footer">
-  <!-- Decorative top border -->
-  <div class="footer-top-accent"></div>
+<footer class="site-footer">
   
-  <div class="footer-container">
-    <!-- Header Section -->
-    <div class="footer-header">
-      <div class="footer-brand">
-        <a href="/" class="footer-logo">
-          <img src="/Jonathan-Mwaniki-logo.png" alt="The Mwaniki's Report Logo" class="logo-image" />
-          <div class="logo-highlight"></div>
-        </a>
-        <div class="brand-content">
-          <h2 class="brand-title">The Mwaniki's Report</h2>
-          <p class="footer-tagline">
-            Professional journalism and insightful commentary from Kenya. 
-            Delivering truth through compelling storytelling.
-          </p>
-        </div>
-      </div>
-      
-      <div class="newsletter-signup">
-        <h3 class="newsletter-title">Stay Informed</h3>
-        <p class="newsletter-desc">Get our latest stories delivered to your inbox</p>
-        <div class="newsletter-form">
-          <input type="email" placeholder="Enter your email" class="email-input" />
-          <button class="subscribe-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
+  {/* Top Red Accent Line */}
+  <div class="footer-accent"></div>
 
-    <!-- Navigation Grid -->
-    <div class="footer-nav-grid">
-      {footerLinks.map(section => (
-        <div class="nav-column">
-          <div class="nav-header">
-            <h4 class="nav-title">{section.title}</h4>
-            <div class="nav-accent"></div>
-          </div>
-          <ul class="nav-list">
-            {section.links.map(link => (
-              <li class="nav-item">
-                <a href={link.url} class="nav-link">
-                  <span class="link-text">{link.name}</span>
-                  <svg class="link-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
-                  </svg>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
+  <div class="footer-container">
     
-    <!-- Social & Bottom Section -->
-    <div class="footer-bottom-section">
-      <div class="social-section">
-        <h4 class="social-title">Connect With Us</h4>
-        <div class="social-grid">
-          {socialLinks.map(link => (
-            <a 
-              href={link.url} 
-              class="social-link" 
-              aria-label={`Follow us on ${link.name}`}
-              style={`--social-color: ${link.color}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div class="social-icon-wrapper">
-                <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d={link.icon} />
-                </svg>
-              </div>
-              <span class="social-name">{link.name}</span>
+    <div class="footer-grid">
+      
+      {/* 1. BRAND COLUMN */}
+      <div class="footer-col brand-col">
+        <a href="/" class="footer-logo">
+          <div class="logo-circle">JM</div>
+          <div class="logo-text">
+            <span>The</span>
+            <span class="highlight">Mwaniki</span>
+            <span>Report</span>
+          </div>
+        </a>
+        <p class="brand-desc">
+          Professional journalism and insightful commentary from Kenya. Delivering truth through compelling storytelling.
+        </p>
+        
+        <div class="social-row">
+          {socialLinks.map(s => (
+            <a href={s.url} target="_blank" rel="noopener noreferrer" class="social-btn" aria-label={s.name} style={`--hover-bg: ${s.bg}`}>
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d={s.icon}/></svg>
             </a>
           ))}
         </div>
       </div>
-      
-      <div class="footer-meta">
-        <div class="copyright-info">
-          <p class="copyright">© {currentYear} The Mwaniki's Report. All rights reserved.</p>
-          <p class="made-in">Kenya's Premier News Source</p>
+
+      {/* 2. LINKS COLUMNS */}
+      {footerLinks.map(section => (
+        <div class="footer-col links-col">
+          <h3 class="col-title">{section.title}</h3>
+          <ul class="footer-nav">
+            {section.links.map(link => (
+              <li><a href={link.url}>{link.name}</a></li>
+            ))}
+          </ul>
         </div>
-        
-        <button class="back-to-top" aria-label="Back to top">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 14l5-5 5 5"/>
-          </svg>
-          <span>Top</span>
-        </button>
+      ))}
+
+      {/* 3. NEWSLETTER COLUMN */}
+      <div class="footer-col newsletter-col">
+        <h3 class="col-title">Stay Informed</h3>
+        <p class="newsletter-text">Get the latest breaking news delivered to your inbox.</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault();">
+          <input type="email" placeholder="Your email address" required />
+          <button type="submit" aria-label="Subscribe">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </form>
       </div>
+
     </div>
+
+    {/* BOTTOM BAR */}
+    <div class="footer-bottom">
+      <div class="copyright">
+        &copy; {currentYear} Jonathan Mwaniki. All rights reserved.
+      </div>
+      
+      <button id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <span>Back to Top</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+      </button>
+    </div>
+
   </div>
-
-  <style>
-    .modern-footer {
-      background: linear-gradient(135deg, #1A1A1A 0%, #2d2d2d 100%);
-      color: #F5F5F5;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .footer-top-accent {
-      height: 4px;
-      background: linear-gradient(90deg, #BB1919 0%, #FF4444 50%, #BB1919 100%);
-      background-size: 200% 100%;
-      animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { background-position: 200% 0; }
-      50% { background-position: -200% 0; }
-    }
-
-    .footer-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 3rem 2rem 2rem;
-    }
-
-    /* Header Section */
-    .footer-header {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 4rem;
-      align-items: start;
-      margin-bottom: 3rem;
-      padding-bottom: 2rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .footer-brand {
-      display: flex;
-      gap: 1.5rem;
-      align-items: flex-start;
-    }
-
-    .footer-logo {
-      position: relative;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      min-width: fit-content;
-    }
-
-    .logo-image {
-      height: 48px;
-      width: auto;
-      position: relative;
-      z-index: 2;
-      transition: all 0.3s ease;
-    }
-
-    .footer-logo:hover .logo-image {
-      transform: scale(1.05);
-    }
-
-    .logo-highlight {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 60px;
-      height: 60px;
-      background: radial-gradient(circle, rgba(187, 25, 25, 0.2) 0%, transparent 70%);
-      border-radius: 50%;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .footer-logo:hover .logo-highlight {
-      opacity: 1;
-    }
-
-    .brand-content {
-      flex: 1;
-    }
-
-    .brand-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      background: linear-gradient(135deg, #F5F5F5 0%, #BB1919 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .footer-tagline {
-      font-size: 1rem;
-      color: #A1A1A1;
-      line-height: 1.6;
-      max-width: 400px;
-    }
-
-    /* Newsletter Section */
-    .newsletter-signup {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 2rem;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-    }
-
-    .newsletter-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #F5F5F5;
-    }
-
-    .newsletter-desc {
-      color: #A1A1A1;
-      font-size: 0.9rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .newsletter-form {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .email-input {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      color: #F5F5F5;
-      font-size: 0.9rem;
-      transition: all 0.3s ease;
-    }
-
-    .email-input:focus {
-      outline: none;
-      border-color: #BB1919;
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .email-input::placeholder {
-      color: #A1A1A1;
-    }
-
-    .subscribe-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-      background: #BB1919;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .subscribe-btn:hover {
-      background: #8B0000;
-      transform: translateY(-2px);
-    }
-
-    /* Navigation Grid */
-    .footer-nav-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 3rem;
-      margin-bottom: 3rem;
-    }
-
-    .nav-column {
-      position: relative;
-    }
-
-    .nav-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .nav-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #F5F5F5;
-      margin-bottom: 0.5rem;
-    }
-
-    .nav-accent {
-      width: 30px;
-      height: 2px;
-      background: #BB1919;
-      border-radius: 1px;
-    }
-
-    .nav-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .nav-item {
-      margin-bottom: 0.75rem;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #A1A1A1;
-      text-decoration: none;
-      font-size: 0.95rem;
-      padding: 0.5rem 0;
-      transition: all 0.3s ease;
-      border-radius: 4px;
-      position: relative;
-    }
-
-    .nav-link:hover {
-      color: #BB1919;
-      padding-left: 0.75rem;
-    }
-
-    .nav-link:hover .link-arrow {
-      opacity: 1;
-      transform: translateX(4px);
-    }
-
-    .link-arrow {
-      opacity: 0;
-      transition: all 0.3s ease;
-      stroke: #BB1919;
-    }
-
-    .nav-link:focus {
-      outline: 2px solid #BB1919;
-      outline-offset: 2px;
-    }
-
-    /* Bottom Section */
-    .footer-bottom-section {
-      padding-top: 2rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .social-section {
-      margin-bottom: 2rem;
-    }
-
-    .social-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: #F5F5F5;
-    }
-
-    .social-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-    }
-
-    .social-link {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 1rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      text-decoration: none;
-      color: #F5F5F5;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .social-link::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-      transition: left 0.6s;
-    }
-
-    .social-link:hover::before {
-      left: 100%;
-    }
-
-    .social-link:hover {
-      transform: translateY(-3px);
-      border-color: var(--social-color);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    }
-
-    .social-icon-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
-    }
-
-    .social-link:hover .social-icon-wrapper {
-      background: var(--social-color);
-      color: white;
-    }
-
-    .social-icon {
-      width: 18px;
-      height: 18px;
-    }
-
-    .social-name {
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    /* Footer Meta */
-    .footer-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .copyright-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .copyright {
-      color: #A1A1A1;
-      font-size: 0.9rem;
-    }
-
-    .made-in {
-      color: #666;
-      font-size: 0.8rem;
-    }
-
-    .back-to-top {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50px;
-      color: #F5F5F5;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .back-to-top:hover {
-      background: #BB1919;
-      border-color: #BB1919;
-      transform: translateY(-2px);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1024px) {
-      .footer-header {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-      }
-
-      .footer-nav-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem;
-      }
-
-      .social-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .footer-container {
-        padding: 2rem 1rem;
-      }
-
-      .footer-brand {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
-
-      .footer-nav-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-
-      .social-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .footer-meta {
-        flex-direction: column;
-        text-align: center;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .brand-title {
-        font-size: 1.25rem;
-      }
-
-      .footer-tagline {
-        font-size: 0.9rem;
-      }
-
-      .newsletter-signup {
-        padding: 1.5rem;
-      }
-
-      .social-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Accessibility */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  </style>
-
-  <script is:inline>
-    function initModernFooter() {
-      // Back to top functionality
-      const backToTopBtn = document.querySelector('.back-to-top-btn');
-      
-      function toggleBackToTop() {
-        const scrolled = window.scrollY > 300;
-        backToTopBtn.style.opacity = scrolled ? '1' : '0.7';
-      }
-      
-      function scrollToTop() {
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      }
-      
-      if (backToTopBtn) {
-        backToTopBtn.addEventListener('click', scrollToTop);
-        window.addEventListener('scroll', toggleBackToTop);
-        toggleBackToTop();
-      }
-      
-      // Newsletter form
-      const subscribeBtn = document.querySelector('.subscribe-btn');
-      const emailInput = document.querySelector('.email-input');
-      
-      if (subscribeBtn && emailInput) {
-        subscribeBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          const email = emailInput.value.trim();
-          
-          if (email && email.includes('@')) {
-            // Success animation
-            this.style.background = '#28a745';
-            this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-            
-            setTimeout(() => {
-              this.style.background = '#BB1919';
-              this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>';
-              emailInput.value = '';
-            }, 2000);
-          } else {
-            emailInput.style.borderColor = '#dc3545';
-            setTimeout(() => {
-              emailInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-            }, 2000);
-          }
-        });
-      }
-      
-      // Intersection Observer for animations
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-      };
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        });
-      }, observerOptions);
-      
-      // Animate elements on scroll
-      const animatedElements = document.querySelectorAll('.nav-column, .social-link');
-      animatedElements.forEach((element, index) => {
-        element.style.opacity = '0';
-        element.style.transform = 'translateY(30px)';
-        element.style.transition = `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.1}s`;
-        observer.observe(element);
-      });
-      
-      // Social link tracking
-      const socialLinks = document.querySelectorAll('.social-link');
-      socialLinks.forEach(link => {
-        link.addEventListener('click', function() {
-          const platform = this.getAttribute('aria-label');
-          console.log('Social link clicked:', platform);
-        });
-      });
-    }
-    
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initModernFooter);
-    } else {
-      initModernFooter();
-    }
-  </script>
 </footer>
+
+<script>
+  // Back to Top Logic
+  const backToTopBtn = document.getElementById('back-to-top');
+  
+  if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTopBtn.classList.add('visible');
+      } else {
+        backToTopBtn.classList.remove('visible');
+      }
+    });
+
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+</script>
+
+<style>
+  :root {
+    --f-bg: #111827; /* Dark Gray/Black */
+    --f-text: #9ca3af; /* Muted Gray */
+    --f-white: #f3f4f6;
+    --f-accent: #dc2626; /* Kenyan Red */
+    --f-border: #1f2937;
+  }
+
+  .site-footer {
+    background-color: var(--f-bg);
+    color: var(--f-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    position: relative;
+    margin-top: auto; /* Pushes footer to bottom */
+  }
+
+  /* Decorative Top Border */
+  .footer-accent {
+    height: 4px;
+    background: linear-gradient(90deg, var(--f-accent) 0%, #b91c1c 100%);
+    width: 100%;
+  }
+
+  .footer-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 2rem;
+  }
+
+  /* GRID LAYOUT */
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr; /* Brand is wider */
+    gap: 3rem;
+    margin-bottom: 4rem;
+  }
+
+  /* BRAND COLUMN */
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    margin-bottom: 1rem;
+  }
+  .logo-circle {
+    width: 40px; height: 40px;
+    background: var(--f-accent);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1rem; letter-spacing: -1px;
+  }
+  .logo-text {
+    font-family: 'Georgia', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1;
+  }
+  .logo-text .highlight { color: var(--f-accent); }
+
+  .brand-desc {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    max-width: 320px;
+  }
+
+  /* SOCIAL ICONS */
+  .social-row { display: flex; gap: 0.8rem; }
+  .social-btn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.05);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  .social-btn:hover {
+    background: var(--hover-bg);
+    transform: translateY(-3px);
+  }
+
+  /* NAVIGATION COLUMNS */
+  .col-title {
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-nav {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 0.8rem;
+  }
+  .footer-nav a {
+    color: var(--f-text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  .footer-nav a:hover {
+    color: var(--f-accent);
+    padding-left: 5px;
+  }
+
+  /* NEWSLETTER */
+  .newsletter-text { font-size: 0.9rem; margin-bottom: 1rem; }
+  .newsletter-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .newsletter-form input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--f-border);
+    padding: 0.7rem 1rem;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.9rem;
+  }
+  .newsletter-form input:focus { outline: 1px solid var(--f-accent); border-color: var(--f-accent); }
+  .newsletter-form button {
+    background: var(--f-accent);
+    border: none;
+    color: white;
+    padding: 0 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .newsletter-form button:hover { background: #b91c1c; }
+
+  /* BOTTOM BAR */
+  .footer-bottom {
+    border-top: 1px solid var(--f-border);
+    padding-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  .back-to-top {
+    background: transparent;
+    border: 1px solid var(--f-border);
+    color: var(--f-text);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+  }
+  .back-to-top.visible { opacity: 1; visibility: visible; }
+  .back-to-top:hover { border-color: var(--f-accent); color: var(--f-accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+    .brand-col { grid-column: span 2; }
+  }
+
+  @media (max-width: 640px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .brand-col { grid-column: span 1; }
+    .footer-bottom { flex-direction: column-reverse; gap: 1rem; }
+  }
+</style>
