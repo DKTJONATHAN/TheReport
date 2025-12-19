@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. DATA FETCHING
+// 1. DATA LOGIC
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
@@ -18,37 +18,33 @@ const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
 }));
 const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 
-// 3. HERO & FEED DATA
-const heroCandidates = allPosts.slice(0, 3);
-const mainStory = heroCandidates[0];
-const subStories = heroCandidates.slice(1, 3);
+// 3. SECTIONS
+const mainStory = allPosts[0];
+const subStories = allPosts.slice(1, 3);
 const trendingPosts = allPosts.slice(3, 8);
 
 const socialStats = [
-  { name: 'Fans', count: '12.5k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
+  { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
-  { name: 'Subs', count: '8.2k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
+  { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
   { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
 ];
 ---
 
-<Layout 
-  title="Breaking News Kenya Today | Latest Updates | Jonathan Mwaniki" 
-  description="Stay updated with the latest breaking news from Kenya including politics, sports, business, and trending stories."
->
+<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news from Kenya.">
   
   <div class="page-wrapper">
     
-    {/* --- 1. STORIES CAROUSEL --- */}
+    {/* --- 1. COMPACT STORIES CAROUSEL --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
           {combinedCircles.map(item => (
-            <a href={item.link} class={`story-circle ${item.type === 'category' ? 'is-cat' : ''}`}>
-              <div class="story-ring">
+            <a href={item.link} class="story-item">
+              <div class="story-img-ring">
                 <img src={item.image || '/default-image.jpg'} alt={item.label} loading="eager" />
               </div>
-              <span class="story-title">{item.label}</span>
+              <span class="story-label">{item.label}</span>
             </a>
           ))}
         </div>
@@ -57,94 +53,80 @@ const socialStats = [
 
     <main class="main-container">
       
-      {/* --- 2. HERO GRID --- */}
+      {/* --- 2. HERO SECTION (Mobile Optimized) --- */}
       {mainStory && (
         <section class="hero-wrapper">
-          
-          {/* Main Story */}
           <div class="hero-main">
-            <a href={`/posts/${mainStory.slug}`} class="hero-split-card">
-              <div class="hero-image-col">
+            <a href={`/posts/${mainStory.slug}`} class="hero-link">
+              <div class="hero-img-box">
                 <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
               </div>
-              <div class="hero-text-col">
-                <div class="hero-badge-row">
-                   <span class="badge badge-primary">Top Story</span>
-                   <span class="hero-date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
+              <div class="hero-text-box">
+                <div class="meta-row">
+                   <span class="badge">Top Story</span>
+                   <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
                 </div>
-                <h1 class="hero-h1">{mainStory.data.title}</h1>
-                <p class="hero-p">
-                  {mainStory.data.description || "Click to read the full story."}
-                </p>
-                <span class="cta-link">Read Full Story &rarr;</span>
+                <h1>{mainStory.data.title}</h1>
+                <p class="hero-excerpt">{mainStory.data.description}</p>
               </div>
             </a>
           </div>
 
-          {/* Side Stack */}
           <div class="hero-side">
             {subStories.map(post => (
-              <a href={`/posts/${post.slug}`} class="hero-sub-card">
+              <a href={`/posts/${post.slug}`} class="sub-card">
                 <div class="sub-img">
                   <img src={post.data.image} alt={post.data.title} loading="eager" />
-                  <div class="img-overlay"></div>
                 </div>
-                <div class="sub-content">
-                  <span class="badge badge-glass">{post.data.category}</span>
-                  <h3 class="sub-h3">{post.data.title}</h3>
+                <div class="sub-text">
+                  <h3>{post.data.title}</h3>
+                  <span class="sub-cat">{post.data.category}</span>
                 </div>
               </a>
             ))}
           </div>
-
         </section>
       )}
 
-      {/* --- 3. TWO COLUMN CONTENT LAYOUT --- */}
-      <div class="main-grid">
-        
-        {/* LEFT: Feed */}
+      {/* --- 3. MAIN CONTENT (Dense List) --- */}
+      <div class="content-grid">
         <div class="feed-column">
           
-          {/* Trending Strip */}
           <section class="feed-block">
-            <h2 class="block-heading"><span class="accent-bar"></span> Just In</h2>
-            <div class="trending-list">
+            <div class="block-head">
+              <h2>Just In</h2>
+              <span class="line"></span>
+            </div>
+            <div class="dense-list">
               {trendingPosts.map(post => (
-                <a href={`/posts/${post.slug}`} class="trend-row">
-                  <div class="trend-thumb">
+                <a href={`/posts/${post.slug}`} class="dense-item">
+                  <div class="dense-thumb">
                     <img src={post.data.image} alt={post.data.title} loading="lazy" />
                   </div>
-                  <div class="trend-details">
-                    <span class="trend-cat">{post.data.category}</span>
-                    <h3 class="trend-title">{post.data.title}</h3>
-                    <span class="trend-time">{new Date(post.data.date).toLocaleDateString()}</span>
+                  <div class="dense-info">
+                    <span class="dense-cat">{post.data.category}</span>
+                    <h4>{post.data.title}</h4>
+                    <span class="dense-time">{new Date(post.data.date).toLocaleDateString()}</span>
                   </div>
                 </a>
               ))}
             </div>
           </section>
 
-          {/* Category Blocks */}
           {majorCategories.map(category => {
-             const catPosts = allPosts
-                .filter(p => p.data.category === category && p.slug !== mainStory?.slug)
-                .slice(0, 4);
+             const catPosts = allPosts.filter(p => p.data.category === category && p.slug !== mainStory?.slug).slice(0, 4);
              if (catPosts.length === 0) return null;
-
              return (
                <section class="feed-block" key={category}>
-                 <div class="block-header">
-                   <h2 class="block-heading"><span class="accent-bar"></span> {category}</h2>
-                   <a href={`/category/${category.toLowerCase()}`} class="view-all">View All</a>
+                 <div class="block-head">
+                   <h2>{category}</h2>
+                   <a href={`/category/${category.toLowerCase()}`} class="more-link">More</a>
                  </div>
-                 <div class="grid-2-col">
+                 <div class="compact-grid">
                    {catPosts.map(post => (
-                     <a href={`/posts/${post.slug}`} class="cat-card">
-                       <div class="cat-thumb">
-                         <img src={post.data.image} alt={post.data.title} loading="lazy"/>
-                       </div>
-                       <h4 class="cat-title">{post.data.title}</h4>
+                     <a href={`/posts/${post.slug}`} class="compact-card">
+                       <div class="compact-img"><img src={post.data.image} loading="lazy"/></div>
+                       <h4>{post.data.title}</h4>
                      </a>
                    ))}
                  </div>
@@ -153,275 +135,154 @@ const socialStats = [
           })}
         </div>
 
-        {/* RIGHT: Sidebar (Sticky) */}
         <aside class="sidebar-column">
-          <div class="sticky-wrapper">
-            
-            <div class="widget">
-              <h3 class="widget-title">Stay Connected</h3>
-              <div class="social-grid">
-                {socialStats.map(s => (
-                  <a href="#" class="social-btn" style={`--btn-bg: ${s.bg}`}>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d={s.icon}/></svg>
-                    <div>
-                      <span class="s-count">{s.count}</span>
-                      <span class="s-name">{s.name}</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
+          <div class="widget">
+            <h3>Connect</h3>
+            <div class="social-grid">
+              {socialStats.map(s => (
+                <a href="#" class="social-mini" style={`--bg:${s.bg}`}>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                  <span>{s.count}</span>
+                </a>
+              ))}
             </div>
+          </div>
 
-            {/* SAFE AD CONTAINER (Prevents Blowout) */}
-            <div class="widget ad-box">
-              <span class="ad-text">Advertisement</span>
-              <div class="ad-safe-wrapper">
-                 <ins class="adsbygoogle"
-                   style="display:block"
-                   data-ad-client="ca-pub-9291176772735390"
-                   data-ad-slot="1358657931"
-                   data-ad-format="auto"
-                   data-full-width-responsive="true"></ins>
-                 <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-              </div>
-            </div>
-
-            <div class="widget newsletter-box">
-              <h3 class="widget-title">Newsletter</h3>
-              <p>Get the best of The Mwaniki Report delivered to your inbox.</p>
-              <form onsubmit="event.preventDefault();">
-                <input type="email" placeholder="Your email address" required />
-                <button type="submit">Subscribe</button>
-              </form>
-            </div>
-
+          <div class="widget ad-container">
+             <span class="ad-label">Advertisement</span>
+             <div class="ad-scroll-safe">
+               <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+               <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+             </div>
           </div>
         </aside>
-
       </div>
     </main>
   </div>
 
-  <div id="betting-widget" class="betting-widget-hidden">
-    <div class="bet-header">
-      <div class="bet-title"><span class="live-dot"></span> TOP MATCHES</div>
-      <button id="close-bet-widget">×</button>
-    </div>
-    <div id="bet-matches-list" class="bet-body"><div class="spinner"></div></div>
-    <div class="bet-footer">Powered by API-Football</div>
-  </div>
-
-  <script is:inline>
-    // Betting Widget Logic
-    fetch('/football_odds.php')
-      .then(res => res.json())
-      .then(data => {
-        const widget = document.getElementById('betting-widget');
-        const list = document.getElementById('bet-matches-list');
-        if(data.length > 0 && !sessionStorage.getItem('widgetClosed')) {
-          widget.classList.remove('betting-widget-hidden');
-          let html = '';
-          data.forEach(m => {
-             html += `<div class="bet-match-row">
-                <div class="bet-teams"><span>${m.home}</span> vs <span>${m.away}</span></div>
-                <div class="bet-odds"><b>1: ${m.odds.home}</b> <b>X: ${m.odds.draw}</b> <b>2: ${m.odds.away}</b></div>
-             </div>`;
-          });
-          list.innerHTML = html;
-        }
-      }).catch(e => console.log(e));
-      
-    document.getElementById('close-bet-widget')?.addEventListener('click', () => {
-      document.getElementById('betting-widget').classList.add('betting-widget-hidden');
-      sessionStorage.setItem('widgetClosed', 'true');
-    });
-  </script>
-
   <style>
-    /* VARIABLES */
+    /* 1. NUCLEAR RESET (Stops all overflow) */
     :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --accent: #dc2626;
-      --border: #e2e8f0;
-      --font: system-ui, -apple-system, sans-serif;
+      --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
       :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
     }
 
-    /* GLOBAL RESET & PROTECTION */
-    html, body { 
-        width: 100%; 
-        overflow-x: hidden; /* STOP HORIZONTAL SCROLL */
-        margin: 0; padding: 0;
-        background: var(--bg); color: var(--text); font-family: var(--font); 
-    }
-    
-    .page-wrapper { 
-        width: 100%; 
-        max-width: 100%; 
-        overflow-x: hidden; 
-    }
-
-    a { text-decoration: none; color: inherit; display: block; }
+    * { box-sizing: border-box; min-width: 0; }
+    html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; line-height: 1.4; }
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    
-    /* Responsive Container */
-    .main-container { 
-        width: 100%;
-        max-width: 1280px; 
-        margin: 0 auto; 
-        padding: 0 1rem; /* 1rem is safer for mobile ads */
-    }
+    a { text-decoration: none; color: inherit; display: block; }
+
+    /* Container: Tighter padding for mobile */
+    .page-wrapper { width: 100%; overflow: hidden; }
+    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; } /* Mobile Padding: 0.8rem */
     @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
 
-    /* STORIES */
-    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 1.5rem 0; margin-bottom: 2rem; }
-    .stories-scroll { display: flex; gap: 1.5rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
+    /* --- STORIES (Smaller & Tighter) --- */
+    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0 0.8rem; scrollbar-width: none; }
     .stories-scroll::-webkit-scrollbar { display: none; }
-    .story-circle { flex: 0 0 auto; text-align: center; width: 80px; cursor: pointer; transition: transform 0.2s; }
-    .story-ring { width: 74px; height: 74px; border-radius: 50%; padding: 3px; border: 2px solid var(--border); margin: 0 auto 0.5rem; }
-    .is-cat .story-ring { border-color: var(--accent); }
-    .story-ring img { border-radius: 50%; border: 3px solid var(--card); }
-    .story-title { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .story-item { flex: 0 0 auto; width: 64px; text-align: center; } /* Smaller width */
+    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
+    .story-label { font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-    /* HERO LAYOUT - USING MINMAX TO PREVENT BLOWOUT */
-    .hero-wrapper { 
-      display: grid; 
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); /* minmax(0) IS CRITICAL */
-      gap: 2rem; 
-      margin-bottom: 3rem; 
-      align-items: stretch;
+    /* --- HERO (Compact) --- */
+    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (min-width: 768px) { .hero-wrapper { grid-template-columns: 1.8fr 1fr; } }
+
+    /* Main Hero */
+    .hero-main { background: var(--card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .hero-link { display: flex; flex-direction: column; }
+    .hero-img-box { width: 100%; aspect-ratio: 16/9; } /* Enforce ratio */
+    
+    .hero-text-box { padding: 1rem; } /* Tighter padding */
+    .meta-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; font-size: 0.75rem; color: var(--muted); }
+    .badge { background: var(--accent); color: white; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; }
+    
+    .hero-main h1 { 
+        font-size: 1.25rem; /* Smaller H1 for Mobile */
+        font-weight: 800; margin: 0 0 0.5rem 0; line-height: 1.25; 
+    }
+    .hero-excerpt { font-size: 0.9rem; color: var(--muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    @media (min-width: 768px) {
+        .hero-link { flex-direction: row; align-items: stretch; min-height: 300px; }
+        .hero-img-box { flex: 1.2; aspect-ratio: auto; }
+        .hero-text-box { flex: 1; padding: 2rem; justify-content: center; display: flex; flex-direction: column; }
+        .hero-main h1 { font-size: 2rem; }
     }
 
-    /* Hero Main - Split */
-    .hero-main { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    /* Sub Stories */
+    .hero-side { display: flex; flex-direction: column; gap: 1rem; }
+    @media (min-width: 768px) { .hero-side { gap: 1rem; } }
     
-    /* Desktop Split */
-    .hero-split-card { display: flex; height: 100%; min-height: 450px; } 
-    .hero-image-col { flex: 1.2; position: relative; min-height: 100%; } 
-    .hero-text-col { flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center; }
+    .sub-card { display: flex; gap: 0.8rem; background: var(--card); padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
+    .sub-img { width: 80px; height: 60px; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+    .sub-text h3 { font-size: 0.9rem; margin: 0 0 0.2rem 0; line-height: 1.3; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .sub-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+
+    /* --- FEED (Dense) --- */
+    .content-grid { display: grid; gap: 2rem; }
+    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
+
+    .block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+    .block-head h2 { font-size: 1.1rem; margin: 0; text-transform: uppercase; font-weight: 800; border-left: 4px solid var(--accent); padding-left: 0.6rem; }
+    .more-link { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+
+    /* Trending Items */
+    .dense-list { display: flex; flex-direction: column; gap: 1rem; }
+    .dense-item { display: flex; gap: 0.8rem; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .dense-item:last-child { border: none; }
     
-    .hero-badge-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-    .badge-primary { background: var(--accent); color: white; }
-    .badge-glass { background: rgba(0,0,0,0.6); color: white; backdrop-filter: blur(4px); }
-    .hero-date { font-size: 0.85rem; color: var(--muted); }
+    /* Smaller Thumbnails for Mobile */
+    .dense-thumb { width: 90px; height: 65px; border-radius: 6px; overflow: hidden; flex-shrink: 0; } 
+    .dense-info { flex: 1; }
+    .dense-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.2rem; }
     
-    /* Text Truncation Safety */
-    .hero-h1 { 
-        font-size: clamp(1.5rem, 2.5vw, 2.5rem); /* Responsive Font Size */
-        line-height: 1.1; font-weight: 800; margin: 0 0 1rem 0; 
-        word-wrap: break-word; /* Prevents long words breaking layout */
+    /* Tighter Headlines */
+    .dense-info h4 { font-size: 0.95rem; margin: 0 0 0.3rem 0; line-height: 1.3; font-weight: 600; }
+    .dense-time { font-size: 0.7rem; color: var(--muted); }
+
+    /* Category Grids */
+    .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; } /* 2-Col on Mobile */
+    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .compact-img { height: 100px; overflow: hidden; } /* Shorter images */
+    .compact-card h4 { font-size: 0.85rem; padding: 0.6rem; margin: 0; font-weight: 600; line-height: 1.3; }
+
+    /* --- SIDEBAR & ADS --- */
+    .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
+    .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+
+    .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
+    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; }
+    .social-mini svg { width: 16px; height: 16px; }
+    .social-mini span { font-size: 0.7rem; font-weight: 700; }
+
+    /* AD PROTECTION (The Fix) */
+    .ad-container { text-align: center; }
+    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+    .ad-scroll-safe { 
+        width: 100%; 
+        overflow-x: auto; /* Allow internal scroll if ad is wide */
+        overflow-y: hidden;
+        display: flex; 
+        justify-content: center;
+        min-height: 100px;
+        background: var(--bg);
     }
-    .hero-p { font-size: 1.1rem; line-height: 1.6; color: var(--muted); margin: 0 0 1.5rem 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-    .cta-link { font-weight: 700; color: var(--accent); text-transform: uppercase; font-size: 0.85rem; }
+    .ad-scroll-safe::-webkit-scrollbar { display: none; } /* Hide scrollbar */
 
-    /* Hero Side */
-    .hero-side { display: flex; flex-direction: column; gap: 1.5rem; }
-    .hero-sub-card { flex: 1; position: relative; border-radius: 12px; overflow: hidden; min-height: 200px; }
-    .sub-img { position: absolute; inset: 0; }
-    .img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
-    .sub-content { position: absolute; bottom: 0; left: 0; padding: 1.5rem; z-index: 2; width: 100%; box-sizing: border-box; }
-    .sub-h3 { color: white; font-size: 1.2rem; font-weight: 700; margin: 0.5rem 0 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); word-wrap: break-word; }
-
-    /* CONTENT GRID - SAFE COLUMNS */
-    .main-grid { 
-        display: grid; 
-        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); /* Safety first */
-        gap: 3rem; 
+    /* Desktop Adjustments */
+    @media (min-width: 1024px) {
+        .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .compact-img { height: 140px; }
+        .compact-card h4 { font-size: 1rem; padding: 1rem; }
+        .dense-thumb { width: 140px; height: 90px; }
+        .dense-info h4 { font-size: 1.1rem; }
     }
-    
-    .feed-block { margin-bottom: 3rem; }
-    .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
-    .block-heading { font-size: 1.3rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase; }
-    .accent-bar { width: 4px; height: 18px; background: var(--accent); display: block; border-radius: 2px; }
-    .view-all { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
-
-    /* TRENDING LIST */
-    .trending-list { display: flex; flex-direction: column; gap: 1.5rem; }
-    .trend-row { display: flex; gap: 1rem; align-items: flex-start; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-    .trend-thumb { width: 120px; height: 85px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-    .trend-details { flex: 1; min-width: 0; /* Allows text truncation inside flex */ }
-    .trend-cat { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-    .trend-title { font-size: 1.1rem; font-weight: 700; margin: 0.25rem 0 0.5rem; line-height: 1.3; word-wrap: break-word; }
-    .trend-time { font-size: 0.75rem; color: var(--muted); }
-
-    .grid-2-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
-    .cat-card:hover .cat-title { color: var(--accent); }
-    .cat-thumb { height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 0.75rem; }
-    .cat-title { font-size: 1rem; font-weight: 700; line-height: 1.4; margin: 0; word-wrap: break-word; }
-
-    /* SIDEBAR & WIDGETS */
-    .sidebar-column { min-width: 0; /* Essential for Ads */ }
-    .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
-    .widget { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-    .widget-title { font-size: 1rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin: 0 0 1rem; }
-    
-    .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .social-btn { 
-      background: var(--btn-bg); color: white; border-radius: 8px; padding: 0.75rem; 
-      display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s; 
-    }
-    .s-count { display: block; font-weight: 700; font-size: 0.9rem; line-height: 1; }
-    .s-name { display: block; font-size: 0.65rem; opacity: 0.9; text-transform: uppercase; }
-
-    /* AD PROTECTION */
-    .ad-widget { text-align: center; }
-    .ad-text { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem; letter-spacing: 1px; }
-    .ad-safe-wrapper { 
-        background: var(--border); 
-        min-height: 250px; 
-        border-radius: 8px; 
-        overflow: hidden; /* CUT OFF OVERFLOWING ADS */
-        display: flex; justify-content: center; align-items: center;
-        width: 100%;
-    }
-
-    .newsletter-box input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; background: var(--bg); color: var(--text); box-sizing: border-box; }
-    .newsletter-box button { width: 100%; padding: 0.75rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
-
-    /* --- RESPONSIVE FIXES --- */
-    
-    /* Tablet/Medium Screens */
-    @media (max-width: 1024px) {
-      .hero-wrapper { grid-template-columns: 1fr; }
-      .hero-side { flex-direction: row; height: 250px; }
-      .main-grid { grid-template-columns: 1fr; }
-      .sidebar-column { display: none; /* Simplify layout on tablet */ }
-    }
-
-    /* Mobile Screens */
-    @media (max-width: 768px) {
-      .hero-wrapper { margin-bottom: 2rem; gap: 1.5rem; }
-      
-      /* Force Stack Layout */
-      .hero-split-card { flex-direction: column; min-height: auto; }
-      .hero-image-col { min-height: 250px; flex: none; width: 100%; }
-      .hero-text-col { padding: 1.5rem; flex: none; }
-      
-      .hero-side { flex-direction: column; height: auto; gap: 1.5rem; }
-      .hero-sub-card { min-height: 220px; }
-      
-      .grid-2-col { grid-template-columns: 1fr; } /* Stack category cards */
-      
-      /* Trending Mobile */
-      .trend-row { flex-direction: column; gap: 0.8rem; }
-      .trend-thumb { width: 100%; height: 200px; }
-      .trend-details { width: 100%; }
-    }
-    
-    #betting-widget { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #111; color: #fff; border-radius: 12px; z-index: 9000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.8rem; overflow: hidden; }
-    .betting-widget-hidden { display: none !important; }
-    .bet-header { background: var(--accent); padding: 10px; display: flex; justify-content: space-between; font-weight: bold; }
-    .bet-body { padding: 10px; max-height: 300px; overflow-y: auto; }
-    .bet-match-row { border-bottom: 1px solid #333; padding: 8px 0; }
-    .bet-teams { display: flex; justify-content: space-between; margin-bottom: 4px; }
-    .bet-odds { display: flex; gap: 10px; color: #aaa; font-size: 0.75rem; }
-    .bet-odds b { color: #fff; }
-    #close-bet-widget { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
   </style>
 </Layout>
