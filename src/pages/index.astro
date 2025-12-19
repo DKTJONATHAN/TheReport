@@ -2,13 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. DATA FETCHING & SORTING
+// 1. DATA FETCHING
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// 2. STORY CIRCLES (Top Carousel)
+// 2. STORY CIRCLES
 const categoryCircles = majorCategories.map(cat => {
   const latest = allPosts.find(p => p.data.category === cat);
   return { type: 'category', label: cat, image: latest?.data.image, link: `/category/${cat.toLowerCase()}` };
@@ -18,15 +18,12 @@ const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
 }));
 const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 
-// 3. HERO SECTION DATA
+// 3. HERO & FEED DATA
 const heroCandidates = allPosts.slice(0, 3);
 const mainStory = heroCandidates[0];
 const subStories = heroCandidates.slice(1, 3);
-
-// 4. MAIN FEED DATA
 const trendingPosts = allPosts.slice(3, 8);
 
-// Social Widget Helper
 const socialStats = [
   { name: 'Fans', count: '12.5k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -60,11 +57,11 @@ const socialStats = [
 
     <main class="main-container">
       
-      {/* --- 2. HERO GRID (Main + Side Stack) --- */}
+      {/* --- 2. HERO GRID --- */}
       {mainStory && (
         <section class="hero-wrapper">
           
-          {/* Main Story (Left - Large) */}
+          {/* Main Story */}
           <div class="hero-main">
             <a href={`/posts/${mainStory.slug}`} class="hero-split-card">
               <div class="hero-image-col">
@@ -77,14 +74,14 @@ const socialStats = [
                 </div>
                 <h1 class="hero-h1">{mainStory.data.title}</h1>
                 <p class="hero-p">
-                  {mainStory.data.description || "Read the full story to get the latest updates on this developing situation."}
+                  {mainStory.data.description || "Click to read the full story."}
                 </p>
                 <span class="cta-link">Read Full Story &rarr;</span>
               </div>
             </a>
           </div>
 
-          {/* Side Stack (Right - 2 Stories) */}
+          {/* Side Stack */}
           <div class="hero-side">
             {subStories.map(post => (
               <a href={`/posts/${post.slug}`} class="hero-sub-card">
@@ -156,11 +153,10 @@ const socialStats = [
           })}
         </div>
 
-        {/* RIGHT: Sidebar */}
+        {/* RIGHT: Sidebar (Sticky) */}
         <aside class="sidebar-column">
           <div class="sticky-wrapper">
             
-            {/* Social Widget */}
             <div class="widget">
               <h3 class="widget-title">Stay Connected</h3>
               <div class="social-grid">
@@ -176,10 +172,10 @@ const socialStats = [
               </div>
             </div>
 
-            {/* Ad Widget */}
+            {/* SAFE AD CONTAINER (Prevents Blowout) */}
             <div class="widget ad-box">
               <span class="ad-text">Advertisement</span>
-              <div class="ad-placeholder">
+              <div class="ad-safe-wrapper">
                  <ins class="adsbygoogle"
                    style="display:block"
                    data-ad-client="ca-pub-9291176772735390"
@@ -190,7 +186,6 @@ const socialStats = [
               </div>
             </div>
 
-            {/* Newsletter */}
             <div class="widget newsletter-box">
               <h3 class="widget-title">Newsletter</h3>
               <p>Get the best of The Mwaniki Report delivered to your inbox.</p>
@@ -207,8 +202,43 @@ const socialStats = [
     </main>
   </div>
 
+  <div id="betting-widget" class="betting-widget-hidden">
+    <div class="bet-header">
+      <div class="bet-title"><span class="live-dot"></span> TOP MATCHES</div>
+      <button id="close-bet-widget">×</button>
+    </div>
+    <div id="bet-matches-list" class="bet-body"><div class="spinner"></div></div>
+    <div class="bet-footer">Powered by API-Football</div>
+  </div>
+
+  <script is:inline>
+    // Betting Widget Logic
+    fetch('/football_odds.php')
+      .then(res => res.json())
+      .then(data => {
+        const widget = document.getElementById('betting-widget');
+        const list = document.getElementById('bet-matches-list');
+        if(data.length > 0 && !sessionStorage.getItem('widgetClosed')) {
+          widget.classList.remove('betting-widget-hidden');
+          let html = '';
+          data.forEach(m => {
+             html += `<div class="bet-match-row">
+                <div class="bet-teams"><span>${m.home}</span> vs <span>${m.away}</span></div>
+                <div class="bet-odds"><b>1: ${m.odds.home}</b> <b>X: ${m.odds.draw}</b> <b>2: ${m.odds.away}</b></div>
+             </div>`;
+          });
+          list.innerHTML = html;
+        }
+      }).catch(e => console.log(e));
+      
+    document.getElementById('close-bet-widget')?.addEventListener('click', () => {
+      document.getElementById('betting-widget').classList.add('betting-widget-hidden');
+      sessionStorage.setItem('widgetClosed', 'true');
+    });
+  </script>
+
   <style>
-    /* VARS */
+    /* VARIABLES */
     :root {
       --bg: #f8fafc;
       --card: #ffffff;
@@ -222,27 +252,46 @@ const socialStats = [
       :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
     }
 
-    /* GLOBAL */
-    body { background: var(--bg); color: var(--text); font-family: var(--font); margin: 0; padding: 0; }
+    /* GLOBAL RESET & PROTECTION */
+    html, body { 
+        width: 100%; 
+        overflow-x: hidden; /* STOP HORIZONTAL SCROLL */
+        margin: 0; padding: 0;
+        background: var(--bg); color: var(--text); font-family: var(--font); 
+    }
+    
+    .page-wrapper { 
+        width: 100%; 
+        max-width: 100%; 
+        overflow-x: hidden; 
+    }
+
     a { text-decoration: none; color: inherit; display: block; }
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .main-container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
+    
+    /* Responsive Container */
+    .main-container { 
+        width: 100%;
+        max-width: 1280px; 
+        margin: 0 auto; 
+        padding: 0 1rem; /* 1rem is safer for mobile ads */
+    }
+    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
 
     /* STORIES */
     .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 1.5rem 0; margin-bottom: 2rem; }
     .stories-scroll { display: flex; gap: 1.5rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
     .stories-scroll::-webkit-scrollbar { display: none; }
     .story-circle { flex: 0 0 auto; text-align: center; width: 80px; cursor: pointer; transition: transform 0.2s; }
-    .story-circle:hover { transform: translateY(-3px); }
     .story-ring { width: 74px; height: 74px; border-radius: 50%; padding: 3px; border: 2px solid var(--border); margin: 0 auto 0.5rem; }
     .is-cat .story-ring { border-color: var(--accent); }
     .story-ring img { border-radius: 50%; border: 3px solid var(--card); }
     .story-title { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-    /* HERO LAYOUT */
+    /* HERO LAYOUT - USING MINMAX TO PREVENT BLOWOUT */
     .hero-wrapper { 
       display: grid; 
-      grid-template-columns: 2fr 1fr; 
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); /* minmax(0) IS CRITICAL */
       gap: 2rem; 
       margin-bottom: 3rem; 
       align-items: stretch;
@@ -250,9 +299,11 @@ const socialStats = [
 
     /* Hero Main - Split */
     .hero-main { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .hero-split-card { display: flex; height: 100%; }
-    .hero-image-col { flex: 1.2; min-height: 400px; position: relative; }
-    .hero-text-col { flex: 1; padding: 2rem; display: flex; flex-direction: column; justify-content: center; }
+    
+    /* Desktop Split */
+    .hero-split-card { display: flex; height: 100%; min-height: 450px; } 
+    .hero-image-col { flex: 1.2; position: relative; min-height: 100%; } 
+    .hero-text-col { flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center; }
     
     .hero-badge-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
     .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
@@ -260,45 +311,53 @@ const socialStats = [
     .badge-glass { background: rgba(0,0,0,0.6); color: white; backdrop-filter: blur(4px); }
     .hero-date { font-size: 0.85rem; color: var(--muted); }
     
-    .hero-h1 { font-size: 2rem; line-height: 1.1; font-weight: 800; margin: 0 0 1rem 0; }
-    .hero-p { font-size: 1rem; line-height: 1.6; color: var(--muted); margin: 0 0 1.5rem 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    /* Text Truncation Safety */
+    .hero-h1 { 
+        font-size: clamp(1.5rem, 2.5vw, 2.5rem); /* Responsive Font Size */
+        line-height: 1.1; font-weight: 800; margin: 0 0 1rem 0; 
+        word-wrap: break-word; /* Prevents long words breaking layout */
+    }
+    .hero-p { font-size: 1.1rem; line-height: 1.6; color: var(--muted); margin: 0 0 1.5rem 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
     .cta-link { font-weight: 700; color: var(--accent); text-transform: uppercase; font-size: 0.85rem; }
 
-    /* Hero Side - Stack */
+    /* Hero Side */
     .hero-side { display: flex; flex-direction: column; gap: 1.5rem; }
     .hero-sub-card { flex: 1; position: relative; border-radius: 12px; overflow: hidden; min-height: 200px; }
     .sub-img { position: absolute; inset: 0; }
     .img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
-    .sub-content { position: absolute; bottom: 0; left: 0; padding: 1.5rem; z-index: 2; width: 100%; }
-    .sub-h3 { color: white; font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .sub-content { position: absolute; bottom: 0; left: 0; padding: 1.5rem; z-index: 2; width: 100%; box-sizing: border-box; }
+    .sub-h3 { color: white; font-size: 1.2rem; font-weight: 700; margin: 0.5rem 0 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); word-wrap: break-word; }
 
-    /* MAIN CONTENT 2-COL */
-    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+    /* CONTENT GRID - SAFE COLUMNS */
+    .main-grid { 
+        display: grid; 
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); /* Safety first */
+        gap: 3rem; 
+    }
     
-    /* Left Feed */
     .feed-block { margin-bottom: 3rem; }
-    .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
-    .block-heading { font-size: 1.25rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase; }
+    .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .block-heading { font-size: 1.3rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem; text-transform: uppercase; }
     .accent-bar { width: 4px; height: 18px; background: var(--accent); display: block; border-radius: 2px; }
     .view-all { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 
+    /* TRENDING LIST */
     .trending-list { display: flex; flex-direction: column; gap: 1.5rem; }
     .trend-row { display: flex; gap: 1rem; align-items: flex-start; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-    .trend-row:last-child { border-bottom: none; }
-    .trend-thumb { width: 130px; height: 90px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-    .trend-details { flex: 1; }
+    .trend-thumb { width: 120px; height: 85px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+    .trend-details { flex: 1; min-width: 0; /* Allows text truncation inside flex */ }
     .trend-cat { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-    .trend-title { font-size: 1.1rem; font-weight: 700; margin: 0.25rem 0 0.5rem; line-height: 1.3; }
+    .trend-title { font-size: 1.1rem; font-weight: 700; margin: 0.25rem 0 0.5rem; line-height: 1.3; word-wrap: break-word; }
     .trend-time { font-size: 0.75rem; color: var(--muted); }
 
-    .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-2-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
     .cat-card:hover .cat-title { color: var(--accent); }
-    .cat-thumb { height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 0.75rem; }
-    .cat-title { font-size: 1rem; font-weight: 700; line-height: 1.4; margin: 0; }
+    .cat-thumb { height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 0.75rem; }
+    .cat-title { font-size: 1rem; font-weight: 700; line-height: 1.4; margin: 0; word-wrap: break-word; }
 
-    /* Right Sidebar */
-    .sidebar-column { min-width: 0; }
-    .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+    /* SIDEBAR & WIDGETS */
+    .sidebar-column { min-width: 0; /* Essential for Ads */ }
+    .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
     .widget { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
     .widget-title { font-size: 1rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin: 0 0 1rem; }
     
@@ -307,31 +366,62 @@ const socialStats = [
       background: var(--btn-bg); color: white; border-radius: 8px; padding: 0.75rem; 
       display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s; 
     }
-    .social-btn:hover { transform: translateY(-2px); opacity: 0.9; }
     .s-count { display: block; font-weight: 700; font-size: 0.9rem; line-height: 1; }
     .s-name { display: block; font-size: 0.65rem; opacity: 0.9; text-transform: uppercase; }
 
-    .ad-placeholder { background: var(--border); height: 250px; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .ad-text { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem; text-align: center; }
+    /* AD PROTECTION */
+    .ad-widget { text-align: center; }
+    .ad-text { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .ad-safe-wrapper { 
+        background: var(--border); 
+        min-height: 250px; 
+        border-radius: 8px; 
+        overflow: hidden; /* CUT OFF OVERFLOWING ADS */
+        display: flex; justify-content: center; align-items: center;
+        width: 100%;
+    }
 
-    .newsletter-box p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; }
-    .newsletter-box input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; background: var(--bg); color: var(--text); }
+    .newsletter-box input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; background: var(--bg); color: var(--text); box-sizing: border-box; }
     .newsletter-box button { width: 100%; padding: 0.75rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
 
-    /* RESPONSIVE */
+    /* --- RESPONSIVE FIXES --- */
+    
+    /* Tablet/Medium Screens */
     @media (max-width: 1024px) {
       .hero-wrapper { grid-template-columns: 1fr; }
       .hero-side { flex-direction: row; height: 250px; }
       .main-grid { grid-template-columns: 1fr; }
-      .sidebar-column { display: none; /* Hide sidebar on tablet/mobile or move below */ }
+      .sidebar-column { display: none; /* Simplify layout on tablet */ }
     }
 
+    /* Mobile Screens */
     @media (max-width: 768px) {
-      .hero-split-card { flex-direction: column; }
-      .hero-image-col { min-height: 250px; }
-      .hero-side { flex-direction: column; height: auto; }
-      .hero-sub-card { min-height: 200px; }
-      .grid-2-col { grid-template-columns: 1fr; }
+      .hero-wrapper { margin-bottom: 2rem; gap: 1.5rem; }
+      
+      /* Force Stack Layout */
+      .hero-split-card { flex-direction: column; min-height: auto; }
+      .hero-image-col { min-height: 250px; flex: none; width: 100%; }
+      .hero-text-col { padding: 1.5rem; flex: none; }
+      
+      .hero-side { flex-direction: column; height: auto; gap: 1.5rem; }
+      .hero-sub-card { min-height: 220px; }
+      
+      .grid-2-col { grid-template-columns: 1fr; } /* Stack category cards */
+      
+      /* Trending Mobile */
+      .trend-row { flex-direction: column; gap: 0.8rem; }
+      .trend-thumb { width: 100%; height: 200px; }
+      .trend-details { width: 100%; }
     }
+    
+    #betting-widget { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #111; color: #fff; border-radius: 12px; z-index: 9000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.8rem; overflow: hidden; }
+    .betting-widget-hidden { display: none !important; }
+    .bet-header { background: var(--accent); padding: 10px; display: flex; justify-content: space-between; font-weight: bold; }
+    .bet-body { padding: 10px; max-height: 300px; overflow-y: auto; }
+    .bet-match-row { border-bottom: 1px solid #333; padding: 8px 0; }
+    .bet-teams { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .bet-odds { display: flex; gap: 10px; color: #aaa; font-size: 0.75rem; }
+    .bet-odds b { color: #fff; }
+    #close-bet-widget { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
   </style>
 </Layout>
