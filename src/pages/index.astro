@@ -2,32 +2,25 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. DATA FETCHING & GLOBAL SORT
-// Get all posts and sort them by date (Newest first)
+// 1. DATA FETCHING & SORTING
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-// 2. DEFINE MAJOR CATEGORIES (The "Big 5" Ranking Order)
-// You can change the order here to determine which section appears first on the page
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// 3. LOGIC: STORY CIRCLES (Diversity Sampler)
-// Strategy: Get the *single latest* post from each major category
-const storyPosts = majorCategories.map(cat => {
-  return allPosts.find(post => post.data.category === cat);
-}).filter(Boolean); // Remove undefined if a category has no posts yet
+// 2. STORY CIRCLES: INCREASED TO 12 TO FILL DESKTOP
+// Strategy: Take the absolute latest 12 posts site-wide for the top carousel
+const storyPosts = allPosts.slice(0, 12);
 
-// 4. LOGIC: HERO SECTION (Breaking News)
-// Strategy: The absolute latest 3 posts site-wide, regardless of category
+// 3. HERO GRID: ABSOLUTE LATEST NEWS
 const heroCandidates = allPosts.slice(0, 3);
 const mainStory = heroCandidates[0];
 const subStories = heroCandidates.slice(1, 3);
 
-// 5. LOGIC: TRENDING BAR
-// Strategy: Posts 4-8 (The next latest ones after the Hero)
+// 4. TRENDING BAR
 const trendingPosts = allPosts.slice(3, 8);
 
-// Helper for Sidebar Widget (Static for visual impact)
+// Helper for Social Widget
 const socialStats = [
   { name: 'Fans', count: '12.5k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -43,7 +36,7 @@ const socialStats = [
   
   <div class="page-wrapper">
     
-    {/* --- 1. STORY CIRCLES: LATEST FROM EACH CATEGORY --- */}
+    {/* --- 1. STORY CIRCLES (Expanded to fill desktop) --- */}
     <section class="stories-section">
       <div class="stories-container">
         {storyPosts.map(post => (
@@ -51,7 +44,7 @@ const socialStats = [
             <div class="story-ring">
               <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="eager" />
             </div>
-            <span class="story-title">{post.data.category}</span>
+            <span class="story-title">{post.data.category || 'News'}</span>
           </a>
         ))}
       </div>
@@ -59,7 +52,7 @@ const socialStats = [
 
     <main class="main-container">
       
-      {/* --- 2. HERO GRID: ABSOLUTE LATEST NEWS --- */}
+      {/* --- 2. HERO GRID --- */}
       {mainStory && (
         <section class="hero-grid">
           {/* Main Article */}
@@ -72,6 +65,12 @@ const socialStats = [
               <div class="hero-content">
                 <span class="badge badge-primary">Top Story</span>
                 <h1 class="hero-headline">{mainStory.data.title}</h1>
+                
+                {/* ADDED DESCRIPTION SNIPPET HERE */}
+                <p class="hero-snippet">
+                  {mainStory.data.description || "Click to read the full story and get the latest updates on this developing situation."}
+                </p>
+
                 <div class="hero-meta">
                   <span class="hero-author">Jonathan Mwaniki</span>
                   <span class="hero-time">{new Date(mainStory.data.date).toLocaleDateString()}</span>
@@ -80,7 +79,7 @@ const socialStats = [
             </a>
           </article>
 
-          {/* Sub Stories (2nd and 3rd Latest) */}
+          {/* Sub Stories */}
           <div class="hero-side">
             {subStories.map(post => (
               <article class="hero-sub" key={post.slug}>
@@ -100,13 +99,13 @@ const socialStats = [
         </section>
       )}
 
-      {/* --- 3. MAIN CONTENT: RANKED BY CATEGORY --- */}
+      {/* --- 3. MAIN CONTENT --- */}
       <div class="content-grid">
         
-        {/* LEFT COLUMN: The Feed */}
+        {/* LEFT COLUMN */}
         <div class="content-left">
           
-          {/* A. Trending Strip (Posts 4-8) */}
+          {/* Trending Strip */}
           <section class="block-section">
             <div class="section-header">
               <h2 class="section-title">
@@ -131,10 +130,8 @@ const socialStats = [
             </div>
           </section>
 
-          {/* B. CATEGORY BLOCKS (Politics, Business, etc.) */}
-          {/* We loop through majorCategories to ensure specific ranking order */}
+          {/* Category Blocks */}
           {majorCategories.map(category => {
-             // Get latest 4 posts for this category, excluding the main hero story to avoid duplicates
              const catPosts = allPosts
                 .filter(p => p.data.category === category && p.slug !== mainStory?.slug)
                 .slice(0, 4);
@@ -207,6 +204,7 @@ const socialStats = [
     </main>
   </div>
 
+  {/* Betting Widget */}
   <div id="betting-widget" class="betting-widget-hidden">
     <div class="bet-header">
       <div class="bet-title"><span class="live-dot"></span> TOP MATCHES</div>
@@ -271,8 +269,11 @@ const socialStats = [
 
     /* STORIES CAROUSEL */
     .stories-section { background: var(--card-bg); padding: 1.5rem 0; border-bottom: 1px solid var(--border); overflow: hidden; }
-    .stories-container { display: flex; gap: 1.5rem; overflow-x: auto; padding: 0 1.5rem; scrollbar-width: none; }
+    
+    /* Filled gap logic: more items + centered alignment if needed */
+    .stories-container { display: flex; gap: 1.8rem; overflow-x: auto; padding: 0 1.5rem; scrollbar-width: none; }
     .stories-container::-webkit-scrollbar { display: none; }
+    
     .story-circle { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-width: 80px; cursor: pointer; }
     .story-ring { width: 76px; height: 76px; border-radius: 50%; padding: 3px; border: 2px solid var(--accent); position: relative; }
     .story-ring img { border-radius: 50%; border: 3px solid var(--card-bg); }
@@ -280,17 +281,33 @@ const socialStats = [
 
     /* HERO GRID */
     .hero-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; height: 500px; margin: 2rem 0 3rem; }
-    @media (max-width: 768px) { .hero-grid { grid-template-columns: 1fr; height: auto; } .hero-main { height: 400px; } .hero-side { height: auto; flex-direction: row; } }
-    @media (max-width: 480px) { .hero-side { flex-direction: column; } .hero-sub { height: 200px; } }
+    
+    @media (max-width: 768px) { 
+        .hero-grid { grid-template-columns: 1fr; height: auto; margin-bottom: 2rem; } /* Added margin bottom */
+        .hero-main { height: 450px; } 
+        .hero-side { height: auto; flex-direction: row; } 
+    }
+    @media (max-width: 480px) { 
+        .hero-side { flex-direction: column; gap: 1.5rem; } /* Increased Gap Mobile */
+        .hero-sub { height: 220px; } 
+    }
+
     .hero-link { display: block; height: 100%; position: relative; border-radius: 12px; overflow: hidden; }
     .hero-link:hover img { transform: scale(1.05); transition: 0.5s; }
     .hero-img-wrap { width: 100%; height: 100%; position: absolute; }
-    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 40%, rgba(0,0,0,0.8)); }
-    .hero-content, .hero-content-small { position: absolute; bottom: 0; left: 0; padding: 2rem; color: white; width: 100%; }
-    .hero-content-small { padding: 1.5rem; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 20%, rgba(0,0,0,0.9)); }
+    
+    .hero-content { position: absolute; bottom: 0; left: 0; padding: 2.5rem; color: white; width: 100%; z-index: 2; }
+    .hero-content-small { position: absolute; bottom: 0; left: 0; padding: 1.5rem; color: white; width: 100%; z-index: 2; }
+    
     .badge { background: var(--accent); color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: inline-block; }
     .badge-secondary { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
-    .hero-headline { font-size: 2.2rem; line-height: 1.1; font-weight: 800; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    
+    .hero-headline { font-size: 2.2rem; line-height: 1.1; font-weight: 800; margin-bottom: 0.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    
+    /* HERO SNIPPET STYLE */
+    .hero-snippet { font-size: 1.1rem; line-height: 1.4; margin-bottom: 1rem; color: rgba(255,255,255,0.9); max-width: 90%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
     .hero-sub-title { font-size: 1.2rem; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .hero-meta { font-size: 0.8rem; opacity: 0.9; }
 
@@ -298,25 +315,32 @@ const socialStats = [
     .content-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
 
-    .block-section { margin-bottom: 3rem; }
+    .block-section { margin-bottom: 4rem; } /* Increased bottom margin */
     .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
     .section-title { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin: 0; }
     .title-accent { width: 4px; height: 20px; background: var(--accent); display: inline-block; border-radius: 2px; }
     .see-more { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 
-    /* LISTS & GRIDS */
-    .trending-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    /* LISTS & GRIDS (MOBILE SPACING FIXES) */
+    .trending-list { display: flex; flex-direction: column; gap: 2rem; } /* Increased Gap */
     .trend-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
     .trend-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
     .trend-link { display: flex; align-items: stretch; gap: 1.5rem; }
+    
+    @media (max-width: 480px) {
+        .trend-link { flex-direction: column; gap: 0; }
+        .trend-img { width: 100%; height: 180px; }
+        .trend-info { padding: 1.2rem; }
+    }
+
     .trend-img { width: 140px; height: 100px; flex-shrink: 0; }
     .trend-info { padding: 1rem 1rem 1rem 0; display: flex; flex-direction: column; justify-content: center; }
     .trend-cat { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
     .trend-title { font-size: 1.1rem; font-weight: 700; margin: 0.3rem 0; line-height: 1.3; }
     .trend-date { font-size: 0.75rem; color: var(--muted); }
 
-    .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-    .cat-card { text-decoration: none; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; } /* Increased Gap */
+    .cat-card { text-decoration: none; display: block; margin-bottom: 1rem; } /* Mobile margin fix */
     .cat-img { height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 0.8rem; }
     .cat-title { font-size: 1rem; font-weight: 700; line-height: 1.4; }
 
