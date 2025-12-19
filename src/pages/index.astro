@@ -2,232 +2,231 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. Get all posts sorted by date (newest first)
+// 1. DATA FETCHING
 const allPosts = (await getCollection('posts'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-// 2. Data Slicing for the "Bento" Layout
-// Main Featured Story (Big Left)
-const mainStory = allPosts[0];
+// 2. DATA SLICING
+// Top Stories (Circles) - First 6 posts
+const storyPosts = allPosts.slice(0, 6);
 
-// Secondary Stories (Right Side Stack) - Next 2 posts
-const subStories = allPosts.slice(1, 3);
+// Hero Bento Grid - Next 3 posts (1 Main + 2 Sub)
+const mainStory = allPosts[6];
+const subStories = allPosts.slice(7, 9);
 
-// Trending Strip - Next 4 posts
-const trendingPosts = allPosts.slice(3, 7);
+// Trending / Latest List - Next 6 posts
+const trendingPosts = allPosts.slice(9, 15);
 
-// 3. Unique Categories for the rest of the page
+// Categories for the feed
 const categories = [...new Set(allPosts.map(post => post.data.category))].filter(Boolean);
 
-// Related articles helper
-const relatedArticlesByCategory = {};
-for (const category of categories) {
-  relatedArticlesByCategory[category] = allPosts
-    .filter(post => post.data.category === category && post.slug !== mainStory?.slug)
-    .slice(0, 3);
-}
+// Helper for Social Widget
+const socialStats = [
+  { name: 'Fans', count: '12.5k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
+  { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
+  { name: 'Subs', count: '8.2k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
+  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
+];
 ---
 
 <Layout 
   title="Breaking News Kenya Today | Latest Updates & Headlines | Jonathan Mwaniki" 
   description="Stay updated with the latest breaking news from Kenya including politics, sports, business, entertainment and trending stories across Nairobi and the entire country."
 >
-  <meta name="keywords" content="Kenya news today, breaking news Kenya, Nairobi latest news, Kenyan politics, Kenya sports news, Kenya entertainment updates, business news Kenya, trending Kenya stories, Jonathan Mwaniki news"/>
-  <meta name="author" content="Jonathan Mwaniki" />
-  <meta property="og:title" content="Breaking News Kenya Today | Latest Headlines | Jonathan Mwaniki" />
-  <meta property="og:description" content="Your trusted source for latest news in Kenya. Breaking Kenya news, politics, entertainment, sports, and business updates." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://jonathanmwaniki.co.ke" />
-  <meta property="og:site_name" content="Jonathan Mwaniki News" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Breaking News Kenya Today | Jonathan Mwaniki" />
-  <meta name="twitter:description" content="Latest breaking news from Kenya including trending stories from Nairobi and across the country." />
-
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
-
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "NewsMediaOrganization",
-      "name": "Jonathan Mwaniki News",
-      "url": "https://jonathanmwaniki.co.ke",
-      "description": "Kenya's premier source for breaking news, politics, entertainment, and trending stories",
-      "sameAs": [
-        "https://twitter.com/maestropuns",
-        "https://facebook.com/jonathanmwaniki"
-      ]
-    }
-  </script>
-
-  <main class="main-container">
+  
+  <div class="page-wrapper">
     
-    {/* --- MODERN MAGAZINE HERO GRID (BENTO STYLE) --- */}
-    {mainStory && (
-      <section class="hero-grid">
-        {/* Main Left Article */}
-        <article class="hero-main">
-          <a href={`/posts/${mainStory.slug}`} class="hero-link" aria-label={`Top story: ${mainStory.data.title}`}>
-            <div class="hero-img-wrap">
-              <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
-              <div class="hero-overlay"></div>
+    {/* --- 1. INSTA-STORIES CAROUSEL (NEW!) --- */}
+    <section class="stories-section">
+      <div class="stories-container">
+        {storyPosts.map(post => (
+          <a href={`/posts/${post.slug}`} class="story-circle">
+            <div class="story-ring">
+              <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="eager" />
             </div>
-            <div class="hero-content">
-              <span class="badge badge-primary">Top Story</span>
-              <h1 class="hero-headline">{mainStory.data.title}</h1>
-              <p class="hero-desc">{mainStory.data.description}</p>
-              <span class="hero-time">
-                {new Date(mainStory.data.date).toLocaleDateString('en-US', { hour: '2-digit', minute:'2-digit' })}
-              </span>
-            </div>
+            <span class="story-title">{post.data.category || 'News'}</span>
           </a>
-        </article>
+        ))}
+      </div>
+    </section>
 
-        {/* Right Side Stack */}
-        <div class="hero-side">
-          {subStories.map(post => (
-            <article class="hero-sub" key={post.slug}>
-              <a href={`/posts/${post.slug}`} class="hero-link">
-                <div class="hero-img-wrap">
-                  <img src={post.data.image} alt={post.data.title} loading="eager" />
-                  <div class="hero-overlay"></div>
-                </div>
-                <div class="hero-content-small">
-                  <span class="badge badge-secondary">{post.data.category}</span>
-                  <h3 class="hero-sub-title">{post.data.title}</h3>
-                </div>
-              </a>
-            </article>
-          ))}
-        </div>
-      </section>
-    )}
-
-    {/* --- TRENDING BAR (UPDATED WITH GRAPH ICON & IMAGES) --- */}
-    {trendingPosts.length > 0 && (
-      <section class="trending-section">
-        <div class="section-header">
-          <h2 class="section-heading">
-            {/* Graph Icon SVG */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-graph"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-            Trending Now
-          </h2>
-        </div>
-        <div class="trending-grid">
-          {trendingPosts.map(post => (
-            <a href={`/posts/${post.slug}`} class="trending-card" key={post.slug}>
-              <div class="trending-img-wrap">
-                 <img src={post.data.image} alt={post.data.title} loading="lazy" />
+    <main class="main-container">
+      
+      {/* --- 2. BENTO HERO GRID --- */}
+      {mainStory && (
+        <section class="hero-grid">
+          {/* Main Article */}
+          <article class="hero-main">
+            <a href={`/posts/${mainStory.slug}`} class="hero-link">
+              <div class="hero-img-wrap">
+                <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
+                <div class="hero-overlay"></div>
               </div>
-              <div class="trending-info">
-                <span class="trending-cat">{post.data.category}</span>
-                <h4 class="trending-title">{post.data.title}</h4>
+              <div class="hero-content">
+                <span class="badge badge-primary">Top Story</span>
+                <h1 class="hero-headline">{mainStory.data.title}</h1>
+                <div class="hero-meta">
+                  <span class="hero-author">Jonathan Mwaniki</span>
+                  <span class="hero-time">{new Date(mainStory.data.date).toLocaleDateString()}</span>
+                </div>
               </div>
             </a>
-          ))}
-        </div>
-      </section>
-    )}
+          </article>
 
-    {/* --- CATEGORY SECTIONS --- */}
-    {categories.map(category => {
-      const categoryPosts = allPosts
-        .filter(post => post.data.category === category)
-        .slice(0, 3); // Limit to 3 per category block
-
-      const relatedArticles = relatedArticlesByCategory[category];
-      
-      return categoryPosts.length > 0 ? (
-        <section class="category-block" key={category}>
-          <div class="category-header-wrap">
-            <h2 class="category-heading">{category} News</h2>
-            <a href={`/category/${category.toLowerCase()}`} class="see-more-link">See All &rarr;</a>
-          </div>
-
-          <div class="standard-grid">
-            {categoryPosts.map(post => (
-              <article class="std-card" key={post.slug}>
-                <a href={`/posts/${post.slug}`} class="std-link">
-                  <div class="std-img-wrap">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
+          {/* Sub Stories */}
+          <div class="hero-side">
+            {subStories.map(post => (
+              <article class="hero-sub" key={post.slug}>
+                <a href={`/posts/${post.slug}`} class="hero-link">
+                  <div class="hero-img-wrap">
+                    <img src={post.data.image} alt={post.data.title} loading="eager" />
+                    <div class="hero-overlay"></div>
                   </div>
-                  <div class="std-content">
-                    <div class="std-meta">
-                      <span class="std-date">{new Date(post.data.date).toLocaleDateString()}</span>
-                    </div>
-                    <h3 class="std-title">{post.data.title}</h3>
+                  <div class="hero-content-small">
+                    <span class="badge badge-secondary">{post.data.category}</span>
+                    <h3 class="hero-sub-title">{post.data.title}</h3>
                   </div>
                 </a>
               </article>
             ))}
           </div>
         </section>
-      ) : null;
-    })}
+      )}
 
-    {allPosts.length === 0 && (
-      <div class="empty-state">
-        <h2>No news available</h2>
-        <p>Check back soon for the latest Kenyan news and updates!</p>
+      {/* --- 3. TWO-COLUMN LAYOUT (Content + Sidebar) --- */}
+      <div class="content-grid">
+        
+        {/* LEFT COLUMN: Trending & Categories */}
+        <div class="content-left">
+          
+          {/* Trending Section */}
+          <section class="block-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                <span class="title-accent"></span> Trending Now
+              </h2>
+            </div>
+            <div class="trending-list">
+              {trendingPosts.map(post => (
+                <article class="trend-card">
+                  <a href={`/posts/${post.slug}`} class="trend-link">
+                    <div class="trend-img">
+                      <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                    </div>
+                    <div class="trend-info">
+                      <span class="trend-cat">{post.data.category}</span>
+                      <h3 class="trend-title">{post.data.title}</h3>
+                      <span class="trend-date">{new Date(post.data.date).toLocaleDateString()}</span>
+                    </div>
+                  </a>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* Categories Blocks */}
+          {categories.slice(0, 3).map(category => {
+             const catPosts = allPosts.filter(p => p.data.category === category).slice(0, 3);
+             return (
+               <section class="block-section" key={category}>
+                 <div class="section-header">
+                   <h2 class="section-title"><span class="title-accent"></span> {category}</h2>
+                   <a href={`/category/${category.toLowerCase()}`} class="see-more">View All</a>
+                 </div>
+                 <div class="cat-grid">
+                   {catPosts.map(post => (
+                     <a href={`/posts/${post.slug}`} class="cat-card">
+                       <div class="cat-img"><img src={post.data.image} alt={post.data.title} loading="lazy"/></div>
+                       <h4 class="cat-title">{post.data.title}</h4>
+                     </a>
+                   ))}
+                 </div>
+               </section>
+             )
+          })}
+
+        </div>
+
+        {/* RIGHT COLUMN: Sidebar */}
+        <aside class="content-right">
+          <div class="sticky-sidebar">
+            
+            {/* SOCIAL COUNTER WIDGET (NEW!) */}
+            <div class="widget social-widget">
+              <h3 class="widget-title">Stay Connected</h3>
+              <div class="social-grid">
+                {socialStats.map(s => (
+                  <a href="#" class="social-box" style={`--bg-color: ${s.bg}`}>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d={s.icon}/></svg>
+                    <span class="social-count">{s.count}</span>
+                    <span class="social-name">{s.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* AD WIDGET */}
+            <div class="widget ad-widget">
+              <span class="ad-label">Advertisement</span>
+              <div class="ad-box">
+                 <ins class="adsbygoogle"
+                   style="display:block"
+                   data-ad-client="ca-pub-9291176772735390"
+                   data-ad-slot="1358657931"
+                   data-ad-format="auto"
+                   data-full-width-responsive="true"></ins>
+                 <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+              </div>
+            </div>
+
+            {/* NEWSLETTER WIDGET */}
+            <div class="widget newsletter-widget">
+              <h3 class="widget-title">Newsletter</h3>
+              <p>Get the latest Mwaniki Report updates in your inbox.</p>
+              <form class="news-form" onsubmit="event.preventDefault();">
+                <input type="email" placeholder="Your email" required />
+                <button type="submit">Subscribe</button>
+              </form>
+            </div>
+
+          </div>
+        </aside>
+
       </div>
-    )}
-  </main>
+    </main>
+  </div>
 
-  {/* --- BETTING WIDGET (Preserved) --- */}
+  {/* FOOTBALL ODDS WIDGET */}
   <div id="betting-widget" class="betting-widget-hidden">
     <div class="bet-header">
-      <div class="bet-title">
-        <span class="live-dot"></span> TOP MATCHES
-      </div>
-      <button id="close-bet-widget" aria-label="Close">×</button>
+      <div class="bet-title"><span class="live-dot"></span> TOP MATCHES</div>
+      <button id="close-bet-widget">×</button>
     </div>
-    <div id="bet-matches-list" class="bet-body">
-      <div class="bet-loading">
-        <div class="spinner"></div> Loading odds...
-      </div>
-    </div>
+    <div id="bet-matches-list" class="bet-body"><div class="spinner"></div></div>
     <div class="bet-footer">Powered by API-Football</div>
   </div>
 
   <script is:inline>
-    // Fetch Data from your PHP Proxy
+    // Simple Betting Logic (Preserved)
     fetch('/football_odds.php')
       .then(res => res.json())
       .then(data => {
         const widget = document.getElementById('betting-widget');
         const list = document.getElementById('bet-matches-list');
-
         if(data.length > 0 && !sessionStorage.getItem('widgetClosed')) {
           widget.classList.remove('betting-widget-hidden');
           let html = '';
-
-          data.forEach(match => {
-            html += `
-              <div class="bet-match-row">
-                <div class="bet-teams">
-                   <div class="bet-team">
-                     <img src="${match.home_logo}" width="18" height="18" alt=""> 
-                     <span>${match.home}</span>
-                   </div>
-                   <div class="bet-team">
-                     <img src="${match.away_logo}" width="18" height="18" alt=""> 
-                     <span>${match.away}</span>
-                   </div>
-                   <div class="bet-meta">${match.time} • ${match.league}</div>
-                </div>
-                <div class="bet-odds">
-                   <div class="odd-box"><span>1</span><b>${match.odds.home}</b></div>
-                   <div class="odd-box"><span>X</span><b>${match.odds.draw}</b></div>
-                   <div class="odd-box"><span>2</span><b>${match.odds.away}</b></div>
-                </div>
-              </div>
-            `;
+          data.forEach(m => {
+             html += `<div class="bet-match-row">
+                <div class="bet-teams"><span>${m.home}</span> vs <span>${m.away}</span></div>
+                <div class="bet-odds"><b>1: ${m.odds.home}</b> <b>X: ${m.odds.draw}</b> <b>2: ${m.odds.away}</b></div>
+             </div>`;
           });
           list.innerHTML = html;
         }
-      })
-      .catch(err => { console.log('Widget error:', err); });
-
-    document.getElementById('close-bet-widget').addEventListener('click', () => {
+      }).catch(e => console.log(e));
+      
+    document.getElementById('close-bet-widget')?.addEventListener('click', () => {
       document.getElementById('betting-widget').classList.add('betting-widget-hidden');
       sessionStorage.setItem('widgetClosed', 'true');
     });
@@ -236,242 +235,137 @@ for (const category of categories) {
   <style>
     /* VARIABLES */
     :root {
-      --bg-color: #f8f9fa;
-      --text-color: #1a1a1a;
-      --subtext-color: #555;
-      --accent: #dc2626; /* Kenyan Red */
+      --bg: #f3f4f6;
       --card-bg: #ffffff;
-      --border-color: #e5e7eb;
-      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-      --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
-      --font-main: system-ui, -apple-system, sans-serif;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #dc2626;
+      --border: #e5e7eb;
+      --font-head: system-ui, -apple-system, sans-serif;
     }
-
+    
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #111827;
-        --text-color: #f3f4f6;
-        --subtext-color: #9ca3af;
-        --accent: #ef4444;
+        --bg: #111827;
         --card-bg: #1f2937;
-        --border-color: #374151;
-        --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #374151;
       }
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font-main); background: var(--bg-color); color: var(--text-color); }
-    img { max-width: 100%; display: block; }
-    a { text-decoration: none; color: inherit; transition: color 0.2s; }
-
+    /* RESETS */
+    body { background: var(--bg); color: var(--text); font-family: var(--font-head); overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .page-wrapper { max-width: 100%; overflow: hidden; }
     .main-container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
 
-    /* --- 1. HERO GRID (BENTO) --- */
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1.5rem;
-      height: 500px;
-      margin-bottom: 3rem;
+    /* --- 1. STORIES CAROUSEL --- */
+    .stories-section { background: var(--card-bg); padding: 1.5rem 0; border-bottom: 1px solid var(--border); overflow: hidden; }
+    .stories-container {
+      display: flex; gap: 1.5rem; overflow-x: auto; padding: 0 1.5rem;
+      scrollbar-width: none; /* Hide scrollbar Firefox */
     }
+    .stories-container::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+    
+    .story-circle { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-width: 80px; cursor: pointer; }
+    .story-ring {
+      width: 76px; height: 76px; border-radius: 50%; padding: 3px;
+      border: 2px solid var(--accent); position: relative;
+    }
+    .story-ring img { border-radius: 50%; border: 3px solid var(--card-bg); }
+    .story-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
 
-    .hero-link { display: block; height: 100%; width: 100%; position: relative; overflow: hidden; border-radius: 16px; }
-    
-    .hero-img-wrap { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
-    .hero-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-    .hero-link:hover .hero-img-wrap img { transform: scale(1.05); }
-    
-    .hero-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
-      z-index: 2;
-    }
+    /* --- 2. HERO BENTO --- */
+    .hero-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; height: 500px; margin: 2rem 0 3rem; }
+    @media (max-width: 768px) { .hero-grid { grid-template-columns: 1fr; height: auto; } .hero-main { height: 400px; } .hero-side { height: auto; flex-direction: row; } }
+    @media (max-width: 480px) { .hero-side { flex-direction: column; } .hero-sub { height: 200px; } }
 
-    /* Main Story Specifics */
-    .hero-main { height: 100%; }
-    .hero-content {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      padding: 2.5rem;
-      z-index: 3;
-      width: 100%;
-      color: white;
-    }
+    .hero-link { display: block; height: 100%; position: relative; border-radius: 12px; overflow: hidden; }
+    .hero-link:hover img { transform: scale(1.05); transition: 0.5s; }
+    .hero-img-wrap { width: 100%; height: 100%; position: absolute; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 40%, rgba(0,0,0,0.8)); }
     
-    .hero-headline {
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1rem;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
+    .hero-content, .hero-content-small { position: absolute; bottom: 0; left: 0; padding: 2rem; color: white; width: 100%; }
+    .hero-content-small { padding: 1.5rem; }
     
-    .hero-desc {
-      font-size: 1.1rem;
-      margin-bottom: 1rem;
-      color: rgba(255,255,255,0.9);
-      max-width: 90%;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    .badge { background: var(--accent); color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: inline-block; }
+    .badge-secondary { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
+    
+    .hero-headline { font-size: 2.2rem; line-height: 1.1; font-weight: 800; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .hero-sub-title { font-size: 1.2rem; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .hero-meta { font-size: 0.8rem; opacity: 0.9; }
 
-    /* Side Stories Specifics */
-    .hero-side { display: flex; flex-direction: column; gap: 1.5rem; height: 100%; }
-    .hero-sub { flex: 1; position: relative; min-height: 0; }
-    
-    .hero-content-small {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      padding: 1.5rem;
-      z-index: 3;
-      color: white;
-    }
-    
-    .hero-sub-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      line-height: 1.3;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
+    /* --- 3. MAIN CONTENT GRID (Sidebar Layout) --- */
+    .content-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
 
-    /* Badges */
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 99px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.75rem;
-    }
-    .badge-primary { background: var(--accent); color: white; }
-    .badge-secondary { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: white; border: 1px solid rgba(255,255,255,0.3); }
+    /* SECTIONS */
+    .block-section { margin-bottom: 3rem; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .section-title { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+    .title-accent { width: 4px; height: 20px; background: var(--accent); display: inline-block; border-radius: 2px; }
+    .see-more { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 
-    /* --- 2. TRENDING SECTION (UPDATED) --- */
-    .trending-section { margin-bottom: 4rem; }
-    .section-header { border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; display: flex; align-items: center; }
-    .section-heading { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; color: var(--text-color); display: flex; align-items: center; gap: 0.75rem; }
-    .icon-graph { stroke: var(--accent); }
-    
-    .trending-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Slightly wider minimum */
-      gap: 1.5rem;
-    }
-    
-    .trending-card {
-      background: var(--card-bg);
-      padding: 0.75rem;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      display: flex;
-      gap: 1rem;
-      align-items: center; /* Center items vertically */
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .trending-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent); }
-    
-    /* New Trending Image Styles */
-    .trending-img-wrap {
-      width: 80px;
-      height: 80px;
-      flex-shrink: 0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .trending-img-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+    /* TRENDING LIST */
+    .trending-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    .trend-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
+    .trend-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .trend-link { display: flex; align-items: stretch; gap: 1.5rem; }
+    .trend-img { width: 140px; height: 100px; flex-shrink: 0; }
+    .trend-info { padding: 1rem 1rem 1rem 0; display: flex; flex-direction: column; justify-content: center; }
+    .trend-cat { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .trend-title { font-size: 1.1rem; font-weight: 700; margin: 0.3rem 0; line-height: 1.3; }
+    .trend-date { font-size: 0.75rem; color: var(--muted); }
 
-    .trending-info { flex: 1; }
-    .trending-cat { font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
-    .trending-title { font-size: 0.95rem; font-weight: 700; line-height: 1.3; }
+    /* CATEGORY GRID */
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+    .cat-card { text-decoration: none; }
+    .cat-img { height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 0.8rem; }
+    .cat-title { font-size: 1rem; font-weight: 700; line-height: 1.4; }
 
-    /* --- 3. STANDARD GRID (Categories) --- */
-    .category-block { margin-bottom: 4rem; }
-    .category-header-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-left: 5px solid var(--accent); padding-left: 1rem; }
-    .category-heading { font-size: 1.75rem; font-weight: 700; color: var(--text-color); }
-    .see-more-link { font-size: 0.9rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.25rem; }
-    .see-more-link:hover { text-decoration: underline; }
-
-    .standard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 2rem;
-    }
+    /* --- SIDEBAR WIDGETS --- */
+    .content-right { min-width: 0; }
+    .sticky-sidebar { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2.5rem; }
     
-    .std-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
-    .std-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-    .std-img-wrap { height: 200px; overflow: hidden; }
-    .std-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-    .std-card:hover .std-img-wrap img { transform: scale(1.1); }
+    .widget-title { font-size: 1.1rem; font-weight: 800; border-bottom: 2px solid var(--text); padding-bottom: 0.5rem; margin-bottom: 1.2rem; text-transform: uppercase; }
     
-    .std-content { padding: 1.25rem; }
-    .std-meta { font-size: 0.8rem; color: var(--subtext-color); margin-bottom: 0.5rem; }
-    .std-title { font-size: 1.25rem; font-weight: 700; line-height: 1.3; color: var(--text-color); }
+    /* Social Widget */
+    .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .social-box {
+      background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 1rem; border-radius: 8px; transition: 0.2s; color: var(--text); position: relative; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .social-box:hover { background: var(--bg-color); color: white; border-color: transparent; }
+    .social-box::before { content:''; position: absolute; inset: 0; background: var(--bg-color); z-index: 0; opacity: 0; transition: 0.3s; }
+    .social-box:hover::before { opacity: 1; }
+    .social-box svg, .social-box span { position: relative; z-index: 1; }
+    .social-count { font-weight: 800; font-size: 1.1rem; margin-top: 0.3rem; }
+    .social-name { font-size: 0.7rem; text-transform: uppercase; opacity: 0.8; }
 
-    /* --- RESPONSIVE --- */
-    @media (max-width: 768px) {
-      .main-container { padding: 1rem; }
-      
-      .hero-grid {
-        grid-template-columns: 1fr;
-        height: auto;
-        gap: 1rem;
-      }
-      .hero-main { height: 400px; }
-      .hero-side { height: auto; flex-direction: row; gap: 1rem; }
-      .hero-sub { height: 200px; }
-      
-      .hero-headline { font-size: 1.75rem; }
-      .hero-desc { display: none; }
-      .category-heading { font-size: 1.4rem; }
-    }
-    
-    @media (max-width: 480px) {
-      .hero-side { flex-direction: column; }
-      .hero-sub { height: 180px; }
-      .trending-grid { grid-template-columns: 1fr; }
-      .trending-img-wrap { width: 70px; height: 70px; } /* Slightly smaller on very small screens */
-    }
+    /* Ad Widget */
+    .ad-widget { text-align: center; }
+    .ad-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .ad-box { background: var(--border); min-height: 250px; display: flex; align-items: center; justify-content: center; border-radius: 8px; overflow: hidden; }
 
-    /* --- BETTING WIDGET STYLES (PRESERVED) --- */
-    #betting-widget {
-      position: fixed; bottom: 20px; right: 20px; width: 320px;
-      background: rgba(22, 22, 22, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 10000;
-      font-family: 'Segoe UI', sans-serif; color: #fff;
-      overflow: hidden; animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+    /* Newsletter Widget */
+    .newsletter-widget { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+    .newsletter-widget p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; }
+    .news-form input { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; background: var(--bg); color: var(--text); }
+    .news-form button { width: 100%; padding: 0.7rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
+    .news-form button:hover { background: #b91c1c; }
+
+    /* BETTING WIDGET STYLES */
+    #betting-widget { position: fixed; bottom: 20px; right: 20px; width: 300px; background: #111; color: #fff; border-radius: 12px; z-index: 9000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.8rem; overflow: hidden; }
     .betting-widget-hidden { display: none !important; }
-    @keyframes slideIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .bet-header { background: linear-gradient(90deg, #dc2626, #b91c1c); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
-    .bet-title { font-weight: 800; font-size: 0.9rem; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
-    .live-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #fff; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-    #close-bet-widget { background: none; border: none; color: rgba(255,255,255,0.8); font-size: 24px; cursor: pointer; line-height: 1; padding: 0; }
-    .bet-body { padding: 0; max-height: 380px; overflow-y: auto; }
-    .bet-match-row { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-    .bet-match-row:hover { background: rgba(255,255,255,0.03); }
-    .bet-teams { flex: 1; }
-    .bet-team { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-    .bet-meta { font-size: 0.7rem; color: #888; margin-top: 4px; }
-    .bet-odds { display: flex; gap: 4px; }
-    .odd-box { background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4px 6px; text-align: center; min-width: 32px; cursor: pointer; }
-    .odd-box:hover { background: #dc2626; }
-    .odd-box span { display: block; font-size: 0.65rem; color: #aaa; margin-bottom: 2px; }
-    .odd-box b { display: block; font-size: 0.8rem; color: #fff; }
-    .bet-footer { font-size: 0.65rem; text-align: center; padding: 8px; background: rgba(0,0,0,0.3); color: #555; }
-    .bet-loading { padding: 20px; text-align: center; color: #888; font-size: 0.9rem; }
-    @media (max-width: 480px) { #betting-widget { width: 100%; bottom: 0; right: 0; left: 0; border-radius: 16px 16px 0 0; } }
+    .bet-header { background: var(--accent); padding: 10px; display: flex; justify-content: space-between; font-weight: bold; }
+    .bet-body { padding: 10px; max-height: 300px; overflow-y: auto; }
+    .bet-match-row { border-bottom: 1px solid #333; padding: 8px 0; }
+    .bet-teams { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .bet-odds { display: flex; gap: 10px; color: #aaa; font-size: 0.75rem; }
+    .bet-odds b { color: #fff; }
+    #close-bet-widget { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
   </style>
 </Layout>
