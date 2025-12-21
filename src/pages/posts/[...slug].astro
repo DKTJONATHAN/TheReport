@@ -57,6 +57,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
@@ -94,14 +98,14 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
   <div class="page-wrapper">
 
-    {/* --- 1. STORIES CAROUSEL (NEW) --- */}
+    {/* --- 1. STORIES CAROUSEL --- */}
     <section class="stories-section">
       <div class="stories-inner">
         <div class="stories-scroll">
           {storyPosts.map(story => (
-            <a href={`/posts/${story.slug}`} class="story-item">
+            <a href={`/posts/${story.slug}`} class="story-item" aria-label={`Read story: ${story.data.title}`}>
               <div class="story-img-ring">
-                <img src={story.data.image || '/default-image.jpg'} alt={story.data.title} loading="eager" />
+                <img src={story.data.image || '/default-image.jpg'} alt="" loading="eager" width="60" height="60" />
               </div>
               <span class="story-label">{story.data.title}</span>
             </a>
@@ -113,9 +117,9 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     <div class="page-container">
 
       <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Home</a><span class="separator">/</span>
-        <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
-        <span class="current">{post.data.title.substring(0, 40)}...</span>
+        <a href="/">Home</a>
+        <svg class="sep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <a href={categoryUrl} class="bread-cat">{post.data.category || 'News'}</a>
       </nav>
 
       <div class="article-grid">
@@ -130,92 +134,93 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
               <div class="article-meta">
                  <div class="meta-left">
-                   <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
-                   <span class="meta-dot">•</span>
-                   <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
+                    <div class="author-mini">
+                        <img src="/Jonathan-Mwaniki-logo.png" alt="JM" class="mini-avatar" />
+                        <div class="meta-text">
+                            <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+                            <span class="date-read">
+                                <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time> 
+                                <span class="dot">·</span> 
+                                {readingTime} min read
+                            </span>
+                        </div>
+                    </div>
                  </div>
-                 <span class="reading-time">{readingTime} min read</span>
-              </div>
-
-              <div class="share-row">
-                 <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
-                 <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
+                 
+                 <div class="share-row">
+                     <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-icon x-share" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                     </a>
+                     <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-icon fb-share" aria-label="Share on Facebook">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                     </a>
+                 </div>
               </div>
             </header>
 
             {post.data.image && (
               <figure class="featured-image">
-                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
+                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" width="800" height="450" />
 
-                {/* --- STATUS BADGE (Circle) --- */}
                 {post.data.status && (
                   <span class={`status-badge ${post.data.status.toLowerCase()}`}>
                     {post.data.status}
                   </span>
                 )}
-
                 {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
               </figure>
             )}
 
-            {post.data.description && (
-              <div class="key-takeaways">
-                <h3>In Brief</h3>
-                <p>{post.data.description}</p>
-              </div>
-            )}
-
-            {/* --- PROTECTED AD WRAPPER --- */}
-            <div class="ad-outer-wrapper">
-               <span class="ad-label">Advertisement</span>
-               <div class="ad-scroll-container">
-                  <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+            {/* --- ADS (Mobile Optimized) --- */}
+            <div class="ad-container-optimized">
+               <span class="ad-text">Advertisement</span>
+               <div class="ad-slot">
+                  <ins class="adsbygoogle"
+                       style="display:block; text-align:center;"
+                       data-ad-layout="in-article"
+                       data-ad-format="fluid"
+                       data-ad-client="ca-pub-9291176772735390"
+                       data-ad-slot="1358657931"></ins>
                   <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
                </div>
             </div>
 
-            <div class="article-body" itemprop="articleBody">
-              <Article>
-                <Content />
-              </Article>
+            <div class="article-body-wrapper">
+                <div class="article-body" itemprop="articleBody">
+                  <Article>
+                    <Content />
+                  </Article>
+                </div>
             </div>
 
             <footer class="article-footer">
               <div class="tags">
-                {/* --- CLICKABLE TAGS LINKING TO /tags/[tag] --- */}
                 {post.data.tags?.map(tag => (
                   <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
                 ))}
               </div>
 
               <div class="author-box">
-                 <div class="author-avatar">
+                 <div class="author-avatar-large">
                    <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
                  </div>
                  <div class="author-info">
                    <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
-                   <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+                   <p>Investigative journalist and developer covering the stories that matter in Kenya. Founder of The Mwaniki Report.</p>
+                   <a href="/about" class="author-link">View Profile &rarr;</a>
                  </div>
               </div>
             </footer>
           </article>
         </main>
 
-        {/* --- RIGHT COLUMN: SIDEBAR --- */}
+        {/* --- RIGHT COLUMN: SIDEBAR (Sticky) --- */}
         <aside class="sidebar-column">
           <div class="sticky-wrapper">
 
-            <div class="ad-outer-wrapper sidebar-ad-wrapper">
-               <span class="ad-label">Advertisement</span>
-               <div class="ad-scroll-container">
-                  <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-                  <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-               </div>
-            </div>
-
             {relatedPosts.length > 0 && (
-              <div class="related-widget">
-                <h3 class="widget-title">More in {post.data.category}</h3>
+              <div class="sidebar-widget">
+                <h3 class="widget-title">Read Next</h3>
                 <div class="widget-list">
                   {relatedPosts.map(related => (
                     <a href={`/posts/${related.slug}`} class="widget-item">
@@ -224,13 +229,27 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
                       </div>
                       <div class="widget-content">
                         <h4>{related.data.title}</h4>
-                        <time>{new Date(related.data.date).toLocaleDateString()}</time>
                       </div>
                     </a>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* --- SIDEBAR AD (Sticky) --- */}
+            <div class="sidebar-ad-wrapper">
+               <span class="ad-text">Advertisement</span>
+               <div class="ad-slot-sidebar">
+                  <ins class="adsbygoogle"
+                       style="display:block"
+                       data-ad-client="ca-pub-9291176772735390"
+                       data-ad-slot="1358657931"
+                       data-ad-format="auto"
+                       data-full-width-responsive="true"></ins>
+                  <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+               </div>
+            </div>
+
           </div>
         </aside>
 
@@ -255,27 +274,36 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
-    /* VARIABLES */
+    /* MODERN VARIABLES 
+      Using 'Inter' for UI and 'Merriweather' for reading
+    */
     :root {
       --bg-color: #ffffff;
-      --text-color: #1a1a1a;
-      --text-light: #555;
-      --accent: #dc2626; 
-      --accent-hover: #b91c1c;
-      --border: #e5e7eb;
-      --bg-light: #f3f4f6;
-      --font-body: 'Georgia', serif;
-      --font-head: system-ui, -apple-system, sans-serif;
+      --text-color: #222222; /* Slightly softer black */
+      --text-light: #666666;
+      --accent: #D32F2F; /* News Red */
+      --accent-hover: #b71c1c;
+      --border: #e0e0e0;
+      --bg-light: #f9f9f9;
+      --bg-surface: #ffffff;
+      
+      --font-body: 'Merriweather', Georgia, serif;
+      --font-head: 'Inter', system-ui, sans-serif;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --radius: 8px;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #111827;
-        --text-color: #f3f4f6;
-        --text-light: #9ca3af;
-        --accent: #ef4444;
-        --border: #374151;
-        --bg-light: #1f2937;
+        --bg-color: #0f1115;
+        --text-color: #e0e0e0;
+        --text-light: #a0a0a0;
+        --accent: #ff5252;
+        --border: #2d333b;
+        --bg-light: #161b22;
+        --bg-surface: #161b22;
       }
     }
 
@@ -285,152 +313,186 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         background: var(--bg-color); 
         color: var(--text-color); 
         font-family: var(--font-body); 
-        line-height: 1.6;
+        line-height: 1.7;
         margin: 0; padding: 0;
+        scroll-behavior: smooth;
     }
 
     * { box-sizing: border-box; }
     img { max-width: 100%; display: block; height: auto; }
-    a { text-decoration: none; color: inherit; transition: color 0.2s; }
+    a { text-decoration: none; color: inherit; transition: all 0.2s ease; }
 
-    #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
-    #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
+    /* PROGRESS BAR */
+    #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 9999; }
+    #progress-bar { height: 3px; background: var(--accent); width: 0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent); }
 
-    .page-wrapper { width: 100%; overflow: hidden; }
-
-    /* STORIES SECTION (New) */
-    .stories-section { background: var(--bg-color); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1rem; }
+    /* STORIES CAROUSEL */
+    .stories-section { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 1rem 0; margin-bottom: 1.5rem; }
     .stories-inner { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
-    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    .stories-scroll { display: flex; gap: 1.2rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; align-items: center; }
     .stories-scroll::-webkit-scrollbar { display: none; }
     
-    .story-item { flex: 0 0 auto; width: 64px; text-align: center; cursor: pointer; transition: transform 0.2s; }
-    .story-item:hover { transform: translateY(-2px); }
-    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
-    .story-img-ring img { border-radius: 50%; border: 2px solid var(--bg-color); width: 100%; height: 100%; object-fit: cover; }
-    .story-label { font-family: var(--font-head); font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text-color); }
-
-    /* CONTAINER */
-    .page-container { 
-      width: 100%;
-      max-width: 1120px; 
-      margin: 0 auto; 
-      padding: 0 1.5rem; 
+    .story-item { flex: 0 0 auto; width: 70px; text-align: center; cursor: pointer; }
+    .story-img-ring { 
+        width: 66px; height: 66px; border-radius: 50%; padding: 2px; 
+        border: 2px solid var(--accent); margin-bottom: 0.4rem; 
+        transition: transform 0.2s;
     }
+    .story-item:hover .story-img-ring { transform: scale(1.05); }
+    .story-img-ring img { border-radius: 50%; width: 100%; height: 100%; object-fit: cover; border: 2px solid var(--bg-color); }
+    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%; }
 
-    /* BREADCRUMBS */
-    .breadcrumb { font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 2rem 0; }
-    .breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
-    .separator { margin: 0 0.5rem; color: #ccc; }
-    .current { font-weight: 600; color: var(--text-color); }
-
-    /* LAYOUT */
-    .article-grid { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 2rem; 
-      width: 100%;
-      min-width: 0; 
-    }
-
+    /* CONTAINER & GRID */
+    .page-container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
+    
+    .article-grid { display: flex; flex-direction: column; gap: 2rem; width: 100%; }
+    
     @media (min-width: 1024px) { 
       .article-grid { 
         display: grid; 
-        grid-template-columns: minmax(0, 1fr) 300px; 
-        gap: 3rem; 
+        grid-template-columns: minmax(0, 1fr) 340px; 
+        gap: 4rem; 
         align-items: start;
       }
     }
 
+    /* BREADCRUMB */
+    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 1rem 0; }
+    .sep-icon { width: 14px; height: 14px; opacity: 0.5; }
+    .bread-cat { font-weight: 600; color: var(--accent); }
+    .breadcrumb a:hover { text-decoration: underline; }
+
     /* HEADER */
-    .article-header { margin-bottom: 2rem; font-family: var(--font-head); }
-    .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
-
+    .article-header { margin-bottom: 2rem; font-family: var(--font-head); text-align: left; }
+    .category-pill { display: inline-block; background: rgba(211, 47, 47, 0.1); color: var(--accent); font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 100px; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 0.5px; }
+    
     .article-title { 
-      font-size: clamp(2rem, 4vw, 3rem); 
+      font-size: clamp(2rem, 5vw, 3.2rem); 
       font-weight: 800; 
-      line-height: 1.1; 
-      margin-bottom: 1rem; 
+      line-height: 1.15; 
+      margin-bottom: 1.5rem; 
       color: var(--text-color); 
-      overflow-wrap: break-word; 
-      word-wrap: break-word;
+      letter-spacing: -0.02em;
     }
 
-    .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
-    .meta-left { display: flex; align-items: center; flex-wrap: wrap; }
-    .meta-dot { margin: 0 0.5rem; }
-    .author-name strong { color: var(--text-color); }
+    .article-meta { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 1rem 0; flex-wrap: wrap; gap: 1rem; }
+    
+    .author-mini { display: flex; align-items: center; gap: 0.75rem; }
+    .mini-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+    .meta-text { display: flex; flex-direction: column; font-size: 0.85rem; line-height: 1.3; }
+    .author-name strong { color: var(--text-color); font-weight: 700; }
+    .date-read { color: var(--text-light); }
+    .dot { font-weight: bold; margin: 0 4px; }
 
-    .share-row { display: flex; gap: 1rem; margin-top: 1rem; }
-    .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); white-space: nowrap; }
-    .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .share-row { display: flex; gap: 0.5rem; }
+    .share-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); color: var(--text-light); transition: all 0.2s; background: var(--bg-surface); }
+    .share-icon svg { width: 18px; height: 18px; }
+    .share-icon:hover { border-color: var(--text-color); color: var(--text-color); transform: translateY(-2px); }
+    .x-share:hover { background: #000; color: #fff; border-color: #000; }
+    .fb-share:hover { background: #1877F2; color: #fff; border-color: #1877F2; }
 
-    /* IMAGE & STATUS */
-    .featured-image { margin-bottom: 2rem; width: 100%; position: relative; }
-    .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; }
-    .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
+    /* IMAGES */
+    .featured-image { margin: 0 0 2.5rem 0; width: 100%; position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md); }
+    .featured-image img { width: 100%; object-fit: cover; aspect-ratio: 16/9; }
+    .featured-image figcaption { font-size: 0.8rem; color: var(--text-light); padding: 0.5rem 0; text-align: right; font-family: var(--font-head); font-style: italic; }
 
-    /* Status Badge */
     .status-badge {
-      position: absolute; top: 15px; right: 15px;
+      position: absolute; top: 15px; left: 15px;
       background: var(--accent); color: white;
-      padding: 0.3rem 0.8rem; border-radius: 20px;
+      padding: 0.3rem 0.8rem; border-radius: 4px;
       font-family: var(--font-head); font-weight: 700; font-size: 0.75rem;
-      text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      z-index: 5;
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .status-badge.breaking { background: #dc2626; animation: pulse 2s infinite; }
-    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
 
-    .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
-    .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
-    .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
+    /* AD CONTAINERS (CLS PREVENTION) */
+    .ad-container-optimized { margin: 2rem 0; background: var(--bg-light); border-radius: var(--radius); text-align: center; overflow: hidden; }
+    .ad-text { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 1px; padding-top: 5px; font-family: var(--font-head); }
+    .ad-slot { min-height: 250px; display: flex; align-items: center; justify-content: center; padding: 10px; }
+    
+    .sidebar-ad-wrapper { background: var(--bg-light); border-radius: var(--radius); margin-top: 2rem; padding-bottom: 10px; text-align: center; }
+    .ad-slot-sidebar { min-height: 300px; display: flex; align-items: center; justify-content: center; }
 
-    /* BODY */
+    /* CONTENT BODY - THE CORE */
+    .article-body-wrapper { width: 100%; display: flex; flex-direction: column; }
+    
+    /* Constrain width for optimal reading comfort */
     .article-body { 
-        font-size: 1.15rem; line-height: 1.8; color: var(--text-color); 
-        width: 100%; overflow-wrap: break-word; word-wrap: break-word; 
+        font-size: 1.18rem; 
+        line-height: 1.85; 
+        color: var(--text-color); 
+        max-width: 68ch; /* 65-75ch is scientifically optimal for reading */
+        margin: 0 auto 0 0; /* Align left but limited width */
+        width: 100%;
     }
-    .article-body :global(p) { margin-bottom: 1.5rem; }
-    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); }
-    .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
-    .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
-    .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; }
-
-    /* ADS */
-    .ad-outer-wrapper { margin: 2rem 0; background: var(--bg-light); border-radius: 8px; text-align: center; width: 100%; padding: 1rem 0; }
-    .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; letter-spacing: 1px; }
-    .ad-scroll-container { width: 100%; overflow-x: auto; display: flex; justify-content: center; -webkit-overflow-scrolling: touch; }
-    .sidebar-ad-wrapper { margin-top: 0; min-height: 250px; }
+    
+    /* Global Styles for Markdown Content */
+    .article-body :global(p) { margin-bottom: 1.8rem; }
+    
+    /* Drop Cap */
+    .article-body :global(p:first-of-type::first-letter) {
+        float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; padding-right: 0.5rem; color: var(--text-color); font-family: var(--font-head);
+    }
+    
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 2.5rem 0 1rem; color: var(--text-color); letter-spacing: -0.01em; }
+    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 2rem 0 1rem; color: var(--text-color); }
+    
+    .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .article-body :global(a:hover) { text-decoration-thickness: 2px; }
+    
+    /* Quotes */
+    .article-body :global(blockquote) { 
+        border-left: 3px solid var(--accent); 
+        padding-left: 1.5rem; margin: 2.5rem 0; 
+        font-style: italic; color: var(--text-color); 
+        font-size: 1.35rem; font-family: var(--font-body);
+        line-height: 1.5;
+    }
+    
+    /* Content Images - CENTERED & STYLED */
+    .article-body :global(img) {
+        width: 100%; height: auto;
+        border-radius: var(--radius);
+        margin: 2.5rem 0;
+        box-shadow: var(--shadow-sm);
+        display: block;
+    }
 
     /* FOOTER */
-    .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
-    .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .article-footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); max-width: 68ch; }
+    .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .tag { display: inline-block; background: var(--bg-light); padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.85rem; font-family: var(--font-head); color: var(--text-light); font-weight: 500; }
+    .tag:hover { background: var(--accent); color: white; }
+
+    .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 2rem; border-radius: var(--radius); align-items: start; border: 1px solid var(--border); }
+    .author-avatar-large img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: var(--shadow-sm); }
+    .author-info h3 { font-family: var(--font-head); font-size: 1.2rem; margin: 0 0 0.5rem 0; }
+    .author-info p { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1rem; }
+    .author-link { font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; color: var(--accent); }
+
+    /* SIDEBAR */
+    .sidebar-column { margin-top: 0; width: 100%; height: 100%; }
+    .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+
+    .sidebar-widget { background: var(--bg-surface); }
+    .widget-title { font-family: var(--font-head); font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.2rem; color: var(--text-color); }
     
-    .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); transition: all 0.2s ease; }
-    .tag:hover { background: var(--accent); color: white; text-decoration: none; transform: translateY(-2px); }
-
-    .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 1.5rem; border-radius: 8px; align-items: center; }
-    .author-avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
-    .author-info h3 { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 0.3rem; }
-    .author-info p { font-size: 0.95rem; color: var(--text-light); margin: 0; }
-
-    .sidebar-column { margin-top: 1rem; width: 100%; }
-    .sticky-wrapper { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 2rem; }
-
-    .widget-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-color); }
-    .widget-list { display: flex; flex-direction: column; gap: 1rem; }
-    .widget-item { display: flex; gap: 1rem; align-items: start; }
+    .widget-list { display: flex; flex-direction: column; gap: 1.2rem; }
+    .widget-item { display: flex; gap: 1rem; align-items: start; group: true; }
+    .widget-img { width: 90px; height: 65px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #eee; }
+    .widget-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .widget-item:hover img { transform: scale(1.1); }
+    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin: 0; color: var(--text-color); transition: color 0.2s; }
     .widget-item:hover h4 { color: var(--accent); }
-    .widget-img { width: 80px; height: 60px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
-    .widget-img img { width: 100%; height: 100%; object-fit: cover; }
-    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin-bottom: 0.3rem; color: var(--text-color); }
-    .widget-content time { font-size: 0.75rem; color: var(--text-light); }
 
     @media (max-width: 768px) {
-      .author-box { flex-direction: column; text-align: center; }
       .article-title { font-size: 2rem; }
-      .page-container { padding: 0 1rem; }
+      .page-container { padding: 0 1.2rem; }
+      .article-meta { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .share-row { width: 100%; justify-content: flex-start; }
+      .author-box { flex-direction: column; text-align: center; align-items: center; }
+      .article-body { font-size: 1.1rem; }
+      /* Dropcap smaller on mobile */
+      .article-body :global(p:first-of-type::first-letter) { font-size: 3rem; }
     }
   </style>
 </Layout>
