@@ -48,7 +48,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 ---
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl}>
-  
+
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
@@ -85,23 +85,23 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   <div id="progress-container"><div id="progress-bar"></div></div>
 
   <div class="page-container">
-    
+
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a><span class="separator">/</span>
       <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
-      <span class="current">{post.data.title}</span>
+      <span class="current">{post.data.title.substring(0, 30)}...</span>
     </nav>
 
     <div class="article-grid">
-      
+
       {/* --- LEFT COLUMN: CONTENT --- */}
       <main id="maincontent" class="main-column">
         <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
-          
+
           <header class="article-header">
             <span class="category-pill">{post.data.category || 'News'}</span>
             <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
-            
+
             <div class="article-meta">
                <div class="meta-left">
                  <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
@@ -110,7 +110,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
                </div>
                <span class="reading-time">{readingTime} min read</span>
             </div>
-            
+
             <div class="share-row">
                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
@@ -152,7 +152,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
                 <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
               ))}
             </div>
-            
+
             <div class="author-box">
                <div class="author-avatar">
                  <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
@@ -169,7 +169,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       {/* --- RIGHT COLUMN: SIDEBAR --- */}
       <aside class="sidebar-column">
         <div class="sticky-wrapper">
-          
+
           <div class="ad-outer-wrapper sidebar-ad-wrapper">
              <span class="ad-label">Advertisement</span>
              <div class="ad-scroll-container">
@@ -219,6 +219,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
+    /* VARIABLES */
     :root {
       --bg-color: #ffffff;
       --text-color: #1a1a1a;
@@ -250,9 +251,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         color: var(--text-color); 
         font-family: var(--font-body); 
         line-height: 1.6;
+        margin: 0; padding: 0;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; }
     img { max-width: 100%; display: block; height: auto; }
     a { text-decoration: none; color: inherit; transition: color 0.2s; }
 
@@ -295,7 +297,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     /* HEADER */
     .article-header { margin-bottom: 2rem; font-family: var(--font-head); }
     .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; }
-    
+
     .article-title { 
       font-size: clamp(2rem, 4vw, 3rem); 
       font-weight: 800; 
@@ -305,7 +307,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       overflow-wrap: break-word; /* Forces line breaks */
       word-wrap: break-word;
     }
-    
+
     .article-meta { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-light); flex-wrap: wrap; gap: 0.5rem; }
     .meta-left { display: flex; align-items: center; flex-wrap: wrap; }
     .meta-dot { margin: 0 0.5rem; }
@@ -347,7 +349,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         width: 100%;
         padding: 1rem 0; /* Vertical padding only */
     }
-    
+
     .ad-label { 
         font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); 
         text-transform: uppercase; display: block; margin-bottom: 0.5rem; 
