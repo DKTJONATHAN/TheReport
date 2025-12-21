@@ -2,15 +2,23 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-// --- 1. ROBUST DATA LOGIC (Preserved) ---
+// --- 1. PRESERVED LOGIC & HELPER FUNCTIONS ---
 type Post = CollectionEntry<'posts'>;
 
 function safeGetTags(post: Post): string[] {
   try {
     const tags = post.data?.tags;
     if (!tags) return [];
-    if (Array.isArray(tags)) return tags.filter(t => typeof t === 'string' && t.trim().length > 0).map(t => t.trim());
-    if (typeof tags === 'string') return tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (Array.isArray(tags)) {
+      return tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0).map(tag => tag.trim());
+    }
+    if (typeof tags === 'string') {
+      const trimmed = tags.trim();
+      return trimmed.length > 0 ? [trimmed] : [];
+    }
+    if (typeof tags === 'string' && tags.includes(',')) {
+      return tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    }
     return [];
   } catch (error) {
     return [];
@@ -22,13 +30,18 @@ function createSlug(text: string): string {
 }
 
 function safeGetCategory(post: Post): string {
-  return typeof post.data?.category === 'string' ? post.data.category.trim() : 'News';
+  try {
+    const category = post.data?.category;
+    return (typeof category === 'string' && category.trim().length > 0) ? category.trim() : 'Uncategorized';
+  } catch (error) {
+    return 'Uncategorized';
+  }
 }
 
 export async function getStaticPaths() {
   try {
     const allPosts = await getCollection('posts');
-    if (!allPosts.length) return [];
+    if (!Array.isArray(allPosts) || allPosts.length === 0) return [];
 
     const allTags = new Set<string>();
     const allCategories = new Set<string>();
@@ -38,13 +51,13 @@ export async function getStaticPaths() {
       allCategories.add(safeGetCategory(post));
     }
 
+    const tagArray = Array.from(allTags);
     const categoryArray = Array.from(allCategories);
     
-    return Array.from(allTags).map(tag => {
+    return tagArray.map(tag => {
       const tagSlug = createSlug(tag);
       if (!tagSlug) return null;
-      
-      const categorySlug = categoryArray.map(c => createSlug(c)).find(s => s === tagSlug);
+      const categorySlug = categoryArray.map(cat => createSlug(cat)).find(slug => slug === tagSlug);
       
       return {
         params: { tag: tagSlug },
@@ -55,7 +68,7 @@ export async function getStaticPaths() {
           categoryRedirect: categorySlug ? `/category/${categorySlug}` : null 
         }
       };
-    }).filter(Boolean);
+    }).filter((path): path is NonNullable<typeof path> => path !== null);
     
   } catch (error) {
     console.error('Error in getStaticPaths:', error);
@@ -65,11 +78,10 @@ export async function getStaticPaths() {
 
 const { originalTag, tagSlug, conflictsWithCategory, categoryRedirect } = Astro.props;
 
-if (conflictsWithCategory && categoryRedirect) {
-  return Astro.redirect(categoryRedirect);
-}
+if (!originalTag || !tagSlug) return Astro.redirect('/404');
+if (conflictsWithCategory && categoryRedirect) return Astro.redirect(categoryRedirect);
 
-// --- 2. FETCH & ORGANIZE DATA FOR UI ---
+// --- 2. DATA FETCHING FOR UI ---
 let filteredPosts: Post[] = [];
 let sidebarTrending: Post[] = [];
 
@@ -79,43 +91,61 @@ try {
   // Filter for current tag
   filteredPosts = allPosts
     .filter(post => {
-      const postTags = safeGetTags(post).map(t => createSlug(t));
-      return postTags.includes(tagSlug);
+      const postTags = safeGetTags(post);
+      const postTagSlugs = postTags.map(tag => createSlug(tag));
+      return postTagSlugs.includes(tagSlug);
     })
-    .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+    .sort((a, b) => {
+      const dateA = a.data?.date ? new Date(a.data.date).getTime() : 0;
+      const dateB = b.data?.date ? new Date(b.data.date).getTime() : 0;
+      return dateB - dateA;
+    });
 
-  // Get Sidebar Content (Global trending excluding current tag items to avoid duplicates)
+  // Get Sidebar Content (Trending site-wide, excluding current posts)
+  // We use a simple slice of the latest posts that aren't in the current tag list
+  const currentIds = new Set(filteredPosts.map(p => p.slug));
   sidebarTrending = allPosts
-    .filter(p => !filteredPosts.includes(p))
+    .filter(p => !currentIds.has(p.slug))
     .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
     .slice(0, 5);
 
 } catch (error) {
+  console.error('Error loading posts:', error);
   return Astro.redirect('/404');
 }
 
 if (filteredPosts.length === 0) return Astro.redirect('/404');
 
-// UI Data Slicing
-const storyPosts = filteredPosts.slice(0, 10); // Top 10 for circles
-const feedPosts = filteredPosts; // Main feed
-
-const pageTitle = `${originalTag} News - Jonathan Mwaniki`;
-const pageDescription = `Latest news and updates tagged with #${originalTag}.`;
+// --- 3. VIEW LOGIC ---
+const storyPosts = filteredPosts.slice(0, 10); // Stories Carousel
+const pageTitle = `${originalTag} News & Articles`;
+const pageDescription = `Discover the latest ${originalTag} news articles and updates from Kenya.`;
 const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tagSlug}`;
 
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
   { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
-  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
+  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
 ];
+
+// Schema Data
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.jonathanmwaniki.co.ke" },
+    { "@type": "ListItem", "position": 2, "name": "Tags", "item": "https://www.jonathanmwaniki.co.ke/tags" },
+    { "@type": "ListItem", "position": 3, "name": `${originalTag} News`, "item": canonicalUrl }
+  ]
+};
 ---
 
 <Layout
   title={pageTitle}
   description={pageDescription}
   canonical={canonicalUrl}
+  image="https://www.jonathanmwaniki.co.ke/default-og-image.jpg"
   meta={[
     { name: 'og:title', content: pageTitle },
     { name: 'og:description', content: pageDescription },
@@ -124,10 +154,11 @@ const socialStats = [
     { name: 'robots', content: 'index, follow' },
   ]}
 >
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
 
   <div class="page-wrapper">
     
-    {/* --- 1. STORIES CAROUSEL (Top Tagged Stories) --- */}
+    {/* --- 1. STORIES CAROUSEL (Top 10 Tagged Stories) --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
@@ -147,9 +178,12 @@ const socialStats = [
       
       {/* HEADER */}
       <div class="tag-header">
-        <span class="tag-eyebrow">Browsing Tag</span>
+        <nav aria-label="Breadcrumb" class="breadcrumb">
+           <a href="/">Home</a> / <a href="/tags">Tags</a> / <span>{originalTag}</span>
+        </nav>
         <h1>#{originalTag}</h1>
         <div class="header-line"></div>
+        <p class="tag-subtitle">Found {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* --- 2. MAIN CONTENT GRID --- */}
@@ -158,7 +192,7 @@ const socialStats = [
         {/* LEFT: Feed */}
         <div class="feed-column">
           <div class="compact-grid">
-            {feedPosts.map(post => (
+            {filteredPosts.map(post => (
               <a href={`/posts/${post.slug}`} class="compact-card">
                 <div class="compact-img">
                   <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
@@ -176,7 +210,9 @@ const socialStats = [
                 
                 <div class="card-content">
                   <div class="card-meta">
-                    <span class="card-date">{new Date(post.data.date).toLocaleDateString()}</span>
+                    <span class="card-date">
+                      {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
                   </div>
                   <h4>{post.data.title}</h4>
                   <p class="card-desc">{post.data.description}</p>
@@ -229,7 +265,7 @@ const socialStats = [
   </div>
 
   <style>
-    /* SHARED VARS (Matches Index/Category) */
+    /* SHARED VARS */
     :root {
       --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
       --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -258,9 +294,11 @@ const socialStats = [
 
     /* HEADER */
     .tag-header { padding: 1.5rem 0; text-align: center; margin-bottom: 1rem; }
-    .tag-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 0.3rem; }
+    .breadcrumb { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .breadcrumb a { display: inline; text-decoration: underline; color: var(--accent); }
     .tag-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: capitalize; }
-    .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
+    .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto 0.5rem; border-radius: 2px; }
+    .tag-subtitle { font-size: 0.9rem; color: var(--muted); }
 
     /* LAYOUT */
     .content-grid { display: grid; gap: 2rem; padding-bottom: 3rem; }
