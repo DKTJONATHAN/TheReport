@@ -274,14 +274,12 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
-    /* MODERN VARIABLES 
-      Using 'Inter' for UI and 'Merriweather' for reading
-    */
+    /* MODERN VARIABLES */
     :root {
       --bg-color: #ffffff;
-      --text-color: #222222; /* Slightly softer black */
+      --text-color: #222222; 
       --text-light: #666666;
-      --accent: #D32F2F; /* News Red */
+      --accent: #D32F2F; 
       --accent-hover: #b71c1c;
       --border: #e0e0e0;
       --bg-light: #f9f9f9;
@@ -404,7 +402,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       text-transform: uppercase; letter-spacing: 0.05em;
     }
 
-    /* AD CONTAINERS (CLS PREVENTION) */
+    /* AD CONTAINERS */
     .ad-container-optimized { margin: 2rem 0; background: var(--bg-light); border-radius: var(--radius); text-align: center; overflow: hidden; }
     .ad-text { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 1px; padding-top: 5px; font-family: var(--font-head); }
     .ad-slot { min-height: 250px; display: flex; align-items: center; justify-content: center; padding: 10px; }
@@ -415,46 +413,49 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     /* CONTENT BODY - THE CORE */
     .article-body-wrapper { width: 100%; display: flex; flex-direction: column; }
     
-    /* Constrain width for optimal reading comfort */
     .article-body { 
         font-size: 1.18rem; 
         line-height: 1.85; 
         color: var(--text-color); 
-        max-width: 68ch; /* 65-75ch is scientifically optimal for reading */
-        margin: 0 auto 0 0; /* Align left but limited width */
+        max-width: 68ch; 
+        margin: 0 auto 0 0; 
         width: 100%;
     }
     
-    /* Global Styles for Markdown Content */
-    .article-body :global(p) { margin-bottom: 1.8rem; }
+    /* REDUCED SPACING HERE */
+    .article-body :global(p) { margin-bottom: 1.2rem; /* Reduced from 1.8rem */ }
     
     /* Drop Cap */
     .article-body :global(p:first-of-type::first-letter) {
         float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; padding-right: 0.5rem; color: var(--text-color); font-family: var(--font-head);
     }
     
-    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 2.5rem 0 1rem; color: var(--text-color); letter-spacing: -0.01em; }
-    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 2rem 0 1rem; color: var(--text-color); }
+    /* REDUCED HEADING SPACING */
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 1.8rem 0 0.8rem; color: var(--text-color); letter-spacing: -0.01em; }
+    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 1.5rem 0 0.8rem; color: var(--text-color); }
     
     .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .article-body :global(a:hover) { text-decoration-thickness: 2px; }
     
-    /* Quotes */
     .article-body :global(blockquote) { 
         border-left: 3px solid var(--accent); 
-        padding-left: 1.5rem; margin: 2.5rem 0; 
+        padding-left: 1.5rem; margin: 2rem 0; 
         font-style: italic; color: var(--text-color); 
         font-size: 1.35rem; font-family: var(--font-body);
         line-height: 1.5;
     }
     
-    /* Content Images - CENTERED & STYLED */
+    /* IMAGE CENTERING FIX */
     .article-body :global(img) {
-        width: 100%; height: auto;
+        display: block;        /* Forces image to its own line */
+        margin-left: auto;     /* Centers horizontally */
+        margin-right: auto;    /* Centers horizontally */
+        margin-top: 2rem;      /* Spacing above */
+        margin-bottom: 2rem;   /* Spacing below */
+        max-width: 100%;       /* Ensures it doesn't overflow */
+        height: auto;          /* Maintains aspect ratio */
         border-radius: var(--radius);
-        margin: 2.5rem 0;
         box-shadow: var(--shadow-sm);
-        display: block;
     }
 
     /* FOOTER */
@@ -491,7 +492,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       .share-row { width: 100%; justify-content: flex-start; }
       .author-box { flex-direction: column; text-align: center; align-items: center; }
       .article-body { font-size: 1.1rem; }
-      /* Dropcap smaller on mobile */
       .article-body :global(p:first-of-type::first-letter) { font-size: 3rem; }
     }
   </style>
