@@ -98,14 +98,14 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
   <div class="page-wrapper">
 
-    {/* --- 1. STORIES CAROUSEL --- */}
+    {/* --- 1. STORIES CAROUSEL (Matched Styling) --- */}
     <section class="stories-section">
-      <div class="stories-inner">
+      <div class="main-container">
         <div class="stories-scroll">
           {storyPosts.map(story => (
             <a href={`/posts/${story.slug}`} class="story-item" aria-label={`Read story: ${story.data.title}`}>
               <div class="story-img-ring">
-                <img src={story.data.image || '/default-image.jpg'} alt="" loading="eager" width="60" height="60" />
+                <img src={story.data.image || '/default-image.jpg'} alt="" loading="eager" />
               </div>
               <span class="story-label">{story.data.title}</span>
             </a>
@@ -158,9 +158,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
               </div>
             </header>
 
+            {/* --- FEATURED IMAGE (Matched Hero Styling) --- */}
             {post.data.image && (
               <figure class="featured-image">
-                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" width="800" height="450" />
+                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
 
                 {post.data.status && (
                   <span class={`status-badge ${post.data.status.toLowerCase()}`}>
@@ -174,7 +175,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
             {/* --- ADS (Mobile Optimized) --- */}
             <div class="ad-container-optimized">
                <span class="ad-text">Advertisement</span>
-               <div class="ad-slot">
+               <div class="ad-scroll-safe">
                   <ins class="adsbygoogle"
                        style="display:block; text-align:center;"
                        data-ad-layout="in-article"
@@ -224,6 +225,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
                 <div class="widget-list">
                   {relatedPosts.map(related => (
                     <a href={`/posts/${related.slug}`} class="widget-item">
+                      {/* Matched Dense-Thumb Styling */}
                       <div class="widget-img">
                         <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
                       </div>
@@ -239,7 +241,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
             {/* --- SIDEBAR AD (Sticky) --- */}
             <div class="sidebar-ad-wrapper">
                <span class="ad-text">Advertisement</span>
-               <div class="ad-slot-sidebar">
+               <div class="ad-scroll-safe">
                   <ins class="adsbygoogle"
                        style="display:block"
                        data-ad-client="ca-pub-9291176772735390"
@@ -274,16 +276,14 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
-    /* MODERN VARIABLES */
+    /* VARIABLES (Matched Colors) */
     :root {
-      --bg-color: #ffffff;
-      --text-color: #222222; 
-      --text-light: #666666;
-      --accent: #D32F2F; 
-      --accent-hover: #b71c1c;
-      --border: #e0e0e0;
-      --bg-light: #f9f9f9;
-      --bg-surface: #ffffff;
+      --bg: #f8fafc; 
+      --card: #fff; 
+      --text: #1e293b; 
+      --muted: #64748b; 
+      --accent: #dc2626; 
+      --border: #e2e8f0;
       
       --font-body: 'Merriweather', Georgia, serif;
       --font-head: 'Inter', system-ui, sans-serif;
@@ -295,21 +295,19 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #0f1115;
-        --text-color: #e0e0e0;
-        --text-light: #a0a0a0;
-        --accent: #ff5252;
-        --border: #2d333b;
-        --bg-light: #161b22;
-        --bg-surface: #161b22;
+        --bg: #0f172a; 
+        --card: #1e293b; 
+        --text: #f1f5f9; 
+        --muted: #94a3b8; 
+        --border: #334155;
       }
     }
 
     html, body {
         width: 100%;
         overflow-x: hidden;
-        background: var(--bg-color); 
-        color: var(--text-color); 
+        background: var(--bg); 
+        color: var(--text); 
         font-family: var(--font-body); 
         line-height: 1.7;
         margin: 0; padding: 0;
@@ -317,28 +315,28 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     }
 
     * { box-sizing: border-box; }
-    img { max-width: 100%; display: block; height: auto; }
+    
+    /* --- 1. GLOBAL IMAGE RESET (EXACT COPY) --- */
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
     a { text-decoration: none; color: inherit; transition: all 0.2s ease; }
 
     /* PROGRESS BAR */
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 9999; }
     #progress-bar { height: 3px; background: var(--accent); width: 0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent); }
 
-    /* STORIES CAROUSEL */
-    .stories-section { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 1rem 0; margin-bottom: 1.5rem; }
-    .stories-inner { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
-    .stories-scroll { display: flex; gap: 1.2rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; align-items: center; }
+    /* STORIES CAROUSEL (Matched) */
+    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
+    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
     .stories-scroll::-webkit-scrollbar { display: none; }
     
-    .story-item { flex: 0 0 auto; width: 70px; text-align: center; cursor: pointer; }
+    .story-item { flex: 0 0 auto; width: 64px; text-align: center; }
     .story-img-ring { 
-        width: 66px; height: 66px; border-radius: 50%; padding: 2px; 
-        border: 2px solid var(--accent); margin-bottom: 0.4rem; 
-        transition: transform 0.2s;
+        width: 60px; height: 60px; border-radius: 50%; padding: 2px; 
+        border: 2px solid var(--accent); margin-bottom: 0.3rem; 
     }
-    .story-item:hover .story-img-ring { transform: scale(1.05); }
-    .story-img-ring img { border-radius: 50%; width: 100%; height: 100%; object-fit: cover; border: 2px solid var(--bg-color); }
-    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%; }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
+    .story-label { font-family: var(--font-head); font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text); }
 
     /* CONTAINER & GRID */
     .page-container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
@@ -355,21 +353,21 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     }
 
     /* BREADCRUMB */
-    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-head); font-size: 0.85rem; color: var(--text-light); margin: 1.5rem 0 1rem 0; }
+    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-head); font-size: 0.85rem; color: var(--muted); margin: 1.5rem 0 1rem 0; }
     .sep-icon { width: 14px; height: 14px; opacity: 0.5; }
     .bread-cat { font-weight: 600; color: var(--accent); }
     .breadcrumb a:hover { text-decoration: underline; }
 
     /* HEADER */
     .article-header { margin-bottom: 2rem; font-family: var(--font-head); text-align: left; }
-    .category-pill { display: inline-block; background: rgba(211, 47, 47, 0.1); color: var(--accent); font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 100px; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 0.5px; }
+    .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 0.5px; }
     
     .article-title { 
       font-size: clamp(2rem, 5vw, 3.2rem); 
       font-weight: 800; 
       line-height: 1.15; 
       margin-bottom: 1.5rem; 
-      color: var(--text-color); 
+      color: var(--text); 
       letter-spacing: -0.02em;
     }
 
@@ -378,21 +376,28 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .author-mini { display: flex; align-items: center; gap: 0.75rem; }
     .mini-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
     .meta-text { display: flex; flex-direction: column; font-size: 0.85rem; line-height: 1.3; }
-    .author-name strong { color: var(--text-color); font-weight: 700; }
-    .date-read { color: var(--text-light); }
+    .author-name strong { color: var(--text); font-weight: 700; }
+    .date-read { color: var(--muted); }
     .dot { font-weight: bold; margin: 0 4px; }
 
     .share-row { display: flex; gap: 0.5rem; }
-    .share-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); color: var(--text-light); transition: all 0.2s; background: var(--bg-surface); }
+    .share-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); transition: all 0.2s; background: var(--card); }
     .share-icon svg { width: 18px; height: 18px; }
-    .share-icon:hover { border-color: var(--text-color); color: var(--text-color); transform: translateY(-2px); }
+    .share-icon:hover { border-color: var(--text); color: var(--text); transform: translateY(-2px); }
     .x-share:hover { background: #000; color: #fff; border-color: #000; }
     .fb-share:hover { background: #1877F2; color: #fff; border-color: #1877F2; }
 
-    /* IMAGES */
-    .featured-image { margin: 0 0 2.5rem 0; width: 100%; position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md); }
-    .featured-image img { width: 100%; object-fit: cover; aspect-ratio: 16/9; }
-    .featured-image figcaption { font-size: 0.8rem; color: var(--text-light); padding: 0.5rem 0; text-align: right; font-family: var(--font-head); font-style: italic; }
+    /* --- 2. FEATURED IMAGE (MATCHED HERO LOGIC) --- */
+    .featured-image { 
+        margin: 0 0 2.5rem 0; 
+        width: 100%; 
+        position: relative; 
+        border-radius: 8px; /* From hero-main */
+        overflow: hidden; 
+        border: 1px solid var(--border); 
+        aspect-ratio: 16/9; /* Enforced Ratio */
+    }
+    .featured-image figcaption { font-size: 0.8rem; color: var(--muted); padding: 0.5rem 0; text-align: right; font-family: var(--font-head); font-style: italic; }
 
     .status-badge {
       position: absolute; top: 15px; left: 15px;
@@ -402,37 +407,35 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       text-transform: uppercase; letter-spacing: 0.05em;
     }
 
-    /* AD CONTAINERS */
-    .ad-container-optimized { margin: 2rem 0; background: var(--bg-light); border-radius: var(--radius); text-align: center; overflow: hidden; }
-    .ad-text { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 1px; padding-top: 5px; font-family: var(--font-head); }
-    .ad-slot { min-height: 250px; display: flex; align-items: center; justify-content: center; padding: 10px; }
+    /* AD CONTAINERS (Scroll Safe from Source) */
+    .ad-container-optimized { margin: 2rem 0; background: var(--card); border-radius: var(--radius); text-align: center; overflow: hidden; }
+    .ad-text { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding-top: 5px; font-family: var(--font-head); }
+    .ad-scroll-safe { width: 100%; overflow-x: auto; display: flex; justify-content: center; min-height: 100px; }
+    .ad-scroll-safe::-webkit-scrollbar { display: none; }
     
-    .sidebar-ad-wrapper { background: var(--bg-light); border-radius: var(--radius); margin-top: 2rem; padding-bottom: 10px; text-align: center; }
-    .ad-slot-sidebar { min-height: 300px; display: flex; align-items: center; justify-content: center; }
+    .sidebar-ad-wrapper { background: var(--card); border-radius: var(--radius); margin-top: 2rem; padding-bottom: 10px; text-align: center; }
 
-    /* CONTENT BODY - THE CORE */
+    /* CONTENT BODY */
     .article-body-wrapper { width: 100%; display: flex; flex-direction: column; }
     
     .article-body { 
         font-size: 1.18rem; 
         line-height: 1.85; 
-        color: var(--text-color); 
+        color: var(--text); 
         max-width: 68ch; 
         margin: 0 auto 0 0; 
         width: 100%;
     }
     
-    /* REDUCED SPACING HERE */
-    .article-body :global(p) { margin-bottom: 1.2rem; /* Reduced from 1.8rem */ }
+    .article-body :global(p) { margin-bottom: 1.2rem; }
     
     /* Drop Cap */
     .article-body :global(p:first-of-type::first-letter) {
-        float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; padding-right: 0.5rem; color: var(--text-color); font-family: var(--font-head);
+        float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; padding-right: 0.5rem; color: var(--text); font-family: var(--font-head);
     }
     
-    /* REDUCED HEADING SPACING */
-    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 1.8rem 0 0.8rem; color: var(--text-color); letter-spacing: -0.01em; }
-    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 1.5rem 0 0.8rem; color: var(--text-color); }
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 1.8rem 0 0.8rem; color: var(--text); letter-spacing: -0.01em; }
+    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 1.5rem 0 0.8rem; color: var(--text); }
     
     .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .article-body :global(a:hover) { text-decoration-thickness: 2px; }
@@ -440,20 +443,19 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .article-body :global(blockquote) { 
         border-left: 3px solid var(--accent); 
         padding-left: 1.5rem; margin: 2rem 0; 
-        font-style: italic; color: var(--text-color); 
+        font-style: italic; color: var(--text); 
         font-size: 1.35rem; font-family: var(--font-body);
         line-height: 1.5;
     }
     
-    /* IMAGE CENTERING FIX */
+    /* --- 3. SAFETY FIX FOR CONTENT IMAGES --- */
+    /* Since we set global img height to 100%, we must reset it here so article images don't stretch */
     .article-body :global(img) {
-        display: block;        /* Forces image to its own line */
-        margin-left: auto;     /* Centers horizontally */
-        margin-right: auto;    /* Centers horizontally */
-        margin-top: 2rem;      /* Spacing above */
-        margin-bottom: 2rem;   /* Spacing below */
-        max-width: 100%;       /* Ensures it doesn't overflow */
-        height: auto;          /* Maintains aspect ratio */
+        display: block; 
+        margin: 2rem auto;
+        width: 100%;       
+        height: auto;      /* Reset height to auto */
+        max-width: 100%;   
         border-radius: var(--radius);
         box-shadow: var(--shadow-sm);
     }
@@ -461,28 +463,37 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     /* FOOTER */
     .article-footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); max-width: 68ch; }
     .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.8rem; }
-    .tag { display: inline-block; background: var(--bg-light); padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.85rem; font-family: var(--font-head); color: var(--text-light); font-weight: 500; }
+    .tag { display: inline-block; background: var(--bg); padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.85rem; font-family: var(--font-head); color: var(--muted); font-weight: 500; }
     .tag:hover { background: var(--accent); color: white; }
 
-    .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 2rem; border-radius: var(--radius); align-items: start; border: 1px solid var(--border); }
-    .author-avatar-large img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: var(--shadow-sm); }
+    .author-box { display: flex; gap: 1.5rem; background: var(--card); padding: 2rem; border-radius: var(--radius); align-items: start; border: 1px solid var(--border); }
+    .author-avatar-large img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg); box-shadow: var(--shadow-sm); }
     .author-info h3 { font-family: var(--font-head); font-size: 1.2rem; margin: 0 0 0.5rem 0; }
-    .author-info p { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1rem; }
+    .author-info p { font-size: 0.95rem; color: var(--muted); margin-bottom: 1rem; }
     .author-link { font-family: var(--font-head); font-weight: 600; font-size: 0.9rem; color: var(--accent); }
 
     /* SIDEBAR */
     .sidebar-column { margin-top: 0; width: 100%; height: 100%; }
     .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
 
-    .sidebar-widget { background: var(--bg-surface); }
-    .widget-title { font-family: var(--font-head); font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.2rem; color: var(--text-color); }
+    .sidebar-widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .widget-title { font-family: var(--font-head); font-size: 0.9rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 1rem; color: var(--text); }
     
-    .widget-list { display: flex; flex-direction: column; gap: 1.2rem; }
-    .widget-item { display: flex; gap: 1rem; align-items: start; group: true; }
-    .widget-img { width: 90px; height: 65px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #eee; }
-    .widget-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-    .widget-item:hover img { transform: scale(1.1); }
-    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin: 0; color: var(--text-color); transition: color 0.2s; }
+    .widget-list { display: flex; flex-direction: column; gap: 1rem; }
+    .widget-item { display: flex; gap: 0.8rem; align-items: start; group: true; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; }
+    .widget-item:last-child { border: none; padding-bottom: 0; }
+
+    /* --- 4. WIDGET IMAGES (MATCHED DENSE-THUMB LOGIC) --- */
+    .widget-img { 
+        width: 90px; 
+        height: 65px; 
+        border-radius: 6px; 
+        overflow: hidden; 
+        flex-shrink: 0; 
+    }
+    /* img rule inherited from global (width 100%, height 100%, object-fit cover) */
+
+    .widget-content h4 { font-family: var(--font-head); font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin: 0; color: var(--text); transition: color 0.2s; }
     .widget-item:hover h4 { color: var(--accent); }
 
     @media (max-width: 768px) {
