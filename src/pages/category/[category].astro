@@ -14,6 +14,13 @@ export async function getStaticPaths() {
 const { category, posts } = Astro.props;
 const optimizedTitle = `${category} News Kenya | Latest Updates | Jonathan Mwaniki`;
 const optimizedDescription = `Latest ${category} news from Kenya. Stay updated with breaking stories, updates, and trending topics in ${category}.`;
+
+// Helper to calculate reading time
+function getReadingTime(body) {
+  const wordsPerMinute = 200;
+  const wordCount = body.split(/\s+/).length;
+  return Math.ceil(wordCount / wordsPerMinute);
+}
 ---
 
 <Layout 
@@ -29,16 +36,22 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
 >
   <main class="main-container">
     <header class="category-header">
-      <h1>{category} News</h1>
-      <p>Latest updates and breaking stories in {category}</p>
+      <h1 class="page-title">{category} News</h1>
+      <div class="header-line"></div>
+      <p class="page-desc">Latest updates and breaking stories in {category}</p>
     </header>
 
     <div class="posts-grid">
-      {posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()).map(post => (
+      {posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()).map(post => {
+        const readingTime = getReadingTime(post.body);
+        // Check for status in frontmatter (e.g., status: "Breaking")
+        const status = post.data.status; 
+        
+        return (
         <article class="post-card">
           <a href={`/posts/${post.slug}`} class="post-link" aria-label={`Read article: ${post.data.title}`}>
-            {post.data.image && (
-              <div class="post-image-container">
+            <div class="post-image-container">
+              {post.data.image ? (
                 <img
                   src={post.data.image}
                   alt={post.data.imageAlt || post.data.title}
@@ -47,166 +60,285 @@ const optimizedDescription = `Latest ${category} news from Kenya. Stay updated w
                   width="400"
                   height="240"
                 />
-              </div>
-            )}
+              ) : (
+                <div class="placeholder-image">JM</div>
+              )}
+              
+              {/* STATUS BADGE FEATURE */}
+              {status && (
+                <span class={`status-badge ${status.toLowerCase()}`}>
+                  {status}
+                </span>
+              )}
+            </div>
+
             <div class="post-content">
               <div class="post-meta">
                 <span class="post-category">{post.data.category}</span>
-                <time class="post-date" datetime={post.data.date}>
+                <span class="meta-dot">•</span>
+                <span class="read-time">{readingTime} min read</span>
+              </div>
+              
+              <h3 class="post-title">{post.data.title}</h3>
+              
+              {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
+              
+              <div class="post-footer">
+                <time class="post-date" datetime={post.data.date.toISOString()}>
                   {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                 </time>
-              </div>
-              <h3 class="post-title">{post.data.title}</h3>
-              {post.data.description && <p class="post-excerpt">{post.data.description}</p>}
-              <div class="post-footer">
-                <span class="read-more">Read Article</span>
+                <span class="read-more-btn">
+                  Read Article 
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </span>
               </div>
             </div>
           </a>
         </article>
-      ))}
+      )})}
     </div>
 
     {posts.length === 0 && (
       <div class="empty-state">
-        <h2>No {category} news available</h2>
+        <div class="empty-icon">📂</div>
+        <h2>No {category} news available yet</h2>
         <p>Check back soon for the latest updates!</p>
+        <a href="/" class="back-home">Back to Home</a>
       </div>
     )}
   </main>
 
   <style>
-    /* Define CSS variables for light and dark themes */
+    /* VARIABLES */
     :root {
-      --bg-color: #ffffff;
-      --text-color: #1a1a1a;
-      --subtext-color: #4a5568;
+      --bg-color: #f8fafc;
+      --text-color: #1e293b;
+      --heading-color: #0f172a;
+      --subtext-color: #64748b;
       --card-bg: #ffffff;
       --card-border: #e2e8f0;
-      --category-bg: #dc2626;
-      --category-text: #ffffff;
-      --read-more: #dc2626;
-      --shadow-color: rgba(0, 0, 0, 0.08);
-      --date-color: #64748b;
-      --link-hover: #b91c1c;
+      --accent: #dc2626; /* Kenyan Red */
+      --accent-hover: #b91c1c;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --font-ui: system-ui, -apple-system, sans-serif;
     }
 
-    /* Dark mode styles */
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #1a1a1a;
-        --text-color: #e2e8f0;
-        --subtext-color: #9ca3af;
-        --card-bg: #2d2d2d;
-        --card-border: #4b5563;
-        --category-bg: #ef4444;
-        --category-text: #ffffff;
-        --read-more: #ef4444;
-        --shadow-color: rgba(0, 0, 0, 0.3);
-        --date-color: #9ca3af;
-        --link-hover: #f87171;
+        --bg-color: #0f172a;
+        --text-color: #cbd5e1;
+        --heading-color: #f1f5f9;
+        --subtext-color: #94a3b8;
+        --card-bg: #1e293b;
+        --card-border: #334155;
+        --accent: #ef4444;
+        --accent-hover: #f87171;
       }
     }
 
-    /* Apply variables to styles */
+    /* LAYOUT */
     .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
       background: var(--bg-color);
-      color: var(--text-color);
+      min-height: 80vh;
     }
 
+    /* HEADER */
     .category-header {
-      padding: 2rem 0;
       text-align: center;
+      margin-bottom: 3rem;
     }
-    .category-header h1 {
+    .page-title {
       font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--text-color);
+      font-weight: 800;
+      color: var(--heading-color);
+      margin: 0 0 1rem;
+      text-transform: capitalize;
     }
-    .category-header p {
-      font-size: 1.2rem;
+    .header-line {
+      width: 60px;
+      height: 4px;
+      background: var(--accent);
+      margin: 0 auto 1rem;
+      border-radius: 2px;
+    }
+    .page-desc {
+      font-size: 1.1rem;
       color: var(--subtext-color);
+      max-width: 600px;
+      margin: 0 auto;
     }
+
+    /* GRID */
     .posts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 2rem;
-      margin: 2rem 0;
     }
+
+    /* CARD */
     .post-card {
       background: var(--card-bg);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px var(--shadow-color);
       border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .post-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent);
     }
     .post-link {
       text-decoration: none;
       color: inherit;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
-    .post-link:hover .read-more {
-      color: var(--link-hover);
-    }
+
+    /* IMAGE & STATUS */
     .post-image-container {
-      height: 200px;
+      position: relative;
+      padding-top: 56.25%; /* 16:9 Aspect Ratio */
+      background: #eee;
       overflow: hidden;
     }
     .post-image {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.3s;
     }
+    .post-card:hover .post-image {
+      transform: scale(1.05);
+    }
+    .placeholder-image {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--card-border); color: var(--subtext-color);
+      font-weight: 800; font-size: 2rem;
+    }
+
+    /* STATUS BADGES */
+    .status-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: white;
+      z-index: 2;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .status-badge.breaking { background: #dc2626; animation: pulse 2s infinite; }
+    .status-badge.live { background: #16a34a; }
+    .status-badge.developing { background: #ea580c; }
+    .status-badge.analysis { background: #7c3aed; }
+    
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+    /* CONTENT */
     .post-content {
       padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
     .post-meta {
       display: flex;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--subtext-color);
+      margin-bottom: 0.8rem;
     }
     .post-category {
-      background: var(--category-bg);
-      color: var(--category-text);
-      padding: 0.25rem 0.6rem;
-      border-radius: 15px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
     }
-    .post-date {
-      color: var(--date-color);
-      font-size: 0.85rem;
-    }
+    .meta-dot { margin: 0 0.5rem; }
+    
     .post-title {
       font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 0.75rem;
-      color: var(--text-color);
+      font-weight: 700;
+      color: var(--heading-color);
+      margin: 0 0 0.8rem;
+      line-height: 1.4;
     }
     .post-excerpt {
-      color: var(--subtext-color);
       font-size: 0.95rem;
-      line-height: 1.5;
+      color: var(--subtext-color);
+      line-height: 1.6;
+      margin: 0 0 1.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1; /* Pushes footer down */
     }
+
+    /* FOOTER */
     .post-footer {
-      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--card-border);
+      margin-top: auto;
     }
-    .read-more {
-      color: var(--read-more);
+    .post-date {
+      font-size: 0.85rem;
+      color: var(--subtext-color);
+    }
+    .read-more-btn {
+      font-size: 0.9rem;
       font-weight: 600;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
     }
+    .post-card:hover .read-more-btn {
+      color: var(--accent-hover);
+    }
+
+    /* EMPTY STATE */
     .empty-state {
       text-align: center;
-      padding: 2rem;
+      padding: 4rem 1rem;
       color: var(--subtext-color);
     }
-    .empty-state h2 {
-      color: var(--text-color);
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .back-home {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.5rem;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: background 0.2s;
     }
-    @media (max-width: 768px) {
-      .posts-grid {
-        grid-template-columns: 1fr;
-      }
+    .back-home:hover { background: var(--accent-hover); }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .posts-grid { grid-template-columns: 1fr; }
+      .page-title { font-size: 2rem; }
     }
   </style>
 </Layout>
