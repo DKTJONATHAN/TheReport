@@ -1,150 +1,133 @@
 ---
 import { getCollection } from 'astro:content';
 
-// 1. Fetch Data
+// 1. DATA FETCHING
 const posts = await getCollection('posts');
-const categories = [...new Set(posts.map(post => post.data.category))].filter(Boolean);
+const categories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// 2. Search Index (Optimized + Added Images)
+// 2. SEARCH INDEX (Optimized for speed)
 const serializedPosts = posts.map(post => ({
   slug: post.slug,
   title: post.data.title,
-  category: post.data.category || 'Uncategorized',
-  image: post.data.image || '/default-image.jpg', // Added Image for Search UI
-  tags: post.data.tags || [],
-  date: post.data.date,
-  description: post.data.description || ''
+  category: post.data.category || 'News',
+  image: post.data.image || '/default-image.jpg',
+  date: new Date(post.data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }));
 
-// 3. Get Top Story
-const topStory = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())[0];
+// 3. TOP STORY LOGIC
+const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const topStory = sortedPosts[0];
 
 const navItems = [
   { href: '/', text: 'Home' },
   { href: '/category/politics', text: 'Politics' },
   { href: '/category/business', text: 'Business' },
   { href: '/category/sports', text: 'Sports' },
+  { href: '/category/lifestyle', text: 'Lifestyle' },
   { href: '/about', text: 'About' },
 ];
+
+const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 ---
 
-<header class="site-header" id="site-header">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
-  {/* --- TOP STORY TICKER --- */}
-  <div class="ticker-wrap">
-    <div class="ticker-label">
-      <span class="pulse-dot"></span> BREAKING
-    </div>
-    <div class="ticker-content">
-      {topStory ? (
-        <a href={`/posts/${topStory.slug}`} class="ticker-link">
-          <span class="ticker-time">{new Date(topStory.data.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}:</span>
-          <strong class="ticker-head">{topStory.data.title}</strong>
-          {topStory.data.description && (
-             <span class="ticker-desc"> — {topStory.data.description.substring(0, 100)}...</span>
+<header class="master-header" id="master-header">
+
+  {/* --- 1. UTILITY BAR (Date & Ticker) --- */}
+  <div class="utility-bar">
+    <div class="utility-inner">
+      <div class="date-display">{today}</div>
+      
+      <div class="ticker-container">
+        <span class="ticker-label">TOP STORY</span>
+        <div class="ticker-window">
+          {topStory ? (
+            <a href={`/posts/${topStory.slug}`} class="ticker-text">
+              {topStory.data.title} <span class="ticker-arrow">&rarr;</span>
+            </a>
+          ) : (
+            <span>Welcome to The Mwaniki Report</span>
           )}
-        </a>
-      ) : (
-         <span>Welcome to The Mwaniki Report.</span>
-      )}
+        </div>
+      </div>
+
+      <div class="utility-socials">
+         <a href="#" aria-label="Twitter"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+         <a href="#" aria-label="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036c-2.148 0-2.971.956-2.971 3.594v.376h3.617l-.571 3.667h-3.046v7.98h-4.844z"/></svg></a>
+      </div>
     </div>
   </div>
 
-  <div class="header-main">
-    <div class="header-inner">
-
-      {/* 1. Mobile Hamburger Button */}
-      <button class="menu-toggle" id="menu-toggle" aria-label="Open Menu">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
+  {/* --- 2. MAIN HEADER (Logo & Actions) --- */}
+  <div class="main-header">
+    <div class="header-content">
+      
+      {/* LEFT: Menu Trigger */}
+      <button class="icon-btn menu-btn" id="menu-trigger" aria-label="Menu">
+        <span class="menu-line top"></span>
+        <span class="menu-line mid"></span>
+        <span class="menu-line bot"></span>
       </button>
 
-      {/* 2. BRAND LOGO & TITLE */}
-      <a href="/" class="brand-link" aria-label="Go to Homepage">
-        <img src="/Jonathan-Mwaniki-logo.png" alt="JM Logo" class="logo-img" />
-        <div class="brand-text">
-          <h1 class="brand-title">The <span class="highlight">Mwaniki</span> Report</h1>
-          <span class="brand-tagline">Kenya's Premier News Source</span>
+      {/* CENTER: Brand */}
+      <a href="/" class="brand-center">
+        <div class="brand-stack">
+          <span class="brand-top">The</span>
+          <h1 class="brand-main">Mwaniki Report</h1>
         </div>
       </a>
 
-      {/* 3. Desktop Navigation */}
-      <nav class="desktop-nav">
-        {navItems.map(item => (
-          <a href={item.href} class="d-nav-link">{item.text}</a>
-        ))}
-      </nav>
-
-      {/* 4. Search Icon */}
-      <button class="search-toggle" id="search-toggle" aria-label="Search">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
+      {/* RIGHT: Search */}
+      <button class="icon-btn search-btn" id="search-trigger" aria-label="Search">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       </button>
 
     </div>
   </div>
 
-  {/* --- MOBILE DRAWER (HAMBURGER MENU) --- */}
-  <div class="mobile-drawer" id="mobile-drawer">
-    <div class="drawer-header">
-      <span class="drawer-title">Menu</span>
-      <button id="close-menu" aria-label="Close Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-    </div>
-    <div class="drawer-content">
-      <nav class="mobile-nav-list">
-        {navItems.map(item => (
-          <a href={item.href} class="m-nav-link">{item.text}</a>
-        ))}
-        <div class="drawer-divider"></div>
-        <span class="drawer-subtitle">Categories</span>
-        <div class="mobile-cat-grid">
-          {categories.map(cat => (
-            <a href={`/category/${cat.toLowerCase()}`} class="m-cat-pill">{cat}</a>
-          ))}
-        </div>
-      </nav>
-    </div>
-  </div>
+  {/* --- 3. NAVIGATION (Sticky) --- */}
+  <nav class="sticky-nav" id="sticky-nav">
+    <ul class="nav-list">
+      {navItems.map(link => (
+        <li><a href={link.href} class="nav-link">{link.text}</a></li>
+      ))}
+    </ul>
+    <div class="scroll-progress" id="scroll-progress"></div>
+  </nav>
 
-  {/* Dark Overlay for Menu/Search */}
-  <div class="overlay" id="site-overlay"></div>
-
-  {/* --- SEARCH OVERLAY (Improved UI) --- */}
-  <div class="search-modal" id="search-modal">
-    <div class="search-container">
+  {/* --- FULLSCREEN SEARCH OVERLAY --- */}
+  <div class="fs-search" id="fs-search">
+    <button class="fs-close" id="fs-close">Close</button>
+    <div class="fs-container">
+      <h3 class="fs-label">What are you looking for?</h3>
+      <input type="text" class="fs-input" id="fs-input" placeholder="Type keywords..." autocomplete="off" />
       
-      {/* Search Header */}
-      <div class="search-bar-wrapper">
-         <svg class="search-icon-input" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-         <input type="text" id="search-input" placeholder="Search stories, people, or events..." autocomplete="off" />
-         <button id="close-search" class="close-search-btn">Esc</button>
-      </div>
-
-      <div class="search-body">
-        
-        {/* Default View (Visible when no search term) */}
-        <div id="search-default" class="search-default">
-           <h3 class="search-label">Trending Topics</h3>
-           <div class="trending-tags">
-              {categories.slice(0, 6).map(cat => (
-                 <a href={`/category/${cat.toLowerCase()}`} class="trend-tag">#{cat}</a>
-              ))}
-           </div>
+      <div class="fs-results" id="fs-results">
+        {/* Empty State */}
+        <div class="fs-empty">
+          <span>Trending now:</span>
+          <div class="fs-tags">
+            {categories.map(c => <a href={`/category/${c.toLowerCase()}`} class="fs-tag">{c}</a>)}
+          </div>
         </div>
-
-        {/* Results View */}
-        <div id="search-results" class="search-results hidden">
-          {/* Results injected via JS */}
-        </div>
-
       </div>
+    </div>
+  </div>
+
+  {/* --- MOBILE MENU OVERLAY --- */}
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mm-content">
+      <nav class="mm-nav">
+        {navItems.map(link => (
+          <a href={link.href} class="mm-link">{link.text}</a>
+        ))}
+        <div class="mm-cats">
+            {categories.map(c => <a href={`/category/${c.toLowerCase()}`} class="mm-cat">#{c}</a>)}
+        </div>
+      </nav>
     </div>
   </div>
 
@@ -152,310 +135,368 @@ const navItems = [
 
 <style>
   :root {
-    --primary: #dc2626; 
-    --primary-dark: #b91c1c;
-    --bg-header: rgba(255, 255, 255, 0.98);
-    --text-main: #1a1a1a; 
-    --text-muted: #6b7280;
-    --border: #e5e7eb;
-    --drawer-bg: #ffffff;
-    --font-serif: 'Georgia', serif;
-    --font-sans: system-ui, -apple-system, sans-serif;
+    --black: #111;
+    --white: #fff;
+    --accent: #dc2626; /* Mwaniki Red */
+    --gray: #f4f4f4;
+    --border: #e5e5e5;
+    --serif: 'Playfair Display', serif;
+    --sans: 'Inter', sans-serif;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg-header: rgba(17, 24, 39, 0.98);
-      --text-main: #ffffff;
-      --text-muted: #9ca3af;
-      --border: #374151;
-      --drawer-bg: #1f2937;
-    }
-  }
-
-  /* --- 1. TICKER STYLES --- */
-  .ticker-wrap {
-    background: #000;
-    color: white;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    height: 40px;
-    overflow: hidden;
+  /* RESET */
+  * { box-sizing: border-box; }
+  
+  .master-header {
+    background: var(--white);
+    color: var(--black);
     position: relative;
-    z-index: 1002;
-    border-bottom: 1px solid #333;
+    z-index: 900;
   }
-  .ticker-label {
-    background: var(--primary);
+
+  /* --- 1. UTILITY BAR --- */
+  .utility-bar {
+    border-bottom: 1px solid var(--border);
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    height: 40px;
+    background: #f9f9f9;
+  }
+
+  .utility-inner {
+    max-width: 1240px;
+    margin: 0 auto;
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 1rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    z-index: 2;
-    font-family: var(--font-sans);
-    flex-shrink: 0;
-  }
-  .pulse-dot {
-    width: 6px; height: 6px; background: white; border-radius: 50%;
-    margin-right: 8px; animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-  .ticker-content {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    position: relative;
-    padding-left: 1rem;
-    mask-image: linear-gradient(to right, transparent, black 20px, black 95%, transparent);
-  }
-  .ticker-link {
-    display: inline-block;
-    color: #e5e7eb;
-    text-decoration: none;
-    animation: marquee 30s linear infinite;
-    font-family: var(--font-sans);
-    display: flex;
-    align-items: center;
-  }
-  .ticker-link:hover { text-decoration: none; animation-play-state: paused; }
-  .ticker-time { color: var(--primary); font-weight: bold; margin-right: 10px; font-size: 0.75rem; }
-  .ticker-head { font-weight: 700; color: white; margin-right: 8px; }
-  .ticker-desc { color: #9ca3af; font-weight: 400; font-style: italic; }
-
-  @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
-  }
-
-  /* --- 2. HEADER MAIN --- */
-  .site-header { position: sticky; top: 0; z-index: 1000; width: 100%; }
-  .header-main {
-    background: var(--bg-header);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-  .header-inner {
-    max-width: 1280px; margin: 0 auto;
-    height: 72px;
-    display: flex; align-items: center; justify-content: space-between;
+    justify-content: space-between;
     padding: 0 1.5rem;
   }
 
-  /* BRAND */
-  .brand-link { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-  .logo-img { height: 48px; width: auto; display: block; }
-  .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-  .brand-title { font-family: var(--font-serif); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; margin: 0; color: var(--text-main); }
-  .highlight { color: var(--primary); }
-  .brand-tagline { font-family: var(--font-sans); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-
-  /* NAV & BUTTONS */
-  .desktop-nav { display: none; gap: 2rem; }
-  .d-nav-link {
-    font-family: var(--font-sans); font-weight: 700; font-size: 0.9rem;
-    color: var(--text-main); text-decoration: none;
-    padding: 0.5rem 0; border-bottom: 2px solid transparent;
-    transition: all 0.2s; text-transform: uppercase;
+  .date-display {
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: none;
   }
-  .d-nav-link:hover, .d-nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
+  @media(min-width: 768px) { .date-display { display: block; } }
 
-  .menu-toggle, .search-toggle {
-    background: none; border: none; cursor: pointer; padding: 0.5rem;
-    color: var(--text-main); border-radius: 50%; transition: background 0.2s;
+  /* New Ticker Style */
+  .ticker-container {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    overflow: hidden;
+    margin: 0 1rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 4px 10px;
+    height: 28px;
+  }
+  
+  .ticker-label {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 0.65rem;
+    margin-right: 10px;
+    white-space: nowrap;
+    position: relative;
+    padding-right: 10px;
+  }
+  .ticker-label::after {
+    content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 1px; height: 10px; background: #ddd;
+  }
+
+  .ticker-window { flex: 1; overflow: hidden; white-space: nowrap; }
+  
+  .ticker-text {
+    display: inline-block;
+    color: var(--black);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.75rem;
+    animation: fadeSlide 6s infinite;
+  }
+  @keyframes fadeSlide {
+    0%, 20% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 1; transform: translateY(0); } /* Simplified for static feel, can animate if list */
+  }
+  
+  .ticker-arrow { color: var(--accent); margin-left: 5px; }
+
+  .utility-socials { display: flex; gap: 1rem; color: #888; }
+  .utility-socials a:hover { color: var(--accent); }
+
+
+  /* --- 2. MAIN HEADER --- */
+  .main-header {
+    padding: 1.5rem 0;
+    background: var(--white);
+    position: relative;
+    z-index: 2;
+  }
+
+  .header-content {
+    max-width: 1240px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: 50px 1fr 50px;
+    align-items: center;
+    padding: 0 1.5rem;
+  }
+
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+    color: var(--black);
   }
-  .menu-toggle:hover, .search-toggle:hover { background: rgba(0,0,0,0.05); color: var(--primary); }
+  .icon-btn:hover { background: #f0f0f0; }
 
-  /* --- 3. MOBILE DRAWER --- */
-  .mobile-drawer {
-    position: fixed; top: 0; left: 0; bottom: 0; width: 85%; max-width: 300px;
-    background: var(--drawer-bg); z-index: 2000;
-    transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+  /* Hamburger Animation */
+  .menu-btn { flex-direction: column; gap: 5px; }
+  .menu-line { width: 22px; height: 2px; background: currentColor; transition: 0.3s; }
+  .menu-active .top { transform: rotate(45deg) translate(5px, 5px); }
+  .menu-active .mid { opacity: 0; }
+  .menu-active .bot { transform: rotate(-45deg) translate(5px, -5px); }
+
+  /* Brand Styling */
+  .brand-center { text-align: center; text-decoration: none; color: var(--black); }
+  .brand-stack { display: flex; flex-direction: column; align-items: center; line-height: 0.8; }
+  .brand-top {
+    font-family: var(--sans);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-bottom: 5px;
   }
-  .mobile-drawer.active { transform: translateX(0); }
-  .drawer-header { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; border-bottom: 1px solid var(--border); }
-  .drawer-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); text-transform: uppercase; }
-  #close-menu { background: none; border: none; color: var(--text-main); cursor: pointer; }
-  .drawer-content { padding: 1.5rem; overflow-y: auto; flex: 1; }
-  .m-nav-link { font-size: 1.1rem; font-weight: 700; color: var(--text-main); padding: 0.75rem 0; text-decoration: none; border-bottom: 1px solid var(--border); display: block; }
-  .drawer-divider { height: 2rem; }
-  .drawer-subtitle { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; font-weight: 700; display: block; }
-  .mobile-cat-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .m-cat-pill { background: rgba(0,0,0,0.05); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 99px; font-size: 0.85rem; text-decoration: none; font-weight: 500; }
+  .brand-main {
+    font-family: var(--serif);
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin: 0;
+    letter-spacing: -1px;
+    white-space: nowrap;
+  }
+  @media(max-width: 480px) { .brand-main { font-size: 1.8rem; } }
+
+
+  /* --- 3. STICKY NAV --- */
+  .sticky-nav {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 800;
+    transition: transform 0.3s;
+  }
+  .nav-up { transform: translateY(-100%); }
+
+  .nav-list {
+    display: none; /* Hidden on mobile */
+    justify-content: center;
+    gap: 2.5rem;
+    list-style: none; margin: 0; padding: 0.8rem 0;
+  }
+  @media(min-width: 900px) { .nav-list { display: flex; } }
+
+  .nav-link {
+    font-family: var(--sans);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--black);
+    text-decoration: none;
+    position: relative;
+    padding-bottom: 5px;
+  }
+  .nav-link::after {
+    content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
+    background: var(--accent); transition: width 0.3s;
+  }
+  .nav-link:hover::after { width: 100%; }
+
+  .scroll-progress { height: 2px; background: var(--accent); width: 0%; position: absolute; bottom: -1px; left: 0; transition: width 0.1s; }
+
+
+  /* --- 4. FULLSCREEN SEARCH --- */
+  .fs-search {
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,0.98);
+    z-index: 2000;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 15vh;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .fs-search.active { opacity: 1; pointer-events: all; }
+
+  .fs-close {
+    position: absolute; top: 2rem; right: 2rem;
+    background: none; border: none; font-family: var(--sans);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer; padding: 1rem;
+  }
   
-  .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1001;
-    opacity: 0; visibility: hidden; transition: opacity 0.3s; backdrop-filter: blur(4px);
-  }
-  .overlay.active { opacity: 1; visibility: visible; }
-
-  /* --- 4. IMPROVED SEARCH UI --- */
-  .search-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3000;
-    background: var(--bg-header); display: none; justify-content: center;
-    padding-top: 80px; animation: slideDown 0.3s ease-out;
-  }
-  .search-modal.active { display: flex; }
-  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-  .search-container { width: 100%; max-width: 700px; padding: 0 1.5rem; display: flex; flex-direction: column; height: 80vh; }
-
-  .search-bar-wrapper {
-    display: flex; align-items: center; border-bottom: 2px solid var(--border);
-    padding-bottom: 1rem; margin-bottom: 2rem; position: relative;
-  }
-  .search-bar-wrapper:focus-within { border-color: var(--primary); }
+  .fs-container { width: 100%; max-width: 800px; padding: 0 1.5rem; }
+  .fs-label { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; color: #555; font-weight: 400; }
   
-  .search-icon-input { color: var(--text-muted); margin-right: 1rem; }
+  .fs-input {
+    width: 100%; border: none; border-bottom: 2px solid #ddd;
+    font-size: 3rem; font-family: var(--serif); font-weight: 700;
+    padding: 0.5rem 0; background: transparent; outline: none;
+    color: var(--black);
+  }
+  .fs-input:focus { border-color: var(--accent); }
+
+  .fs-results { margin-top: 3rem; max-height: 50vh; overflow-y: auto; }
   
-  #search-input {
-    flex: 1; border: none; background: transparent; font-size: 1.5rem;
-    outline: none; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);
+  .fs-empty span { display: block; font-family: var(--sans); font-size: 0.8rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
+  .fs-tags { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .fs-tag {
+    padding: 0.5rem 1.2rem; border: 1px solid #ddd; border-radius: 50px;
+    text-decoration: none; color: var(--black); font-family: var(--sans);
+    font-size: 0.85rem; transition: 0.2s;
   }
-  #search-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .fs-tag:hover { background: var(--black); color: var(--white); border-color: var(--black); }
 
-  .close-search-btn {
-    background: rgba(0,0,0,0.05); border: none; color: var(--text-muted);
-    font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.8rem;
-    border-radius: 4px; cursor: pointer; text-transform: uppercase;
+  /* Search Result Item */
+  .search-hit {
+    display: flex; align-items: center; gap: 1.5rem;
+    padding: 1rem 0; border-bottom: 1px solid #eee;
+    text-decoration: none; color: var(--black);
+    animation: slideUp 0.3s ease-out forwards;
   }
-  .close-search-btn:hover { background: var(--primary); color: white; }
-
-  /* Search Body */
-  .search-body { overflow-y: auto; padding-bottom: 2rem; }
-  .hidden { display: none; }
-
-  /* Default Tags */
-  .search-label { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; letter-spacing: 1px; }
-  .trending-tags { display: flex; flex-wrap: wrap; gap: 0.8rem; }
-  .trend-tag { 
-    font-size: 0.9rem; color: var(--primary); background: rgba(220, 38, 38, 0.1); 
-    padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 600;
-  }
-  .trend-tag:hover { background: var(--primary); color: white; }
-
-  /* Results List */
-  .search-result-card {
-    display: flex; align-items: start; gap: 1rem; padding: 1rem;
-    border-radius: 8px; text-decoration: none; margin-bottom: 0.5rem;
-    transition: background 0.2s; border: 1px solid transparent;
-  }
-  .search-result-card:hover { background: rgba(0,0,0,0.03); border-color: var(--border); }
+  .search-hit img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
+  .search-hit h4 { font-family: var(--serif); font-size: 1.4rem; margin: 0; }
+  .search-hit span { font-family: var(--sans); font-size: 0.75rem; color: var(--accent); text-transform: uppercase; font-weight: 700; }
   
-  .result-thumb { width: 80px; height: 60px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: #eee; }
-  
-  .result-content { flex: 1; }
-  .result-cat { font-size: 0.65rem; text-transform: uppercase; color: var(--primary); font-weight: 700; display: block; margin-bottom: 0.2rem; }
-  .result-title { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.2rem 0; line-height: 1.3; }
-  .result-snippet { font-size: 0.8rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-  @media (min-width: 900px) {
-    .menu-toggle { display: none; }
-    .desktop-nav { display: flex; }
+
+  /* --- 5. MOBILE MENU --- */
+  .mobile-menu {
+    position: fixed; top: 120px; left: 0; width: 100%; height: calc(100vh - 120px);
+    background: var(--white); z-index: 850;
+    transform: translateY(20px); opacity: 0; pointer-events: none;
+    transition: 0.3s ease; padding: 2rem;
   }
+  .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+  
+  .mm-nav { display: flex; flex-direction: column; gap: 1.5rem; text-align: center; }
+  .mm-link {
+    font-family: var(--serif); font-size: 2rem; color: var(--black);
+    text-decoration: none; font-weight: 700;
+  }
+  .mm-cats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 2rem; }
+  .mm-cat {
+    font-family: var(--sans); font-size: 0.8rem; color: #666;
+    background: #f4f4f4; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;
+  }
+
 </style>
 
 <script is:inline define:vars={{posts: serializedPosts}}>
-  // === UI LOGIC ===
-  const menuBtn = document.getElementById('menu-toggle');
-  const drawer = document.getElementById('mobile-drawer');
-  const overlay = document.getElementById('site-overlay');
-  const closeMenuBtn = document.getElementById('close-menu');
+  // === ELEMENTS ===
+  const menuTrigger = document.getElementById('menu-trigger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const stickyNav = document.getElementById('sticky-nav');
+  const searchTrigger = document.getElementById('search-trigger');
+  const fsSearch = document.getElementById('fs-search');
+  const fsClose = document.getElementById('fs-close');
+  const fsInput = document.getElementById('fs-input');
+  const fsResults = document.getElementById('fs-results');
+  const progressBar = document.getElementById('scroll-progress');
 
-  function toggleMenu(show) {
-    if(show) {
-      drawer.classList.add('active');
-      overlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    } else {
-      drawer.classList.remove('active');
-      overlay.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-  }
+  // === MENU TOGGLE ===
+  let isMenuOpen = false;
+  menuTrigger.addEventListener('click', () => {
+    isMenuOpen = !isMenuOpen;
+    mobileMenu.classList.toggle('open');
+    menuTrigger.classList.toggle('menu-active');
+    
+    // Lock scroll
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+  });
 
-  menuBtn?.addEventListener('click', () => toggleMenu(true));
-  closeMenuBtn?.addEventListener('click', () => toggleMenu(false));
-  overlay?.addEventListener('click', () => {
-    toggleMenu(false);
-    toggleSearch(false);
+  // === SEARCH TOGGLE ===
+  searchTrigger.addEventListener('click', () => {
+    fsSearch.classList.add('active');
+    setTimeout(() => fsInput.focus(), 100);
+    document.body.style.overflow = 'hidden';
+  });
+
+  fsClose.addEventListener('click', () => {
+    fsSearch.classList.remove('active');
+    document.body.style.overflow = '';
   });
 
   // === SEARCH LOGIC ===
-  const searchBtn = document.getElementById('search-toggle');
-  const searchModal = document.getElementById('search-modal');
-  const closeSearchBtn = document.getElementById('close-search');
-  const searchInput = document.getElementById('search-input');
-  const searchResults = document.getElementById('search-results');
-  const searchDefault = document.getElementById('search-default');
-
-  function toggleSearch(show) {
-    if(show) {
-      searchModal.classList.add('active');
-      setTimeout(() => searchInput.focus(), 100);
-      document.body.style.overflow = 'hidden';
-    } else {
-      searchModal.classList.remove('active');
-      document.body.style.overflow = '';
-      searchInput.value = '';
-      searchResults.classList.add('hidden');
-      searchDefault.classList.remove('hidden');
+  fsInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase().trim();
+    
+    if(term.length < 2) {
+       // Show default tags if empty
+       fsResults.innerHTML = `
+        <div class="fs-empty">
+          <span>Trending now:</span>
+          <div class="fs-tags">
+             <a href="/category/politics" class="fs-tag">Politics</a>
+             <a href="/category/business" class="fs-tag">Business</a>
+             <a href="/category/sports" class="fs-tag">Sports</a>
+          </div>
+        </div>`;
+       return;
     }
-  }
 
-  searchBtn?.addEventListener('click', () => toggleSearch(true));
-  closeSearchBtn?.addEventListener('click', () => toggleSearch(false));
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      toggleMenu(false);
-      toggleSearch(false);
+    const hits = posts.filter(p => p.title.toLowerCase().includes(term)).slice(0, 5);
+    
+    if(hits.length === 0) {
+      fsResults.innerHTML = `<div style="text-align:center; color:#999; margin-top:2rem;">No stories found for "${term}"</div>`;
+    } else {
+      fsResults.innerHTML = hits.map(h => `
+        <a href="/posts/${h.slug}" class="search-hit">
+           <img src="${h.image}" alt="">
+           <div>
+              <span>${h.category}</span>
+              <h4>${h.title}</h4>
+           </div>
+        </a>
+      `).join('');
     }
   });
 
-  searchInput?.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
+  // === SCROLL PROGRESS & STICKY HIDE ===
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.scrollY;
     
-    if (query.length < 2) {
-      searchResults.classList.add('hidden');
-      searchDefault.classList.remove('hidden');
-      return;
-    }
+    // Progress Bar
+    const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = (currentScroll / totalHeight) * 100;
+    if(progressBar) progressBar.style.width = `${progress}%`;
 
-    searchDefault.classList.add('hidden');
-    searchResults.classList.remove('hidden');
-    searchResults.innerHTML = '';
-
-    const hits = posts.filter(post => {
-      return post.title.toLowerCase().includes(query) ||
-             post.tags.some(tag => tag.toLowerCase().includes(query)) ||
-             post.description.toLowerCase().includes(query);
-    }).slice(0, 5);
-
-    if(hits.length === 0) {
-      searchResults.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">No results found.</div>';
+    // Hide/Show Nav
+    if (currentScroll > 100 && currentScroll > lastScroll && !isMenuOpen) {
+      stickyNav.classList.add('nav-up');
     } else {
-      hits.forEach(hit => {
-        const item = document.createElement('a');
-        item.href = `/posts/${hit.slug}`;
-        item.className = 'search-result-card';
-        item.innerHTML = `
-          <img src="${hit.image}" class="result-thumb" alt="" />
-          <div class="result-content">
-             <span class="result-cat">${hit.category}</span>
-             <h4 class="result-title">${hit.title}</h4>
-             <p class="result-snippet">${hit.description.substring(0, 80)}...</p>
-          </div>
-        `;
-        searchResults.appendChild(item);
-      });
+      stickyNav.classList.remove('nav-up');
+    }
+    lastScroll = currentScroll;
+  });
+
+  // Keyboard Escape
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') {
+      fsSearch.classList.remove('active');
+      if(isMenuOpen) menuTrigger.click();
     }
   });
 </script>
