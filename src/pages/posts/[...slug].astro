@@ -20,12 +20,20 @@ function createTagSlug(tag) {
   return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// 3. Related posts logic
+// 3. Data Logic
 const allPosts = await getCollection('posts');
+
+// Related Posts (Sidebar)
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 5); 
+
+// Stories Circles (Top 10 from the same category)
+const storyPosts = allPosts
+  .filter(p => p.data.category === post.data.category)
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 10);
 
 // 4. Metadata & SEO
 const siteUrl = 'https://jonathanmwaniki.co.ke';
@@ -84,130 +92,149 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
   <div id="progress-container"><div id="progress-bar"></div></div>
 
-  <div class="page-container">
+  <div class="page-wrapper">
 
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Home</a><span class="separator">/</span>
-      <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
-      <span class="current">{post.data.title}</span>
-    </nav>
+    {/* --- 1. STORIES CAROUSEL (NEW) --- */}
+    <section class="stories-section">
+      <div class="stories-inner">
+        <div class="stories-scroll">
+          {storyPosts.map(story => (
+            <a href={`/posts/${story.slug}`} class="story-item">
+              <div class="story-img-ring">
+                <img src={story.data.image || '/default-image.jpg'} alt={story.data.title} loading="eager" />
+              </div>
+              <span class="story-label">{story.data.title}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <div class="article-grid">
+    <div class="page-container">
 
-      {/* --- LEFT COLUMN: CONTENT --- */}
-      <main id="maincontent" class="main-column">
-        <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a><span class="separator">/</span>
+        <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
+        <span class="current">{post.data.title.substring(0, 40)}...</span>
+      </nav>
 
-          <header class="article-header">
-            <span class="category-pill">{post.data.category || 'News'}</span>
-            <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
+      <div class="article-grid">
 
-            <div class="article-meta">
-               <div class="meta-left">
-                 <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
-                 <span class="meta-dot">•</span>
-                 <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
-               </div>
-               <span class="reading-time">{readingTime} min read</span>
-            </div>
+        {/* --- LEFT COLUMN: CONTENT --- */}
+        <main id="maincontent" class="main-column">
+          <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
 
-            <div class="share-row">
-               <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
-               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
-            </div>
-          </header>
+            <header class="article-header">
+              <a href={categoryUrl} class="category-pill">{post.data.category || 'News'}</a>
+              <h1 class="article-title" itemprop="headline">{post.data.title}</h1>
 
-          {post.data.image && (
-            <figure class="featured-image">
-              <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
-              
-              {/* --- NEW: STATUS BADGE (Circle) --- */}
-              {post.data.status && (
-                <span class={`status-badge ${post.data.status.toLowerCase()}`}>
-                  {post.data.status}
-                </span>
-              )}
+              <div class="article-meta">
+                 <div class="meta-left">
+                   <span class="author-name">By <strong itemprop="name">{post.data.author || 'Jonathan Mwaniki'}</strong></span>
+                   <span class="meta-dot">•</span>
+                   <time datetime={publishedDate} itemprop="datePublished">{displayDate}</time>
+                 </div>
+                 <span class="reading-time">{readingTime} min read</span>
+              </div>
 
-              {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
-            </figure>
-          )}
+              <div class="share-row">
+                 <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-x">Share on X</a>
+                 <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} target="_blank" class="share-pill share-fb">Share on FB</a>
+              </div>
+            </header>
 
-          {post.data.description && (
-            <div class="key-takeaways">
-              <h3>In Brief</h3>
-              <p>{post.data.description}</p>
-            </div>
-          )}
+            {post.data.image && (
+              <figure class="featured-image">
+                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
 
-          {/* --- PROTECTED AD WRAPPER --- */}
-          <div class="ad-outer-wrapper">
-             <span class="ad-label">Advertisement</span>
-             <div class="ad-scroll-container">
-                <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
-                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-             </div>
-          </div>
+                {/* --- STATUS BADGE (Circle) --- */}
+                {post.data.status && (
+                  <span class={`status-badge ${post.data.status.toLowerCase()}`}>
+                    {post.data.status}
+                  </span>
+                )}
 
-          <div class="article-body" itemprop="articleBody">
-            <Article>
-              <Content />
-            </Article>
-          </div>
+                {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
+              </figure>
+            )}
 
-          <footer class="article-footer">
-            <div class="tags">
-              {/* --- CLICKABLE TAGS LINKING TO /tags/[tag] --- */}
-              {post.data.tags?.map(tag => (
-                <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
-              ))}
-            </div>
+            {post.data.description && (
+              <div class="key-takeaways">
+                <h3>In Brief</h3>
+                <p>{post.data.description}</p>
+              </div>
+            )}
 
-            <div class="author-box">
-               <div class="author-avatar">
-                 <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
-               </div>
-               <div class="author-info">
-                 <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
-                 <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+            {/* --- PROTECTED AD WRAPPER --- */}
+            <div class="ad-outer-wrapper">
+               <span class="ad-label">Advertisement</span>
+               <div class="ad-scroll-container">
+                  <ins class="adsbygoogle" style="display:block" data-ad-format="fluid" data-ad-layout-key="-ft+62+3a-cx+as" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931"></ins>
+                  <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
                </div>
             </div>
-          </footer>
-        </article>
-      </main>
 
-      {/* --- RIGHT COLUMN: SIDEBAR --- */}
-      <aside class="sidebar-column">
-        <div class="sticky-wrapper">
+            <div class="article-body" itemprop="articleBody">
+              <Article>
+                <Content />
+              </Article>
+            </div>
 
-          <div class="ad-outer-wrapper sidebar-ad-wrapper">
-             <span class="ad-label">Advertisement</span>
-             <div class="ad-scroll-container">
-                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-             </div>
-          </div>
-
-          {relatedPosts.length > 0 && (
-            <div class="related-widget">
-              <h3 class="widget-title">More in {post.data.category}</h3>
-              <div class="widget-list">
-                {relatedPosts.map(related => (
-                  <a href={`/posts/${related.slug}`} class="widget-item">
-                    <div class="widget-img">
-                      <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
-                    </div>
-                    <div class="widget-content">
-                      <h4>{related.data.title}</h4>
-                      <time>{new Date(related.data.date).toLocaleDateString()}</time>
-                    </div>
-                  </a>
+            <footer class="article-footer">
+              <div class="tags">
+                {/* --- CLICKABLE TAGS LINKING TO /tags/[tag] --- */}
+                {post.data.tags?.map(tag => (
+                  <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </aside>
 
+              <div class="author-box">
+                 <div class="author-avatar">
+                   <img src="/Jonathan-Mwaniki-logo.png" alt="JM" />
+                 </div>
+                 <div class="author-info">
+                   <h3>About {post.data.author || 'Jonathan Mwaniki'}</h3>
+                   <p>Investigative journalist and developer covering the stories that matter in Kenya.</p>
+                 </div>
+              </div>
+            </footer>
+          </article>
+        </main>
+
+        {/* --- RIGHT COLUMN: SIDEBAR --- */}
+        <aside class="sidebar-column">
+          <div class="sticky-wrapper">
+
+            <div class="ad-outer-wrapper sidebar-ad-wrapper">
+               <span class="ad-label">Advertisement</span>
+               <div class="ad-scroll-container">
+                  <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                  <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+               </div>
+            </div>
+
+            {relatedPosts.length > 0 && (
+              <div class="related-widget">
+                <h3 class="widget-title">More in {post.data.category}</h3>
+                <div class="widget-list">
+                  {relatedPosts.map(related => (
+                    <a href={`/posts/${related.slug}`} class="widget-item">
+                      <div class="widget-img">
+                        <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
+                      </div>
+                      <div class="widget-content">
+                        <h4>{related.data.title}</h4>
+                        <time>{new Date(related.data.date).toLocaleDateString()}</time>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+
+      </div>
     </div>
   </div>
 
@@ -228,6 +255,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
+    /* VARIABLES */
     :root {
       --bg-color: #ffffff;
       --text-color: #1a1a1a;
@@ -251,10 +279,9 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       }
     }
 
-    /* 1. NUCLEAR OVERFLOW PROTECTION */
     html, body {
         width: 100%;
-        overflow-x: hidden; /* Force Stop Horizontal Scroll */
+        overflow-x: hidden;
         background: var(--bg-color); 
         color: var(--text-color); 
         font-family: var(--font-body); 
@@ -262,12 +289,26 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         margin: 0; padding: 0;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; }
     img { max-width: 100%; display: block; height: auto; }
     a { text-decoration: none; color: inherit; transition: color 0.2s; }
 
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; background: transparent; }
     #progress-bar { height: 4px; background: var(--accent); width: 0%; transition: width 0.1s; }
+
+    .page-wrapper { width: 100%; overflow: hidden; }
+
+    /* STORIES SECTION (New) */
+    .stories-section { background: var(--bg-color); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1rem; }
+    .stories-inner { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    .stories-scroll::-webkit-scrollbar { display: none; }
+    
+    .story-item { flex: 0 0 auto; width: 64px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+    .story-item:hover { transform: translateY(-2px); }
+    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--bg-color); width: 100%; height: 100%; object-fit: cover; }
+    .story-label { font-family: var(--font-head); font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text-color); }
 
     /* CONTAINER */
     .page-container { 
@@ -289,7 +330,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       flex-direction: column; 
       gap: 2rem; 
       width: 100%;
-      min-width: 0; /* Flex child shrink fix */
+      min-width: 0; 
     }
 
     @media (min-width: 1024px) { 
@@ -324,46 +365,31 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); white-space: nowrap; }
     .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-    /* FEATURED IMAGE & STATUS */
+    /* IMAGE & STATUS */
     .featured-image { margin-bottom: 2rem; width: 100%; position: relative; }
     .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; }
     .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
 
-    /* New Status Badge Styles */
+    /* Status Badge */
     .status-badge {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: var(--accent);
-      color: white;
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-family: var(--font-head);
-      font-weight: 700;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      position: absolute; top: 15px; right: 15px;
+      background: var(--accent); color: white;
+      padding: 0.3rem 0.8rem; border-radius: 20px;
+      font-family: var(--font-head); font-weight: 700; font-size: 0.75rem;
+      text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       z-index: 5;
     }
-    /* Specific Colors for Statuses */
     .status-badge.breaking { background: #dc2626; animation: pulse 2s infinite; }
-    .status-badge.developing { background: #ea580c; } /* Orange */
-    .status-badge.live { background: #16a34a; } /* Green */
-    
     @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
 
     .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
     .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
     .key-takeaways p { font-size: 1.1rem; font-weight: 500; color: var(--text-color); margin: 0; }
 
-    /* CONTENT BODY */
+    /* BODY */
     .article-body { 
-        font-size: 1.15rem; 
-        line-height: 1.8; 
-        color: var(--text-color); 
-        width: 100%; 
-        overflow-wrap: break-word; 
-        word-wrap: break-word; 
+        font-size: 1.15rem; line-height: 1.8; color: var(--text-color); 
+        width: 100%; overflow-wrap: break-word; word-wrap: break-word; 
     }
     .article-body :global(p) { margin-bottom: 1.5rem; }
     .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; margin: 2rem 0 1rem; color: var(--text-color); }
@@ -371,51 +397,18 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
     .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; }
 
-    /* AD WRAPPER */
-    .ad-outer-wrapper {
-        margin: 2rem 0;
-        background: var(--bg-light);
-        border-radius: 8px;
-        text-align: center;
-        width: 100%;
-        padding: 1rem 0;
-    }
-    .ad-label { 
-        font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); 
-        text-transform: uppercase; display: block; margin-bottom: 0.5rem; 
-        text-align: center; letter-spacing: 1px; 
-    }
-    .ad-scroll-container {
-        width: 100%;
-        overflow-x: auto; 
-        display: flex;
-        justify-content: center;
-        -webkit-overflow-scrolling: touch; 
-    }
-
+    /* ADS */
+    .ad-outer-wrapper { margin: 2rem 0; background: var(--bg-light); border-radius: 8px; text-align: center; width: 100%; padding: 1rem 0; }
+    .ad-label { font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .ad-scroll-container { width: 100%; overflow-x: auto; display: flex; justify-content: center; -webkit-overflow-scrolling: touch; }
     .sidebar-ad-wrapper { margin-top: 0; min-height: 250px; }
 
     /* FOOTER */
     .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
     .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
     
-    /* Clickable Tag Styles */
-    .tag { 
-        display: inline-block; 
-        background: var(--bg-light); 
-        padding: 0.3rem 0.8rem; 
-        border-radius: 4px; 
-        font-size: 0.9rem; 
-        font-family: var(--font-head); 
-        color: var(--text-light); 
-        transition: all 0.2s ease;
-    }
-    .tag:hover { 
-        background: var(--accent); 
-        color: white; 
-        text-decoration: none;
-        transform: translateY(-2px);
-    }
+    .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); transition: all 0.2s ease; }
+    .tag:hover { background: var(--accent); color: white; text-decoration: none; transform: translateY(-2px); }
 
     .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 1.5rem; border-radius: 8px; align-items: center; }
     .author-avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
