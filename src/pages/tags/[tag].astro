@@ -2,130 +2,60 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-// Define types for better type safety
+// --- 1. ROBUST DATA LOGIC (Preserved) ---
 type Post = CollectionEntry<'posts'>;
 
-// Helper function to safely extract tags with comprehensive validation
 function safeGetTags(post: Post): string[] {
   try {
     const tags = post.data?.tags;
-    
-    // Handle null/undefined
     if (!tags) return [];
-    
-    // Handle array of tags
-    if (Array.isArray(tags)) {
-      return tags
-        .filter((tag): tag is string => {
-          return typeof tag === 'string' && tag.trim().length > 0;
-        })
-        .map(tag => tag.trim());
-    }
-    
-    // Handle single string tag
-    if (typeof tags === 'string') {
-      const trimmed = tags.trim();
-      return trimmed.length > 0 ? [trimmed] : [];
-    }
-    
-    // Handle comma-separated string
-    if (typeof tags === 'string' && tags.includes(',')) {
-      return tags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-    }
-    
+    if (Array.isArray(tags)) return tags.filter(t => typeof t === 'string' && t.trim().length > 0).map(t => t.trim());
+    if (typeof tags === 'string') return tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
     return [];
   } catch (error) {
-    console.warn('Error extracting tags from post:', post.slug, error);
     return [];
   }
 }
 
-// Helper function to create URL-safe slugs
 function createSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  return text.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// Helper function to safely get category
 function safeGetCategory(post: Post): string {
-  try {
-    const category = post.data?.category;
-    if (typeof category === 'string' && category.trim().length > 0) {
-      return category.trim();
-    }
-    return 'Uncategorized';
-  } catch (error) {
-    console.warn('Error extracting category from post:', post.slug, error);
-    return 'Uncategorized';
-  }
+  return typeof post.data?.category === 'string' ? post.data.category.trim() : 'News';
 }
 
 export async function getStaticPaths() {
   try {
-    // Get all posts with error handling
     const allPosts = await getCollection('posts');
-    
-    if (!Array.isArray(allPosts) || allPosts.length === 0) {
-      console.warn('No posts found or posts is not an array');
-      return [];
-    }
+    if (!allPosts.length) return [];
 
-    // Extract all unique tags safely
     const allTags = new Set<string>();
     const allCategories = new Set<string>();
     
     for (const post of allPosts) {
-      // Add tags
-      const tags = safeGetTags(post);
-      tags.forEach(tag => allTags.add(tag));
-      
-      // Add categories
-      const category = safeGetCategory(post);
-      allCategories.add(category);
+      safeGetTags(post).forEach(tag => allTags.add(tag));
+      allCategories.add(safeGetCategory(post));
     }
 
-    // Convert to arrays and create slugs
-    const tagArray = Array.from(allTags);
     const categoryArray = Array.from(allCategories);
     
-    // Create paths for each tag
-    const paths = tagArray.map(tag => {
+    return Array.from(allTags).map(tag => {
       const tagSlug = createSlug(tag);
+      if (!tagSlug) return null;
       
-      // Skip if slug is empty
-      if (!tagSlug) {
-        console.warn('Empty slug generated for tag:', tag);
-        return null;
-      }
-      
-      // Check if this tag slug conflicts with any category slug
-      const categorySlug = categoryArray
-        .map(cat => createSlug(cat))
-        .find(slug => slug === tagSlug);
+      const categorySlug = categoryArray.map(c => createSlug(c)).find(s => s === tagSlug);
       
       return {
-        params: { 
-          tag: tagSlug 
-        },
+        params: { tag: tagSlug },
         props: { 
-          originalTag: tag,
-          tagSlug,
-          conflictsWithCategory: !!categorySlug,
-          categoryRedirect: categorySlug ? `/category/${categorySlug}` : null
+          originalTag: tag, 
+          tagSlug, 
+          conflictsWithCategory: !!categorySlug, 
+          categoryRedirect: categorySlug ? `/category/${categorySlug}` : null 
         }
       };
-    }).filter((path): path is NonNullable<typeof path> => path !== null);
-
-    console.log(`Generated ${paths.length} tag paths from ${tagArray.length} unique tags`);
-    return paths;
+    }).filter(Boolean);
     
   } catch (error) {
     console.error('Error in getStaticPaths:', error);
@@ -133,508 +63,248 @@ export async function getStaticPaths() {
   }
 }
 
-// Get props from Astro
 const { originalTag, tagSlug, conflictsWithCategory, categoryRedirect } = Astro.props;
 
-// Validate required props
-if (!originalTag || !tagSlug) {
-  console.error('Missing required props:', { originalTag, tagSlug });
-  return Astro.redirect('/404');
-}
-
-// Redirect if tag conflicts with category
 if (conflictsWithCategory && categoryRedirect) {
   return Astro.redirect(categoryRedirect);
 }
 
-// Get all posts and filter by current tag
+// --- 2. FETCH & ORGANIZE DATA FOR UI ---
 let filteredPosts: Post[] = [];
-let allCategories: string[] = [];
+let sidebarTrending: Post[] = [];
 
 try {
   const allPosts = await getCollection('posts');
   
-  // Filter posts that have the current tag
+  // Filter for current tag
   filteredPosts = allPosts
     .filter(post => {
-      const postTags = safeGetTags(post);
-      const postTagSlugs = postTags.map(tag => createSlug(tag));
-      return postTagSlugs.includes(tagSlug);
+      const postTags = safeGetTags(post).map(t => createSlug(t));
+      return postTags.includes(tagSlug);
     })
-    .sort((a, b) => {
-      const dateA = a.data?.date ? new Date(a.data.date).getTime() : 0;
-      const dateB = b.data?.date ? new Date(b.data.date).getTime() : 0;
-      return dateB - dateA; // Most recent first
-    });
+    .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-  // Get all categories for navigation
-  allCategories = Array.from(new Set(
-    allPosts.map(post => safeGetCategory(post))
-  )).sort();
+  // Get Sidebar Content (Global trending excluding current tag items to avoid duplicates)
+  sidebarTrending = allPosts
+    .filter(p => !filteredPosts.includes(p))
+    .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+    .slice(0, 5);
 
 } catch (error) {
-  console.error('Error loading posts:', error);
   return Astro.redirect('/404');
 }
 
-// Redirect to 404 if no posts found
-if (filteredPosts.length === 0) {
-  console.warn(`No posts found for tag: ${originalTag}`);
-  return Astro.redirect('/404');
-}
+if (filteredPosts.length === 0) return Astro.redirect('/404');
 
-// SEO and meta data
-const pageTitle = `${originalTag} News & Articles`;
-const pageDescription = `Discover the latest ${originalTag} news, articles, and updates from Kenya. Stay informed with comprehensive coverage and insights.`;
+// UI Data Slicing
+const storyPosts = filteredPosts.slice(0, 10); // Top 10 for circles
+const feedPosts = filteredPosts; // Main feed
+
+const pageTitle = `${originalTag} News - Jonathan Mwaniki`;
+const pageDescription = `Latest news and updates tagged with #${originalTag}.`;
 const canonicalUrl = `https://www.jonathanmwaniki.co.ke/tags/${tagSlug}`;
 
-// Schema.org data
-const breadcrumbSchema = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": "https://www.jonathanmwaniki.co.ke"
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "Tags",
-      "item": "https://www.jonathanmwaniki.co.ke/tags"
-    },
-    {
-      "@type": "ListItem",
-      "position": 3,
-      "name": `${originalTag} News`,
-      "item": canonicalUrl
-    }
-  ]
-};
-
-const collectionSchema = {
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": pageTitle,
-  "description": pageDescription,
-  "url": canonicalUrl,
-  "mainEntity": {
-    "@type": "ItemList",
-    "numberOfItems": filteredPosts.length,
-    "itemListElement": filteredPosts.map((post, index) => ({
-      "@type": "ListItem",
-      "position": index + 1,
-      "item": {
-        "@type": "NewsArticle",
-        "headline": post.data?.title || 'Untitled',
-        "description": post.data?.description || '',
-        "datePublished": post.data?.date?.toISOString() || new Date().toISOString(),
-        "author": {
-          "@type": "Person",
-          "name": "Jonathan Mwaniki"
-        },
-        "url": `https://www.jonathanmwaniki.co.ke/posts/${post.slug}`
-      }
-    }))
-  }
-};
+const socialStats = [
+  { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
+  { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
+  { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
+  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
+];
 ---
 
 <Layout
   title={pageTitle}
   description={pageDescription}
   canonical={canonicalUrl}
-  image="https://www.jonathanmwaniki.co.ke/default-og-image.jpg"
   meta={[
     { name: 'og:title', content: pageTitle },
     { name: 'og:description', content: pageDescription },
     { name: 'og:type', content: 'website' },
     { name: 'og:url', content: canonicalUrl },
-    { name: 'og:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
-    { name: 'og:site_name', content: 'Jonathan Mwaniki' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: pageTitle },
-    { name: 'twitter:description', content: pageDescription },
-    { name: 'twitter:image', content: 'https://www.jonathanmwaniki.co.ke/default-og-image.jpg' },
-    { name: 'keywords', content: `${originalTag}, Kenya news, ${originalTag} articles, breaking news` },
     { name: 'robots', content: 'index, follow' },
   ]}
 >
-  <!-- JSON-LD Structured Data -->
-  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
-  <script type="application/ld+json" set:html={JSON.stringify(collectionSchema)}></script>
 
-  <main class="container">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="Breadcrumb" class="breadcrumb">
-      <ol>
-        <li><a href="/">Home</a></li>
-        <li><a href="/tags">Tags</a></li>
-        <li aria-current="page">{originalTag}</li>
-      </ol>
-    </nav>
-
-    <!-- Page Header -->
-    <header class="page-header">
-      <h1>{originalTag} News & Articles</h1>
-      <p class="subtitle">
-        Explore {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''} 
-        tagged with "{originalTag}"
-      </p>
-    </header>
-
-    <!-- Category Navigation -->
-    <nav class="category-nav" aria-label="Categories">
-      <h2 class="nav-title">Explore Categories</h2>
-      <ul class="category-list">
-        {allCategories.map(category => (
-          <li>
-            <a 
-              href={`/category/${createSlug(category)}`}
-              class="category-link"
-              title={`Browse ${category} articles`}
-            >
-              {category}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-
-    <!-- Posts Grid -->
-    <section class="posts-section" aria-label="Articles">
-      <h2 class="section-title">Latest Articles</h2>
-      <div class="posts-grid">
-        {filteredPosts.map(post => {
-          const title = post.data?.title || 'Untitled';
-          const description = post.data?.description || 'No description available';
-          const category = safeGetCategory(post);
-          const date = post.data?.date || new Date();
-          const categorySlug = createSlug(category);
-          
-          return (
-            <article class="post-card">
-              <header class="post-header">
-                <h3 class="post-title">
-                  <a href={`/posts/${post.slug}`} title={`Read: ${title}`}>
-                    {title}
-                  </a>
-                </h3>
-              </header>
-              
-              <div class="post-content">
-                <p class="post-description">{description}</p>
+  <div class="page-wrapper">
+    
+    {/* --- 1. STORIES CAROUSEL (Top Tagged Stories) --- */}
+    <section class="stories-section">
+      <div class="main-container">
+        <div class="stories-scroll">
+          {storyPosts.map(post => (
+            <a href={`/posts/${post.slug}`} class="story-item">
+              <div class="story-img-ring">
+                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="eager" />
               </div>
-              
-              <footer class="post-meta">
-                <span class="post-category">
-                  <a 
-                    href={`/category/${categorySlug}`}
-                    title={`Browse ${category} articles`}
-                  >
-                    {category}
-                  </a>
-                </span>
-                <time 
-                  class="post-date"
-                  datetime={date.toISOString()}
-                  title={`Published on ${date.toLocaleDateString()}`}
-                >
-                  {date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </time>
-              </footer>
-            </article>
-          );
-        })}
+              <span class="story-label">{post.data.title}</span>
+            </a>
+          ))}
+        </div>
       </div>
     </section>
 
-    <!-- Back Navigation -->
-    <nav class="back-nav">
-      <a href="/tags" class="back-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15,18 9,12 15,6"></polyline>
-        </svg>
-        View All Tags
-      </a>
-      <a href="/" class="back-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9,22 9,12 15,12 15,22"></polyline>
-        </svg>
-        Back to Home
-      </a>
-    </nav>
-  </main>
+    <main class="main-container">
+      
+      {/* HEADER */}
+      <div class="tag-header">
+        <span class="tag-eyebrow">Browsing Tag</span>
+        <h1>#{originalTag}</h1>
+        <div class="header-line"></div>
+      </div>
+
+      {/* --- 2. MAIN CONTENT GRID --- */}
+      <div class="content-grid">
+        
+        {/* LEFT: Feed */}
+        <div class="feed-column">
+          <div class="compact-grid">
+            {feedPosts.map(post => (
+              <a href={`/posts/${post.slug}`} class="compact-card">
+                <div class="compact-img">
+                  <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
+                  
+                  {/* Status Badge */}
+                  {post.data.status && (
+                    <span class={`status-badge ${post.data.status.toLowerCase()}`}>
+                      {post.data.status}
+                    </span>
+                  )}
+                  
+                  {/* Category Overlay */}
+                  <span class="cat-overlay">{safeGetCategory(post)}</span>
+                </div>
+                
+                <div class="card-content">
+                  <div class="card-meta">
+                    <span class="card-date">{new Date(post.data.date).toLocaleDateString()}</span>
+                  </div>
+                  <h4>{post.data.title}</h4>
+                  <p class="card-desc">{post.data.description}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: Sidebar */}
+        <aside class="sidebar-column">
+          
+          <div class="widget">
+            <h3>Connect</h3>
+            <div class="social-grid">
+              {socialStats.map(s => (
+                <a href="#" class="social-mini" style={`--bg:${s.bg}`}>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                  <span>{s.count}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Ad Safe Container */}
+          <div class="widget ad-container">
+             <span class="ad-label">Advertisement</span>
+             <div class="ad-scroll-safe">
+               <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+               <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+             </div>
+          </div>
+
+          <div class="widget">
+            <h3>Trending Elsewhere</h3>
+            <div class="sidebar-list">
+              {sidebarTrending.map(p => (
+                <a href={`/posts/${p.slug}`} class="side-item">
+                  <span class="side-cat">{safeGetCategory(p)}</span>
+                  <h5>{p.data.title}</h5>
+                </a>
+              ))}
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </main>
+  </div>
 
   <style>
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-      line-height: 1.6;
+    /* SHARED VARS (Matches Index/Category) */
+    :root {
+      --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
     }
 
-    /* Breadcrumb */
-    .breadcrumb {
-      margin-bottom: 2rem;
-    }
+    * { box-sizing: border-box; min-width: 0; }
+    html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; line-height: 1.4; }
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    a { text-decoration: none; color: inherit; display: block; }
 
-    .breadcrumb ol {
-      list-style: none;
-      padding: 0;
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      background: #f8f9fa;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
+    .page-wrapper { width: 100%; overflow: hidden; }
+    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; }
+    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
 
-    .breadcrumb li::after {
-      content: '→';
-      margin-left: 0.5rem;
-      color: #666;
-    }
+    /* STORIES */
+    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0 0.8rem; scrollbar-width: none; }
+    .stories-scroll::-webkit-scrollbar { display: none; }
+    .story-item { flex: 0 0 auto; width: 64px; text-align: center; }
+    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
+    .story-label { font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-    .breadcrumb li:last-child::after {
-      display: none;
-    }
+    /* HEADER */
+    .tag-header { padding: 1.5rem 0; text-align: center; margin-bottom: 1rem; }
+    .tag-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 0.3rem; }
+    .tag-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: capitalize; }
+    .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
 
-    .breadcrumb a {
-      color: #dc2626;
-      text-decoration: none;
-      font-weight: 500;
-    }
+    /* LAYOUT */
+    .content-grid { display: grid; gap: 2rem; padding-bottom: 3rem; }
+    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
 
-    .breadcrumb a:hover {
-      text-decoration: underline;
-    }
+    /* CARDS (Dense) */
+    .compact-grid { display: grid; gap: 1rem; }
+    @media (min-width: 640px) { .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
 
-    /* Page Header */
-    .page-header {
-      text-align: center;
-      margin-bottom: 3rem;
-      padding-bottom: 2rem;
-      border-bottom: 2px solid #e5e7eb;
-    }
+    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
+    .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    
+    .compact-img { height: 180px; position: relative; overflow: hidden; }
+    .cat-overlay { position: absolute; bottom: 0; left: 0; background: var(--accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px 2px 6px; border-radius: 0 6px 0 0; text-transform: uppercase; }
+    
+    /* Status Badge */
+    .status-badge { position: absolute; top: 8px; right: 8px; background: #dc2626; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; animation: pulse 2s infinite; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
-    .page-header h1 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      color: #1f2937;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
+    .card-content { padding: 1rem; }
+    .card-date { font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+    .compact-card h4 { font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 700; line-height: 1.3; }
+    .card-desc { font-size: 0.9rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
 
-    .subtitle {
-      font-size: 1.125rem;
-      color: #6b7280;
-      margin: 0;
-    }
+    /* SIDEBAR */
+    .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
+    .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
 
-    /* Category Navigation */
-    .category-nav {
-      margin-bottom: 3rem;
-    }
+    .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
+    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; }
+    .social-mini svg { width: 16px; height: 16px; }
+    .social-mini span { font-size: 0.7rem; font-weight: 700; }
 
-    .nav-title {
-      font-size: 1.25rem;
-      color: #374151;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
+    .sidebar-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .side-item { padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+    .side-item:last-child { border: 0; padding: 0; }
+    .side-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+    .side-item h5 { font-size: 0.9rem; margin: 0.2rem 0 0 0; }
 
-    .category-list {
-      list-style: none;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .category-link {
-      display: inline-block;
-      padding: 0.5rem 1rem;
-      background: #dc2626;
-      color: white;
-      text-decoration: none;
-      border-radius: 50px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-
-    .category-link:hover {
-      background: #b91c1c;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
-    }
-
-    /* Posts Section */
-    .posts-section {
-      margin-bottom: 3rem;
-    }
-
-    .section-title {
-      font-size: 1.5rem;
-      color: #1f2937;
-      margin-bottom: 2rem;
-      font-weight: 600;
-    }
-
-    .posts-grid {
-      display: grid;
-      gap: 2rem;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    }
-
-    /* Post Cards */
-    .post-card {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1.5rem;
-      transition: all 0.3s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .post-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      border-color: #dc2626;
-    }
-
-    .post-title {
-      margin: 0 0 1rem 0;
-      font-size: 1.25rem;
-      line-height: 1.3;
-    }
-
-    .post-title a {
-      color: #1f2937;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .post-title a:hover {
-      color: #dc2626;
-    }
-
-    .post-description {
-      color: #4b5563;
-      margin: 0 0 1.5rem 0;
-      font-size: 0.95rem;
-    }
-
-    .post-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 1rem;
-      border-top: 1px solid #f3f4f6;
-      font-size: 0.875rem;
-    }
-
-    .post-category a {
-      color: #dc2626;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .post-category a:hover {
-      text-decoration: underline;
-    }
-
-    .post-date {
-      color: #6b7280;
-    }
-
-    /* Back Navigation */
-    .back-nav {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-top: 3rem;
-      padding-top: 2rem;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: white;
-      border: 2px solid #dc2626;
-      color: #dc2626;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-
-    .back-link:hover {
-      background: #dc2626;
-      color: white;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .container {
-        padding: 1rem;
-      }
-
-      .posts-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-
-      .breadcrumb ol {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-      }
-
-      .breadcrumb li::after {
-        content: '↓';
-      }
-
-      .back-nav {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .category-list {
-        justify-content: center;
-      }
-    }
-
-    /* Focus Styles for Accessibility */
-    a:focus,
-    button:focus {
-      outline: 2px solid #dc2626;
-      outline-offset: 2px;
-    }
-
-    /* Print Styles */
-    @media print {
-      .category-nav,
-      .back-nav {
-        display: none;
-      }
-      
-      .post-card {
-        break-inside: avoid;
-        box-shadow: none;
-        border: 1px solid #ccc;
-      }
-    }
+    /* ADS */
+    .ad-container { text-align: center; }
+    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+    .ad-scroll-safe { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; min-height: 100px; background: var(--bg); }
+    .ad-scroll-safe::-webkit-scrollbar { display: none; }
   </style>
 </Layout>
