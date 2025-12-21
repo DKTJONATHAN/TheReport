@@ -15,19 +15,19 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// 2. Helper function
+// 2. Helper function for Tags
 function createTagSlug(tag) {
   return tag.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-// 3. Related posts
+// 3. Related posts logic
 const allPosts = await getCollection('posts');
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 5); 
 
-// 4. Metadata
+// 4. Metadata & SEO
 const siteUrl = 'https://jonathanmwaniki.co.ke';
 const postUrl = `${siteUrl}/posts/${post.slug}`;
 const categorySlug = (post.data.category || 'news').toLowerCase().replace(/\s+/g, '-');
@@ -89,7 +89,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a><span class="separator">/</span>
       <a href={categoryUrl}>{post.data.category || 'News'}</a><span class="separator">/</span>
-      <span class="current">{post.data.title.substring(0, 30)}...</span>
+      <span class="current">{post.data.title}</span>
     </nav>
 
     <div class="article-grid">
@@ -120,6 +120,14 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
           {post.data.image && (
             <figure class="featured-image">
               <img src={imageUrl} alt={post.data.imageAlt || post.data.title} itemprop="image" loading="eager" />
+              
+              {/* --- NEW: STATUS BADGE (Circle) --- */}
+              {post.data.status && (
+                <span class={`status-badge ${post.data.status.toLowerCase()}`}>
+                  {post.data.status}
+                </span>
+              )}
+
               {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
             </figure>
           )}
@@ -148,6 +156,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
 
           <footer class="article-footer">
             <div class="tags">
+              {/* --- CLICKABLE TAGS LINKING TO /tags/[tag] --- */}
               {post.data.tags?.map(tag => (
                 <a href={`/tags/${createTagSlug(tag)}`} class="tag" key={tag}>#{tag}</a>
               ))}
@@ -219,7 +228,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
   </script>
 
   <style>
-    /* VARIABLES */
     :root {
       --bg-color: #ffffff;
       --text-color: #1a1a1a;
@@ -254,7 +262,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
         margin: 0; padding: 0;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     img { max-width: 100%; display: block; height: auto; }
     a { text-decoration: none; color: inherit; transition: color 0.2s; }
 
@@ -275,7 +283,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .separator { margin: 0 0.5rem; color: #ccc; }
     .current { font-weight: 600; color: var(--text-color); }
 
-    /* 2. FLEX COLUMN FOR MOBILE (Avoids Grid Overflow) */
+    /* LAYOUT */
     .article-grid { 
       display: flex; 
       flex-direction: column; 
@@ -284,11 +292,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       min-width: 0; /* Flex child shrink fix */
     }
 
-    /* Desktop Grid (Only above 1024px) */
     @media (min-width: 1024px) { 
       .article-grid { 
         display: grid; 
-        grid-template-columns: minmax(0, 1fr) 300px; /* Safe column sizing */
+        grid-template-columns: minmax(0, 1fr) 300px; 
         gap: 3rem; 
         align-items: start;
       }
@@ -304,7 +311,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
       line-height: 1.1; 
       margin-bottom: 1rem; 
       color: var(--text-color); 
-      overflow-wrap: break-word; /* Forces line breaks */
+      overflow-wrap: break-word; 
       word-wrap: break-word;
     }
 
@@ -317,9 +324,33 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .share-pill { font-size: 0.85rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-light); white-space: nowrap; }
     .share-pill:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-    .featured-image { margin-bottom: 2rem; width: 100%; }
+    /* FEATURED IMAGE & STATUS */
+    .featured-image { margin-bottom: 2rem; width: 100%; position: relative; }
     .featured-image img { width: 100%; border-radius: 8px; max-height: 500px; object-fit: cover; }
     .featured-image figcaption { font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem; text-align: center; font-family: var(--font-head); }
+
+    /* New Status Badge Styles */
+    .status-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--accent);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 5;
+    }
+    /* Specific Colors for Statuses */
+    .status-badge.breaking { background: #dc2626; animation: pulse 2s infinite; }
+    .status-badge.developing { background: #ea580c; } /* Orange */
+    .status-badge.live { background: #16a34a; } /* Green */
+    
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
 
     .key-takeaways { background: rgba(220, 38, 38, 0.05); border-left: 4px solid var(--accent); padding: 1.5rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem; font-family: var(--font-head); }
     .key-takeaways h3 { font-size: 1rem; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; font-weight: 700; }
@@ -340,28 +371,26 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     .article-body :global(blockquote) { border-left: 4px solid var(--accent); padding-left: 1.5rem; font-style: italic; color: var(--text-light); font-size: 1.25rem; margin: 2rem 0; }
     .article-body :global(pre) { white-space: pre-wrap; word-wrap: break-word; }
 
-    /* 3. AD WRAPPER FIX (Internal Scrolling) */
+    /* AD WRAPPER */
     .ad-outer-wrapper {
         margin: 2rem 0;
         background: var(--bg-light);
         border-radius: 8px;
         text-align: center;
         width: 100%;
-        padding: 1rem 0; /* Vertical padding only */
+        padding: 1rem 0;
     }
-
     .ad-label { 
         font-family: var(--font-head); font-size: 0.7rem; color: var(--text-light); 
         text-transform: uppercase; display: block; margin-bottom: 0.5rem; 
         text-align: center; letter-spacing: 1px; 
     }
-
     .ad-scroll-container {
         width: 100%;
-        overflow-x: auto; /* ALLOWS AD TO SCROLL INSIDE IF TOO BIG */
+        overflow-x: auto; 
         display: flex;
         justify-content: center;
-        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+        -webkit-overflow-scrolling: touch; 
     }
 
     .sidebar-ad-wrapper { margin-top: 0; min-height: 250px; }
@@ -369,8 +398,24 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-US', {
     /* FOOTER */
     .article-footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
     .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .tag { display: inline-block; background: var(--bg-light); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; font-family: var(--font-head); color: var(--text-light); }
-    .tag:hover { background: var(--accent); color: white; }
+    
+    /* Clickable Tag Styles */
+    .tag { 
+        display: inline-block; 
+        background: var(--bg-light); 
+        padding: 0.3rem 0.8rem; 
+        border-radius: 4px; 
+        font-size: 0.9rem; 
+        font-family: var(--font-head); 
+        color: var(--text-light); 
+        transition: all 0.2s ease;
+    }
+    .tag:hover { 
+        background: var(--accent); 
+        color: white; 
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
 
     .author-box { display: flex; gap: 1.5rem; background: var(--bg-light); padding: 1.5rem; border-radius: 8px; align-items: center; }
     .author-avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
