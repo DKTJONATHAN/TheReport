@@ -1,8 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 
-// 1. SHARED SLUG FUNCTION (Must match [slug].astro exactly)
+// 1. SHARED SLUG FUNCTION (Must match [slug].astro logic)
 function createTagSlug(tag) {
   return tag.toLowerCase().trim()
     .replace(/[^\w\s-]/g, '')
@@ -14,7 +14,7 @@ function createTagSlug(tag) {
 // 2. GENERATE PATHS
 export async function getStaticPaths() {
   const allPosts = await getCollection('posts');
-  
+   
   // Get unique tags from all posts
   const uniqueTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))];
 
@@ -63,9 +63,9 @@ const socialStats = [
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
-  
+
   <div class="page-wrapper">
-    
+
     {/* --- 1. STORIES CAROUSEL (Top Tagged Stories) --- */}
     <section class="stories-section">
       <div class="main-container">
@@ -83,7 +83,7 @@ const socialStats = [
     </section>
 
     <main class="main-container">
-      
+
       {/* HEADER */}
       <div class="tag-header">
         <span class="tag-eyebrow">Tag Archives</span>
@@ -93,7 +93,7 @@ const socialStats = [
 
       {/* --- 2. MAIN CONTENT GRID --- */}
       <div class="content-grid">
-        
+
         {/* LEFT: Feed */}
         <div class="feed-column">
           <div class="compact-grid">
@@ -101,18 +101,18 @@ const socialStats = [
               <a href={`/posts/${post.slug}`} class="compact-card">
                 <div class="compact-img">
                   <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
-                  
+
                   {/* Status Badge */}
                   {post.data.status && (
                     <span class={`status-badge ${post.data.status.toLowerCase()}`}>
                       {post.data.status}
                     </span>
                   )}
-                  
+
                   {/* Category Overlay */}
                   <span class="cat-overlay">{post.data.category}</span>
                 </div>
-                
+
                 <div class="card-content">
                   <div class="card-meta">
                     <span class="card-date">
@@ -129,7 +129,7 @@ const socialStats = [
 
         {/* RIGHT: Sidebar */}
         <aside class="sidebar-column">
-          
+
           <div class="widget">
             <h3>Connect</h3>
             <div class="social-grid">
@@ -213,10 +213,10 @@ const socialStats = [
 
     .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
     .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    
+
     .compact-img { height: 180px; position: relative; overflow: hidden; }
     .cat-overlay { position: absolute; bottom: 0; left: 0; background: var(--accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px 2px 6px; border-radius: 0 6px 0 0; text-transform: uppercase; }
-    
+
     /* Status Badge */
     .status-badge { position: absolute; top: 8px; right: 8px; background: #dc2626; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; animation: pulse 2s infinite; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
