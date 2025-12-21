@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 const posts = await getCollection('posts');
 const categories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// 2. SEARCH INDEX (Optimized for speed)
+// 2. SEARCH INDEX
 const serializedPosts = posts.map(post => ({
   slug: post.slug,
   title: post.data.title,
@@ -36,17 +36,20 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 
 <header class="master-header" id="master-header">
 
-  {/* --- 1. UTILITY BAR (Date & Ticker) --- */}
+  {/* --- 1. UTILITY BAR (Date & RED Ticker) --- */}
   <div class="utility-bar">
     <div class="utility-inner">
       <div class="date-display">{today}</div>
       
-      <div class="ticker-container">
-        <span class="ticker-label">TOP STORY</span>
-        <div class="ticker-window">
+      {/* THE RED PILL TICKER */}
+      <div class="ticker-red-pill">
+        <span class="ticker-badge">TOP STORY</span>
+        <div class="ticker-mask">
           {topStory ? (
-            <a href={`/posts/${topStory.slug}`} class="ticker-text">
-              {topStory.data.title} <span class="ticker-arrow">&rarr;</span>
+            <a href={`/posts/${topStory.slug}`} class="ticker-track">
+              <span class="ticker-title">{topStory.data.title}</span>
+              <span class="ticker-sep">—</span>
+              <span class="ticker-desc">{topStory.data.description}</span>
             </a>
           ) : (
             <span>Welcome to The Mwaniki Report</span>
@@ -54,10 +57,6 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
         </div>
       </div>
 
-      <div class="utility-socials">
-         <a href="#" aria-label="Twitter"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-         <a href="#" aria-label="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036c-2.148 0-2.971.956-2.971 3.594v.376h3.617l-.571 3.667h-3.046v7.98h-4.844z"/></svg></a>
-      </div>
     </div>
   </div>
 
@@ -76,7 +75,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
       <a href="/" class="brand-center">
         <div class="brand-stack">
           <span class="brand-top">The</span>
-          <h1 class="brand-main">Mwaniki Report</h1>
+          <h1 class="brand-main"><span class="highlight">Mwaniki</span> Report</h1>
         </div>
       </a>
 
@@ -137,14 +136,14 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   :root {
     --black: #111;
     --white: #fff;
-    --accent: #dc2626; /* Mwaniki Red */
+    --accent: #dc2626; /* Vivid Red */
+    --accent-dark: #b91c1c;
     --gray: #f4f4f4;
     --border: #e5e5e5;
     --serif: 'Playfair Display', serif;
     --sans: 'Inter', sans-serif;
   }
 
-  /* RESET */
   * { box-sizing: border-box; }
   
   .master-header {
@@ -159,76 +158,94 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     border-bottom: 1px solid var(--border);
     font-family: var(--sans);
     font-size: 0.75rem;
-    height: 40px;
-    background: #f9f9f9;
+    height: 48px; /* Slightly taller for the pill */
+    background: #ffffff;
+    display: flex;
+    align-items: center;
   }
 
   .utility-inner {
+    width: 100%;
     max-width: 1240px;
     margin: 0 auto;
-    height: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 1.5rem;
+    gap: 1rem;
   }
 
   .date-display {
-    color: #666;
-    font-weight: 600;
+    color: #444;
+    font-weight: 700;
     text-transform: uppercase;
+    font-size: 0.7rem;
     letter-spacing: 0.5px;
-    display: none;
+    white-space: nowrap;
   }
-  @media(min-width: 768px) { .date-display { display: block; } }
-
-  /* New Ticker Style */
-  .ticker-container {
+  
+  /* THE RED PILL CONTAINER */
+  .ticker-red-pill {
+    flex: 1;
+    background: var(--accent);
+    color: white;
+    height: 32px;
+    border-radius: 99px; /* Fully curved */
     display: flex;
     align-items: center;
-    flex: 1;
+    padding: 0 4px;
     overflow: hidden;
-    margin: 0 1rem;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    padding: 4px 10px;
-    height: 28px;
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.2);
+    max-width: 800px;
+    margin-left: auto;
   }
-  
-  .ticker-label {
-    color: var(--accent);
+
+  .ticker-badge {
+    background: rgba(0,0,0,0.2);
+    color: white;
     font-weight: 800;
     font-size: 0.65rem;
-    margin-right: 10px;
+    padding: 4px 10px;
+    border-radius: 99px;
     white-space: nowrap;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .ticker-mask {
+    flex: 1;
+    overflow: hidden;
     position: relative;
-    padding-right: 10px;
-  }
-  .ticker-label::after {
-    content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-    width: 1px; height: 10px; background: #ddd;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    mask-image: linear-gradient(to right, transparent, black 10px, black 95%, transparent);
   }
 
-  .ticker-window { flex: 1; overflow: hidden; white-space: nowrap; }
-  
-  .ticker-text {
-    display: inline-block;
-    color: var(--black);
+  .ticker-track {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    color: white;
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.75rem;
-    animation: fadeSlide 6s infinite;
+    animation: marquee 25s linear infinite;
+    padding-left: 0;
   }
-  @keyframes fadeSlide {
-    0%, 20% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 1; transform: translateY(0); } /* Simplified for static feel, can animate if list */
-  }
-  
-  .ticker-arrow { color: var(--accent); margin-left: 5px; }
+  .ticker-track:hover { animation-play-state: paused; }
 
-  .utility-socials { display: flex; gap: 1rem; color: #888; }
-  .utility-socials a:hover { color: var(--accent); }
+  .ticker-title { font-weight: 700; font-size: 0.8rem; margin-right: 8px; }
+  .ticker-sep { opacity: 0.6; margin-right: 8px; }
+  .ticker-desc { font-weight: 400; opacity: 0.9; font-size: 0.8rem; font-style: italic; }
+
+  @keyframes marquee {
+    0% { transform: translateX(20%); }
+    100% { transform: translateX(-100%); }
+  }
+
+  @media(max-width: 768px) { 
+    .date-display { display: none; } 
+    .ticker-red-pill { margin: 0; width: 100%; }
+  }
 
 
   /* --- 2. MAIN HEADER --- */
@@ -257,14 +274,12 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   }
   .icon-btn:hover { background: #f0f0f0; }
 
-  /* Hamburger Animation */
   .menu-btn { flex-direction: column; gap: 5px; }
   .menu-line { width: 22px; height: 2px; background: currentColor; transition: 0.3s; }
   .menu-active .top { transform: rotate(45deg) translate(5px, 5px); }
   .menu-active .mid { opacity: 0; }
   .menu-active .bot { transform: rotate(-45deg) translate(5px, -5px); }
 
-  /* Brand Styling */
   .brand-center { text-align: center; text-decoration: none; color: var(--black); }
   .brand-stack { display: flex; flex-direction: column; align-items: center; line-height: 0.8; }
   .brand-top {
@@ -283,6 +298,8 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     letter-spacing: -1px;
     white-space: nowrap;
   }
+  .highlight { color: var(--accent); }
+  
   @media(max-width: 480px) { .brand-main { font-size: 1.8rem; } }
 
 
@@ -299,7 +316,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   .nav-up { transform: translateY(-100%); }
 
   .nav-list {
-    display: none; /* Hidden on mobile */
+    display: none; 
     justify-content: center;
     gap: 2.5rem;
     list-style: none; margin: 0; padding: 0.8rem 0;
@@ -326,7 +343,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   .scroll-progress { height: 2px; background: var(--accent); width: 0%; position: absolute; bottom: -1px; left: 0; transition: width 0.1s; }
 
 
-  /* --- 4. FULLSCREEN SEARCH --- */
+  /* --- FULLSCREEN SEARCH --- */
   .fs-search {
     position: fixed; inset: 0;
     background: rgba(255,255,255,0.98);
@@ -367,7 +384,6 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   }
   .fs-tag:hover { background: var(--black); color: var(--white); border-color: var(--black); }
 
-  /* Search Result Item */
   .search-hit {
     display: flex; align-items: center; gap: 1.5rem;
     padding: 1rem 0; border-bottom: 1px solid #eee;
@@ -381,7 +397,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 
-  /* --- 5. MOBILE MENU --- */
+  /* --- MOBILE MENU --- */
   .mobile-menu {
     position: fixed; top: 120px; left: 0; width: 100%; height: calc(100vh - 120px);
     background: var(--white); z-index: 850;
@@ -404,7 +420,6 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 </style>
 
 <script is:inline define:vars={{posts: serializedPosts}}>
-  // === ELEMENTS ===
   const menuTrigger = document.getElementById('menu-trigger');
   const mobileMenu = document.getElementById('mobile-menu');
   const stickyNav = document.getElementById('sticky-nav');
@@ -415,18 +430,16 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   const fsResults = document.getElementById('fs-results');
   const progressBar = document.getElementById('scroll-progress');
 
-  // === MENU TOGGLE ===
+  // MENU
   let isMenuOpen = false;
   menuTrigger.addEventListener('click', () => {
     isMenuOpen = !isMenuOpen;
     mobileMenu.classList.toggle('open');
     menuTrigger.classList.toggle('menu-active');
-    
-    // Lock scroll
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
   });
 
-  // === SEARCH TOGGLE ===
+  // SEARCH
   searchTrigger.addEventListener('click', () => {
     fsSearch.classList.add('active');
     setTimeout(() => fsInput.focus(), 100);
@@ -438,12 +451,10 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     document.body.style.overflow = '';
   });
 
-  // === SEARCH LOGIC ===
+  // SEARCH LOGIC
   fsInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim();
-    
     if(term.length < 2) {
-       // Show default tags if empty
        fsResults.innerHTML = `
         <div class="fs-empty">
           <span>Trending now:</span>
@@ -473,17 +484,15 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     }
   });
 
-  // === SCROLL PROGRESS & STICKY HIDE ===
+  // SCROLL & STICKY
   let lastScroll = 0;
   window.addEventListener('scroll', () => {
     const currentScroll = window.scrollY;
     
-    // Progress Bar
     const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
     const progress = (currentScroll / totalHeight) * 100;
     if(progressBar) progressBar.style.width = `${progress}%`;
 
-    // Hide/Show Nav
     if (currentScroll > 100 && currentScroll > lastScroll && !isMenuOpen) {
       stickyNav.classList.add('nav-up');
     } else {
@@ -492,7 +501,6 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     lastScroll = currentScroll;
   });
 
-  // Keyboard Escape
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape') {
       fsSearch.classList.remove('active');
