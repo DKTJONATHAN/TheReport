@@ -2,18 +2,18 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. SHARED SLUG FUNCTION (Must match [slug].astro logic)
-function createTagSlug(tag) {
-  return tag.toLowerCase().trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-// 2. GENERATE PATHS
+// 1. GENERATE PATHS
 export async function getStaticPaths() {
   const allPosts = await getCollection('posts');
+
+  // Helper Function: Defined INSIDE to prevent scope errors
+  function createTagSlug(tag) {
+    return tag.toLowerCase().trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
    
   // Get unique tags from all posts
   const uniqueTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))];
@@ -34,7 +34,7 @@ export async function getStaticPaths() {
 
 const { tag, posts } = Astro.props;
 
-// 3. DATA SORTING
+// 2. DATA SORTING
 const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
 // Story Circles (Top 10 latest in this TAG)
