@@ -14,9 +14,13 @@ const serializedPosts = posts.map(post => ({
   date: new Date(post.data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }));
 
-// 3. TRENDING LOGIC (Modified to pick top 5)
+// 3. TRENDING LOGIC
 const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
-const trendingStories = sortedPosts.slice(0, 5); // Pick top 5 items
+const top5 = sortedPosts.slice(0, 5);
+
+// 4. DUPLICATE FOR INFINITE LOOP
+// We concat the array to itself so we have [1,2,3,4,5, 1,2,3,4,5]
+const tickerStories = [...top5, ...top5]; 
 
 const navItems = [
   { href: '/', text: 'Home' },
@@ -36,7 +40,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 
 <header class="master-header" id="master-header">
 
-  {/* --- 1. UTILITY BAR (Date & RED Ticker) --- */}
+  {/* --- UTILITY BAR --- */}
   <div class="utility-bar">
     <div class="utility-inner">
       <div class="date-display">{today}</div>
@@ -45,23 +49,21 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
       <div class="ticker-red-pill">
         <span class="ticker-badge">TRENDING</span>
         <div class="ticker-mask">
-          {trendingStories.length > 0 ? (
+          {tickerStories.length > 0 ? (
             <div class="ticker-track">
-              {trendingStories.map((story) => (
-                <span class="ticker-group">
+              {tickerStories.map((story) => (
+                <div class="ticker-group">
                   <a href={`/posts/${story.slug}`} class="ticker-link">
                     <span class="ticker-title">{story.data.title}</span>
                     <span class="ticker-sep">—</span>
                     <span class="ticker-desc">{story.data.description}</span>
                   </a>
                   <span class="ticker-dot">•</span>
-                </span>
+                </div>
               ))}
             </div>
           ) : (
-            <div class="ticker-track">
-              <span class="ticker-title">Welcome to The Mwaniki Report</span>
-            </div>
+            <div class="ticker-no-data">Welcome to The Mwaniki Report</div>
           )}
         </div>
       </div>
@@ -69,18 +71,15 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     </div>
   </div>
 
-  {/* --- 2. MAIN HEADER (Logo & Actions) --- */}
+  {/* --- MAIN HEADER --- */}
   <div class="main-header">
     <div class="header-content">
-
-      {/* LEFT: Menu Trigger */}
       <button class="icon-btn menu-btn" id="menu-trigger" aria-label="Menu">
         <span class="menu-line top"></span>
         <span class="menu-line mid"></span>
         <span class="menu-line bot"></span>
       </button>
 
-      {/* CENTER: Brand */}
       <a href="/" class="brand-center">
         <div class="brand-stack">
           <span class="brand-top">The</span>
@@ -88,15 +87,13 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
         </div>
       </a>
 
-      {/* RIGHT: Search */}
       <button class="icon-btn search-btn" id="search-trigger" aria-label="Search">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       </button>
-
     </div>
   </div>
 
-  {/* --- 3. NAVIGATION (Sticky) --- */}
+  {/* --- STICKY NAV --- */}
   <nav class="sticky-nav" id="sticky-nav">
     <ul class="nav-list">
       {navItems.map(link => (
@@ -106,35 +103,21 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     <div class="scroll-progress" id="scroll-progress"></div>
   </nav>
 
-  {/* --- FULLSCREEN SEARCH OVERLAY --- */}
+  {/* --- SEARCH & MENU OVERLAYS --- */}
   <div class="fs-search" id="fs-search">
     <button class="fs-close" id="fs-close">Close</button>
     <div class="fs-container">
       <h3 class="fs-label">What are you looking for?</h3>
       <input type="text" class="fs-input" id="fs-input" placeholder="Type keywords..." autocomplete="off" />
-
-      <div class="fs-results" id="fs-results">
-        {/* Empty State */}
-        <div class="fs-empty">
-          <span>Trending now:</span>
-          <div class="fs-tags">
-            {categories.map(c => <a href={`/category/${c.toLowerCase()}`} class="fs-tag">{c}</a>)}
-          </div>
-        </div>
-      </div>
+      <div class="fs-results" id="fs-results"></div>
     </div>
   </div>
 
-  {/* --- MOBILE MENU OVERLAY --- */}
   <div class="mobile-menu" id="mobile-menu">
     <div class="mm-content">
       <nav class="mm-nav">
-        {navItems.map(link => (
-          <a href={link.href} class="mm-link">{link.text}</a>
-        ))}
-        <div class="mm-cats">
-            {categories.map(c => <a href={`/category/${c.toLowerCase()}`} class="mm-cat">#{c}</a>)}
-        </div>
+        {navItems.map(link => (<a href={link.href} class="mm-link">{link.text}</a>))}
+        <div class="mm-cats">{categories.map(c => <a href={`/category/${c.toLowerCase()}`} class="mm-cat">#{c}</a>)}</div>
       </nav>
     </div>
   </div>
@@ -145,113 +128,89 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   :root {
     --black: #111;
     --white: #fff;
-    --accent: #dc2626; /* Vivid Red */
-    --accent-dark: #b91c1c;
-    --gray: #f4f4f4;
+    --accent: #dc2626;
     --border: #e5e5e5;
     --serif: 'Playfair Display', serif;
     --sans: 'Inter', sans-serif;
   }
-
   * { box-sizing: border-box; }
 
-  .master-header {
-    background: var(--white);
-    color: var(--black);
-    position: relative;
-    z-index: 900;
-  }
+  .master-header { background: var(--white); color: var(--black); position: relative; z-index: 900; }
 
-  /* --- 1. UTILITY BAR --- */
+  /* UTILITY BAR & TICKER */
   .utility-bar {
     border-bottom: 1px solid var(--border);
     font-family: var(--sans);
     font-size: 0.75rem;
-    height: 48px; /* Slightly taller for the pill */
+    height: 48px;
     background: #ffffff;
-    display: flex;
-    align-items: center;
+    display: flex; align-items: center;
   }
-
   .utility-inner {
-    width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1.5rem;
-    gap: 1rem;
+    width: 100%; max-width: 1240px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1.5rem; gap: 1rem;
   }
-
   .date-display {
-    color: #444;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
+    color: #444; font-weight: 700; text-transform: uppercase;
+    font-size: 0.7rem; letter-spacing: 0.5px; white-space: nowrap;
   }
 
-  /* THE RED PILL CONTAINER */
+  /* --- TICKER PILL --- */
   .ticker-red-pill {
     flex: 1;
     background: var(--accent);
     color: white;
     height: 32px;
-    border-radius: 99px; /* Fully curved */
-    display: flex;
-    align-items: center;
+    border-radius: 99px;
+    display: flex; align-items: center;
     padding: 0 4px;
-    overflow: hidden;
+    overflow: hidden; /* Crucial for masking */
     box-shadow: 0 2px 10px rgba(220, 38, 38, 0.2);
     max-width: 800px;
     margin-left: auto;
   }
-
   .ticker-badge {
     background: rgba(0,0,0,0.2);
     color: white;
-    font-weight: 800;
-    font-size: 0.65rem;
-    padding: 4px 10px;
-    border-radius: 99px;
-    white-space: nowrap;
-    margin-right: 10px;
-    flex-shrink: 0;
+    font-weight: 800; font-size: 0.65rem;
+    padding: 4px 10px; border-radius: 99px;
+    white-space: nowrap; margin-right: 10px; flex-shrink: 0;
   }
-
   .ticker-mask {
     flex: 1;
     overflow: hidden;
-    position: relative;
-    height: 100%;
-    display: flex;
-    align-items: center;
+    position: relative; height: 100%;
+    display: flex; align-items: center;
+    /* Fade mask on edges */
     mask-image: linear-gradient(to right, transparent, black 10px, black 95%, transparent);
   }
 
-  /* UPDATED TICKER STYLES */
+  /* --- CONTINUOUS ANIMATION --- */
   .ticker-track {
     display: flex;
     align-items: center;
-    white-space: nowrap;
-    color: white;
-    animation: marquee 40s linear infinite; /* Slowed down for readability of 5 items */
-    padding-left: 0;
+    width: fit-content; /* Allow it to be as wide as needed */
+    /* 80s = Speed (Increase to slow down)
+       linear = Consistent speed
+       infinite = Loops forever
+    */
+    animation: marquee 80s linear infinite; 
+    will-change: transform;
   }
+  
   .ticker-track:hover { animation-play-state: paused; }
 
   .ticker-group {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    white-space: nowrap;
+    padding-right: 0;
   }
 
   .ticker-link {
-    display: inline-flex;
-    align-items: center;
-    color: white;
-    text-decoration: none;
+    display: flex; align-items: center;
+    color: white; text-decoration: none;
   }
   .ticker-link:hover .ticker-title { text-decoration: underline; }
 
@@ -260,16 +219,21 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   .ticker-desc { font-weight: 400; opacity: 0.9; font-size: 0.8rem; font-style: italic; }
   
   .ticker-dot {
-    margin: 0 2rem; /* Spacing around the dot */
-    font-size: 1.2rem;
-    line-height: 0;
-    opacity: 0.5;
-    color: #fff;
+    margin: 0 2rem; /* Spacing between stories */
+    font-size: 1.2rem; line-height: 0;
+    opacity: 0.5; color: #fff;
   }
 
+  .ticker-no-data { padding-left: 1rem; font-size: 0.8rem; font-style: italic; opacity: 0.8; }
+
+  /* THE MAGIC:
+     We move from 0 to -50%. 
+     Since the content is duplicated (AB), once we reach the end of A (-50%),
+     we instantly snap back to 0 (start of A), which looks exactly like start of B.
+  */
   @keyframes marquee {
-    0% { transform: translateX(20%); }
-    100% { transform: translateX(-200%); } /* Increased translate to scroll all items */
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } 
   }
 
   @media(max-width: 768px) { 
@@ -277,179 +241,68 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     .ticker-red-pill { margin: 0; width: 100%; }
   }
 
-
-  /* --- 2. MAIN HEADER --- */
-  .main-header {
-    padding: 1.5rem 0;
-    background: var(--white);
-    position: relative;
-    z-index: 2;
-  }
-
+  /* --- REST OF HEADER STYLES (Unchanged) --- */
+  .main-header { padding: 1.5rem 0; background: var(--white); z-index: 2; }
   .header-content {
-    max-width: 1240px; margin: 0 auto;
-    display: grid;
-    grid-template-columns: 50px 1fr 50px;
-    align-items: center;
-    padding: 0 1.5rem;
+    max-width: 1240px; margin: 0 auto; display: grid;
+    grid-template-columns: 50px 1fr 50px; align-items: center; padding: 0 1.5rem;
   }
-
   .icon-btn {
-    background: none; border: none; cursor: pointer;
-    width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
-    transition: background 0.2s;
-    color: var(--black);
+    background: none; border: none; cursor: pointer; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    transition: background 0.2s; color: var(--black);
   }
   .icon-btn:hover { background: #f0f0f0; }
-
   .menu-btn { flex-direction: column; gap: 5px; }
   .menu-line { width: 22px; height: 2px; background: currentColor; transition: 0.3s; }
   .menu-active .top { transform: rotate(45deg) translate(5px, 5px); }
   .menu-active .mid { opacity: 0; }
   .menu-active .bot { transform: rotate(-45deg) translate(5px, -5px); }
-
   .brand-center { text-align: center; text-decoration: none; color: var(--black); }
   .brand-stack { display: flex; flex-direction: column; align-items: center; line-height: 0.8; }
-  .brand-top {
-    font-family: var(--sans);
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 3px;
-    font-weight: 700;
-    margin-bottom: 5px;
-  }
-  .brand-main {
-    font-family: var(--serif);
-    font-size: 2.5rem;
-    font-weight: 900;
-    margin: 0;
-    letter-spacing: -1px;
-    white-space: nowrap;
-  }
+  .brand-top { font-family: var(--sans); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 3px; font-weight: 700; margin-bottom: 5px; }
+  .brand-main { font-family: var(--serif); font-size: 2.5rem; font-weight: 900; margin: 0; letter-spacing: -1px; white-space: nowrap; }
   .highlight { color: var(--accent); }
-
   @media(max-width: 480px) { .brand-main { font-size: 1.8rem; } }
-
-
-  /* --- 3. STICKY NAV --- */
   .sticky-nav {
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    z-index: 800;
-    transition: transform 0.3s;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+    z-index: 800; transition: transform 0.3s;
   }
   .nav-up { transform: translateY(-100%); }
-
-  .nav-list {
-    display: none; 
-    justify-content: center;
-    gap: 2.5rem;
-    list-style: none; margin: 0; padding: 0.8rem 0;
-  }
+  .nav-list { display: none; justify-content: center; gap: 2.5rem; list-style: none; margin: 0; padding: 0.8rem 0; }
   @media(min-width: 900px) { .nav-list { display: flex; } }
-
-  .nav-link {
-    font-family: var(--sans);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: var(--black);
-    text-decoration: none;
-    position: relative;
-    padding-bottom: 5px;
-  }
-  .nav-link::after {
-    content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
-    background: var(--accent); transition: width 0.3s;
-  }
+  .nav-link { font-family: var(--sans); text-transform: uppercase; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; color: var(--black); text-decoration: none; position: relative; padding-bottom: 5px; }
+  .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--accent); transition: width 0.3s; }
   .nav-link:hover::after { width: 100%; }
-
   .scroll-progress { height: 2px; background: var(--accent); width: 0%; position: absolute; bottom: -1px; left: 0; transition: width 0.1s; }
-
-
-  /* --- FULLSCREEN SEARCH --- */
-  .fs-search {
-    position: fixed; inset: 0;
-    background: rgba(255,255,255,0.98);
-    z-index: 2000;
-    display: flex; flex-direction: column; align-items: center;
-    padding-top: 15vh;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.3s;
-  }
+  .fs-search { position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 2000; display: flex; flex-direction: column; align-items: center; padding-top: 15vh; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .fs-search.active { opacity: 1; pointer-events: all; }
-
-  .fs-close {
-    position: absolute; top: 2rem; right: 2rem;
-    background: none; border: none; font-family: var(--sans);
-    font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-    cursor: pointer; padding: 1rem;
-  }
-
+  .fs-close { position: absolute; top: 2rem; right: 2rem; background: none; border: none; font-family: var(--sans); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; padding: 1rem; }
   .fs-container { width: 100%; max-width: 800px; padding: 0 1.5rem; }
   .fs-label { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; color: #555; font-weight: 400; }
-
-  .fs-input {
-    width: 100%; border: none; border-bottom: 2px solid #ddd;
-    font-size: 3rem; font-family: var(--serif); font-weight: 700;
-    padding: 0.5rem 0; background: transparent; outline: none;
-    color: var(--black);
-  }
+  .fs-input { width: 100%; border: none; border-bottom: 2px solid #ddd; font-size: 3rem; font-family: var(--serif); font-weight: 700; padding: 0.5rem 0; background: transparent; outline: none; color: var(--black); }
   .fs-input:focus { border-color: var(--accent); }
-
   .fs-results { margin-top: 3rem; max-height: 50vh; overflow-y: auto; }
-
   .fs-empty span { display: block; font-family: var(--sans); font-size: 0.8rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
   .fs-tags { display: flex; gap: 0.8rem; flex-wrap: wrap; }
-  .fs-tag {
-    padding: 0.5rem 1.2rem; border: 1px solid #ddd; border-radius: 50px;
-    text-decoration: none; color: var(--black); font-family: var(--sans);
-    font-size: 0.85rem; transition: 0.2s;
-  }
+  .fs-tag { padding: 0.5rem 1.2rem; border: 1px solid #ddd; border-radius: 50px; text-decoration: none; color: var(--black); font-family: var(--sans); font-size: 0.85rem; transition: 0.2s; }
   .fs-tag:hover { background: var(--black); color: var(--white); border-color: var(--black); }
-
-  .search-hit {
-    display: flex; align-items: center; gap: 1.5rem;
-    padding: 1rem 0; border-bottom: 1px solid #eee;
-    text-decoration: none; color: var(--black);
-    animation: slideUp 0.3s ease-out forwards;
-  }
+  .search-hit { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0; border-bottom: 1px solid #eee; text-decoration: none; color: var(--black); animation: slideUp 0.3s ease-out forwards; }
   .search-hit img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
   .search-hit h4 { font-family: var(--serif); font-size: 1.4rem; margin: 0; }
   .search-hit span { font-family: var(--sans); font-size: 0.75rem; color: var(--accent); text-transform: uppercase; font-weight: 700; }
-
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-
-  /* --- MOBILE MENU --- */
-  .mobile-menu {
-    position: fixed; top: 120px; left: 0; width: 100%; height: calc(100vh - 120px);
-    background: var(--white); z-index: 850;
-    transform: translateY(20px); opacity: 0; pointer-events: none;
-    transition: 0.3s ease; padding: 2rem;
-  }
+  .mobile-menu { position: fixed; top: 120px; left: 0; width: 100%; height: calc(100vh - 120px); background: var(--white); z-index: 850; transform: translateY(20px); opacity: 0; pointer-events: none; transition: 0.3s ease; padding: 2rem; }
   .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
-
   .mm-nav { display: flex; flex-direction: column; gap: 1.5rem; text-align: center; }
-  .mm-link {
-    font-family: var(--serif); font-size: 2rem; color: var(--black);
-    text-decoration: none; font-weight: 700;
-  }
+  .mm-link { font-family: var(--serif); font-size: 2rem; color: var(--black); text-decoration: none; font-weight: 700; }
   .mm-cats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 2rem; }
-  .mm-cat {
-    font-family: var(--sans); font-size: 0.8rem; color: #666;
-    background: #f4f4f4; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none;
-  }
-
+  .mm-cat { font-family: var(--sans); font-size: 0.8rem; color: #666; background: #f4f4f4; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; }
 </style>
 
 <script is:inline define:vars={{posts: serializedPosts}}>
+  // JS remains the same as previous version
   const menuTrigger = document.getElementById('menu-trigger');
   const mobileMenu = document.getElementById('mobile-menu');
   const stickyNav = document.getElementById('sticky-nav');
@@ -496,9 +349,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
         </div>`;
        return;
     }
-
     const hits = posts.filter(p => p.title.toLowerCase().includes(term)).slice(0, 5);
-
     if(hits.length === 0) {
       fsResults.innerHTML = `<div style="text-align:center; color:#999; margin-top:2rem;">No stories found for "${term}"</div>`;
     } else {
@@ -518,11 +369,9 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   let lastScroll = 0;
   window.addEventListener('scroll', () => {
     const currentScroll = window.scrollY;
-
     const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
     const progress = (currentScroll / totalHeight) * 100;
     if(progressBar) progressBar.style.width = `${progress}%`;
-
     if (currentScroll > 100 && currentScroll > lastScroll && !isMenuOpen) {
       stickyNav.classList.add('nav-up');
     } else {
