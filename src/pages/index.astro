@@ -21,21 +21,25 @@ const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 // 3. SECTIONS
 const mainStory = allPosts[0];
 const subStories = allPosts.slice(1, 3);
-const trendingPosts = allPosts.slice(3, 8);
+const trendingPosts = allPosts.slice(3, 9); // Increased to 6 for the grid
+const opinionPosts = allPosts.filter(p => p.data.category === 'Opinion').slice(0, 3);
+// Fallback if no opinion posts found, just take some from the end
+const displayOpinion = opinionPosts.length > 0 ? opinionPosts : allPosts.slice(10, 13);
 
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
   { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
-  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
 ];
 ---
 
 <Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news from Kenya.">
-  
+
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
   <div class="page-wrapper">
-    
-    {/* --- 1. COMPACT STORIES CAROUSEL --- */}
+
+    {/* --- 1. STORIES BAR (Instagram Style) --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
@@ -52,18 +56,20 @@ const socialStats = [
     </section>
 
     <main class="main-container">
-      
-      {/* --- 2. HERO SECTION (Mobile Optimized) --- */}
+
+      {/* --- 2. HERO SECTION (Preserved Logic, Refined Style) --- */}
       {mainStory && (
         <section class="hero-wrapper">
           <div class="hero-main">
             <a href={`/posts/${mainStory.slug}`} class="hero-link">
               <div class="hero-img-box">
                 <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
+                <span class="hero-badge">Top Story</span>
               </div>
               <div class="hero-text-box">
                 <div class="meta-row">
-                   <span class="badge">Top Story</span>
+                   <span class="cat-tag">{mainStory.data.category}</span>
+                   <span class="bullet">•</span>
                    <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
                 </div>
                 <h1>{mainStory.data.title}</h1>
@@ -79,8 +85,8 @@ const socialStats = [
                   <img src={post.data.image} alt={post.data.title} loading="eager" />
                 </div>
                 <div class="sub-text">
-                  <h3>{post.data.title}</h3>
                   <span class="sub-cat">{post.data.category}</span>
+                  <h3>{post.data.title}</h3>
                 </div>
               </a>
             ))}
@@ -88,44 +94,72 @@ const socialStats = [
         </section>
       )}
 
-      {/* --- 3. MAIN CONTENT (Dense List) --- */}
-      <div class="content-grid">
+      {/* --- 3. MAIN CONTENT LAYOUT (Sidebar Layout) --- */}
+      <div class="layout-grid">
+        
+        {/* LEFT COLUMN: THE FEED */}
         <div class="feed-column">
           
-          <section class="feed-block">
-            <div class="block-head">
-              <h2>Just In</h2>
-              <span class="line"></span>
-            </div>
-            <div class="dense-list">
-              {trendingPosts.map(post => (
-                <a href={`/posts/${post.slug}`} class="dense-item">
-                  <div class="dense-thumb">
+          {/* SECTION A: LATEST NEWS RIVER */}
+          <div class="section-header">
+            <h2>The Latest</h2>
+            <div class="header-line"></div>
+          </div>
+          
+          <div class="news-river">
+            {trendingPosts.map(post => (
+              <article class="river-item">
+                <a href={`/posts/${post.slug}`} class="river-link">
+                  <div class="river-content">
+                    <div class="river-meta">
+                      <span class="river-cat">{post.data.category}</span>
+                      <span class="river-time">{new Date(post.data.date).toLocaleDateString()}</span>
+                    </div>
+                    <h3>{post.data.title}</h3>
+                    <p>{post.data.description}</p>
+                  </div>
+                  <div class="river-img">
                     <img src={post.data.image} alt={post.data.title} loading="lazy" />
                   </div>
-                  <div class="dense-info">
-                    <span class="dense-cat">{post.data.category}</span>
-                    <h4>{post.data.title}</h4>
-                    <span class="dense-time">{new Date(post.data.date).toLocaleDateString()}</span>
+                </a>
+              </article>
+            ))}
+          </div>
+
+          {/* SECTION B: FEATURED / OPINION (Dark Mode Block) */}
+          <section class="opinion-block">
+            <div class="opinion-header">
+              <h3>Opinion & Analysis</h3>
+              <a href="/category/opinion">View All &rarr;</a>
+            </div>
+            <div class="opinion-grid">
+              {displayOpinion.map((post, index) => (
+                <a href={`/posts/${post.slug}`} class={`opinion-card op-${index}`}>
+                  <span class="opinion-tag">Opinion</span>
+                  <h4>{post.data.title}</h4>
+                  <div class="author-row">
+                    <div class="author-dot"></div>
+                    <span>Jonathan Mwaniki</span>
                   </div>
                 </a>
               ))}
             </div>
           </section>
 
-          {majorCategories.map(category => {
-             const catPosts = allPosts.filter(p => p.data.category === category && p.slug !== mainStory?.slug).slice(0, 4);
+          {/* SECTION C: CATEGORY GRIDS */}
+          {majorCategories.slice(0, 3).map(category => {
+             const catPosts = allPosts.filter(p => p.data.category === category).slice(0, 4);
              if (catPosts.length === 0) return null;
              return (
-               <section class="feed-block" key={category}>
-                 <div class="block-head">
+               <section class="category-section" key={category}>
+                 <div class="section-header small">
                    <h2>{category}</h2>
-                   <a href={`/category/${category.toLowerCase()}`} class="more-link">More</a>
+                   <a href={`/category/${category.toLowerCase()}`}>More {category} &rarr;</a>
                  </div>
-                 <div class="compact-grid">
+                 <div class="grid-4">
                    {catPosts.map(post => (
-                     <a href={`/posts/${post.slug}`} class="compact-card">
-                       <div class="compact-img"><img src={post.data.image} loading="lazy"/></div>
+                     <a href={`/posts/${post.slug}`} class="grid-card">
+                       <div class="grid-img"><img src={post.data.image} loading="lazy"/></div>
                        <h4>{post.data.title}</h4>
                      </a>
                    ))}
@@ -135,154 +169,216 @@ const socialStats = [
           })}
         </div>
 
+        {/* RIGHT COLUMN: STICKY SIDEBAR */}
         <aside class="sidebar-column">
-          <div class="widget">
-            <h3>Connect</h3>
-            <div class="social-grid">
-              {socialStats.map(s => (
-                <a href="#" class="social-mini" style={`--bg:${s.bg}`}>
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
-                  <span>{s.count}</span>
-                </a>
-              ))}
+          <div class="sticky-wrapper">
+            
+            {/* Widget: Socials */}
+            <div class="widget social-widget">
+              <h3 class="widget-title">Connect</h3>
+              <div class="social-list">
+                {socialStats.map(s => (
+                  <a href="#" class="social-row" style={`--bg:${s.bg}`}>
+                    <div class="social-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                    </div>
+                    <div class="social-text">
+                      <span class="count">{s.count}</span>
+                      <span class="label">{s.name}</span>
+                    </div>
+                    <div class="social-arrow">&rarr;</div>
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div class="widget ad-container">
-             <span class="ad-label">Advertisement</span>
-             <div class="ad-scroll-safe">
-               <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-               <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-             </div>
+            {/* Widget: Advertisement */}
+            <div class="widget ad-widget">
+               <span class="ad-label">Advertisement</span>
+               <div class="ad-box">
+                 <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                 <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+               </div>
+            </div>
+
+            {/* Widget: Newsletter / CTA */}
+            <div class="widget cta-widget">
+              <h3>The Mwaniki Report</h3>
+              <p>Independent journalism. Straight to your inbox.</p>
+              <form class="cta-form">
+                <input type="email" placeholder="Email address" />
+                <button>Subscribe</button>
+              </form>
+            </div>
+
           </div>
         </aside>
+
       </div>
     </main>
   </div>
 
   <style>
-    /* 1. NUCLEAR RESET (Stops all overflow) */
+    /* --- 1. GLOBAL VARIABLES & RESET --- */
     :root {
-      --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
-      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
+      --bg: #ffffff;
+      --text-main: #111111;
+      --text-muted: #555555;
+      --accent: #D93025; /* Classic News Red */
+      --border: #e0e0e0;
+      --serif: 'Playfair Display', serif;
+      --sans: 'Inter', sans-serif;
     }
 
-    * { box-sizing: border-box; min-width: 0; }
-    html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; line-height: 1.4; }
+    * { box-sizing: border-box; }
+    body { 
+      background: var(--bg); color: var(--text-main); 
+      font-family: var(--sans); margin: 0; 
+      overflow-x: hidden; 
+    }
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    a { text-decoration: none; color: inherit; display: block; }
+    a { text-decoration: none; color: inherit; transition: opacity 0.2s; }
+    a:hover { opacity: 0.7; }
+    
+    .main-container { max-width: 1240px; margin: 0 auto; padding: 0 1rem; }
+    @media (min-width: 768px) { .main-container { padding: 0 2rem; } }
 
-    /* Container: Tighter padding for mobile */
-    .page-wrapper { width: 100%; overflow: hidden; }
-    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; } /* Mobile Padding: 0.8rem */
-    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
-
-    /* --- STORIES (Smaller & Tighter) --- */
-    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
-    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0 0.8rem; scrollbar-width: none; }
+    /* --- STORIES SECTION --- */
+    .stories-section { margin: 1.5rem 0; }
+    .stories-scroll { 
+      display: flex; gap: 1.2rem; overflow-x: auto; 
+      padding-bottom: 1rem; scrollbar-width: none; 
+      border-bottom: 1px solid var(--border);
+    }
     .stories-scroll::-webkit-scrollbar { display: none; }
-    .story-item { flex: 0 0 auto; width: 64px; text-align: center; } /* Smaller width */
-    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
-    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
-    .story-label { font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    
+    .story-item { flex: 0 0 auto; width: 70px; text-align: center; }
+    .story-img-ring { 
+      width: 70px; height: 70px; border-radius: 50%; padding: 3px; 
+      border: 2px solid var(--accent); margin-bottom: 0.5rem; 
+    }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--bg); }
+    .story-label { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
-    /* --- HERO (Compact) --- */
-    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 2rem; }
-    @media (min-width: 768px) { .hero-wrapper { grid-template-columns: 1.8fr 1fr; } }
+    /* --- HERO SECTION --- */
+    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3rem; }
+    @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
 
     /* Main Hero */
-    .hero-main { background: var(--card); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
-    .hero-link { display: flex; flex-direction: column; }
-    .hero-img-box { width: 100%; aspect-ratio: 16/9; } /* Enforce ratio */
-    
-    .hero-text-box { padding: 1rem; } /* Tighter padding */
-    .meta-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; font-size: 0.75rem; color: var(--muted); }
-    .badge { background: var(--accent); color: white; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; }
-    
-    .hero-main h1 { 
-        font-size: 1.25rem; /* Smaller H1 for Mobile */
-        font-weight: 800; margin: 0 0 0.5rem 0; line-height: 1.25; 
+    .hero-main { display: flex; flex-direction: column; }
+    .hero-img-box { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 8px; overflow: hidden; }
+    .hero-badge { 
+      position: absolute; top: 1rem; left: 1rem; 
+      background: var(--accent); color: white; 
+      padding: 0.3rem 0.8rem; font-weight: 700; 
+      font-size: 0.7rem; text-transform: uppercase; border-radius: 4px;
     }
-    .hero-excerpt { font-size: 0.9rem; color: var(--muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .hero-text-box { padding-top: 1rem; }
+    .hero-main h1 { 
+      font-family: var(--serif); font-size: 1.8rem; 
+      margin: 0.5rem 0; line-height: 1.1; font-weight: 700; 
+    }
+    .hero-excerpt { font-size: 1rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .meta-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+    .cat-tag { color: var(--accent); }
+
+    @media (min-width: 768px) { .hero-main h1 { font-size: 2.5rem; } }
+
+    /* Side Heros */
+    .hero-side { display: flex; flex-direction: column; gap: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    @media (min-width: 900px) { 
+      .hero-side { border-top: none; border-left: 1px solid var(--border); padding-top: 0; padding-left: 1.5rem; } 
+    }
+    
+    .sub-card { display: flex; gap: 1rem; align-items: flex-start; }
+    .sub-img { width: 100px; height: 70px; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+    .sub-text h3 { margin: 0; font-family: var(--serif); font-size: 1.1rem; line-height: 1.3; font-weight: 700; }
+    .sub-cat { font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-bottom: 0.2rem; display: block; }
+
+
+    /* --- MAIN LAYOUT GRID --- */
+    .layout-grid { display: grid; gap: 3rem; }
+    @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 300px; } }
+
+    /* HEADERS */
+    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .section-header h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0; white-space: nowrap; }
+    .header-line { flex: 1; height: 1px; background: var(--text-main); opacity: 0.2; }
+    .section-header.small { justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .section-header.small a { font-size: 0.8rem; font-weight: 700; color: var(--accent); }
+
+    /* NEWS RIVER */
+    .news-river { display: flex; flex-direction: column; gap: 2rem; margin-bottom: 3rem; }
+    .river-item { border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
+    .river-item:last-child { border: none; }
+    
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1rem; }
+    .river-content h3 { font-family: var(--serif); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.2; }
+    .river-content p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .river-meta { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: flex; gap: 0.5rem; }
+    .river-cat { color: var(--accent); }
+    .river-img { width: 100%; height: 200px; border-radius: 6px; overflow: hidden; }
 
     @media (min-width: 768px) {
-        .hero-link { flex-direction: row; align-items: stretch; min-height: 300px; }
-        .hero-img-box { flex: 1.2; aspect-ratio: auto; }
-        .hero-text-box { flex: 1; padding: 2rem; justify-content: center; display: flex; flex-direction: column; }
-        .hero-main h1 { font-size: 2rem; }
+      .river-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+      .river-content { flex: 1; }
+      .river-img { width: 240px; height: 160px; flex-shrink: 0; }
     }
 
-    /* Sub Stories */
-    .hero-side { display: flex; flex-direction: column; gap: 1rem; }
-    @media (min-width: 768px) { .hero-side { gap: 1rem; } }
+    /* OPINION BLOCK */
+    .opinion-block { background: #1a1a1a; color: white; padding: 2rem; border-radius: 8px; margin-bottom: 3rem; }
+    .opinion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1rem; }
+    .opinion-header h3 { font-family: var(--serif); margin: 0; font-size: 1.5rem; }
+    .opinion-header a { color: var(--accent); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
     
-    .sub-card { display: flex; gap: 0.8rem; background: var(--card); padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
-    .sub-img { width: 80px; height: 60px; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
-    .sub-text h3 { font-size: 0.9rem; margin: 0 0 0.2rem 0; line-height: 1.3; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .sub-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
-
-    /* --- FEED (Dense) --- */
-    .content-grid { display: grid; gap: 2rem; }
-    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
-
-    .block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
-    .block-head h2 { font-size: 1.1rem; margin: 0; text-transform: uppercase; font-weight: 800; border-left: 4px solid var(--accent); padding-left: 0.6rem; }
-    .more-link { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; }
-
-    /* Trending Items */
-    .dense-list { display: flex; flex-direction: column; gap: 1rem; }
-    .dense-item { display: flex; gap: 0.8rem; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-    .dense-item:last-child { border: none; }
+    .opinion-grid { display: grid; gap: 1.5rem; }
+    @media (min-width: 600px) { .opinion-grid { grid-template-columns: 1fr 1fr 1fr; } }
     
-    /* Smaller Thumbnails for Mobile */
-    .dense-thumb { width: 90px; height: 65px; border-radius: 6px; overflow: hidden; flex-shrink: 0; } 
-    .dense-info { flex: 1; }
-    .dense-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.2rem; }
-    
-    /* Tighter Headlines */
-    .dense-info h4 { font-size: 0.95rem; margin: 0 0 0.3rem 0; line-height: 1.3; font-weight: 600; }
-    .dense-time { font-size: 0.7rem; color: var(--muted); }
+    .opinion-card { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+    .opinion-tag { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+    .opinion-card h4 { font-family: var(--serif); font-size: 1.2rem; margin: 0 0 1rem 0; line-height: 1.3; color: white; }
+    .author-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #aaa; }
+    .author-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
 
-    /* Category Grids */
-    .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; } /* 2-Col on Mobile */
-    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-    .compact-img { height: 100px; overflow: hidden; } /* Shorter images */
-    .compact-card h4 { font-size: 0.85rem; padding: 0.6rem; margin: 0; font-weight: 600; line-height: 1.3; }
+    /* CATEGORY GRIDS */
+    .category-section { margin-bottom: 3rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .grid-card { display: flex; flex-direction: column; gap: 0.8rem; }
+    .grid-img { height: 120px; border-radius: 4px; overflow: hidden; }
+    .grid-card h4 { font-family: var(--serif); font-size: 1rem; margin: 0; line-height: 1.3; }
 
-    /* --- SIDEBAR & ADS --- */
-    .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
-    .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
-
-    .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
-    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; }
-    .social-mini svg { width: 16px; height: 16px; }
-    .social-mini span { font-size: 0.7rem; font-weight: 700; }
-
-    /* AD PROTECTION (The Fix) */
-    .ad-container { text-align: center; }
-    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
-    .ad-scroll-safe { 
-        width: 100%; 
-        overflow-x: auto; /* Allow internal scroll if ad is wide */
-        overflow-y: hidden;
-        display: flex; 
-        justify-content: center;
-        min-height: 100px;
-        background: var(--bg);
+    /* --- SIDEBAR --- */
+    .sidebar-column { display: none; } /* Hidden on mobile */
+    @media (min-width: 1024px) { 
+      .sidebar-column { display: block; } 
+      .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
     }
-    .ad-scroll-safe::-webkit-scrollbar { display: none; } /* Hide scrollbar */
 
-    /* Desktop Adjustments */
-    @media (min-width: 1024px) {
-        .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .compact-img { height: 140px; }
-        .compact-card h4 { font-size: 1rem; padding: 1rem; }
-        .dense-thumb { width: 140px; height: 90px; }
-        .dense-info h4 { font-size: 1.1rem; }
+    .widget-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; border-bottom: 2px solid var(--black); padding-bottom: 0.5rem; }
+    
+    .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .social-row { 
+      display: flex; align-items: center; gap: 1rem; 
+      background: #f8f9fa; padding: 0.8rem; border-radius: 6px; 
+      border: 1px solid var(--border); transition: transform 0.2s;
     }
+    .social-row:hover { transform: translateX(5px); border-color: #ccc; }
+    .social-icon { width: 32px; height: 32px; color: white; background: var(--bg); border-radius: 50%; padding: 6px; }
+    .social-text { flex: 1; display: flex; flex-direction: column; line-height: 1.1; }
+    .social-text .count { font-weight: 800; font-size: 0.9rem; }
+    .social-text .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+    .social-arrow { font-size: 1.2rem; color: var(--border); }
+
+    .ad-widget { text-align: center; }
+    .ad-label { font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+    .ad-box { background: #f4f4f4; min-height: 250px; display: flex; align-items: center; justify-content: center; }
+
+    .cta-widget { background: var(--text-main); color: white; padding: 2rem; border-radius: 8px; text-align: center; }
+    .cta-widget h3 { font-family: var(--serif); margin: 0 0 0.5rem 0; }
+    .cta-widget p { font-size: 0.9rem; color: #ccc; margin-bottom: 1.5rem; }
+    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .cta-form input { padding: 0.8rem; border: none; border-radius: 4px; }
+    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+
   </style>
 </Layout>
