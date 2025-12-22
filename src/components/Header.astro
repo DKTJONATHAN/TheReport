@@ -14,9 +14,9 @@ const serializedPosts = posts.map(post => ({
   date: new Date(post.data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }));
 
-// 3. TOP STORY LOGIC
+// 3. TRENDING LOGIC (Modified to pick top 5)
 const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
-const topStory = sortedPosts[0];
+const trendingStories = sortedPosts.slice(0, 5); // Pick top 5 items
 
 const navItems = [
   { href: '/', text: 'Home' },
@@ -40,19 +40,28 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   <div class="utility-bar">
     <div class="utility-inner">
       <div class="date-display">{today}</div>
-      
+
       {/* THE RED PILL TICKER */}
       <div class="ticker-red-pill">
-        <span class="ticker-badge">TOP STORY</span>
+        <span class="ticker-badge">TRENDING</span>
         <div class="ticker-mask">
-          {topStory ? (
-            <a href={`/posts/${topStory.slug}`} class="ticker-track">
-              <span class="ticker-title">{topStory.data.title}</span>
-              <span class="ticker-sep">—</span>
-              <span class="ticker-desc">{topStory.data.description}</span>
-            </a>
+          {trendingStories.length > 0 ? (
+            <div class="ticker-track">
+              {trendingStories.map((story) => (
+                <span class="ticker-group">
+                  <a href={`/posts/${story.slug}`} class="ticker-link">
+                    <span class="ticker-title">{story.data.title}</span>
+                    <span class="ticker-sep">—</span>
+                    <span class="ticker-desc">{story.data.description}</span>
+                  </a>
+                  <span class="ticker-dot">•</span>
+                </span>
+              ))}
+            </div>
           ) : (
-            <span>Welcome to The Mwaniki Report</span>
+            <div class="ticker-track">
+              <span class="ticker-title">Welcome to The Mwaniki Report</span>
+            </div>
           )}
         </div>
       </div>
@@ -63,7 +72,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   {/* --- 2. MAIN HEADER (Logo & Actions) --- */}
   <div class="main-header">
     <div class="header-content">
-      
+
       {/* LEFT: Menu Trigger */}
       <button class="icon-btn menu-btn" id="menu-trigger" aria-label="Menu">
         <span class="menu-line top"></span>
@@ -103,7 +112,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     <div class="fs-container">
       <h3 class="fs-label">What are you looking for?</h3>
       <input type="text" class="fs-input" id="fs-input" placeholder="Type keywords..." autocomplete="off" />
-      
+
       <div class="fs-results" id="fs-results">
         {/* Empty State */}
         <div class="fs-empty">
@@ -145,7 +154,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   }
 
   * { box-sizing: border-box; }
-  
+
   .master-header {
     background: var(--white);
     color: var(--black);
@@ -183,7 +192,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     letter-spacing: 0.5px;
     white-space: nowrap;
   }
-  
+
   /* THE RED PILL CONTAINER */
   .ticker-red-pill {
     flex: 1;
@@ -222,24 +231,45 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     mask-image: linear-gradient(to right, transparent, black 10px, black 95%, transparent);
   }
 
+  /* UPDATED TICKER STYLES */
   .ticker-track {
     display: flex;
     align-items: center;
     white-space: nowrap;
     color: white;
-    text-decoration: none;
-    animation: marquee 25s linear infinite;
+    animation: marquee 40s linear infinite; /* Slowed down for readability of 5 items */
     padding-left: 0;
   }
   .ticker-track:hover { animation-play-state: paused; }
 
+  .ticker-group {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ticker-link {
+    display: inline-flex;
+    align-items: center;
+    color: white;
+    text-decoration: none;
+  }
+  .ticker-link:hover .ticker-title { text-decoration: underline; }
+
   .ticker-title { font-weight: 700; font-size: 0.8rem; margin-right: 8px; }
   .ticker-sep { opacity: 0.6; margin-right: 8px; }
   .ticker-desc { font-weight: 400; opacity: 0.9; font-size: 0.8rem; font-style: italic; }
+  
+  .ticker-dot {
+    margin: 0 2rem; /* Spacing around the dot */
+    font-size: 1.2rem;
+    line-height: 0;
+    opacity: 0.5;
+    color: #fff;
+  }
 
   @keyframes marquee {
     0% { transform: translateX(20%); }
-    100% { transform: translateX(-100%); }
+    100% { transform: translateX(-200%); } /* Increased translate to scroll all items */
   }
 
   @media(max-width: 768px) { 
@@ -299,7 +329,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     white-space: nowrap;
   }
   .highlight { color: var(--accent); }
-  
+
   @media(max-width: 480px) { .brand-main { font-size: 1.8rem; } }
 
 
@@ -361,10 +391,10 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
     cursor: pointer; padding: 1rem;
   }
-  
+
   .fs-container { width: 100%; max-width: 800px; padding: 0 1.5rem; }
   .fs-label { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; color: #555; font-weight: 400; }
-  
+
   .fs-input {
     width: 100%; border: none; border-bottom: 2px solid #ddd;
     font-size: 3rem; font-family: var(--serif); font-weight: 700;
@@ -374,7 +404,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   .fs-input:focus { border-color: var(--accent); }
 
   .fs-results { margin-top: 3rem; max-height: 50vh; overflow-y: auto; }
-  
+
   .fs-empty span { display: block; font-family: var(--sans); font-size: 0.8rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
   .fs-tags { display: flex; gap: 0.8rem; flex-wrap: wrap; }
   .fs-tag {
@@ -393,7 +423,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   .search-hit img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
   .search-hit h4 { font-family: var(--serif); font-size: 1.4rem; margin: 0; }
   .search-hit span { font-family: var(--sans); font-size: 0.75rem; color: var(--accent); text-transform: uppercase; font-weight: 700; }
-  
+
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 
@@ -405,7 +435,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     transition: 0.3s ease; padding: 2rem;
   }
   .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
-  
+
   .mm-nav { display: flex; flex-direction: column; gap: 1.5rem; text-align: center; }
   .mm-link {
     font-family: var(--serif); font-size: 2rem; color: var(--black);
@@ -468,7 +498,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
     }
 
     const hits = posts.filter(p => p.title.toLowerCase().includes(term)).slice(0, 5);
-    
+
     if(hits.length === 0) {
       fsResults.innerHTML = `<div style="text-align:center; color:#999; margin-top:2rem;">No stories found for "${term}"</div>`;
     } else {
@@ -488,7 +518,7 @@ const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
   let lastScroll = 0;
   window.addEventListener('scroll', () => {
     const currentScroll = window.scrollY;
-    
+
     const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
     const progress = (currentScroll / totalHeight) * 100;
     if(progressBar) progressBar.style.width = `${progress}%`;
