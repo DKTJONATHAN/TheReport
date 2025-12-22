@@ -6,7 +6,7 @@ author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/J7xJJQfD/Gemini-Generated-Image-ilm8qcilm8qcilm8.png"
 imageCaption: "A Kenyan using M-Pesa to invest in shares"
 imageAlt: "Person checking phone with stock market app"
-category: "Finance"
+category: "Business"
 tags: ["Stock Market", "NSE", "M-Pesa", "Ziidi Trader", "Kenya", "Investing", "Financial Freedom"]
 featured: true
 draft: false
