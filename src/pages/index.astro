@@ -96,16 +96,16 @@ const socialStats = [
 
       {/* --- 3. MAIN CONTENT LAYOUT (Sidebar Layout) --- */}
       <div class="layout-grid">
-        
+
         {/* LEFT COLUMN: THE FEED */}
         <div class="feed-column">
-          
+
           {/* SECTION A: LATEST NEWS RIVER */}
           <div class="section-header">
             <h2>The Latest</h2>
             <div class="header-line"></div>
           </div>
-          
+
           <div class="news-river">
             {trendingPosts.map(post => (
               <article class="river-item">
@@ -172,7 +172,7 @@ const socialStats = [
         {/* RIGHT COLUMN: STICKY SIDEBAR */}
         <aside class="sidebar-column">
           <div class="sticky-wrapper">
-            
+
             {/* Widget: Socials */}
             <div class="widget social-widget">
               <h3 class="widget-title">Connect</h3>
@@ -230,6 +230,15 @@ const socialStats = [
       --sans: 'Inter', sans-serif;
     }
 
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111111;
+        --text-main: #f1f1f1;
+        --text-muted: #aaaaaa;
+        --border: #333333;
+      }
+    }
+
     * { box-sizing: border-box; }
     body { 
       background: var(--bg); color: var(--text-main); 
@@ -239,7 +248,7 @@ const socialStats = [
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
     a { text-decoration: none; color: inherit; transition: opacity 0.2s; }
     a:hover { opacity: 0.7; }
-    
+
     .main-container { max-width: 1240px; margin: 0 auto; padding: 0 1rem; }
     @media (min-width: 768px) { .main-container { padding: 0 2rem; } }
 
@@ -251,7 +260,7 @@ const socialStats = [
       border-bottom: 1px solid var(--border);
     }
     .stories-scroll::-webkit-scrollbar { display: none; }
-    
+
     .story-item { flex: 0 0 auto; width: 70px; text-align: center; }
     .story-img-ring { 
       width: 70px; height: 70px; border-radius: 50%; padding: 3px; 
@@ -289,7 +298,7 @@ const socialStats = [
     @media (min-width: 900px) { 
       .hero-side { border-top: none; border-left: 1px solid var(--border); padding-top: 0; padding-left: 1.5rem; } 
     }
-    
+
     .sub-card { display: flex; gap: 1rem; align-items: flex-start; }
     .sub-img { width: 100px; height: 70px; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
     .sub-text h3 { margin: 0; font-family: var(--serif); font-size: 1.1rem; line-height: 1.3; font-weight: 700; }
@@ -311,7 +320,7 @@ const socialStats = [
     .news-river { display: flex; flex-direction: column; gap: 2rem; margin-bottom: 3rem; }
     .river-item { border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
     .river-item:last-child { border: none; }
-    
+
     .river-link { display: flex; flex-direction: column-reverse; gap: 1rem; }
     .river-content h3 { font-family: var(--serif); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.2; }
     .river-content p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -330,10 +339,10 @@ const socialStats = [
     .opinion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1rem; }
     .opinion-header h3 { font-family: var(--serif); margin: 0; font-size: 1.5rem; }
     .opinion-header a { color: var(--accent); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
-    
+
     .opinion-grid { display: grid; gap: 1.5rem; }
     @media (min-width: 600px) { .opinion-grid { grid-template-columns: 1fr 1fr 1fr; } }
-    
+
     .opinion-card { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
     .opinion-tag { color: var(--accent); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
     .opinion-card h4 { font-family: var(--serif); font-size: 1.2rem; margin: 0 0 1rem 0; line-height: 1.3; color: white; }
@@ -355,7 +364,7 @@ const socialStats = [
     }
 
     .widget-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; border-bottom: 2px solid var(--black); padding-bottom: 0.5rem; }
-    
+
     .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .social-row { 
       display: flex; align-items: center; gap: 1rem; 
@@ -379,6 +388,5 @@ const socialStats = [
     .cta-form { display: flex; flex-direction: column; gap: 0.5rem; }
     .cta-form input { padding: 0.8rem; border: none; border-radius: 4px; }
     .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-
   </style>
 </Layout>
