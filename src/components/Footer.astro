@@ -1,3 +1,5 @@
+in this code add the RSS feed and send full code. the rss link is https://rss.app/feeds/QcLNMreXGcRH8ykn.xml
+
 ---
 const currentYear = new Date().getFullYear();
 
@@ -57,14 +59,14 @@ const footerLinks = [
 ---
 
 <footer class="site-footer">
-  
+
   {/* Top Red Accent Line */}
   <div class="footer-accent"></div>
 
   <div class="footer-container">
-    
+
     <div class="footer-grid">
-      
+
       {/* 1. BRAND COLUMN (With Image Logo) */}
       <div class="footer-col brand-col">
         <a href="/" class="footer-logo" aria-label="Jonathan Mwaniki Home">
@@ -78,7 +80,7 @@ const footerLinks = [
         <p class="brand-desc">
           Professional journalism and insightful commentary from Kenya. Delivering truth through compelling storytelling.
         </p>
-        
+
         <div class="social-row">
           {socialLinks.map(s => (
             <a href={s.url} target="_blank" rel="noopener noreferrer" class="social-btn" aria-label={s.name} style={`--hover-bg: ${s.bg}`}>
@@ -119,7 +121,7 @@ const footerLinks = [
       <div class="copyright">
         &copy; {currentYear} Jonathan Mwaniki. All rights reserved.
       </div>
-      
+
       <button id="back-to-top" class="back-to-top" aria-label="Back to top">
         <span>Back to Top</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
@@ -132,7 +134,7 @@ const footerLinks = [
 <script>
   // --- Back to Top Functionality ---
   const backToTopBtn = document.getElementById('back-to-top');
-  
+
   if (backToTopBtn) {
     // Show button after scrolling 400px
     window.addEventListener('scroll', () => {
@@ -198,7 +200,7 @@ const footerLinks = [
     text-decoration: none;
     margin-bottom: 1.5rem;
   }
-  
+
   .footer-logo-img {
     height: 50px; /* Adjusted size for footer balance */
     width: auto;
