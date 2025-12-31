@@ -3,7 +3,7 @@ title: "Are Money Market Funds Safe in Kenya?"
 description: "Comprehensive analysis of money market fund safety in Kenya, covering regulations, risks, and top-performing funds in 2025"
 date: 2025,08,12
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/PqX7xM6C/depositphotos-461510060-stock-illustration-hand-drawn-doodle-money-bag.jpg"
+image: "https://i.postimg.cc/4d2bxMw5/unnamed-(5)-2.jpg"
 imageCaption: "Money bag illustration representing financial growth"
 imageAlt: "Hand-drawn money bag doodle"
 category: "Business"
@@ -78,8 +78,8 @@ While no Kenyan MMF has "broken the buck" (fallen below KES 1 NAV), our investig
 | CIC MMF            | 81.8    | 12.1% | 2.1               | AA+            |
 | Sanlam MMF         | 72.2    | 11.8% | 2.3               | AA             |
 | ICEA Lion          | 20.1    | 10.5% | 3.0               | AA-            |
-| ABSA Shilling      | 19.2    | 10.2% | 2.8               | A+             |
-| Co-op MMF          | 16.3    | 9.8%  | 4.5               | A              |
+| ABSA Shilling      | 19.2    | 10.2  | 2.8               | A+             |
+| Co-op MMF          | 16.3    | 9.8   | 4.5               | A              |
 
 ### Comparative Safety Analysis
 
@@ -112,11 +112,12 @@ Money market funds occupy a unique middle ground in Kenya's investment landscape
 
 Based on interviews with 10 fund managers and CMA officials:
 
-1. **Diversify Holdings**: Spread across 2-3 top-tier MMFs
-2. **Monitor Rates**: CBR decisions directly impact yields
-3. **Verify Credentials**: Confirm CMA registration via https://www.cma.or.ke
-4. **Digital Convenience**: Consider apps like Etica (KES 100 minimum)
-5. **Emergency Funds**: Keep 3-6 months' expenses in liquid MMFs
+1. **Diversify Holdings**: Spread across 2-3 top-tier MMFs  
+2. **Monitor Rates**: CBR decisions directly impact yields  
+3. **Verify Credentials**: Confirm CMA registration via [https://www.cma.or.ke](https://www.cma.or.ke)  
+4. **Digital Convenience**: Consider apps like Etica (KES 100 minimum)  
+5. **Currency Comparison**: For investors tracking returns in multiple currencies (e.g., USD vs KES), a quick tool like [this Currency Converter](https://www.allthethings.dev/tools/currency-converter) can simplify exchange value calculations without manual effort.  
+6. **Emergency Funds**: Keep 3–6 months’ expenses in liquid MMFs  
 
 ### The Bottom Line
 
