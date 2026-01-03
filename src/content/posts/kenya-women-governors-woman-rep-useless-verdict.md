@@ -6,7 +6,7 @@ author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/ydBP2PSC/1767441369835.jpg"
 imageCaption: "Kenyan women governors face unprecedented public backlash after 2022 promises faded."
 imageAlt: "Kenya women governors criticism public opinion"
-category: "Investigations"
+category: "Opinion"
 tags: ["women governors Kenya", "Woman Rep useless", "gender politics failure", "corruption women leaders", "affirmative action waste"]
 featured: true
 draft: false
