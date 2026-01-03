@@ -6,7 +6,7 @@ author: "Jonathan Mwaniki"
 image: "https://i.postimg.cc/j5rT4kv1/Gemini-Generated-Image-d6scwpd6scwpd6sc.jpg"
 imageCaption: "Meru County Assembly after ousting Governor Kawira Mwangaza amid endless political drama."
 imageAlt: "Meru Governor Kawira impeachment Senate"
-category: "Investigations"
+category: "Politics"
 tags: ["Meru Governor Kawira", "Meru County politics", "Sniper murder Meru", "Mutuma M'Ethingia", "Meru restructuring", "victimhood politics"]
 featured: true
 draft: false
