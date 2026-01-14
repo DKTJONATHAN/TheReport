@@ -3,7 +3,7 @@ title: "Unspoken Divorce in Kenya: Why Middle-Class Couples Split But Stay Under
 description: "Divorce rates among Kenyan women doubled to 9.3% since 1989 amid soaring Nairobi rents and school fees. Explore why economics trap middle-class families in emotional separation while cohabiting."
 date: 2026-01-14
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/nairobi-couple-apartment.jpg"
+image: "https://i.postimg.cc/bv2XfwsY/unnamed-(1)-(1).jpg"
 imageCaption: "A middle-class Nairobi couple navigates silent separation in their shared Kilimani apartment amid rising living costs."
 imageAlt: "Nairobi apartment interior with separated couple setup"
 category: "Lifestyle"
