@@ -3,7 +3,7 @@ title: "TikTok Algorithm Kenya: How 'Ruto' Keywords and Controversy Dominate Fee
 description: "TikTok's For You Page boosts Ruto mentions, tribal rants, scandals 3-10x over policy talks. Data shows 55% of Kenyans see it as top misinformation source amid 2024 protests."
 date: 2026-01-14
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/tiktok-kenya-politics.jpg"
+image: "https://i.postimg.cc/QMHH11Cf/unnamed-(1)-(2).jpg"
 imageCaption: "Kenyan TikTok feeds flooded with Ruto controversy, protests, tribal clips driving viral engagement."
 imageAlt: "TikTok app on phone showing Kenyan political videos"
 category: "Investigations"
