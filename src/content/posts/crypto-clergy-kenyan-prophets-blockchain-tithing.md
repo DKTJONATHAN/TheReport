@@ -3,7 +3,7 @@ title: "The Crypto Clergy: Why Kenyan 'Prophets' are Adopting Blockchain Tithing
 description: "Kenyan pastors turn churches into crypto investment clubs. From Optcoin's Sh2.7 billion collapse to Prophet Owuor's property empire, explore how religious trust enables digital fraud."
 date: 2026-01-14
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/crypto-clergy.jpg"
+image: "https://i.postimg.cc/W1fn2WVG/AIJ2gl-yj-Wsi-Lko-ND4a-Cn-MSeqpv-ATs9uvtm-H90Av-SSHfebiy5z-Ii-Yi-K3Pt1KJc-Al-Cz-Nuc-UFco-BSZ1i8-Frl9.jpg"
 imageCaption: "Kenyan pastor preaching cryptocurrency investments to congregation as digital tithing goes viral."
 imageAlt: "Pastor at pulpit showing blockchain screen"
 category: "Investigations"
