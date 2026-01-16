@@ -1,9 +1,9 @@
-***
+---
 title: "Ruto’s Gen Z Problem: Why 2027 Will Be Won on the Feed, Not at the Rally"
 description: "Gen Z turned Kenya’s 2024 tax protests into a digital uprising. In 2027, Ruto must fight not for crowds, but for control of the algorithms that shape attention."
 date: 2026-01-16
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/genz-ruto-feeds.jpg"
+image: "https://i.postimg.cc/FFTcpxmX/unnamed-(1)-(3).jpg"
 imageCaption: "Young Kenyans in Nairobi scroll, stream and organise politics through TikTok, X Spaces and WhatsApp instead of traditional barazas."
 imageAlt: "Kenyan Gen Z using phones during a protest"
 category: "Politics"
@@ -11,7 +11,7 @@ tags: ["Gen Z Kenya", "Ruto 2027", "Finance Bill protests", "TikTok politics"]
 featured: true
 draft: false
 slug: "ruto-gen-z-problem-2027-election-won-on-the-feed"
-***
+---
 
 # Ruto’s Gen Z Problem: Why 2027 Will Be Won on the Feed, Not at the Rally
 
