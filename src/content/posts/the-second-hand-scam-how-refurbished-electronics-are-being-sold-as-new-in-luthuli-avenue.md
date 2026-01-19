@@ -1,5 +1,5 @@
 ---
-title: "Luthuli's Second-Hand Phone Scam: Spot the Fake Before It Burns You"
+title: "Electronics are Being Sold as New in Luthuli Avenue"
 description: "KSh 90k iPhone 16 Pro Max looks sealed, but IMEI says five-year refurb. How Nairobi's Luthuli dealers repackage counterfeits as new and steal salary wallets."
 date: 2026-01-19
 author: "Jonathan Mwaniki"
