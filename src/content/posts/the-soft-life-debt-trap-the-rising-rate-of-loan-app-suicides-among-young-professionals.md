@@ -1,9 +1,9 @@
 ---
-title: "Nairobi's Soft Life Debt Trap: Loan Apps Driving Young Pros to Suicide"
+title: "The 'Soft Life' Debt Trap: The Rising Rate of Loan App Suicides Among Young Professionals"
 description: "KSh 3,000 loan turns into 30% weekly hell. Samuel Ngari hanged himself after app harassment. How predatory lending fuels soft life dreams and Kenya's mental health crisis."
 date: 2026-01-20
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/soft-life-debt-suicide.jpg"
+image: "https://i.postimg.cc/kXtF82GW/Gemini-Generated-Image-6auvla6auvla6auv.png"
 imageCaption: "Nairobi's soft life Instagram glow hides loan app harassment driving young pros like Samuel Ngari to despair."
 imageAlt: "Stressed Kenyan young professional on phone with loan app"
 category: "Business"
