@@ -3,7 +3,7 @@ title: "No Panty Movement: Kenyan Women Ditching Undies While Pastors Lose Their
 description: "Marion Sinkeet's viral dress-lift clip explodes. Grandmas wore leather skirts with no panties. Why modern chicks skip underwear while church loses their shit over pussy freedom."
 date: 2026-01-20
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/no-panty-kenya.jpg"
+image: "https://i.postimg.cc/KjJr31tC/marion(0).jpg"
 imageCaption: "Marion Sinkeet club video has church boys mad while girls celebrate no-panty freedom."
 imageAlt: "Nairobi woman sparking underwear debate"
 category: "Lifestyle"
