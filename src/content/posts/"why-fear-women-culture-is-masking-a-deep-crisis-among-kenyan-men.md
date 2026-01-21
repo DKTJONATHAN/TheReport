@@ -3,7 +3,7 @@ title: "Why 'Fear Women' Memes Actually Show Kenyan Men Breaking Down"
 description: "Nyeri buried 75 men who killed themselves while r/Kenya posts Jamie betrayal screenshots. Economy breaks provider dreams, loan apps blacklist for KSh 1,500, bedroom stress hits hard."
 date: 2026-01-21
 author: "Jonathan Mwaniki"
-image: "https://i.postimg.cc/placeholder/fear-women-kenya.jpg"
+image: "https://i.postimg.cc/P5HVTz3p/Gemini-Generated-Image-z1bj0kz1bj0kz1bj.png"
 imageCaption: "Nairobi guys scroll TikTok Fear Women jokes while CRB blacklists and money stress eat them alive."
 imageAlt: "Stressed Kenyan man checking phone during lunch break"
 category: "Lifestyle"
