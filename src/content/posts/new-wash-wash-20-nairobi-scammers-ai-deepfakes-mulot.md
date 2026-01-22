@@ -1,9 +1,9 @@
-***
+---
 title: "The New Wash Wash 2.0: How Nairobi Scammers Trade Fake Gold for AI Deepfakes"
 description: "From Luthuli fake notes to cloned mum voices begging M-Pesa. Kenya's 2.5B cyber threats in 2025 show scammers now use AI voices, deepfakes, and Facebook ads milking millions."
 date: 2026-01-22
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/ai-scams-wash-wash-nairobi.jpg"
+image: "https://i.postimg.cc/vZSjXLNs/unnamed-(1)-(6).jpg"
 imageCaption: "Roysambu teen clones family voices while Mulot crews train AI fraud nationwide."
 imageAlt: "AI voice cloning software on laptop with deepfake video interface"
 category: "Business"
@@ -11,7 +11,7 @@ tags: ["AI scams Kenya", "Wash wash Nairobi", "Online fraud Kenya", "Cybersecuri
 featured: true
 draft: false
 slug: "new-wash-wash-20-nairobi-scammers-ai-deepfakes-mulot"
-***
+---
 
 # The New Wash Wash 2.0: How Nairobi Scammers Trade Fake Gold for AI Deepfakes
 
