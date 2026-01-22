@@ -1,9 +1,9 @@
-***
+---
 title: "The TikTok Begging Economy: How Kenyan Creators Extract Millions Through Emotional Appeals"
 description: "As living costs soar across Kenya, TikTok LIVE creators fake distress to collect virtual gifts worth millions from cash-strapped fans. A closer look at this troubling trend."
 date: 2026-01-22
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/tiktok-gifting-economy-kenya.jpg"
+image: "https://i.postimg.cc/VLnB7RrF/Gemini-Generated-Image-wgm0s5wgm0s5wgm0.png"
 imageCaption: "TikTok LIVE streams turn personal hardship into profitable performances for creators."
 imageAlt: "Kenyan creator receiving virtual gifts during emotional livestream"
 category: "Business"
@@ -11,7 +11,7 @@ tags: ["TikTok Kenya", "TikTok gifting", "Kenyan influencers", "digital begging"
 featured: true
 draft: false
 slug: "tiktok-begging-syndicate-kenyan-creators-emotional-appeals-millions"
-***
+---
 
 # The TikTok Begging Economy: How Kenyan Creators Extract Millions Through Emotional Appeals
 
