@@ -1,9 +1,9 @@
-***
+---
 title: "Airbnb Brothel Crisis: How Nairobi Short-Term Rentals Replaced Koinange Street"
 description: "Kileleshwa and Kilimani Airbnbs now host rotating sex workers under cover of digital nomad stays. County officer Geoffrey Mosiria's expose reveals the hidden operations."
 date: 2026-01-23
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/airbnb-sex-work-nairobi-crisis.jpg"
+image: "https://i.postimg.cc/qqB11YsY/unnamed-(1)-(7).jpg"
 imageCaption: "Short-term rentals in upscale estates facilitate organized sex work and content creation."
 imageAlt: "Airbnb listing in Kileleshwa neighborhood with discreet operational activity"
 category: "Business"
@@ -11,7 +11,7 @@ tags: ["Airbnb Nairobi", "Kileleshwa apartments", "Sex work Kenya", "Digital nom
 featured: true
 draft: false
 slug: "airbnb-brothel-crisis-nairobi-short-term-rentals-koinange"
-***
+---
 
 # Airbnb Brothel Crisis: How Nairobi Short-Term Rentals Replaced Koinange Street
 
