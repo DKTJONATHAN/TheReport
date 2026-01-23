@@ -1,9 +1,9 @@
-***
+---
 title: "How I Made KSh 450,000 From TikTok Live Using One Simple Trick"
 description: "For 30 days, I ran one strange TikTok Live setup and cleared over KSh 450,000 in gifts. Here is exactly how the trick works, step by step."
 date: 2026-01-23
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/how-i-made-450k-from-tiktok-live.jpg"
+image: "https://i.postimg.cc/MZmpTbxk/unnamed-(1)-(8).jpg"
 imageCaption: "A Nairobi creator uses a looping scene and community goals on TikTok Live to turn tiny gifts into serious money."
 imageAlt: "Phone on tripod streaming TikTok Live with progress bar and gifts overlay"
 category: "Business"
@@ -11,7 +11,7 @@ tags: ["TikTok Live", "content creation", "Kenya creators", "live streaming"]
 featured: true
 draft: false
 slug: "how-i-made-ksh-450000-from-tiktok-live"
-***
+---
 
 # How I Made KSh 450,000 From TikTok Live Using One Simple Trick
 
