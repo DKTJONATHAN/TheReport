@@ -3,7 +3,7 @@ title: "The Post-Raila Vacuum: 5 Leaders Fighting for the 5 Million 'Baba' Votes
 description: "When the sun sets on the era of Enigma, who stays in the dark and who finds the light?"
 date: "2026-01-26"
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/post-raila-odm-split.jpg"
+image: "https://i.postimg.cc/BbmsnV3c/unnamed-(1)-(11)-2.jpg"
 imageCaption: "ODM splits into youth vs elders after Raila Odinga's death"
 imageAlt: "ODM party succession battle after Raila Odinga"
 category: "Politics"
