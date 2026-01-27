@@ -3,7 +3,7 @@ title: "From 'Doctor' to Fraud: The Rise of Fake Honorary Degrees Among Kenya's 
 description: "Your favorite politician just became 'Dr. So-and-So' over the weekend, but the university that gave it to them doesn't actually have a physical address."
 date: "2026-01-27"
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/fake-doctor-politicians.jpg"
+image: "https://i.postimg.cc/nVs71rwV/6369-1000117496-2.jpg"
 imageCaption: "Kenyan MPs proudly displaying fake honorary degrees while CUE watches helplessly"
 imageAlt: "Fake honorary PhD scandals Kenya politicians"
 category: "Politics"
