@@ -1,0 +1,28 @@
+name: Daily Sitemap.xml
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 4AM EAT (before llms.txt)
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Astro CLI
+      run: npm install -g astro
+    - name: Generate Sitemap
+      run: |
+        astro build --sitemap
+        mkdir -p public
+        cp dist/sitemap-index.xml public/sitemap.xml || cp dist/sitemap-0.xml public/sitemap.xml || echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.jonathanmwaniki.co.ke/</loc></url></urlset>' > public/sitemap.xml
+    - name: Commit Sitemap
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add public/sitemap*.xml
+        git commit -m "Daily sitemap.xml update" || exit 0
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
