@@ -1,7 +1,7 @@
 name: Daily llms.txt (Root + Public)
 on:
   schedule:
-    - cron: '0 2 * * *'  # 5AM EAT
+    - cron: '0 2 * * *'
   workflow_dispatch:
 jobs:
   generate:
@@ -17,10 +17,11 @@ jobs:
       run: |
         mkdir -p public
         cp llms.txt public/llms.txt
+        ls -la public/
     - name: Commit Both
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: llms.txt root + public
         file_pattern: |
           llms.txt
-          public/llms.txt
+          **/llms.txt
