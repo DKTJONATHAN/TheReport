@@ -3,7 +3,7 @@ title: "Kenya's Dangerous Denial: How Government Officials Are Concealing Child 
 description: "An analysis of the Kenyan government's aggressive response to BBC's child trafficking exposé, raising serious concerns about official complicity and human rights violations"
 date: 2025,08,14
 author: "Investigative Research Team"
-image: "https://i.postimg.cc/0NzkXT2j/images-1.jpg"
+image: "https://i.postimg.cc/wMxvtWPH/6369-1000117496.jpg"
 imageCaption: "Interior CS Kipchumba Murkomen addresses parliament regarding BBC documentary"
 imageAlt: "Kenyan government official speaking at parliamentary session"
 category: "Human Rights Investigation"
