@@ -3,7 +3,7 @@ title: "The 'Wash Wash' Pandemic: Why Nairobi's Club Scene is Actually a Money L
 description: "That KSh 500,000 bottle service at the club isn't about the champagne. It's about the receipt."
 date: "2026-01-27"
 author: "Jonathan Mwaniki"
-image: "https://jonathanmwaniki.co.ke/images/nairobi-club-wash-wash.jpg"
+image: "https://i.postimg.cc/13ch30SB/177.jpg"
 imageCaption: "Forex traders showering money at Mirema Drive while politicians count receipts"
 imageAlt: "Nairobi nightlife money laundering forex crypto"
 category: "Crime"
