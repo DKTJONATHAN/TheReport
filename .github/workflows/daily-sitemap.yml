@@ -1,35 +1,26 @@
-name: Daily Sitemap.xml
+name: Daily Sitemap Copy
 on:
   schedule:
     - cron: '0 1 * * *'  # 4AM EAT
   workflow_dispatch:
 jobs:
-  generate:
+  copy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
     - uses: actions/checkout@v4
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-    - name: Install Deps
-      run: npm ci
-    - name: Build & Sitemap
+    - name: Copy Sitemap
       run: |
-        npm run build
         mkdir -p public
-        if [ -f "dist/sitemap-index.xml" ]; then cp dist/sitemap-index.xml public/sitemap.xml; fi ||
-        if [ -f "dist/sitemap-0.xml" ]; then cp dist/sitemap-0.xml public/sitemap.xml; fi ||
-        echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.jonathanmwaniki.co.ke/</loc><lastmod>$(date -I)</lastmod></url></urlset>' > public/sitemap.xml
+        curl -s https://www.jonathanmwaniki.co.ke/sitemap-0.xml -o public/sitemap.xml || echo '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.jonathanmwaniki.co.ke/</loc></url></urlset>' > public/sitemap.xml
+        ls -la public/sitemap.xml
     - name: Commit Sitemap
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git add public/sitemap*.xml
-        git commit -m "Daily sitemap.xml" || exit 0
+        git add public/sitemap.xml
+        git commit -m "Daily sitemap.xml copy" || exit 0
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
