@@ -9,8 +9,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Generate Complete llms.txt
-      run: npx llmstxt@latest gen https://www.jonathanmwaniki.co.ke/sitemap-0.xml --max-pages 500 > llms.txt
+      run: npx llmstxt@latest gen https://www.jonathanmwaniki.co.ke/sitemap-0.xml --exclude-path "**/privacy**" --exclude-path "**/terms**" > llms.txt
     - uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: Full llms.txt (all sitemaps)
+        commit_message: Full llms.txt (all pages)
         file_pattern: llms.txt
