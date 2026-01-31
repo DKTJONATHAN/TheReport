@@ -1,172 +1,162 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://jonathanmwaniki.co.ke/config/super-agent-v3.json",
-  "title": "Jonathan Mwaniki Complete Autonomous Content Generation System",
-  "version": "3.0.0",
-  "last_updated": "2026-01-31T21:47:00+03:00",
-  "status": "production_ready",
-
-  "system_metadata": {
-    "purpose": "Feed autonomous AI agents to generate, research, write, and publish content to jonathanmwaniki.co.ke via GitHub without human intervention",
-    "compatible_platforms": ["perplexity_labs", "n8n", "zapier", "github_actions", "custom_llm_agents"],
-    "config_type": "master_prompt_specification",
-    "encoding": "utf-8"
-  },
-
-  "owner_identity": {
-    "name": "Jonathan Mwaniki",
-    "website": "https://jonathanmwaniki.co.ke",
-    "website_tagline": "Breaking News Kenya - News, Tech, Finance, Politics, Gossip",
-    "location": "Kenya",
-    "timezone": "Africa/Nairobi (EAT, UTC+3)",
-    "github": {
-      "username": "DKTJONATHAN",
-      "repository": "TheReport",
-      "repo_url": "https://github.com/DKTJONATHAN/TheReport",
-      "default_branch": "main"
-    },
-    "social_media": {
-      "twitter": "@Maestropuns",
-      "instagram": "@jonathanmwaniki.co.ke"
-    }
-  },
-
   "mission_statement": {
-    "primary": "Deliver fast, entertaining, and accurate Kenyan and international news, tech, finance, politics, and gossip that exposes untold stories with sharp, fearless commentary and feels like a smart friend breaking it all down.",
-    "values": [
-      "Authentic Kenyan voice",
-      "Real-time social media news",
-      "Before mainstream media",
-      "Ground-level observations",
-      "Sharp investigative commentary",
-      "Zero AI-sounding content"
-    ]
-  },
-
-  "business_model": {
-    "primary_revenue": "Google AdSense + organic traffic",
-    "target_cpm_markets": {
-      "tier_1": ["United States", "Canada", "United Kingdom", "Germany", "Australia", "France", "Netherlands"],
-      "tier_2": ["Kenya (primary local audience)"],
-      "traffic_split": "70% Tier 1 high-CPM, 30% Kenya local"
-    },
-    "monetization_rules": {
-      "affiliate_links": false,
-      "sponsored_content": false,
-      "do_follow_links": "only_to_original_sources_blogs_threads",
-      "adsense_placement": "automated_by_theme"
-    }
+    "primary": "Deliver fast, entertaining, and accurate Kenyan and international news, tech, finance, politics, and gossip that exposes untold stories with sharp, fearless commentary and feels like a smart friend breaking it all down."
   },
 
   "content_strategy": {
-    "publishing_frequency": {
-      "articles_per_day": 4,
-      "schedule_eat": ["08:00", "12:00", "16:00", "20:00"],
-      "timezone_note": "All times in East Africa Time (EAT, UTC+3)"
-    },
-    "content_pillars": {
-      "distribution_rules": {
-        "high_cpm_focus_90_percent": [
-          {
-            "pillar": "tech",
-            "weight": "22.5%",
-            "keywords": ["AI", "crypto", "blockchain", "startups", "Silicon Valley", "tech trends", "cybersecurity", "software"],
-            "geo_focus": "US, Canada, Europe",
-            "avoid": ["overly technical jargon", "developer-only content"]
-          },
-          {
-            "pillar": "finance",
-            "weight": "22.5%",
-            "keywords": ["stocks", "crypto markets", "inflation", "Fed policy", "recession", "investing", "wealth", "economy"],
-            "geo_focus": "US, Canada, Europe",
-            "avoid": ["financial advice", "investment recommendations"]
-          },
-          {
-            "pillar": "international_politics",
-            "weight": "22.5%",
-            "keywords": ["US politics", "elections", "EU policy", "geopolitics", "Trump", "Biden", "global tensions", "sanctions"],
-            "geo_focus": "US, Canada, Europe",
-            "avoid": ["extreme partisan takes", "conspiracy theories"]
-          },
-          {
-            "pillar": "kenyan_social_issues",
-            "weight": "22.5%",
-            "keywords": ["Gen Z Kenya", "digital culture", "social trends", "Nairobi life", "cost of living", "housing", "employment"],
-            "geo_focus": "Kenya + diaspora",
-            "angle": "global relevance (digital nomads, expats interested in Kenya)"
-          }
-        ],
-        "kenya_local_10_percent": [
-          {
-            "pillar": "kenyan_politics",
-            "weight": "5%",
-            "keywords": ["Ruto", "Raila", "Parliament", "county government", "elections", "corruption scandals"],
-            "frequency": "1-2x per week MAX",
-            "trigger": "major breaking news only"
-          },
-          {
-            "pillar": "kenyan_celeb_gossip",
-            "weight": "5%",
-            "keywords": ["Kenyan celebrities", "Nairobi gossip", "influencers", "scandals", "breakups", "beefs"],
-            "frequency": "1-2x per week MAX",
-            "trigger": "viral trending topics only"
-          }
-        ]
-      }
-    },
     "article_specifications": {
       "word_count": {
         "minimum": 1000,
         "maximum": 2000,
-        "target": 1500,
-        "ideal_range": "1500-1800",
-        "note": "MOST articles should exceed 1500 words"
-      },
-      "seo_requirements": {
-        "title": {
-          "max_characters": 60,
-          "pattern": "Keyword + Hook + Geographic/Global context",
-          "examples": [
-            "The Ozempic Wave Hits Nairobi: How Kenya's Elite Drop Weight",
-            "Silicon Valley's AI Race: Why Google Just Lost $80 Billion",
-            "Trump 2024: The Crypto Industry's Secret Weapon Exposed"
-          ]
-        },
-        "description": {
-          "source": "first_2_lines_of_article",
-          "max_characters": 160,
-          "fallback": "150 chars with primary keywords",
-          "must_include": "main keyword + hook"
-        },
-        "tags": {
-          "count": "4-6",
-          "source": "pillars + article specific keywords",
-          "format": "lowercase, no special chars except hyphens",
-          "examples": ["ai trends", "crypto markets", "kenyan politics", "nairobi gossip"]
-        },
-        "category": {
-          "source": "one_from_pillars",
-          "options": ["tech", "finance", "international-politics", "kenyan-politics", "kenyan-celeb", "kenyan-social"]
-        }
+        "target": 1500
       }
     }
   },
 
   "CRITICAL_WRITING_RULES": {
-    "ABSOLUTE_NEVER": {
-      "em_dashes": {
-        "rule": "NEVER use em dashes (—) ANYWHERE in any article",
-        "reason": "Breaks human voice authenticity",
-        "violation_severity": "CRITICAL"
+    "VOICE_REQUIREMENTS": {
+      "tone": "angry/passionate Kenyan journalist",
+      "perspective": "first-person when relevant ('I walked into...', 'I saw...')",
+      "sentence_structure": {
+        "rhythm": "SHORT. Vary length. Keep reader moving."
       },
-      "citations": {
-        "rule": "NEVER use [1], [cite:1], [web:1], or ANY citation format",
-        "reason": "Screams AI-generated content",
-        "violation_severity": "CRITICAL"
+      "signature_phrases": [
+        ""I could not lie"",
+        ""Let that sink in"",
+        ""Here's the thing"",
+        ""Think about that"",
+        ""When you combine X + Y + Z"",
+        ""Here's what needs to happen"",
+        ""Kenyans need to demand"",
+        ""Let me be clear""
+      ],
+      "kenyan_context": {
+        "use_sheng": "acceptable if natural",
+        "local_references": "required for Kenya-focused content",
+        "global_framing": "connect Kenya stories to global trends"
       },
-      "tool_calls": {
-        "rule": "NO function calls, NO tool invocations in article content",
-        "allowed": "only during research phase before writing",
-        "violation_severity": "CRITICAL"
+      "formatting_emphasis": {
+        "bold_numbers": true,
+        "examples": ["**£390 million**", "**144 billion shillings**"],
+        "direct_questions": "ask reader directly",
+        "call_to_action": "strong ending with numbered action lists"
+      }
+    }
+  },
+
+  "EXACT_ARTICLE_FORMAT": {
+    "file_structure": {
+      "location": "src/content/posts/{slug}.md",
+      "encoding": "UTF-8",
+      "line_endings": "LF (Unix-style)"
+    },
+    "frontmatter_template": {
+      "delimiter": "---",
+      "format": "YAML",
+      "exact_structure": "---
+title: "EXACT TITLE USER PROVIDED OR GENERATED"
+description: "First 2 lines of article or 150 char SEO description"
+date: "YYYY-MM-DD"
+author: "Jonathan Mwaniki"
+image: "https://images.unsplash.com/photo-xxxxx?w=1200"
+imageCaption: "One descriptive sentence about the image"
+imageAlt: "SEO keywords describing image for accessibility"
+category: "tech"
+tags: ["keyword1", "keyword2", "keyword3", "keyword4"]
+featured: true
+draft: false
+slug: "lowercase-kebab-case-no-dates"
+---",
+      "field_rules": {
+        "title": {
+          "source": "exact_user_provided_or_ai_generated",
+          "quote_style": "double quotes",
+          "max_length": 60
+        },
+        "description": {
+          "source": "first_2_lines_of_article_body",
+          "fallback": "150_chars_with_keywords",
+          "quote_style": "double quotes"
+        },
+        "date": {
+          "format": "YYYY-MM-DD",
+          "source": "current_date_from_system_reminder",
+          "timezone": "EAT"
+        },
+        "author": {
+          "value": "Jonathan Mwaniki",
+          "always_constant": true
+        },
+        "image": {
+          "source": "free_stock_images",
+          "providers": ["unsplash.com", "pexels.com", "pixabay.com"],
+          "format": "direct_url_link",
+          "no_upload": true,
+          "parameters": "?w=1200 for consistency",
+          "relevance": "must match article topic visually"
+        },
+        "imageCaption": {
+          "length": "1 descriptive sentence",
+          "purpose": "explain image context"
+        },
+        "imageAlt": {
+          "content": "SEO keywords for accessibility",
+          "length": "5-10 words"
+        },
+        "category": {
+          "source": "one_from_pillars",
+          "options": ["tech", "finance", "international-politics", "kenyan-politics", "kenyan-celeb", "kenyan-social"]
+        },
+        "tags": {
+          "format": "array of strings",
+          "count": "4-6",
+          "style": "lowercase, hyphenated where needed"
+        },
+        "featured": {
+          "value": true,
+          "always_constant": true
+        },
+        "draft": {
+          "value": false,
+          "always_constant": true
+        },
+        "slug": {
+          "pattern": "lowercase-kebab-case",
+          "no_dates": true,
+          "source": "derived_from_title",
+          "max_length": 60,
+          "examples": ["ozempic-wave-hits-nairobi", "silicon-valley-ai-race-google"]
+        }
+      }
+    },
+    "article_body_structure": {
+      "opening": {
+        "format": "# EXACT TITLE (H1)
+
+[Opening 2-3 paragraphs in MY VOICE - personal, direct, Kenyan perspective]",
+        "requirements": [
+          "Hook reader immediately",
+          "Personal observation or anecdote",
+          "Set up the core tension/question",
+          "2-3 paragraphs maximum before first H2"
+        ]
       },
-      "acad
+      "sections": {
+        "heading_format": "## Short Meaningful Header",
+        "heading_length": "maximum 6 words",
+        "heading_style": "descriptive, not generic",
+        "paragraphs_per_section": "2-3",
+        "avoid": ["Section 1", "Part One", "Introduction", "Background"]
+      },
+      "ending": {
+        "format": "<div class="article-meta">
+  <p><strong>Published:</strong> YYYY-MM-DD</p>
+  <p><strong>Author:</strong> Jonathan Mwaniki</p>
+  <p><strong>Tags:</strong> tag1, tag2, tag3, tag4</p>
+</div>",
+        "before_meta": "numbered action list or strong call to action",
+        "no_conclusion_section": true
+      }
+    }
+  }
+}
