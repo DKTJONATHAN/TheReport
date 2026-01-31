@@ -32,15 +32,102 @@ jobs:
           pip install requests
 
       - name: Generate article with Gemini 3 Flash
-        id: generate_article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python << 'EOF'
-          import os, json, datetime, textwrap, requests
+          import os, json, datetime, requests
 
-          with open("config/super-agent.json", "r", encoding="utf-8") as f:
-            cfg = json.load(f)
+          cfg = {
+            "mission_statement": {
+              "primary": "Deliver fast, entertaining, and accurate Kenyan and international news, tech, finance, politics, and gossip that exposes untold stories with sharp, fearless commentary and feels like a smart friend breaking it all down."
+            },
+            "content_strategy": {
+              "article_specifications": {
+                "word_count": {
+                  "minimum": 1000,
+                  "maximum": 2000,
+                  "target": 1500
+                }
+              }
+            },
+            "CRITICAL_WRITING_RULES": {
+              "VOICE_REQUIREMENTS": {
+                "tone": "angry/passionate Kenyan journalist",
+                "perspective": "first-person when relevant ('I walked into...', 'I saw...')",
+                "sentence_structure": {
+                  "rhythm": "SHORT. Vary length. Keep reader moving."
+                },
+                "signature_phrases": [
+                  ""I could not lie"",
+                  ""Let that sink in"",
+                  ""Here's the thing"",
+                  ""Think about that"",
+                  ""When you combine X + Y + Z"",
+                  ""Here's what needs to happen"",
+                  ""Kenyans need to demand"",
+                  ""Let me be clear""
+                ],
+                "kenyan_context": {
+                  "use_sheng": "acceptable if natural",
+                  "local_references": "required for Kenya-focused content",
+                  "global_framing": "connect Kenya stories to global trends"
+                },
+                "formatting_emphasis": {
+                  "bold_numbers": True,
+                  "examples": ["**£390 million**", "**144 billion shillings**"],
+                  "direct_questions": "ask reader directly",
+                  "call_to_action": "strong ending with numbered action lists"
+                }
+              }
+            },
+            "EXACT_ARTICLE_FORMAT": {
+              "frontmatter_template": {
+                "delimiter": "---",
+                "format": "YAML",
+                "exact_structure": "---
+"
+                  "title: "EXACT TITLE USER PROVIDED OR GENERATED"
+"
+                  "description: "First 2 lines of article or 150 char SEO description"
+"
+                  "date: "YYYY-MM-DD"
+"
+                  "author: "Jonathan Mwaniki"
+"
+                  "image: "https://images.unsplash.com/photo-xxxxx?w=1200"
+"
+                  "imageCaption: "One descriptive sentence about the image"
+"
+                  "imageAlt: "SEO keywords describing image for accessibility"
+"
+                  "category: "tech"
+"
+                  "tags: ["keyword1", "keyword2", "keyword3", "keyword4"]
+"
+                  "featured: true
+"
+                  "draft: false
+"
+                  "slug: "lowercase-kebab-case-no-dates"
+"
+                  "---"
+              },
+              "article_body_structure": {
+                "ending": {
+                  "format": "<div class="article-meta">
+"
+                            "  <p><strong>Published:</strong> YYYY-MM-DD</p>
+"
+                            "  <p><strong>Author:</strong> Jonathan Mwaniki</p>
+"
+                            "  <p><strong>Tags:</strong> tag1, tag2, tag3, tag4</p>
+"
+                            "</div>"
+                }
+              }
+            }
+          }
 
           mission = cfg["mission_statement"]["primary"]
           voice = cfg["CRITICAL_WRITING_RULES"]["VOICE_REQUIREMENTS"]
@@ -58,16 +145,17 @@ jobs:
           - Use tone: {voice["tone"]}.
           - Perspective: {voice["perspective"]}.
           - Sentence rhythm: {voice["sentence_structure"]["rhythm"]}.
+          - Signature phrases: {", ".join(voice["signature_phrases"])}.
+          - Kenyan context: {json.dumps(voice["kenyan_context"])}.
           - ABSOLUTE NEVER: em dashes, any citation syntax, banned phrases, summary/conclusion sections.
 
           Output:
           - Full markdown file starting with YAML frontmatter using ---.
-          - Include title, description, date, author, image, imageCaption, imageAlt, category, tags, featured, draft, slug.
-          - date: "{date_str}"
-          - author: "Jonathan Mwaniki"
-          - featured: true
-          - draft: false
-          - After frontmatter, first line in body is "# EXACT TITLE".
+          - Frontmatter fields: title, description, date, author, image, imageCaption, imageAlt, category, tags, featured, draft, slug.
+          - date field must be "{date_str}".
+          - author must be "Jonathan Mwaniki".
+          - featured: true, draft: false.
+          - After frontmatter, first line in body is "# EXACT TITLE" (replace with real title).
           - End with a numbered action list and then:
             <div class="article-meta">
               <p><strong>Published:</strong> {date_str}</p>
@@ -109,7 +197,6 @@ jobs:
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # Write output path and content for next step
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           out_path = os.path.join(out_dir, "test-article.md")
