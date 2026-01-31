@@ -1,6 +1,11 @@
 name: Autonomous Content Publisher
 
 on:
+  schedule:
+    - cron: '0 1 * * *'   # 4AM EAT (1:00 UTC)
+    - cron: '0 5 * * *'   # 8AM EAT (5:00 UTC)
+    - cron: '0 10 * * *'  # 1PM EAT (10:00 UTC)
+    - cron: '0 12 * * *'  # 3PM EAT (12:00 UTC)
   workflow_dispatch:
 
 permissions:
@@ -13,13 +18,14 @@ env:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        topic: [tech, finance, international-politics, kenyan-social]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
-          # Force checkout to use PAT and rely on it for subsequent git ops
           token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
           persist-credentials: true
 
@@ -33,17 +39,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Generate article with Gemini 3 Flash (plain text spec)
+      - name: Generate article with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TOPIC: ${{ matrix.topic }}
         run: |
           python << 'EOF'
           import os, json, datetime, requests
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+          topic = os.environ.get('TOPIC', 'tech')
 
-          spec_text = """
+          spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
+
+          IMPORTANT: Focus ONLY on '{topic}' for this article. Choose one current, timely story in this pillar using your latest knowledge.
 
           HIGH-LEVEL MISSION:
           Deliver fast, entertaining, and accurate Kenyan and international news, tech, finance, politics, and gossip that exposes untold stories with sharp, fearless commentary and feels like a smart friend breaking it all down.
@@ -77,11 +87,7 @@ jobs:
 
           ARTICLE SPEC:
           - Word count: between 1000 and 2000 words, target about 1500.
-          - Topic: choose one story that fits ANY of these pillars:
-            * Tech (AI, crypto, startups, cybersecurity, Silicon Valley).
-            * Finance (markets, inflation, recession, economy).
-            * International politics (US politics, elections, geopolitics, Trump, Biden).
-            * Kenyan social issues (Gen Z Kenya, Nairobi life, cost of living, housing, employment).
+          - Topic: choose one story that fits '{topic}' pillar.
           - Audience: global readers + Kenyans + diaspora.
           - Angle: sharp, fearless commentary with ground-level examples.
 
@@ -97,7 +103,7 @@ jobs:
           image: "https://images.unsplash.com/photo-xxxxx?w=1200"
           imageCaption: "One descriptive sentence about the image"
           imageAlt: "5-10 word SEO description of the image"
-          category: "tech"          # or "finance", "international-politics", "kenyan-social"
+          category: "{topic}"          # Use exactly: tech, finance, international-politics, or kenyan-social
           tags: ["keyword1", "keyword2", "keyword3", "keyword4"]
           featured: true
           draft: false
@@ -105,7 +111,6 @@ jobs:
           ---
 
           - Make sure slug is lowercase-kebab-case with no dates.
-          - Make sure category is one of: tech, finance, international-politics, kenyan-social.
 
           2) BODY STRUCTURE:
 
@@ -141,6 +146,7 @@ jobs:
           """
 
           spec_text = spec_text.replace("{date_str}", date_str)
+          spec_text = spec_text.replace("{topic}", topic)
 
           api_key = os.environ.get("GEMINI_API_KEY")
           if not api_key:
@@ -177,7 +183,11 @@ jobs:
 
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
-          out_path = os.path.join(out_dir, "test-article.md")
+          
+          topic_slug = topic.replace("-", "_")
+          out_filename = f"{topic_slug}-daily-{date_str}.md"
+          out_path = os.path.join(out_dir, out_filename)
+          
           with open(out_path, "w", encoding="utf-8") as f:
             f.write(text)
 
@@ -187,11 +197,10 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish article test-article"
+          commit_message: "content: publish ${{ matrix.topic }} daily article (${{ github.run_id }})"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: ${{ env.POSTS_DIR }}/test-article.md
+          file_pattern: ${{ env.POSTS_DIR }}/${{ matrix.topic }}-daily-*.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
         env:
-          # STRICTLY use the PAT here to override any default GITHUB_TOKEN
           GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
