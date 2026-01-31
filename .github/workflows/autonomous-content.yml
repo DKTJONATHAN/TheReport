@@ -1,4 +1,4 @@
-      - name: Generate article with Gemini 3 Flash
+name: Generate article with Gemini 3 Flash
         id: generate_article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
