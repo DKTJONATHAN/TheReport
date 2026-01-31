@@ -19,7 +19,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
-          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          # Force checkout to use PAT and rely on it for subsequent git ops
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -31,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Generate article with Gemini 3 Flash
+      - name: Generate article with Gemini 3 Flash (plain text spec)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -92,7 +94,7 @@ jobs:
           description: "First 2 lines of article or ~150 chars with main hook"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
-          image: "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?w=1200"
+          image: "https://images.unsplash.com/photo-xxxxx?w=1200"
           imageCaption: "One descriptive sentence about the image"
           imageAlt: "5-10 word SEO description of the image"
           category: "tech"          # or "finance", "international-politics", "kenyan-social"
@@ -190,3 +192,6 @@ jobs:
           file_pattern: ${{ env.POSTS_DIR }}/test-article.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
+        env:
+          # STRICTLY use the PAT here to override any default GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
