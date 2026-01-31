@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pyyaml
 
       - name: Generate article with Gemini
         env:
@@ -45,7 +45,7 @@ jobs:
           TOPIC: ${{ matrix.topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests
+          import os, json, datetime, requests, re, yaml
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           topic = os.environ.get('TOPIC', 'tech')
@@ -60,7 +60,7 @@ jobs:
 
           VOICE AND STYLE:
           - Tone: angry/passionate Kenyan journalist.
-          - Perspective: first-person where natural ("I walked into...", "I saw...").
+          - Perspective: Vary your opening style - use first-person ONLY when truly relevant to the story (e.g., personal investigation), otherwise jump straight into the news with punchy third-person or second-person ("You won't believe...", "They just announced...").
           - Rhythm: SHORT sentences, vary length, keep reader moving.
           - Signature phrases to sprinkle in naturally:
             * "I could not lie"
@@ -71,7 +71,7 @@ jobs:
             * "Here's what needs to happen"
             * "Kenyans need to demand"
             * "Let me be clear"
-          - Kenyan context: use sheng if natural; add Nairobi / Kenya references; connect Kenya to global trends.
+          - Kenyan context: use sheng if natural; add Nairobi / Kenya references WHERE RELEVANT; connect Kenya to global trends.
           - Emphasis: bold numbers (e.g. **144 billion shillings**), ask direct questions, end with strong numbered action list.
 
           HARD RULES (ABSOLUTE NEVER):
@@ -84,6 +84,7 @@ jobs:
             "tapestry", "realm", "robust", "leverage".
           - Do NOT use $ for dollars or LaTeX math.
           - Do NOT add a separate summary or conclusion section at the end.
+          - Do NOT force first-person narrative if the story doesn't need it.
 
           ARTICLE SPEC:
           - Word count: between 1000 and 2000 words, target about 1500.
@@ -103,14 +104,14 @@ jobs:
           image: "https://images.unsplash.com/photo-xxxxx?w=1200"
           imageCaption: "One descriptive sentence about the image"
           imageAlt: "5-10 word SEO description of the image"
-          category: "{topic}"          # Use exactly: tech, finance, international-politics, or kenyan-social
+          category: "{topic}"
           tags: ["keyword1", "keyword2", "keyword3", "keyword4"]
           featured: true
           draft: false
-          slug: "lowercase-kebab-case-no-dates"
+          slug: "lowercase-kebab-case-from-title-words-no-dates"
           ---
 
-          - Make sure slug is lowercase-kebab-case with no dates.
+          - Make sure slug is lowercase-kebab-case created from the main title words with no dates or special characters.
 
           2) BODY STRUCTURE:
 
@@ -121,8 +122,8 @@ jobs:
 
           Then:
           - 2–3 opening paragraphs in my Kenyan voice:
-            * Hook immediately.
-            * Use at least one personal or Nairobi observation.
+            * Hook immediately with the news/story.
+            * Vary opening style - don't always use "I sat in..." or personal anecdotes. Start with the story itself.
             * Set up the core tension or question.
 
           Sections:
@@ -181,25 +182,44 @@ jobs:
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
+          # Extract slug from frontmatter
+          try:
+            frontmatter_match = re.search(r'^---s*
+(.*?)
+---', text, re.DOTALL)
+            if frontmatter_match:
+              frontmatter_text = frontmatter_match.group(1)
+              frontmatter_data = yaml.safe_load(frontmatter_text)
+              slug = frontmatter_data.get('slug', 'article')
+            else:
+              slug = 'article'
+          except Exception:
+            slug = 'article'
+
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           
-          topic_slug = topic.replace("-", "_")
-          out_filename = f"{topic_slug}-daily-{date_str}.md"
+          out_filename = f"{slug}.md"
           out_path = os.path.join(out_dir, out_filename)
           
           with open(out_path, "w", encoding="utf-8") as f:
             f.write(text)
 
           print(f"Article written to {out_path}")
+          print(f"SLUG={slug}")
+          
+          # Save slug to environment for next step
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+            print(f"article_slug={slug}", file=fh)
           EOF
+        id: generate
 
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish ${{ matrix.topic }} daily article (${{ github.run_id }})"
+          commit_message: "content: publish ${{ matrix.topic }} article - ${{ steps.generate.outputs.article_slug }}"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: ${{ env.POSTS_DIR }}/${{ matrix.topic }}-daily-*.md
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
         env:
