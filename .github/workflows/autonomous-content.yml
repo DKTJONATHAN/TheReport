@@ -4,10 +4,10 @@
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python << 'EOF'
-          import os, json, datetime, random, textwrap, requests
+          import os, json, datetime, random, textwrap, requests, re
 
-          CONFIG = r'''{{SUPER_AGENT_JSON_HERE}}'''
-          cfg = json.loads(CONFIG)
+          with open("config/super-agent.json", "r", encoding="utf-8") as f:
+            cfg = json.load(f)
 
           high_cpm = cfg["content_strategy"]["content_pillars"]["distribution_rules"]["high_cpm_focus_90_percent"]
           ke_local = cfg["content_strategy"]["content_pillars"]["distribution_rules"]["kenya_local_10_percent"]
@@ -87,16 +87,20 @@
 
           data = resp.json()
           try:
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            text = data["candidates"]["content"]["parts"]["text"]
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # Extract title from frontmatter line: title: "..."
-          import re
           m = re.search(r'^title:s*"([^"]+)"', text, re.MULTILINE)
           title = m.group(1).strip() if m else "Untitled"
 
-          # Expose to later steps
-          print(f"::set-output name=markdown::{text}")
-          print(f"::set-output name=title::{title}")
-          EOF 
+          github_output = os.environ.get("GITHUB_OUTPUT")
+          if github_output:
+            with open(github_output, "a", encoding="utf-8") as fh:
+              fh.write(f"markdown<<EOF
+{text}
+EOF
+")
+              fh.write(f"title={title}
+")
+          EOF
