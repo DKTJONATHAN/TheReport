@@ -1,17 +1,12 @@
 name: Autonomous Content Publisher
 
 on:
-  schedule:
-    # 4 runs per day at 08:00, 12:00, 16:00, 20:00 EAT (UTC+3)
-    - cron: '0 5,9,13,17 * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 env:
-  REPO_OWNER: DKTJONATHAN
-  REPO_NAME: TheReport
   DEFAULT_BRANCH: main
   POSTS_DIR: src/content/posts
 
@@ -34,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pyyaml
+          pip install requests
 
       - name: Generate article with Gemini 3 Flash
         id: generate_article
@@ -42,20 +37,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python << 'EOF'
-          import os, json, datetime, random, textwrap, requests, re
+          import os, json, datetime, textwrap, requests
 
           with open("config/super-agent.json", "r", encoding="utf-8") as f:
             cfg = json.load(f)
 
-          high_cpm = cfg["content_strategy"]["content_pillars"]["distribution_rules"]["high_cpm_focus_90_percent"]
-          ke_local = cfg["content_strategy"]["content_pillars"]["distribution_rules"]["kenya_local_10_percent"]
-
-          if random.random() < 0.9:
-            pillar_spec = random.choice(high_cpm)
-          else:
-            pillar_spec = random.choice(ke_local)
-
-          pillar_name = pillar_spec["pillar"]
           mission = cfg["mission_statement"]["primary"]
           voice = cfg["CRITICAL_WRITING_RULES"]["VOICE_REQUIREMENTS"]
           article_spec = cfg["content_strategy"]["article_specifications"]
@@ -72,21 +58,15 @@ jobs:
           - Use tone: {voice["tone"]}.
           - Perspective: {voice["perspective"]}.
           - Sentence rhythm: {voice["sentence_structure"]["rhythm"]}.
-          - Signature phrases: {", ".join(voice["signature_phrases"])}.
-          - Kenyan context: {json.dumps(voice["kenyan_context"])}.
           - ABSOLUTE NEVER: em dashes, any citation syntax, banned phrases, summary/conclusion sections.
-
-          Pillar: {pillar_name}
-          Keywords: {", ".join(pillar_spec.get("keywords", []))}
 
           Output:
           - Full markdown file starting with YAML frontmatter using ---.
-          - Frontmatter fields: title, description, date, author, image, imageCaption, imageAlt, category, tags, featured, draft, slug.
+          - Include title, description, date, author, image, imageCaption, imageAlt, category, tags, featured, draft, slug.
           - date: "{date_str}"
           - author: "Jonathan Mwaniki"
           - featured: true
           - draft: false
-          - slug: lowercase-kebab-case, no dates.
           - After frontmatter, first line in body is "# EXACT TITLE".
           - End with a numbered action list and then:
             <div class="article-meta">
@@ -129,54 +109,22 @@ jobs:
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          m = re.search(r'^title:s*"([^"]+)"', text, re.MULTILINE)
-          title = m.group(1).strip() if m else "Untitled"
+          # Write output path and content for next step
+          out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
+          os.makedirs(out_dir, exist_ok=True)
+          out_path = os.path.join(out_dir, "test-article.md")
+          with open(out_path, "w", encoding="utf-8") as f:
+            f.write(text)
 
-          github_output = os.environ.get("GITHUB_OUTPUT")
-          if github_output:
-            with open(github_output, "a", encoding="utf-8") as fh:
-              fh.write(f"markdown<<EOF
-{text}
-EOF
-")
-              fh.write(f"title={title}
-")
+          print(f"Article written to {out_path}")
           EOF
-
-      - name: Save generated markdown to file
-        if: success() && steps.generate_article.outputs.markdown != ''
-        run: |
-          mkdir -p "${{ env.POSTS_DIR }}"
-          python << 'EOF'
-          import pathlib, re, os, sys
-
-          md = os.environ.get("ARTICLE_MARKDOWN", "")
-          if not md.strip():
-            print("No markdown in ARTICLE_MARKDOWN")
-            sys.exit(1)
-
-          slug_match = re.search(r'^slug:s*"([^"]+)"', md, re.MULTILINE)
-          if not slug_match:
-            print("No slug field found in frontmatter")
-            sys.exit(1)
-
-          slug = slug_match.group(1).strip()
-          posts_dir = pathlib.Path(os.environ.get("POSTS_DIR", "src/content/posts"))
-          posts_dir.mkdir(parents=True, exist_ok=True)
-          path = posts_dir / f"{slug}.md"
-          path.write_text(md, encoding="utf-8")
-          EOF
-        env:
-          ARTICLE_MARKDOWN: ${{ steps.generate_article.outputs.markdown }}
 
       - name: Commit and push article
-        if: success()
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: |
-            content: publish article ${{ steps.generate_article.outputs.title }}
+          commit_message: "content: publish article test-article"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          file_pattern: ${{ env.POSTS_DIR }}/test-article.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
         env:
