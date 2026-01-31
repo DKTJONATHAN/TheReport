@@ -1,4 +1,42 @@
-name: Generate article with Gemini 3 Flash
+name: Autonomous Content Publisher
+
+on:
+  schedule:
+    # 4 runs per day at 08:00, 12:00, 16:00, 20:00 EAT (UTC+3)
+    - cron: '0 5,9,13,17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  REPO_OWNER: DKTJONATHAN
+  REPO_NAME: TheReport
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+
+      - name: Generate article with Gemini 3 Flash
         id: generate_article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -87,7 +125,7 @@ name: Generate article with Gemini 3 Flash
 
           data = resp.json()
           try:
-            text = data["candidates"]["content"]["parts"]["text"]
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
@@ -104,3 +142,42 @@ EOF
               fh.write(f"title={title}
 ")
           EOF
+
+      - name: Save generated markdown to file
+        if: success() && steps.generate_article.outputs.markdown != ''
+        run: |
+          mkdir -p "${{ env.POSTS_DIR }}"
+          python << 'EOF'
+          import pathlib, re, os, sys
+
+          md = os.environ.get("ARTICLE_MARKDOWN", "")
+          if not md.strip():
+            print("No markdown in ARTICLE_MARKDOWN")
+            sys.exit(1)
+
+          slug_match = re.search(r'^slug:s*"([^"]+)"', md, re.MULTILINE)
+          if not slug_match:
+            print("No slug field found in frontmatter")
+            sys.exit(1)
+
+          slug = slug_match.group(1).strip()
+          posts_dir = pathlib.Path(os.environ.get("POSTS_DIR", "src/content/posts"))
+          posts_dir.mkdir(parents=True, exist_ok=True)
+          path = posts_dir / f"{slug}.md"
+          path.write_text(md, encoding="utf-8")
+          EOF
+        env:
+          ARTICLE_MARKDOWN: ${{ steps.generate_article.outputs.markdown }}
+
+      - name: Commit and push article
+        if: success()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: |
+            content: publish article ${{ steps.generate_article.outputs.title }}
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
