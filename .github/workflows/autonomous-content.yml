@@ -2,7 +2,7 @@ name: Autonomous Content Publisher
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4AM EAT (Tech)
+    - cron: '0 1 * * *'   # 4AM EAT (Tech - Global)
     - cron: '0 5 * * *'   # 8AM EAT (Finance)
     - cron: '0 10 * * *'  # 1PM EAT (Int. Politics)
     - cron: '0 12 * * *'  # 3PM EAT (Kenyan Social)
@@ -44,6 +44,7 @@ jobs:
       - name: Generate article with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
@@ -51,67 +52,61 @@ jobs:
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
-
-          # --- 1. DETERMINE TOPIC BASED ON TIME (OR MANUAL INPUT) ---
-          # Logic: Map the schedule time to a specific topic so they rotate daily.
           
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
+          # --- HELPER: Fetch Real Photo from Unsplash ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              # FALLBACK 1: If key is missing, use Abstract AI (No Humans)
+              if not access_key:
+                  print("⚠️ No Unsplash Key found. Using Safe AI fallback.")
+                  safe_query = query.replace(" ", "-")
+                  return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans-cinematic-lighting?width=1200&height=630&nologo=true"
+              
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      data = resp.json()
+                      return data['urls']['regular']
+                  else:
+                      print(f"⚠️ Unsplash Error {resp.status_code}. Using fallback.")
+              except Exception as e:
+                  print(f"⚠️ Unsplash Connection Error: {e}")
+              
+              # FALLBACK 2: If Unsplash fails/limits hit, use a safe generic tech/news image
+              return "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
 
+          # --- 1. DETERMINE TOPIC ---
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
           if manual_input:
               topic = manual_input
           else:
-              # Automatic Schedule Mapping
-              if current_hour_utc < 3:     # 1:00 UTC (4AM EAT)
-                  topic = 'tech'
-              elif current_hour_utc < 8:   # 5:00 UTC (8AM EAT)
-                  topic = 'finance'
-              elif current_hour_utc < 11:  # 10:00 UTC (1PM EAT)
-                  topic = 'international-politics'
-              else:                        # 12:00 UTC (3PM EAT)
-                  topic = 'kenyan-social'
-
-          print(f"🕒 Current Hour (UTC): {current_hour_utc}")
+              if current_hour_utc < 3: topic = 'tech'
+              elif current_hour_utc < 8: topic = 'finance'
+              elif current_hour_utc < 11: topic = 'international-politics'
+              else: topic = 'kenyan-social'
+          
           print(f"🎯 Selected Topic: {topic}")
 
-          # --- 2. DYNAMIC HOOK GENERATOR ---
+          # --- 2. DYNAMIC HOOKS ---
           hooks = [
-             "A Direct Question: Start immediately with a hard-hitting question to the reader.",
+             "A Direct Question: Start immediately with a hard-hitting question.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
-             "A Cynical Observation: Start by mocking a common belief or statement.",
-             "A Direct Attack: Start by calling out a specific group (e.g., 'The regulators are lying to you').",
-             "A 'Scene from the Future': Start by describing a dystopian or utopian scenario as if it's already here."
+             "A Cynical Observation: Start by mocking a common belief.",
+             "A Direct Attack: Start by calling out a specific group.",
+             "A 'Scene from the Future': Describe a scenario as if it's already here."
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 3. TOPIC-SPECIFIC LOGIC ---
+          # --- 3. TOPIC INSTRUCTIONS ---
           if topic == 'tech':
-              focus_instruction = """
-              IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY.
-              *** STRICT GEOGRAPHIC LOCK ***
-              - DO NOT write about Kenya, Safaricom, M-PESA, or local startups.
-              - DO NOT mention Kenyan politics or local regulations.
-              - FOCUS ON: AI Agents, Quantum Computing, Space Race (SpaceX/China), Biotech, Semiconductors, Robotics, or Cyber-warfare between superpowers.
-              """
-              angle_instruction = "Find a global tech breakthrough that feels dangerous or revolutionary."
-          
+              focus_instruction = "IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY (AI, Quantum, Space, Cyber-war). NO Kenya mentions."
+              angle_instruction = "Find a global tech breakthrough that feels dangerous."
           elif topic == 'finance':
-              focus_instruction = """
-              IMPORTANT: Focus on FINANCE (Global or Kenyan).
-              *** ANTI-REPETITION RULES ***
-              - DO NOT write about IMF/World Bank loans unless there is a crisis TODAY.
-              - Focus on: Stock market crashes, Crypto regulation, Tax policies, Corporate fraud, or Inflation/Cost of Living truths.
-              """
+              focus_instruction = "IMPORTANT: Focus on FINANCE. Anti-repetition: NO generic IMF stories."
               angle_instruction = "Find a story about money that they are hiding from the common person."
-
           else:
-              # International Politics & Kenyan Social
-              focus_instruction = f"""
-              IMPORTANT: Focus on '{topic}'.
-              *** ANTI-REPETITION RULES ***
-              - DO NOT write generic 'corruption is bad' articles—find a SPECIFIC new scandal or event.
-              - If International Politics: Focus on shifting alliances, wars, or elections.
-              - If Kenyan Social: Focus on trending cultural debates, inequality, or urban survival in Nairobi.
-              """
+              focus_instruction = f"IMPORTANT: Focus on '{topic}'. Anti-repetition: NO generic corruption stories."
               angles = ["an ignored scandal", "a rising underdog story", "a policy failure", "a controversial trend"]
               angle_instruction = f"TODAY'S ANGLE: Find a story about {random.choice(angles)}."
 
@@ -122,36 +117,27 @@ jobs:
           {focus_instruction}
           {angle_instruction}
 
-          OPENING STRATEGY (CRITICAL):
+          OPENING STRATEGY:
           - **{selected_hook}**
-          - **ABSOLUTE BAN:** DO NOT start with "I was sitting at...", "I walked into...", or "I saw...". Start directly with the concept/anger/fact.
+          - ABSOLUTE BAN: Do not start with "I was sitting at...".
 
-          HIGH-LEVEL MISSION:
-          Deliver fast, entertaining, and accurate news. Dig for UNTOLD stories.
-
-          VOICE AND STYLE:
-          - Tone: angry/passionate Kenyan journalist (even for global stories, keep the "voice" African/Kenyan, e.g., "These guys think they own the future...").
-          - Perspective: first-person.
-          - Signature phrases: "I could not lie", "Let that sink in", "Here's the thing".
-
-          HARD RULES:
-          - No em dashes (—).
-          - No academic jargon.
-          - No citation syntax.
-          - No intro/outro labels.
+          *** IMAGE STRATEGY ***
+          - You must provide a "Search Keyword" for a stock photo site on Line 2.
+          - Example: If the story is about Coffee farming, Line 2 should be: "coffee beans sack close up"
+          - Do NOT generate an image URL yourself. Just the keyword.
 
           *** CRITICAL OUTPUT FORMAT ***
           Line 1: A unique, SEO-optimized, lowercase-kebab-case slug.
-          Line 2: The start of the YAML frontmatter (---).
-          Line 3+: The rest of the article content.
+          Line 2: IMAGE_KEYWORD: [Insert 2-3 word search term for Unsplash here]
+          Line 3: The start of the YAML frontmatter (---).
 
-          1) YAML FRONTMATTER (starts on Line 2):
+          1) YAML FRONTMATTER (starts on Line 3):
           ---
-          title: "Your punchy title here"
-          description: "Hook description"
+          title: "Title"
+          description: "Description"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
-          image: "https://images.unsplash.com/photo-xxxxx?w=1200"
+          image: "IMAGE_URL_PLACEHOLDER"
           imageCaption: "Caption"
           imageAlt: "Alt text"
           category: "{topic}"
@@ -178,49 +164,60 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # --- 5. RETRY LOGIC FOR 429 ERRORS ---
-          max_retries = 5
-          for attempt in range(max_retries):
+          # Retry Logic for Rate Limits
+          for attempt in range(5):
               resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-              
-              if resp.status_code == 200:
-                  break # Success!
+              if resp.status_code == 200: break
               elif resp.status_code == 429:
-                  print(f"Rate limit hit (429). Retrying in 30 seconds... (Attempt {attempt+1}/{max_retries})")
+                  print("Rate limit hit. Sleeping 30s...")
                   time.sleep(30)
-              else:
-                  raise SystemExit(f"Gemini API error {resp.status_code}: {resp.text[:500]}")
-          else:
-              raise SystemExit("Failed to generate content after multiple retries due to rate limiting.")
+              else: raise SystemExit(f"Gemini API error {resp.status_code}: {resp.text[:500]}")
 
           data = resp.json()
           try:
-            full_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+              full_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
           except Exception:
-            raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
+              raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 6. PARSE SLUG AND CONTENT ---
-          lines = full_text.split('\n', 1)
-          if len(lines) < 2:
-             raw_slug = f"{topic}-story-{date_str}"
-             content = full_text
-          else:
-             raw_slug = lines[0].strip()
-             content = lines[1].strip()
+          # --- 5. PARSE OUTPUT & FETCH IMAGE ---
+          lines = full_text.split('\n')
+          
+          slug = f"{topic}-story-{date_str}"
+          image_keyword = topic
+          content_start_index = 0
 
-          slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower())
-          if not slug: slug = f"{topic}-daily-{date_str}"
+          # Safe Parsing
+          if len(lines) > 2:
+              # Line 1: Slug
+              raw_slug = lines[0].strip()
+              slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower()) or slug
+              
+              # Line 2: Image Keyword
+              if "IMAGE_KEYWORD:" in lines[1]:
+                  image_keyword = lines[1].replace("IMAGE_KEYWORD:", "").strip()
+                  content_start_index = 2
+              else:
+                  # AI messed up format, assume content starts at line 1
+                  content_start_index = 1
+          
+          # Fetch Real Image
+          print(f"📷 Fetching photo for: {image_keyword}")
+          real_image_url = get_real_image(image_keyword)
+          
+          # Reassemble Content
+          content_lines = lines[content_start_index:]
+          full_content = "\n".join(content_lines)
+          
+          # Inject Image URL
+          final_content = full_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
 
+          # Save File
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
-          
-          out_filename = f"{slug}.md"
-          out_path = os.path.join(out_dir, out_filename)
-          
-          with open(out_path, "w", encoding="utf-8") as f:
-            f.write(content)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+            f.write(final_content)
 
-          print(f"Article written to {out_path}")
+          print(f"✅ Article written to {slug}.md with image: {image_keyword}")
           EOF
 
       - name: Commit and push article
