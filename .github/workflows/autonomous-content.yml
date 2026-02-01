@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pyyaml
 
       - name: Generate article with Gemini
         env:
@@ -45,7 +45,7 @@ jobs:
           TOPIC: ${{ matrix.topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests
+          import os, json, datetime, requests, yaml, re
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           topic = os.environ.get('TOPIC', 'tech')
@@ -181,11 +181,24 @@ jobs:
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
+          # Extract slug from frontmatter
+          frontmatter_match = re.search(r'^---s*
+(.*?)
+---', text, re.DOTALL)
+          if frontmatter_match:
+            frontmatter_str = frontmatter_match.group(1)
+            try:
+              frontmatter = yaml.safe_load(frontmatter_str)
+              slug = frontmatter.get('slug', f'{topic}-article-{date_str}')
+            except:
+              slug = f'{topic}-article-{date_str}'
+          else:
+            slug = f'{topic}-article-{date_str}'
+
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           
-          topic_slug = topic.replace("-", "_")
-          out_filename = f"{topic_slug}-daily-{date_str}.md"
+          out_filename = f"{slug}.md"
           out_path = os.path.join(out_dir, out_filename)
           
           with open(out_path, "w", encoding="utf-8") as f:
@@ -199,7 +212,7 @@ jobs:
         with:
           commit_message: "content: publish ${{ matrix.topic }} daily article (${{ github.run_id }})"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: ${{ env.POSTS_DIR }}/${{ matrix.topic }}-daily-*.md
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
         env:
