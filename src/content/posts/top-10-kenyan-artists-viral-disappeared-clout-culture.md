@@ -1,4 +1,3 @@
-
 ---
 title: "The Clout Graveyard: Why Kenya’s Viral Sensations Are Designed to Fail"
 description: "An unapologetic look at the controversial trend of 'clout culture' in the Kenyan music industry and why our viral stars disappear as fast as they arrive."
