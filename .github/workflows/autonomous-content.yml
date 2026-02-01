@@ -81,14 +81,15 @@ jobs:
           if manual_input:
               topic = manual_input
           else:
-              if current_hour_utc < 3: topic = 'tech'
-              elif current_hour_utc < 8: topic = 'finance'
-              elif current_hour_utc < 11: topic = 'international-politics'
-              else: topic = 'kenyan-social'
+              # Time-based routing (UTC times map to EAT schedule)
+              if current_hour_utc < 3: topic = 'tech'                # 1AM UTC = 4AM EAT
+              elif current_hour_utc < 8: topic = 'finance'             # 5AM UTC = 8AM EAT
+              elif current_hour_utc < 11: topic = 'international-politics' # 10AM UTC = 1PM EAT
+              else: topic = 'kenyan-social'                            # 12PM UTC = 3PM EAT
           
           print(f"🎯 Selected Topic: {topic}")
 
-          # --- 2. DYNAMIC HOOKS ---
+          # --- 2. DYNAMIC HOOKS (Anti-Fatigue) ---
           hooks = [
              "A Direct Question: Start immediately with a hard-hitting question.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
@@ -98,7 +99,7 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 3. TOPIC INSTRUCTIONS ---
+          # --- 3. TOPIC INSTRUCTIONS (Anti-Repetition) ---
           if topic == 'tech':
               focus_instruction = "IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY (AI, Quantum, Space, Cyber-war). NO Kenya mentions."
               angle_instruction = "Find a global tech breakthrough that feels dangerous."
@@ -120,6 +121,13 @@ jobs:
           OPENING STRATEGY:
           - **{selected_hook}**
           - ABSOLUTE BAN: Do not start with "I was sitting at...".
+
+          *** LENGTH STRATEGY (CRITICAL) ***
+          - The article MUST be over 1500 words.
+          - To achieve this, you must write **6 DISTINCT SECTIONS** (excluding intro).
+          - Each section must be at least 250 words deep.
+          - Go into extreme detail: use dates, numbers, specific names, and technical details.
+          - Do not summarize; EXPLAIN in depth.
 
           *** IMAGE STRATEGY ***
           - You must provide a "Search Keyword" for a stock photo site on Line 2.
@@ -164,7 +172,7 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # Retry Logic for Rate Limits
+          # Retry Logic for Rate Limits (429)
           for attempt in range(5):
               resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
               if resp.status_code == 200: break
@@ -208,8 +216,13 @@ jobs:
           content_lines = lines[content_start_index:]
           full_content = "\n".join(content_lines)
           
-          # Inject Image URL
+          # --- 6. FINAL CLEANING (Inject Image & Fix Punctuation) ---
           final_content = full_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
+          
+          # Replace Em Dashes with Commas
+          final_content = final_content.replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
+          # Clean double punctuation
+          final_content = final_content.replace(" ,", ",").replace(",,", ",")
 
           # Save File
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
