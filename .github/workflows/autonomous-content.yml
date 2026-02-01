@@ -122,12 +122,15 @@ jobs:
           - **{selected_hook}**
           - ABSOLUTE BAN: Do not start with "I was sitting at...".
 
-          *** LENGTH STRATEGY (CRITICAL) ***
-          - The article MUST be over 1500 words.
-          - To achieve this, you must write **6 DISTINCT SECTIONS** (excluding intro).
-          - Each section must be at least 250 words deep.
-          - Go into extreme detail: use dates, numbers, specific names, and technical details.
-          - Do not summarize; EXPLAIN in depth.
+          *** LENGTH & STRUCTURE STRATEGY (CRITICAL) ***
+          - The article MUST follow this EXACT sequential order. Do not mix them up:
+            1. **YAML Frontmatter**
+            2. **H1 Title**
+            3. **Introduction** (2-3 paragraphs)
+            4. **6 DISTINCT SECTIONS** (Use ## Headers). Each section must be 250 words deep.
+            5. **FINAL ELEMENT:** The HTML `<div class="article-meta">` block.
+          
+          - **WARNING:** Do NOT put the HTML article-meta block after the introduction. It must be the VERY LAST thing in the file.
 
           *** IMAGE STRATEGY ***
           - You must provide a "Search Keyword" for a stock photo site on Line 2.
@@ -154,10 +157,23 @@ jobs:
           draft: false
           ---
 
-          2) BODY STRUCTURE:
+          2) BODY STRUCTURE (After YAML):
           # EXACT TITLE
-          (Content follows...)
           
+          (Write the Introduction here...)
+
+          ## 1. First Section
+          (Content...)
+
+          ## 2. Second Section
+          (Content...)
+          
+          ... (Continue until Section 6) ...
+
+          ## 6. Sixth Section
+          (Content...)
+
+          (ONLY NOW, AT THE VERY END, ADD THE META BLOCK):
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
             <p><strong>Author:</strong> Jonathan Mwaniki</p>
