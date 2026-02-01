@@ -2,11 +2,16 @@ name: Autonomous Content Publisher
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4AM EAT (1:00 UTC)
-    - cron: '0 5 * * *'   # 8AM EAT (5:00 UTC)
-    - cron: '0 10 * * *'  # 1PM EAT (10:00 UTC)
-    - cron: '0 12 * * *'  # 3PM EAT (12:00 UTC)
+    - cron: '0 1 * * *'   # 4AM EAT (Tech)
+    - cron: '0 5 * * *'   # 8AM EAT (Finance)
+    - cron: '0 10 * * *'  # 1PM EAT (Int. Politics)
+    - cron: '0 12 * * *'  # 3PM EAT (Kenyan Social)
   workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (optional)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -18,9 +23,6 @@ env:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        topic: [tech, finance, international-politics, kenyan-social]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -42,15 +44,36 @@ jobs:
       - name: Generate article with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TOPIC: ${{ matrix.topic }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random
+          import os, json, datetime, requests, re, random, time
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
-          topic = os.environ.get('TOPIC', 'tech')
+          current_hour_utc = datetime.datetime.utcnow().hour
 
-          # --- 1. DYNAMIC HOOK GENERATOR (Prevents "I was sitting at..." fatigue) ---
+          # --- 1. DETERMINE TOPIC BASED ON TIME (OR MANUAL INPUT) ---
+          # Logic: Map the schedule time to a specific topic so they rotate daily.
+          
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
+
+          if manual_input:
+              topic = manual_input
+          else:
+              # Automatic Schedule Mapping
+              if current_hour_utc < 3:     # 1:00 UTC (4AM EAT)
+                  topic = 'tech'
+              elif current_hour_utc < 8:   # 5:00 UTC (8AM EAT)
+                  topic = 'finance'
+              elif current_hour_utc < 11:  # 10:00 UTC (1PM EAT)
+                  topic = 'international-politics'
+              else:                        # 12:00 UTC (3PM EAT)
+                  topic = 'kenyan-social'
+
+          print(f"🕒 Current Hour (UTC): {current_hour_utc}")
+          print(f"🎯 Selected Topic: {topic}")
+
+          # --- 2. DYNAMIC HOOK GENERATOR ---
           hooks = [
              "A Direct Question: Start immediately with a hard-hitting question to the reader.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
@@ -60,9 +83,8 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 2. TOPIC-SPECIFIC LOGIC ---
+          # --- 3. TOPIC-SPECIFIC LOGIC ---
           if topic == 'tech':
-              # STRICT GLOBAL ONLY for Tech
               focus_instruction = """
               IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY.
               *** STRICT GEOGRAPHIC LOCK ***
@@ -71,27 +93,29 @@ jobs:
               - FOCUS ON: AI Agents, Quantum Computing, Space Race (SpaceX/China), Biotech, Semiconductors, Robotics, or Cyber-warfare between superpowers.
               """
               angle_instruction = "Find a global tech breakthrough that feels dangerous or revolutionary."
-              
-          else:
-              # ORIGINAL MIX for Finance, Politics, Social
+          
+          elif topic == 'finance':
               focus_instruction = """
-              IMPORTANT: Focus on '{topic}' with a mix of Kenyan and Global context.
-              
-              *** ANTI-REPETITION RULES (STRICT) ***
-              - DO NOT write about Starlink vs Safaricom.
-              - DO NOT write about IMF/World Bank loans unless the shilling crashed TODAY.
-              - DO NOT write generic "corruption is bad" articles—find a SPECIFIC new scandal or event.
+              IMPORTANT: Focus on FINANCE (Global or Kenyan).
+              *** ANTI-REPETITION RULES ***
+              - DO NOT write about IMF/World Bank loans unless there is a crisis TODAY.
+              - Focus on: Stock market crashes, Crypto regulation, Tax policies, Corporate fraud, or Inflation/Cost of Living truths.
               """
-              
-              angles = [
-                 "an ignored scandal",
-                 "a rising underdog story",
-                 "a policy affecting the common mwananchi",
-                 "a controversial opinion on a new event"
-              ]
+              angle_instruction = "Find a story about money that they are hiding from the common person."
+
+          else:
+              # International Politics & Kenyan Social
+              focus_instruction = f"""
+              IMPORTANT: Focus on '{topic}'.
+              *** ANTI-REPETITION RULES ***
+              - DO NOT write generic 'corruption is bad' articles—find a SPECIFIC new scandal or event.
+              - If International Politics: Focus on shifting alliances, wars, or elections.
+              - If Kenyan Social: Focus on trending cultural debates, inequality, or urban survival in Nairobi.
+              """
+              angles = ["an ignored scandal", "a rising underdog story", "a policy failure", "a controversial trend"]
               angle_instruction = f"TODAY'S ANGLE: Find a story about {random.choice(angles)}."
 
-          # --- 3. CONSTRUCT THE PROMPT ---
+          # --- 4. CONSTRUCT PROMPT ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
 
@@ -106,18 +130,18 @@ jobs:
           Deliver fast, entertaining, and accurate news. Dig for UNTOLD stories.
 
           VOICE AND STYLE:
-          - Tone: angry/passionate Kenyan journalist (even for global stories, keep the "voice" African/Kenyan, e.g., "These Silicon Valley guys think they own the future...").
+          - Tone: angry/passionate Kenyan journalist (even for global stories, keep the "voice" African/Kenyan, e.g., "These guys think they own the future...").
           - Perspective: first-person.
           - Signature phrases: "I could not lie", "Let that sink in", "Here's the thing".
 
           HARD RULES:
           - No em dashes (—).
-          - No academic jargon ("delve", "tapestry").
-          - No citation syntax like [1].
+          - No academic jargon.
+          - No citation syntax.
           - No intro/outro labels.
 
           *** CRITICAL OUTPUT FORMAT ***
-          Line 1: A unique, SEO-optimized, lowercase-kebab-case slug (e.g., nairobi-drainage-scandal-exposed).
+          Line 1: A unique, SEO-optimized, lowercase-kebab-case slug.
           Line 2: The start of the YAML frontmatter (---).
           Line 3+: The rest of the article content.
 
@@ -148,23 +172,26 @@ jobs:
           """
 
           api_key = os.environ.get("GEMINI_API_KEY")
-          if not api_key:
-            raise SystemExit("Missing GEMINI_API_KEY")
+          if not api_key: raise SystemExit("Missing GEMINI_API_KEY")
 
           url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+          headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
+          payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          payload = {
-            "contents": [{ "parts": [{ "text": spec_text }] }]
-          }
-
-          headers = {
-            "x-goog-api-key": api_key,
-            "Content-Type": "application/json"
-          }
-
-          resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-          if resp.status_code != 200:
-            raise SystemExit(f"Gemini API error {resp.status_code}: {resp.text[:500]}")
+          # --- 5. RETRY LOGIC FOR 429 ERRORS ---
+          max_retries = 5
+          for attempt in range(max_retries):
+              resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
+              
+              if resp.status_code == 200:
+                  break # Success!
+              elif resp.status_code == 429:
+                  print(f"Rate limit hit (429). Retrying in 30 seconds... (Attempt {attempt+1}/{max_retries})")
+                  time.sleep(30)
+              else:
+                  raise SystemExit(f"Gemini API error {resp.status_code}: {resp.text[:500]}")
+          else:
+              raise SystemExit("Failed to generate content after multiple retries due to rate limiting.")
 
           data = resp.json()
           try:
@@ -172,7 +199,7 @@ jobs:
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 4. PARSE SLUG AND CONTENT ---
+          # --- 6. PARSE SLUG AND CONTENT ---
           lines = full_text.split('\n', 1)
           if len(lines) < 2:
              raw_slug = f"{topic}-story-{date_str}"
@@ -181,7 +208,6 @@ jobs:
              raw_slug = lines[0].strip()
              content = lines[1].strip()
 
-          # Sanitize slug
           slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower())
           if not slug: slug = f"{topic}-daily-{date_str}"
 
@@ -200,7 +226,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish ${{ matrix.topic }} daily article (${{ github.run_id }})"
+          commit_message: "content: publish daily article (${{ github.run_id }})"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: ${{ env.POSTS_DIR }}/*.md
           commit_user_name: "Content Bot"
