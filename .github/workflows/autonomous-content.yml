@@ -2,10 +2,10 @@ name: Autonomous Content Publisher
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4AM EAT (Tech -> Technology)
-    - cron: '0 5 * * *'   # 8AM EAT (Finance -> Business)
-    - cron: '0 10 * * *'  # 1PM EAT (Int. Politics -> Politics)
-    - cron: '0 12 * * *'  # 3PM EAT (Kenyan Social -> Entertainment/Opinion)
+    - cron: '0 1 * * *'   # 4AM EAT (Tech)
+    - cron: '0 5 * * *'   # 8AM EAT (Finance)
+    - cron: '0 10 * * *'  # 1PM EAT (Politics)
+    - cron: '0 12 * * *'  # 3PM EAT (Social/Ent)
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -56,10 +56,11 @@ jobs:
           # --- HELPER: Fetch Real Photo from Unsplash ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              # FALLBACK: If key is missing, use Abstract AI (No Humans)
+              fallback_image = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
+              
               if not access_key:
                   safe_query = query.replace(" ", "-")
-                  return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans-cinematic-lighting?width=1200&height=630&nologo=true"
+                  return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans?width=1200&height=630&nologo=true"
               
               url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
               try:
@@ -68,15 +69,13 @@ jobs:
                       return resp.json()['urls']['regular']
               except Exception:
                   pass
-              # Safe generic fallback
-              return "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
+              return fallback_image
 
           # --- 1. DETERMINE TOPIC ---
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
           if manual_input:
               topic = manual_input
           else:
-              # Time-based routing
               if current_hour_utc < 3: topic = 'tech'                # 4AM EAT
               elif current_hour_utc < 8: topic = 'finance'             # 8AM EAT
               elif current_hour_utc < 11: topic = 'international-politics' # 1PM EAT
@@ -105,7 +104,7 @@ jobs:
               angles = ["an ignored scandal", "a rising underdog story", "a policy failure", "a controversial trend"]
               angle_instruction = f"TODAY'S ANGLE: Find a story about {random.choice(angles)}."
 
-          # --- 4. CONSTRUCT PROMPT ---
+          # --- 4. CONSTRUCT PROMPT (STRUCTURED DATA REQUEST) ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
 
@@ -116,40 +115,24 @@ jobs:
           - **{selected_hook}**
           - ABSOLUTE BAN: Do not start with "I was sitting at...".
 
-          *** CATEGORY RULES (STRICT) ***
-          - The 'category' field in YAML MUST be exactly one of:
+          *** CATEGORY RULES ***
+          - You must classify the story into exactly ONE of these:
             ["Business", "Sports", "Politics", "Entertainment", "Technology", "Education", "Opinion"]
-          - INTELLIGENTLY MAP the topic:
-            - 'finance' -> 'Business'
-            - 'tech' -> 'Technology'
-            - 'international-politics' -> 'Politics'
-            - 'kenyan-social' -> 'Entertainment' or 'Opinion'
 
-          *** STRUCTURE STRATEGY (CRITICAL) ***
-          - You must output the content in this EXACT order:
-            1. **SLUG & KEYWORD** (First 2 lines)
-            2. **YAML Frontmatter** (Starts with ---)
-            3. **Article Body** (Title, Intro, 6 Sections)
-            4. **Meta Block** (HTML div at the very bottom)
+          *** OUTPUT FORMAT (STRICT) ***
+          Do NOT write a Markdown file. Write a structured response with these specific labels followed by the content:
 
-          *** CRITICAL OUTPUT FORMAT ***
-          Line 1: SLUG: unique-slug-here
-          Line 2: IMAGE_KEYWORD: search-term-here
-          Line 3: ---
-          Line 4: title: "Title"
-          ...
-          (Rest of YAML)
-          ---
-          # EXACT TITLE
+          TITLE: [Write a punchy title]
+          DESCRIPTION: [Write a 2-sentence SEO description]
+          CATEGORY: [Select one from list]
+          TAGS: [Comma separated tags]
+          IMAGE_KEYWORD: [Search term for Unsplash]
+          BODY:
+          [Write the full 1500-word article here. Use ## Headers. Do NOT include the Title again.]
           
-          (Content...)
-
-          (AT THE VERY END):
-          <div class="article-meta">
-            <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Author:</strong> Jonathan Mwaniki</p>
-            <p><strong>Tags:</strong> tag1, tag2</p>
-          </div>
+          *** CONTENT RULES ***
+          - 6 Distinct Sections (250 words each).
+          - Go deep. No fluff.
           """
 
           api_key = os.environ.get("GEMINI_API_KEY")
@@ -159,7 +142,7 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # --- 5. ROBUST RETRY LOGIC (Handles 503 & 429) ---
+          # --- 5. ROBUST RETRY LOGIC ---
           max_retries = 5
           for attempt in range(max_retries):
               try:
@@ -180,50 +163,93 @@ jobs:
           except Exception:
               raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 6. SURGICAL PARSING (Fixes White Space Issues) ---
+          # --- 6. PYTHON PARSING & ASSEMBLY (The Fix) ---
+          
+          # Default Values
+          parsed = {
+              "TITLE": f"Daily {topic} Update",
+              "DESCRIPTION": "Latest updates from Kenya and the world.",
+              "CATEGORY": "Opinion",
+              "TAGS": f"{topic}, kenya, news",
+              "IMAGE_KEYWORD": topic,
+              "BODY": ""
+          }
+
+          # Parse the AI response line by line
+          current_section = None
           lines = full_text.splitlines()
           
-          slug = f"{topic}-story-{date_str}"
-          image_keyword = topic
-          frontmatter_start_index = -1
-
-          # 1. Extract Metadata & Find Frontmatter Start
-          for i, line in enumerate(lines):
-              clean_line = line.strip()
-              if clean_line.startswith("SLUG:"):
-                  slug = clean_line.replace("SLUG:", "").strip()
-              elif clean_line.startswith("IMAGE_KEYWORD:"):
-                  image_keyword = clean_line.replace("IMAGE_KEYWORD:", "").strip()
-              elif clean_line == "---":
-                  frontmatter_start_index = i
-                  break # Found the start!
-
-          if frontmatter_start_index == -1:
-              # Fallback: Just assume top of text is content if --- is missing (unlikely)
-              print("⚠️ Warning: No Frontmatter found. Saving raw text.")
-              final_content = full_text
-          else:
-              # 2. Slice content starting EXACTLY at ---
-              raw_content_lines = lines[frontmatter_start_index:]
-              raw_content = "\n".join(raw_content_lines)
+          for line in lines:
+              # Check for Keys
+              if line.startswith("TITLE:"):
+                  parsed["TITLE"] = line.replace("TITLE:", "").strip()
+                  current_section = None # Done capturing
+              elif line.startswith("DESCRIPTION:"):
+                  parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
+                  current_section = None
+              elif line.startswith("CATEGORY:"):
+                  parsed["CATEGORY"] = line.replace("CATEGORY:", "").strip()
+                  current_section = None
+              elif line.startswith("TAGS:"):
+                  parsed["TAGS"] = line.replace("TAGS:", "").strip()
+                  current_section = None
+              elif line.startswith("IMAGE_KEYWORD:"):
+                  parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
+                  current_section = None
+              elif line.strip() == "BODY:":
+                  current_section = "BODY"
+                  continue
               
-              # 3. CRITICAL FIX: LSTRIP() removes any whitespace before ---
-              final_content = raw_content.lstrip()
+              # Capture Body Content
+              if current_section == "BODY":
+                  parsed["BODY"] += line + "\n"
 
-          # Sanitize Slug
-          slug = re.sub(r'[^a-z0-9-]', '', slug.lower()) or f"{topic}-story-{date_str}"
+          # 1. Fetch Image
+          print(f"📷 Fetching photo for: {parsed['IMAGE_KEYWORD']}")
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           
-          # Fetch Image
-          print(f"📷 Fetching photo for: {image_keyword}")
-          real_image_url = get_real_image(image_keyword)
+          # 2. Generate Slug
+          raw_slug = parsed["TITLE"].lower()
+          slug = re.sub(r'[^a-z0-9-]', '-', raw_slug)
+          slug = re.sub(r'-+', '-', slug).strip('-') # Clean repeated dashes
+
+          # 3. Clean Content Punctuation
+          clean_body = parsed["BODY"].replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
           
-          # --- 7. CLEANING ---
-          final_content = final_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
-          final_content = final_content.replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
-          final_content = final_content.replace(" ,", ",").replace(",,", ",")
+          # 4. Convert Tags to List Format
+          tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
+          tags_json = json.dumps(tag_list)
+
+          # 5. ASSEMBLE FINAL FILE (Python Controls Structure)
+          final_content = f"""---
+title: "{parsed['TITLE'].replace('"', "'")}"
+description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+date: "{date_str}"
+author: "Jonathan Mwaniki"
+image: "{image_url}"
+imageCaption: "Image representing {parsed['IMAGE_KEYWORD']}"
+imageAlt: "{parsed['IMAGE_KEYWORD']} stock photo"
+category: "{parsed['CATEGORY']}"
+tags: {tags_json}
+featured: true
+draft: false
+slug: "{slug}"
+---
+
+# {parsed['TITLE']}
+
+{clean_body}
+
+<div class="article-meta">
+  <p><strong>Published:</strong> {date_str}</p>
+  <p><strong>Author:</strong> Jonathan Mwaniki</p>
+  <p><strong>Tags:</strong> {parsed['TAGS']}</p>
+</div>
+"""
 
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
+          
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
             f.write(final_content)
 
