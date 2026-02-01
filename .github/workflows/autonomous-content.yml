@@ -5,7 +5,7 @@ on:
     - cron: '0 1 * * *'   # 4AM EAT (Tech)
     - cron: '0 5 * * *'   # 8AM EAT (Finance)
     - cron: '0 10 * * *'  # 1PM EAT (Politics)
-    - cron: '0 12 * * *'  # 3PM EAT (Social/Ent)
+    - cron: '0 12 * * *'  # 3PM EAT (Social)
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -50,10 +50,24 @@ jobs:
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
 
+          # --- CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           
-          # --- HELPER: Fetch Real Photo from Unsplash ---
+          # --- 1. TOPIC SELECTION ---
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
+          if manual_input:
+              topic = manual_input
+          else:
+              # Time-based routing
+              if current_hour_utc < 3: topic = 'tech'                # 4AM EAT
+              elif current_hour_utc < 8: topic = 'finance'             # 8AM EAT
+              elif current_hour_utc < 11: topic = 'international-politics' # 1PM EAT
+              else: topic = 'kenyan-social'                            # 3PM EAT
+          
+          print(f"🎯 Selected Topic: {topic}")
+
+          # --- 2. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback_image = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
@@ -71,19 +85,7 @@ jobs:
                   pass
               return fallback_image
 
-          # --- 1. DETERMINE TOPIC ---
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
-          if manual_input:
-              topic = manual_input
-          else:
-              if current_hour_utc < 3: topic = 'tech'                # 4AM EAT
-              elif current_hour_utc < 8: topic = 'finance'             # 8AM EAT
-              elif current_hour_utc < 11: topic = 'international-politics' # 1PM EAT
-              else: topic = 'kenyan-social'                            # 3PM EAT
-          
-          print(f"🎯 Selected Topic: {topic}")
-
-          # --- 2. DYNAMIC HOOKS ---
+          # --- 3. DYNAMIC PROMPTS ---
           hooks = [
              "A Direct Question: Start immediately with a hard-hitting question.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
@@ -92,44 +94,35 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 3. TOPIC INSTRUCTIONS ---
           if topic == 'tech':
-              focus_instruction = "IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY (AI, Quantum, Space). NO Kenya mentions."
-              angle_instruction = "Find a global tech breakthrough that feels dangerous."
+              focus = "Global Emerging Tech (AI, Space, Quantum). NO Kenya mentions."
+              angle = "A dangerous breakthrough."
           elif topic == 'finance':
-              focus_instruction = "IMPORTANT: Focus on FINANCE. Anti-repetition: NO generic IMF stories."
-              angle_instruction = "Find a story about money that they are hiding from the common person."
+              focus = "Finance/Business. NO generic IMF stories."
+              angle = "Money they are hiding from us."
           else:
-              focus_instruction = f"IMPORTANT: Focus on '{topic}'. Anti-repetition: NO generic corruption stories."
-              angles = ["an ignored scandal", "a rising underdog story", "a policy failure", "a controversial trend"]
-              angle_instruction = f"TODAY'S ANGLE: Find a story about {random.choice(angles)}."
+              focus = f"Topic: {topic}. NO generic corruption stories."
+              angle = "An ignored scandal or underdog story."
 
-          # --- 4. CONSTRUCT PROMPT (STRUCTURED DATA REQUEST) ---
+          # --- 4. CONSTRUCT PROMPT ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
+          
+          TASK: Write a news article about: {focus}
+          ANGLE: {angle}
+          OPENING: {selected_hook} (Do NOT start with "I was sitting at...").
 
-          {focus_instruction}
-          {angle_instruction}
+          *** STRICT OUTPUT FORMAT ***
+          Do NOT write Markdown/YAML yourself. Provide raw data labeled exactly like this:
 
-          OPENING STRATEGY:
-          - **{selected_hook}**
-          - ABSOLUTE BAN: Do not start with "I was sitting at...".
-
-          *** CATEGORY RULES ***
-          - You must classify the story into exactly ONE of these:
-            ["Business", "Sports", "Politics", "Entertainment", "Technology", "Education", "Opinion"]
-
-          *** OUTPUT FORMAT (STRICT) ***
-          Do NOT write a Markdown file. Write a structured response with these specific labels followed by the content:
-
-          TITLE: [Write a punchy title]
-          DESCRIPTION: [Write a 2-sentence SEO description]
-          CATEGORY: [Select one from list]
-          TAGS: [Comma separated tags]
+          TITLE: [Insert punchy title]
+          DESCRIPTION: [Insert 2-sentence description]
+          CATEGORY: [One of: Business, Sports, Politics, Entertainment, Technology, Education, Opinion]
+          TAGS: [tag1, tag2, tag3]
           IMAGE_KEYWORD: [Search term for Unsplash]
           BODY:
-          [Write the full 1500-word article here. Use ## Headers. Do NOT include the Title again.]
-          
+          [Write the full 1500-word article here using ## Headers. NO Title at start.]
+
           *** CONTENT RULES ***
           - 6 Distinct Sections (250 words each).
           - Go deep. No fluff.
@@ -138,122 +131,124 @@ jobs:
           api_key = os.environ.get("GEMINI_API_KEY")
           if not api_key: raise SystemExit("Missing GEMINI_API_KEY")
 
+          # --- 5. CALL GEMINI (With Retry) ---
           url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # --- 5. ROBUST RETRY LOGIC ---
           max_retries = 5
+          full_text = ""
+          
           for attempt in range(max_retries):
               try:
                   resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-                  if resp.status_code == 200: break
+                  if resp.status_code == 200:
+                      full_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+                      break
                   elif resp.status_code in [429, 500, 502, 503, 504]:
                       print(f"⚠️ API Busy ({resp.status_code}). Retrying in 30s...")
                       time.sleep(30)
-                  else: raise SystemExit(f"Gemini API Error {resp.status_code}: {resp.text[:500]}")
-              except requests.exceptions.RequestException as e:
-                  print(f"⚠️ Network Error. Retrying in 30s...")
+                  else:
+                      print(f"❌ Error {resp.status_code}: {resp.text[:200]}")
+                      break
+              except Exception as e:
+                  print(f"⚠️ Network Error: {e}. Retrying...")
                   time.sleep(30)
-          else: raise SystemExit("Failed to generate content after retries.")
-
-          data = resp.json()
-          try:
-              full_text = data["candidates"][0]["content"]["parts"][0]["text"]
-          except Exception:
-              raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
-
-          # --- 6. PYTHON PARSING & ASSEMBLY (The Fix) ---
           
-          # Default Values
+          if not full_text:
+              raise SystemExit("Failed to get content from Gemini.")
+
+          # --- 6. PARSE RESPONSE (Robust Mode) ---
           parsed = {
-              "TITLE": f"Daily {topic} Update",
-              "DESCRIPTION": "Latest updates from Kenya and the world.",
+              "TITLE": f"Daily {topic.capitalize()} Update",
+              "DESCRIPTION": "Latest news update.",
               "CATEGORY": "Opinion",
-              "TAGS": f"{topic}, kenya, news",
+              "TAGS": "news, update",
               "IMAGE_KEYWORD": topic,
               "BODY": ""
           }
 
-          # Parse the AI response line by line
           current_section = None
           lines = full_text.splitlines()
-          
+
           for line in lines:
-              # Check for Keys
-              if line.startswith("TITLE:"):
-                  parsed["TITLE"] = line.replace("TITLE:", "").strip()
-                  current_section = None # Done capturing
-              elif line.startswith("DESCRIPTION:"):
-                  parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
+              # Clean line to handle **TITLE:** or TITLE:
+              clean_line = line.strip().replace("**", "")
+              
+              if clean_line.startswith("TITLE:"):
+                  parsed["TITLE"] = clean_line.replace("TITLE:", "").strip()
                   current_section = None
-              elif line.startswith("CATEGORY:"):
-                  parsed["CATEGORY"] = line.replace("CATEGORY:", "").strip()
+              elif clean_line.startswith("DESCRIPTION:"):
+                  parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
                   current_section = None
-              elif line.startswith("TAGS:"):
-                  parsed["TAGS"] = line.replace("TAGS:", "").strip()
+              elif clean_line.startswith("CATEGORY:"):
+                  parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
                   current_section = None
-              elif line.startswith("IMAGE_KEYWORD:"):
-                  parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("TAGS:"):
+                  parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
                   current_section = None
-              elif line.strip() == "BODY:":
+              elif clean_line.startswith("IMAGE_KEYWORD:"):
+                  parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+                  current_section = None
+              elif clean_line.startswith("BODY:"):
                   current_section = "BODY"
                   continue
-              
-              # Capture Body Content
-              if current_section == "BODY":
+              elif current_section == "BODY":
                   parsed["BODY"] += line + "\n"
 
-          # 1. Fetch Image
-          print(f"📷 Fetching photo for: {parsed['IMAGE_KEYWORD']}")
+          # --- 7. ASSEMBLE FINAL FILE ---
+          
+          # Get Image
+          print(f"📷 Fetching image for: {parsed['IMAGE_KEYWORD']}")
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
-          
-          # 2. Generate Slug
-          raw_slug = parsed["TITLE"].lower()
-          slug = re.sub(r'[^a-z0-9-]', '-', raw_slug)
-          slug = re.sub(r'-+', '-', slug).strip('-') # Clean repeated dashes
 
-          # 3. Clean Content Punctuation
-          clean_body = parsed["BODY"].replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
-          
-          # 4. Convert Tags to List Format
+          # Create Slug
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
+          slug = re.sub(r'-+', '-', slug).strip('-')
+
+          # Format Tags
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
           tags_json = json.dumps(tag_list)
 
-          # 5. ASSEMBLE FINAL FILE (Python Controls Structure)
-          final_content = f"""---
-title: "{parsed['TITLE'].replace('"', "'")}"
-description: "{parsed['DESCRIPTION'].replace('"', "'")}"
-date: "{date_str}"
-author: "Jonathan Mwaniki"
-image: "{image_url}"
-imageCaption: "Image representing {parsed['IMAGE_KEYWORD']}"
-imageAlt: "{parsed['IMAGE_KEYWORD']} stock photo"
-category: "{parsed['CATEGORY']}"
-tags: {tags_json}
-featured: true
-draft: false
-slug: "{slug}"
----
+          # Final Content Assembly
+          final_file = f"""---
+          title: "{parsed['TITLE'].replace('"', "'")}"
+          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+          date: "{date_str}"
+          author: "Jonathan Mwaniki"
+          image: "{image_url}"
+          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
+          imageAlt: "{parsed['IMAGE_KEYWORD']}"
+          category: "{parsed['CATEGORY']}"
+          tags: {tags_json}
+          featured: true
+          draft: false
+          slug: "{slug}"
+          ---
 
-# {parsed['TITLE']}
+          # {parsed['TITLE']}
 
-{clean_body}
+          {parsed['BODY']}
 
-<div class="article-meta">
-  <p><strong>Published:</strong> {date_str}</p>
-  <p><strong>Author:</strong> Jonathan Mwaniki</p>
-  <p><strong>Tags:</strong> {parsed['TAGS']}</p>
-</div>
-"""
+          <div class="article-meta">
+            <p><strong>Published:</strong> {date_str}</p>
+            <p><strong>Author:</strong> Jonathan Mwaniki</p>
+            <p><strong>Tags:</strong> {parsed['TAGS']}</p>
+          </div>
+          """
 
+          # Dedent to fix YAML spacing if needed, though MD ignores it mostly
+          import textwrap
+          final_file = textwrap.dedent(final_file).strip()
+
+          # Write to disk
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
-            f.write(final_content)
-
-          print(f"✅ Article written to {slug}.md")
+              f.write(final_file)
+          
+          print(f"✅ Success! Created {slug}.md")
           EOF
 
       - name: Commit and push article
