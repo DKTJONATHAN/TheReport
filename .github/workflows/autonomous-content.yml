@@ -56,9 +56,8 @@ jobs:
           # --- HELPER: Fetch Real Photo from Unsplash ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              # FALLBACK 1: If key is missing, use Abstract AI (No Humans)
+              # FALLBACK: If key is missing, use Abstract AI (No Humans)
               if not access_key:
-                  print("⚠️ No Unsplash Key found. Using Safe AI fallback.")
                   safe_query = query.replace(" ", "-")
                   return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans-cinematic-lighting?width=1200&height=630&nologo=true"
               
@@ -66,14 +65,10 @@ jobs:
               try:
                   resp = requests.get(url, timeout=10)
                   if resp.status_code == 200:
-                      data = resp.json()
-                      return data['urls']['regular']
-                  else:
-                      print(f"⚠️ Unsplash Error {resp.status_code}. Using fallback.")
-              except Exception as e:
-                  print(f"⚠️ Unsplash Connection Error: {e}")
-              
-              # FALLBACK 2: If Unsplash fails, use a safe generic image
+                      return resp.json()['urls']['regular']
+              except Exception:
+                  pass
+              # Safe generic fallback
               return "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
 
           # --- 1. DETERMINE TOPIC ---
@@ -81,7 +76,7 @@ jobs:
           if manual_input:
               topic = manual_input
           else:
-              # Time-based routing (UTC times map to EAT schedule)
+              # Time-based routing
               if current_hour_utc < 3: topic = 'tech'                # 4AM EAT
               elif current_hour_utc < 8: topic = 'finance'             # 8AM EAT
               elif current_hour_utc < 11: topic = 'international-politics' # 1PM EAT
@@ -94,8 +89,7 @@ jobs:
              "A Direct Question: Start immediately with a hard-hitting question.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
              "A Cynical Observation: Start by mocking a common belief.",
-             "A Direct Attack: Start by calling out a specific group.",
-             "A 'Scene from the Future': Describe a scenario as if it's already here."
+             "A Direct Attack: Start by calling out a specific group."
           ]
           selected_hook = random.choice(hooks)
 
@@ -123,49 +117,32 @@ jobs:
           - ABSOLUTE BAN: Do not start with "I was sitting at...".
 
           *** CATEGORY RULES (STRICT) ***
-          - The 'category' field in the YAML frontmatter MUST be exactly one of these 9 options:
-            ["Business", "Sports", "Politics", "Entertainment", "Technology", "Education", "Opinion", "Relationships", "Lifestyle" "Fashion"]
-          - Do NOT use the raw topic name (e.g. do not use 'kenyan-social' or 'finance').
+          - The 'category' field in YAML MUST be exactly one of:
+            ["Business", "Sports", "Politics", "Entertainment", "Technology", "Education", "Opinion"]
           - INTELLIGENTLY MAP the topic:
-            - If topic is 'finance' -> use 'Business'.
-            - If topic is 'tech' -> use 'Technology'.
-            - If topic is 'international-politics' -> use 'Politics'.
-            - If topic is Manual (e.g. "Teachers Strike") -> classify it correctly (e.g. "Education").
+            - 'finance' -> 'Business'
+            - 'tech' -> 'Technology'
+            - 'international-politics' -> 'Politics'
+            - 'kenyan-social' -> 'Entertainment' or 'Opinion'
 
-          *** LENGTH & STRUCTURE STRATEGY ***
-          - The article MUST follow this EXACT sequential order:
-            1. **YAML Frontmatter**
-            2. **H1 Title**
-            3. **Introduction** (2-3 paragraphs)
-            4. **6 DISTINCT SECTIONS** (Use ## Headers). Each section must be 250 words deep.
-            5. **FINAL ELEMENT:** The HTML `<div class="article-meta">` block.
-
-          *** IMAGE STRATEGY ***
-          - Provide a "Search Keyword" for a stock photo site on Line 2. (e.g., "coffee beans sack")
+          *** STRUCTURE STRATEGY (CRITICAL) ***
+          - You must output the content in this EXACT order:
+            1. **SLUG & KEYWORD** (First 2 lines)
+            2. **YAML Frontmatter** (Starts with ---)
+            3. **Article Body** (Title, Intro, 6 Sections)
+            4. **Meta Block** (HTML div at the very bottom)
 
           *** CRITICAL OUTPUT FORMAT ***
-          Line 1: A unique, SEO-optimized, lowercase-kebab-case slug.
-          Line 2: IMAGE_KEYWORD: [Insert 2-3 word search term for Unsplash]
-          Line 3: The start of the YAML frontmatter (---).
-
-          1) YAML FRONTMATTER (starts on Line 3):
+          Line 1: SLUG: unique-slug-here
+          Line 2: IMAGE_KEYWORD: search-term-here
+          Line 3: ---
+          Line 4: title: "Title"
+          ...
+          (Rest of YAML)
           ---
-          title: "Title"
-          description: "Description"
-          date: "{date_str}"
-          author: "Jonathan Mwaniki"
-          image: "IMAGE_URL_PLACEHOLDER"
-          imageCaption: "Caption"
-          imageAlt: "Alt text"
-          category: "SELECT_ONE_FROM_ALLOWED_LIST"
-          tags: ["tag1", "tag2"]
-          featured: true
-          draft: false
-          ---
-
-          2) BODY STRUCTURE:
           # EXACT TITLE
-          (Content follows...)
+          
+          (Content...)
 
           (AT THE VERY END):
           <div class="article-meta">
@@ -182,50 +159,66 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # --- 5. ROBUST RETRY LOGIC ---
+          # --- 5. ROBUST RETRY LOGIC (Handles 503 & 429) ---
           max_retries = 5
           for attempt in range(max_retries):
               try:
                   resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
                   if resp.status_code == 200: break
                   elif resp.status_code in [429, 500, 502, 503, 504]:
-                      print(f"⚠️ API Busy/Error ({resp.status_code}). Retrying in 30s...")
+                      print(f"⚠️ API Busy ({resp.status_code}). Retrying in 30s...")
                       time.sleep(30)
                   else: raise SystemExit(f"Gemini API Error {resp.status_code}: {resp.text[:500]}")
               except requests.exceptions.RequestException as e:
-                  print(f"⚠️ Network Error: {e}. Retrying in 30s...")
+                  print(f"⚠️ Network Error. Retrying in 30s...")
                   time.sleep(30)
-          else: raise SystemExit("Failed to generate content after multiple retries.")
+          else: raise SystemExit("Failed to generate content after retries.")
 
           data = resp.json()
           try:
-              full_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+              full_text = data["candidates"][0]["content"]["parts"][0]["text"]
           except Exception:
               raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 6. PARSE OUTPUT ---
-          lines = full_text.split('\n')
+          # --- 6. SURGICAL PARSING (Fixes White Space Issues) ---
+          lines = full_text.splitlines()
           
           slug = f"{topic}-story-{date_str}"
           image_keyword = topic
-          content_start_index = 0
+          frontmatter_start_index = -1
 
-          if len(lines) > 2:
-              raw_slug = lines[0].strip()
-              slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower()) or slug
-              if "IMAGE_KEYWORD:" in lines[1]:
-                  image_keyword = lines[1].replace("IMAGE_KEYWORD:", "").strip()
-                  content_start_index = 2
-              else: content_start_index = 1
+          # 1. Extract Metadata & Find Frontmatter Start
+          for i, line in enumerate(lines):
+              clean_line = line.strip()
+              if clean_line.startswith("SLUG:"):
+                  slug = clean_line.replace("SLUG:", "").strip()
+              elif clean_line.startswith("IMAGE_KEYWORD:"):
+                  image_keyword = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line == "---":
+                  frontmatter_start_index = i
+                  break # Found the start!
+
+          if frontmatter_start_index == -1:
+              # Fallback: Just assume top of text is content if --- is missing (unlikely)
+              print("⚠️ Warning: No Frontmatter found. Saving raw text.")
+              final_content = full_text
+          else:
+              # 2. Slice content starting EXACTLY at ---
+              raw_content_lines = lines[frontmatter_start_index:]
+              raw_content = "\n".join(raw_content_lines)
+              
+              # 3. CRITICAL FIX: LSTRIP() removes any whitespace before ---
+              final_content = raw_content.lstrip()
+
+          # Sanitize Slug
+          slug = re.sub(r'[^a-z0-9-]', '', slug.lower()) or f"{topic}-story-{date_str}"
           
+          # Fetch Image
           print(f"📷 Fetching photo for: {image_keyword}")
           real_image_url = get_real_image(image_keyword)
           
-          content_lines = lines[content_start_index:]
-          full_content = "\n".join(content_lines)
-          
           # --- 7. CLEANING ---
-          final_content = full_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
+          final_content = final_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
           final_content = final_content.replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
           final_content = final_content.replace(" ,", ",").replace(",,", ",")
 
