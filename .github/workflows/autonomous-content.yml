@@ -2,10 +2,10 @@ name: Autonomous Content Publisher
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4AM EAT (Tech - Global)
-    - cron: '0 5 * * *'   # 8AM EAT (Finance)
-    - cron: '0 10 * * *'  # 1PM EAT (Int. Politics)
-    - cron: '0 12 * * *'  # 3PM EAT (Kenyan Social)
+    - cron: '0 1 * * *'   # 4AM EAT (Tech -> Technology)
+    - cron: '0 5 * * *'   # 8AM EAT (Finance -> Business)
+    - cron: '0 10 * * *'  # 1PM EAT (Int. Politics -> Politics)
+    - cron: '0 12 * * *'  # 3PM EAT (Kenyan Social -> Entertainment/Opinion)
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -73,7 +73,7 @@ jobs:
               except Exception as e:
                   print(f"⚠️ Unsplash Connection Error: {e}")
               
-              # FALLBACK 2: If Unsplash fails/limits hit, use a safe generic tech/news image
+              # FALLBACK 2: If Unsplash fails, use a safe generic image
               return "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
 
           # --- 1. DETERMINE TOPIC ---
@@ -82,14 +82,14 @@ jobs:
               topic = manual_input
           else:
               # Time-based routing (UTC times map to EAT schedule)
-              if current_hour_utc < 3: topic = 'tech'                # 1AM UTC = 4AM EAT
-              elif current_hour_utc < 8: topic = 'finance'             # 5AM UTC = 8AM EAT
-              elif current_hour_utc < 11: topic = 'international-politics' # 10AM UTC = 1PM EAT
-              else: topic = 'kenyan-social'                            # 12PM UTC = 3PM EAT
+              if current_hour_utc < 3: topic = 'tech'                # 4AM EAT
+              elif current_hour_utc < 8: topic = 'finance'             # 8AM EAT
+              elif current_hour_utc < 11: topic = 'international-politics' # 1PM EAT
+              else: topic = 'kenyan-social'                            # 3PM EAT
           
           print(f"🎯 Selected Topic: {topic}")
 
-          # --- 2. DYNAMIC HOOKS (Anti-Fatigue) ---
+          # --- 2. DYNAMIC HOOKS ---
           hooks = [
              "A Direct Question: Start immediately with a hard-hitting question.",
              "A Shocking Statistic: Start with a number that makes no sense and explain it.",
@@ -99,9 +99,9 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 3. TOPIC INSTRUCTIONS (Anti-Repetition) ---
+          # --- 3. TOPIC INSTRUCTIONS ---
           if topic == 'tech':
-              focus_instruction = "IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY (AI, Quantum, Space, Cyber-war). NO Kenya mentions."
+              focus_instruction = "IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY (AI, Quantum, Space). NO Kenya mentions."
               angle_instruction = "Find a global tech breakthrough that feels dangerous."
           elif topic == 'finance':
               focus_instruction = "IMPORTANT: Focus on FINANCE. Anti-repetition: NO generic IMF stories."
@@ -122,24 +122,30 @@ jobs:
           - **{selected_hook}**
           - ABSOLUTE BAN: Do not start with "I was sitting at...".
 
-          *** LENGTH & STRUCTURE STRATEGY (CRITICAL) ***
-          - The article MUST follow this EXACT sequential order. Do not mix them up:
+          *** CATEGORY RULES (STRICT) ***
+          - The 'category' field in the YAML frontmatter MUST be exactly one of these 9 options:
+            ["Business", "Sports", "Politics", "Entertainment", "Technology", "Education", "Opinion", "Relationships", "Lifestyle" "Fashion"]
+          - Do NOT use the raw topic name (e.g. do not use 'kenyan-social' or 'finance').
+          - INTELLIGENTLY MAP the topic:
+            - If topic is 'finance' -> use 'Business'.
+            - If topic is 'tech' -> use 'Technology'.
+            - If topic is 'international-politics' -> use 'Politics'.
+            - If topic is Manual (e.g. "Teachers Strike") -> classify it correctly (e.g. "Education").
+
+          *** LENGTH & STRUCTURE STRATEGY ***
+          - The article MUST follow this EXACT sequential order:
             1. **YAML Frontmatter**
             2. **H1 Title**
             3. **Introduction** (2-3 paragraphs)
             4. **6 DISTINCT SECTIONS** (Use ## Headers). Each section must be 250 words deep.
             5. **FINAL ELEMENT:** The HTML `<div class="article-meta">` block.
-          
-          - **WARNING:** Do NOT put the HTML article-meta block after the introduction. It must be the VERY LAST thing in the file.
 
           *** IMAGE STRATEGY ***
-          - You must provide a "Search Keyword" for a stock photo site on Line 2.
-          - Example: If the story is about Coffee farming, Line 2 should be: "coffee beans sack close up"
-          - Do NOT generate an image URL yourself. Just the keyword.
+          - Provide a "Search Keyword" for a stock photo site on Line 2. (e.g., "coffee beans sack")
 
           *** CRITICAL OUTPUT FORMAT ***
           Line 1: A unique, SEO-optimized, lowercase-kebab-case slug.
-          Line 2: IMAGE_KEYWORD: [Insert 2-3 word search term for Unsplash here]
+          Line 2: IMAGE_KEYWORD: [Insert 2-3 word search term for Unsplash]
           Line 3: The start of the YAML frontmatter (---).
 
           1) YAML FRONTMATTER (starts on Line 3):
@@ -151,29 +157,17 @@ jobs:
           image: "IMAGE_URL_PLACEHOLDER"
           imageCaption: "Caption"
           imageAlt: "Alt text"
-          category: "{topic}"
+          category: "SELECT_ONE_FROM_ALLOWED_LIST"
           tags: ["tag1", "tag2"]
           featured: true
           draft: false
           ---
 
-          2) BODY STRUCTURE (After YAML):
+          2) BODY STRUCTURE:
           # EXACT TITLE
-          
-          (Write the Introduction here...)
+          (Content follows...)
 
-          ## 1. First Section
-          (Content...)
-
-          ## 2. Second Section
-          (Content...)
-          
-          ... (Continue until Section 6) ...
-
-          ## 6. Sixth Section
-          (Content...)
-
-          (ONLY NOW, AT THE VERY END, ADD THE META BLOCK):
+          (AT THE VERY END):
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
             <p><strong>Author:</strong> Jonathan Mwaniki</p>
@@ -188,26 +182,20 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # --- 5. ROBUST RETRY LOGIC (HANDLES 429 & 503) ---
+          # --- 5. ROBUST RETRY LOGIC ---
           max_retries = 5
           for attempt in range(max_retries):
               try:
                   resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-                  
-                  if resp.status_code == 200:
-                      break # Success!
+                  if resp.status_code == 200: break
                   elif resp.status_code in [429, 500, 502, 503, 504]:
-                      # Retry on Rate Limit (429) OR Server Overload (503)
-                      print(f"⚠️ API Busy/Error ({resp.status_code}). Retrying in 30s... (Attempt {attempt+1}/{max_retries})")
+                      print(f"⚠️ API Busy/Error ({resp.status_code}). Retrying in 30s...")
                       time.sleep(30)
-                  else:
-                      # Fatal error (e.g., 400 Bad Request)
-                      raise SystemExit(f"Gemini API Fatal Error {resp.status_code}: {resp.text[:500]}")
+                  else: raise SystemExit(f"Gemini API Error {resp.status_code}: {resp.text[:500]}")
               except requests.exceptions.RequestException as e:
                   print(f"⚠️ Network Error: {e}. Retrying in 30s...")
                   time.sleep(30)
-          else:
-              raise SystemExit("Failed to generate content after multiple retries.")
+          else: raise SystemExit("Failed to generate content after multiple retries.")
 
           data = resp.json()
           try:
@@ -215,50 +203,38 @@ jobs:
           except Exception:
               raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 6. PARSE OUTPUT & FETCH IMAGE ---
+          # --- 6. PARSE OUTPUT ---
           lines = full_text.split('\n')
           
           slug = f"{topic}-story-{date_str}"
           image_keyword = topic
           content_start_index = 0
 
-          # Safe Parsing
           if len(lines) > 2:
-              # Line 1: Slug
               raw_slug = lines[0].strip()
               slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower()) or slug
-              
-              # Line 2: Image Keyword
               if "IMAGE_KEYWORD:" in lines[1]:
                   image_keyword = lines[1].replace("IMAGE_KEYWORD:", "").strip()
                   content_start_index = 2
-              else:
-                  # AI messed up format, assume content starts at line 1
-                  content_start_index = 1
+              else: content_start_index = 1
           
-          # Fetch Real Image
           print(f"📷 Fetching photo for: {image_keyword}")
           real_image_url = get_real_image(image_keyword)
           
-          # Reassemble Content
           content_lines = lines[content_start_index:]
           full_content = "\n".join(content_lines)
           
-          # --- 7. FINAL CLEANING (Inject Image & Fix Punctuation) ---
+          # --- 7. CLEANING ---
           final_content = full_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
-          
-          # Replace Em Dashes with Commas
           final_content = final_content.replace(" — ", ", ").replace("—", ", ").replace(" – ", ", ")
-          # Clean double punctuation
           final_content = final_content.replace(" ,", ",").replace(",,", ",")
 
-          # Save File
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
             f.write(final_content)
 
-          print(f"✅ Article written to {slug}.md with image: {image_keyword}")
+          print(f"✅ Article written to {slug}.md")
           EOF
 
       - name: Commit and push article
