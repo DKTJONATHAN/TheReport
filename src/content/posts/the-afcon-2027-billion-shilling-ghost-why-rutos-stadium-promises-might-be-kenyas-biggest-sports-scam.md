@@ -10,7 +10,7 @@ category: "Sports"
 tags: ["AFCON 2027 Kenya", "Talanta Stadium construction", "Ruto sports budget", "Kasarani renovation"]
 featured: true
 draft: false
-slug:"the-afcon-2027-billion-shilling-ghost-why-rutos-stadium-promises-might-be-kenyas-biggest-sports-scam"
+slug: "the-afcon-2027-billion-shilling-ghost-why-rutos-stadium-promises-might-be-kenyas-biggest-sports-scam"
 ---
 
 # The AFCON 2027 Billion-Shilling Ghost: Why Ruto's Stadium Promises Might Be Kenya's Biggest Sports Scam
