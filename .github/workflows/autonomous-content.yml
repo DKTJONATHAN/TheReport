@@ -172,14 +172,26 @@ jobs:
           headers = { "x-goog-api-key": api_key, "Content-Type": "application/json" }
           payload = { "contents": [{ "parts": [{ "text": spec_text }] }] }
 
-          # Retry Logic for Rate Limits (429)
-          for attempt in range(5):
-              resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-              if resp.status_code == 200: break
-              elif resp.status_code == 429:
-                  print("Rate limit hit. Sleeping 30s...")
+          # --- 5. ROBUST RETRY LOGIC (HANDLES 429 & 503) ---
+          max_retries = 5
+          for attempt in range(max_retries):
+              try:
+                  resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
+                  
+                  if resp.status_code == 200:
+                      break # Success!
+                  elif resp.status_code in [429, 500, 502, 503, 504]:
+                      # Retry on Rate Limit (429) OR Server Overload (503)
+                      print(f"⚠️ API Busy/Error ({resp.status_code}). Retrying in 30s... (Attempt {attempt+1}/{max_retries})")
+                      time.sleep(30)
+                  else:
+                      # Fatal error (e.g., 400 Bad Request)
+                      raise SystemExit(f"Gemini API Fatal Error {resp.status_code}: {resp.text[:500]}")
+              except requests.exceptions.RequestException as e:
+                  print(f"⚠️ Network Error: {e}. Retrying in 30s...")
                   time.sleep(30)
-              else: raise SystemExit(f"Gemini API error {resp.status_code}: {resp.text[:500]}")
+          else:
+              raise SystemExit("Failed to generate content after multiple retries.")
 
           data = resp.json()
           try:
@@ -187,7 +199,7 @@ jobs:
           except Exception:
               raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # --- 5. PARSE OUTPUT & FETCH IMAGE ---
+          # --- 6. PARSE OUTPUT & FETCH IMAGE ---
           lines = full_text.split('\n')
           
           slug = f"{topic}-story-{date_str}"
@@ -216,7 +228,7 @@ jobs:
           content_lines = lines[content_start_index:]
           full_content = "\n".join(content_lines)
           
-          # --- 6. FINAL CLEANING (Inject Image & Fix Punctuation) ---
+          # --- 7. FINAL CLEANING (Inject Image & Fix Punctuation) ---
           final_content = full_content.replace("IMAGE_URL_PLACEHOLDER", real_image_url)
           
           # Replace Em Dashes with Commas
