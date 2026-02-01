@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pyyaml
+          pip install requests
 
       - name: Generate article with Gemini
         env:
@@ -45,108 +45,107 @@ jobs:
           TOPIC: ${{ matrix.topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, yaml, re
+          import os, json, datetime, requests, re, random
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           topic = os.environ.get('TOPIC', 'tech')
 
+          # --- 1. DYNAMIC HOOK GENERATOR (Prevents "I was sitting at..." fatigue) ---
+          hooks = [
+             "A Direct Question: Start immediately with a hard-hitting question to the reader.",
+             "A Shocking Statistic: Start with a number that makes no sense and explain it.",
+             "A Cynical Observation: Start by mocking a common belief or statement.",
+             "A Direct Attack: Start by calling out a specific group (e.g., 'The regulators are lying to you').",
+             "A 'Scene from the Future': Start by describing a dystopian or utopian scenario as if it's already here."
+          ]
+          selected_hook = random.choice(hooks)
+
+          # --- 2. TOPIC-SPECIFIC LOGIC ---
+          if topic == 'tech':
+              # STRICT GLOBAL ONLY for Tech
+              focus_instruction = """
+              IMPORTANT: Focus ONLY on GLOBAL EMERGING TECHNOLOGY.
+              *** STRICT GEOGRAPHIC LOCK ***
+              - DO NOT write about Kenya, Safaricom, M-PESA, or local startups.
+              - DO NOT mention Kenyan politics or local regulations.
+              - FOCUS ON: AI Agents, Quantum Computing, Space Race (SpaceX/China), Biotech, Semiconductors, Robotics, or Cyber-warfare between superpowers.
+              """
+              angle_instruction = "Find a global tech breakthrough that feels dangerous or revolutionary."
+              
+          else:
+              # ORIGINAL MIX for Finance, Politics, Social
+              focus_instruction = """
+              IMPORTANT: Focus on '{topic}' with a mix of Kenyan and Global context.
+              
+              *** ANTI-REPETITION RULES (STRICT) ***
+              - DO NOT write about Starlink vs Safaricom.
+              - DO NOT write about IMF/World Bank loans unless the shilling crashed TODAY.
+              - DO NOT write generic "corruption is bad" articles—find a SPECIFIC new scandal or event.
+              """
+              
+              angles = [
+                 "an ignored scandal",
+                 "a rising underdog story",
+                 "a policy affecting the common mwananchi",
+                 "a controversial opinion on a new event"
+              ]
+              angle_instruction = f"TODAY'S ANGLE: Find a story about {random.choice(angles)}."
+
+          # --- 3. CONSTRUCT THE PROMPT ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
 
-          IMPORTANT: Focus ONLY on '{topic}' for this article. Choose one current, timely story in this pillar using your latest knowledge.
+          {focus_instruction}
+          {angle_instruction}
+
+          OPENING STRATEGY (CRITICAL):
+          - **{selected_hook}**
+          - **ABSOLUTE BAN:** DO NOT start with "I was sitting at...", "I walked into...", or "I saw...". Start directly with the concept/anger/fact.
 
           HIGH-LEVEL MISSION:
-          Deliver fast, entertaining, and accurate Kenyan and international news, tech, finance, politics, and gossip that exposes untold stories with sharp, fearless commentary and feels like a smart friend breaking it all down.
+          Deliver fast, entertaining, and accurate news. Dig for UNTOLD stories.
 
           VOICE AND STYLE:
-          - Tone: angry/passionate Kenyan journalist.
-          - Perspective: first-person where natural ("I walked into...", "I saw...").
-          - Rhythm: SHORT sentences, vary length, keep reader moving.
-          - Signature phrases to sprinkle in naturally:
-            * "I could not lie"
-            * "Let that sink in"
-            * "Here's the thing"
-            * "Think about that"
-            * "When you combine X + Y + Z"
-            * "Here's what needs to happen"
-            * "Kenyans need to demand"
-            * "Let me be clear"
-          - Kenyan context: use sheng if natural; add Nairobi / Kenya references; connect Kenya to global trends.
-          - Emphasis: bold numbers (e.g. **144 billion shillings**), ask direct questions, end with strong numbered action list.
+          - Tone: angry/passionate Kenyan journalist (even for global stories, keep the "voice" African/Kenyan, e.g., "These Silicon Valley guys think they own the future...").
+          - Perspective: first-person.
+          - Signature phrases: "I could not lie", "Let that sink in", "Here's the thing".
 
-          HARD RULES (ABSOLUTE NEVER):
-          - Do NOT use em dashes (—) anywhere.
-          - Do NOT use any citation syntax like [1], [web:1], [cite:x] anywhere.
-          - Do NOT use academic / AI phrases like:
-            "According to sources", "Studies show", "Research indicates", "Experts say",
-            "It is worth noting", "In conclusion", "To summarize",
-            "delve into", "dive deep", "unpack", "navigate", "landscape",
-            "tapestry", "realm", "robust", "leverage".
-          - Do NOT use $ for dollars or LaTeX math.
-          - Do NOT add a separate summary or conclusion section at the end.
+          HARD RULES:
+          - No em dashes (—).
+          - No academic jargon ("delve", "tapestry").
+          - No citation syntax like [1].
+          - No intro/outro labels.
 
-          ARTICLE SPEC:
-          - Word count: between 1000 and 2000 words, target about 1500.
-          - Topic: choose one story that fits '{topic}' pillar.
-          - Audience: global readers + Kenyans + diaspora.
-          - Angle: sharp, fearless commentary with ground-level examples.
+          *** CRITICAL OUTPUT FORMAT ***
+          Line 1: A unique, SEO-optimized, lowercase-kebab-case slug (e.g., nairobi-drainage-scandal-exposed).
+          Line 2: The start of the YAML frontmatter (---).
+          Line 3+: The rest of the article content.
 
-          EXACT ARTICLE FORMAT (MARKDOWN):
-
-          1) YAML FRONTMATTER at the top, between --- lines, exactly in this shape:
-
+          1) YAML FRONTMATTER (starts on Line 2):
           ---
-          title: "Your punchy title here (<= 60 characters)"
-          description: "First 2 lines of article or ~150 chars with main hook"
+          title: "Your punchy title here"
+          description: "Hook description"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
           image: "https://images.unsplash.com/photo-xxxxx?w=1200"
-          imageCaption: "One descriptive sentence about the image"
-          imageAlt: "5-10 word SEO description of the image"
-          category: "{topic}"          # Use exactly: tech, finance, international-politics, or kenyan-social
-          tags: ["keyword1", "keyword2", "keyword3", "keyword4"]
+          imageCaption: "Caption"
+          imageAlt: "Alt text"
+          category: "{topic}"
+          tags: ["tag1", "tag2"]
           featured: true
           draft: false
-          slug: "lowercase-kebab-case-no-dates"
           ---
 
-          - Make sure slug is lowercase-kebab-case with no dates.
-
           2) BODY STRUCTURE:
-
-          First line after frontmatter:
           # EXACT TITLE
-
-          Replace EXACT TITLE with the same title text (no quotes).
-
-          Then:
-          - 2–3 opening paragraphs in my Kenyan voice:
-            * Hook immediately.
-            * Use at least one personal or Nairobi observation.
-            * Set up the core tension or question.
-
-          Sections:
-          - Use H2 headings: "## Short Meaningful Header" (max 6 words, descriptive).
-          - 2–3 paragraphs per section.
-          - No headings like "Introduction", "Conclusion", "Background".
-
-          Ending:
-          - Before the final meta block, include a numbered action list (1., 2., 3.) or a strong call-to-action aimed at readers (what they should do, demand, or pay attention to).
-          - After that, end with this EXACT HTML block, with date and tags filled in consistently:
-
+          (Content follows...)
+          
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
             <p><strong>Author:</strong> Jonathan Mwaniki</p>
-            <p><strong>Tags:</strong> tag1, tag2, tag3, tag4</p>
+            <p><strong>Tags:</strong> tag1, tag2</p>
           </div>
-
-          IMPORTANT:
-          - No extra content after the article-meta div.
-          - Keep everything in natural, human-sounding Kenyan English.
           """
-
-          spec_text = spec_text.replace("{date_str}", date_str)
-          spec_text = spec_text.replace("{topic}", topic)
 
           api_key = os.environ.get("GEMINI_API_KEY")
           if not api_key:
@@ -155,15 +154,7 @@ jobs:
           url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
 
           payload = {
-            "contents": [
-              {
-                "parts": [
-                  {
-                    "text": spec_text
-                  }
-                ]
-              }
-            ]
+            "contents": [{ "parts": [{ "text": spec_text }] }]
           }
 
           headers = {
@@ -177,23 +168,22 @@ jobs:
 
           data = resp.json()
           try:
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            full_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
           except Exception:
             raise SystemExit(f"Unexpected Gemini response: {json.dumps(data)[:800]}")
 
-          # Extract slug from frontmatter
-          frontmatter_match = re.search(r'^---s*
-(.*?)
----', text, re.DOTALL)
-          if frontmatter_match:
-            frontmatter_str = frontmatter_match.group(1)
-            try:
-              frontmatter = yaml.safe_load(frontmatter_str)
-              slug = frontmatter.get('slug', f'{topic}-article-{date_str}')
-            except:
-              slug = f'{topic}-article-{date_str}'
+          # --- 4. PARSE SLUG AND CONTENT ---
+          lines = full_text.split('\n', 1)
+          if len(lines) < 2:
+             raw_slug = f"{topic}-story-{date_str}"
+             content = full_text
           else:
-            slug = f'{topic}-article-{date_str}'
+             raw_slug = lines[0].strip()
+             content = lines[1].strip()
+
+          # Sanitize slug
+          slug = re.sub(r'[^a-z0-9-]', '', raw_slug.lower())
+          if not slug: slug = f"{topic}-daily-{date_str}"
 
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
@@ -202,7 +192,7 @@ jobs:
           out_path = os.path.join(out_dir, out_filename)
           
           with open(out_path, "w", encoding="utf-8") as f:
-            f.write(text)
+            f.write(content)
 
           print(f"Article written to {out_path}")
           EOF
