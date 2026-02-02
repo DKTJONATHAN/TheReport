@@ -1,4 +1,4 @@
-name: Autonomous Content Publisher
+name: Auto Newser
 
 on:
   schedule:
