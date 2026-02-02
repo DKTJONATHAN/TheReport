@@ -1,29 +1,4 @@
-name: Autonomous Content Publisher
-
-on:
-  schedule:
-    - cron: '0 0 * * *'   # 3AM EAT (Sports)
-    - cron: '0 6 * * *'   # 9AM EAT (Tech)
-    - cron: '0 11 * * *'  # 2PM EAT (Finance)
-    - cron: '0 14 * * *'  # 5PM EAT (Sports)
-    - cron: '0 18 * * *'  # 9PM EAT (Finance)
-    - cron: '0 22 * * *'  # 1AM EAT (Tech)
-  workflow_dispatch:
-    inputs:
-      manual_topic:
-        description: 'Force a topic (sports, technology, business)'
-        required: false
-        default: ''
-
-permissions:
-  contents: write
-
-env:
-  DEFAULT_BRANCH: main
-  POSTS_DIR: src/content/posts
-
-jobs:
-  generate-and-publish:
+generate-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -41,7 +16,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-generativeai
+          # "google-genai" is the new library required for Gemini 3
+          pip install requests google-genai
 
       - name: Generate article with Gemini
         env:
@@ -52,7 +28,8 @@ jobs:
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
-          import google.generativeai as genai
+          from google import genai
+          from google.genai import types
 
           # --- 1. CONFIGURATION & TOPIC ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -76,8 +53,12 @@ jobs:
               'pageSize': 5,
               'apiKey': os.environ['NEWSAPI_KEY']
           }
-          news_resp = requests.get('https://newsapi.org/v2/top-headlines', params=params, timeout=10)
-          news_data = news_resp.json()
+          try:
+              news_resp = requests.get('https://newsapi.org/v2/top-headlines', params=params, timeout=10)
+              news_data = news_resp.json()
+          except Exception as e:
+              print(f"Error fetching news: {e}")
+              exit(0)
           
           if news_data.get('totalResults', 0) == 0:
               print("No news available, skipping")
@@ -115,7 +96,6 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # FIX: Define category map OUTSIDE the f-string
           cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business' }
           display_category = cat_map.get(topic, 'General')
 
@@ -148,12 +128,26 @@ jobs:
           - UK English, commas not em-dashes.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 5. GEMINI CALL ---
-          genai.configure(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model = genai.GenerativeModel(os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"))
-
-          response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.1))
-          full_text = response.text.strip()
+          # --- 5. GEMINI 3 CALL (New SDK) ---
+          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          
+          # STRICTLY use Gemini 3 Flash Preview
+          model_id = "gemini-3-flash-preview"
+          
+          print(f"🤖 Generating with {model_id}...")
+          
+          try:
+              response = client.models.generate_content(
+                  model=model_id,
+                  contents=prompt,
+                  config=types.GenerateContentConfig(
+                      temperature=0.1
+                  )
+              )
+              full_text = response.text.strip()
+          except Exception as e:
+              print(f"❌ Gemini 3 Error: {e}")
+              exit(1)
 
           # --- 6. PARSE ---
           parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": "Technology", "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
