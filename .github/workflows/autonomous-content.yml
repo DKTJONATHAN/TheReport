@@ -119,16 +119,15 @@ jobs:
           - Go deep. No fluff.
           """
 
-          # --- 5. CALL GEMINI (UPDATED FOR 2026: gemini-2.5-flash) ---
+          # --- 5. CALL GEMINI (UPDATED: Gemini 3 Flash Preview) ---
           api_key = os.environ.get("GEMINI_API_KEY")
           if not api_key: raise SystemExit("Missing GEMINI_API_KEY")
 
-          # 🚨 CRITICAL FIX: Using 'gemini-2.5-flash' on the stable v1 endpoint
-          url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent"
+          # We use the v1beta endpoint for the preview model
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
           headers = { "Content-Type": "application/json" }
-          params = { "key": api_key } # v1 standard auth
-
-          # Safety settings to allow political discourse
+          
+          # Safety settings to allow geopolitical and critical discussion
           safety_settings = [
               {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
               {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -146,7 +145,7 @@ jobs:
           
           for attempt in range(max_retries):
               try:
-                  resp = requests.post(url, params=params, json=payload, timeout=160)
+                  resp = requests.post(url, headers=headers, json=payload, timeout=160)
                   if resp.status_code == 200:
                       result = resp.json()
                       if "candidates" in result and result["candidates"][0]["content"]["parts"]:
