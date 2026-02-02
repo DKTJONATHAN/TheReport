@@ -1,0 +1,227 @@
+name: Autonomous Content Publisher
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 4AM EAT (Sports)
+    - cron: '0 5 * * *'   # 8AM EAT (Tech)
+    - cron: '0 10 * * *'  # 1PM EAT (Finance)
+    - cron: '0 12 * * *'  # 3PM EAT (Sports)
+    - cron: '0 16 * * *'  # 7PM EAT (Tech)
+    - cron: '0 20 * * *'  # 11PM EAT (Finance)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  NEWSAPI_KEY: 33579597361b410a9454a9634f3fd8a5
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-generativeai
+
+      - name: Generate article with Gemini
+        env:
+          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+        run: |
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, time
+          import google.generativeai as genai
+
+          # --- 1. CONFIGURATION & TOPIC ---
+          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+          current_hour_utc = datetime.datetime.utcnow().hour
+          
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
+          if manual_input in ['sports', 'technology', 'business']:
+              topic = manual_input
+              newsapi_category = {'sports': 'sports', 'technology': 'technology', 'business': 'business'}[topic]
+          else:
+              if current_hour_utc < 3 or current_hour_utc == 12: topic = 'sports'; newsapi_category = 'sports'
+              elif current_hour_utc < 8 or current_hour_utc == 16: topic = 'technology'; newsapi_category = 'technology'
+              else: topic = 'business'; newsapi_category = 'business'
+          
+          print(f"🎯 Topic: {topic} | Category: {newsapi_category}")
+
+          # --- 2. FETCH REAL-TIME NEWS (International) ---
+          params = {
+              'category': newsapi_category,
+              'language': 'en',
+              'pageSize': 5,
+              'apiKey': os.environ['NEWSAPI_KEY']
+          }
+          news_resp = requests.get('https://newsapi.org/v2/top-headlines', params=params, timeout=10)
+          news_data = news_resp.json()
+          
+          if news_data['totalResults'] == 0:
+              print("No news available, skipping")
+              exit(0)
+          
+          # Pick FRESHEST top story
+          top_story = min(news_data['articles'], key=lambda x: x['publishedAt'] if x['publishedAt'] else '9999')
+          title = top_story['title']
+          snippet = (top_story.get('description') or top_story.get('content', ''))[:300]
+          source = top_story['source']['name']
+          pub_date = top_story['publishedAt']
+          
+          print(f"📺 Top story: {title[:80]}... ({source})")
+
+          # --- 3. IMAGE HELPER (unchanged) ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = "https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{}-no-humans?width=1200&height=630&nologo=true".format(query.replace(" ", "-"))
+              if not access_key:
+                  return fallback.format(query)
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except: pass
+              return fallback.format(query)
+
+          # --- 4. REPORTING-TONE PROMPT (Facts only) ---
+          hooks = [
+             "Straight reporting: What happened, when, where, who, why.",
+             "Key facts first: Timeline of events.",
+             "Source-led: What experts/officials said.",
+             "Data-driven: Numbers and impacts."
+          ]
+          selected_hook = random.choice(hooks)
+
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+
+          NEWS ITEM:
+          Title: "{title}"
+          Snippet: "{snippet}"
+          Source: {source}
+          Published: {pub_date}
+
+          TASK: Write FACTUAL news article. NO OPINIONS. NO HYPOTHESIS. NO HALLUCINATIONS.
+          - Stick to verifiable facts from snippet + your knowledge of this exact story.
+          - Report in neutral, professional journalist tone.
+          - Verify/expand only from reputable sources matching this headline.
+          - Opening: {selected_hook}
+
+          OUTPUT FORMAT (exact):
+          TITLE: [News-style headline, 60 chars]
+          DESCRIPTION: [Factual 1-2 sentence summary, 160 chars]
+          CATEGORY: [{ 'sports':'Sports', 'technology':'Technology', 'business':'Business' }[topic]]
+          TAGS: [3-5 relevant tags]
+          IMAGE_KEYWORD: [2-3 words for image]
+          BODY:
+          [Full article: 1200-1600 words. ## Headers for sections. Cite sources inline.]
+
+          RULES:
+          - Facts only. If unknown, say "details unclear".
+          - No changing topic. Cover THIS story only.
+          - UK English, commas not em-dashes.
+          - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
+
+          # --- 5. GEMINI CALL (GEMINI_WRITE_KEY) ---
+          genai.configure(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          model = genai.GenerativeModel(os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"))
+
+          response = model.generate_content(prompt, temperature=0.1)  # Low temp = factual
+          full_text = response.text.strip()
+
+          # --- 6. PARSE (unchanged logic) ---
+          parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": "Technology", "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          current_section = None
+          
+          for line in full_text.splitlines():
+              clean_line = line.strip().replace("**", "")
+              if clean_line.startswith("TITLE:"): parsed["TITLE"] = clean_line.replace("TITLE:", "").strip()
+              elif clean_line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
+              elif clean_line.startswith("CATEGORY:"): parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
+              elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
+              elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("BODY:"): current_section = "BODY"
+              elif current_section == "BODY": parsed["BODY"] += line + "
+"
+
+          # Em-Dash scrubber (unchanged)
+          for key in ["TITLE", "DESCRIPTION", "BODY"]:
+              text = parsed[key]
+              text = text.replace("—", ", ").replace("–", ", ").replace("--", ", ")
+              text = re.sub(r',s*,', ',', text)
+              parsed[key] = text.strip()
+
+          # --- 7. FINAL FILE (unchanged) ---
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
+          slug = re.sub(r'-+', '-', slug).strip('-')
+          tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
+
+          final_file = f"""---
+          title: "{parsed['TITLE'].replace('"', "'")}"
+          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+          date: "{date_str}"
+          author: "Jonathan Mwaniki"
+          image: "{image_url}"
+          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
+          imageAlt: "{parsed['IMAGE_KEYWORD']}"
+          category: "{parsed['CATEGORY']}"
+          tags: {json.dumps(tag_list)}
+          featured: true
+          draft: false
+          slug: "{slug}"
+          ---
+
+          # {parsed['TITLE']}
+
+          {parsed['BODY']}
+
+          <div class="article-meta">
+            <p><strong>Published:</strong> {date_str}</p>
+            <p><strong>Author:</strong> Jonathan Mwaniki</p>
+            <p><strong>Tags:</strong> {parsed['TAGS']}</p>
+            <div class="source-credit">Source story: {source} ({pub_date})</div>
+          </div>
+          """
+
+          import textwrap
+          final_file = textwrap.dedent(final_file).strip()
+          out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
+          os.makedirs(out_dir, exist_ok=True)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+              f.write(final_file)
+          print(f"✅ Published: {slug}.md | {len(parsed['BODY'].split())} words")
+          EOF
+
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: publish ${{ github.run_id }} (${{ env.NEWSAPI_KEY[:8] }}...)"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
