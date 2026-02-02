@@ -1,15 +1,14 @@
 name: 🚀 Auto-Post Latest Blog to X
 on:
   schedule:
-    - cron: '30 2 * * *' # Runs 30 mins after your sitemap/llms.txt generation
-  workflow_dispatch:      # Allows you to test it manually
+    - cron: '30 2 * * *' 
+  workflow_dispatch:
 
 jobs:
   tweet:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -39,31 +38,32 @@ jobs:
 
           async function run() {
             try {
-              // 1. Fetch the sitemap
               const response = await axios.get('https://www.jonathanmwaniki.co.ke/sitemap-0.xml');
               const parser = new XMLParser();
               const jsonObj = parser.parse(response.data);
               
-              // 2. Get the last URL in the list (assuming sitemap is chronological)
+              // 1. Filter for blog posts specifically
               const urls = jsonObj.urlset.url;
-              const latestEntry = Array.isArray(urls) ? urls[urls.length - 1] : urls;
+              const postEntries = urls.filter(u => u.loc.includes('/posts/'));
+              
+              if (postEntries.length === 0) throw new Error('No posts found in sitemap');
+              
+              const latestEntry = postEntries[postEntries.length - 1];
               const url = latestEntry.loc;
 
-              // 3. Clean the slug to create a Title
-              // Example: .../posts/my-new-article -> My New Article
-              const slug = url.split('/').pop();
-              const title = slug
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, l => l.toUpperCase());
+              // 2. Format the Title from the slug
+              const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+              const slug = cleanUrl.split('/').pop();
+              const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-              // 4. Send the Tweet
+              // 3. Post the Tweet
               const tweetText = \`\${title}\n\n\${url}\`;
+              console.log('Posting:', tweetText);
               
-              console.log('Sending tweet:', tweetText);
               await client.v2.tweet(tweetText);
-              console.log('Successfully posted to X!');
+              console.log('Success!');
             } catch (error) {
-              console.error('Workflow failed:', error);
+              console.error('Error:', error.message);
               process.exit(1);
             }
           }
