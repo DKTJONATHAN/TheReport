@@ -30,7 +30,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
-          token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          # If using the default GITHUB_TOKEN, you don't need to specify 'token' here
+          # unless you specifically need a PAT to trigger other workflows.
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
       - name: Set up Python
@@ -79,7 +81,7 @@ jobs:
           news_resp = requests.get('https://newsapi.org/v2/top-headlines', params=params, timeout=10)
           news_data = news_resp.json()
           
-          if news_data['totalResults'] == 0:
+          if news_data.get('totalResults', 0) == 0:
               print("No news available, skipping")
               exit(0)
           
@@ -92,7 +94,7 @@ jobs:
           
           print(f"📺 Top story: {title[:80]}... ({source})")
 
-          # --- 3. IMAGE HELPER (unchanged) ---
+          # --- 3. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = "https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{}-no-humans?width=1200&height=630&nologo=true".format(query.replace(" ", "-"))
@@ -106,7 +108,7 @@ jobs:
               except: pass
               return fallback.format(query)
 
-          # --- 4. REPORTING-TONE PROMPT (Facts only) ---
+          # --- 4. REPORTING-TONE PROMPT ---
           hooks = [
              "Straight reporting: What happened, when, where, who, why.",
              "Key facts first: Timeline of events.",
@@ -144,14 +146,14 @@ jobs:
           - UK English, commas not em-dashes.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 5. GEMINI CALL (GEMINI_WRITE_KEY) ---
+          # --- 5. GEMINI CALL ---
           genai.configure(api_key=os.environ.get("GEMINI_WRITE_KEY"))
           model = genai.GenerativeModel(os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"))
 
-          response = model.generate_content(prompt, temperature=0.1)  # Low temp = factual
+          response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.1))
           full_text = response.text.strip()
 
-          # --- 6. PARSE (unchanged logic) ---
+          # --- 6. PARSE ---
           parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": "Technology", "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
           
@@ -163,17 +165,16 @@ jobs:
               elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
               elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
               elif clean_line.startswith("BODY:"): current_section = "BODY"
-              elif current_section == "BODY": parsed["BODY"] += line + "
-"
+              elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          # Em-Dash scrubber (unchanged)
+          # Em-Dash scrubber
           for key in ["TITLE", "DESCRIPTION", "BODY"]:
               text = parsed[key]
               text = text.replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              text = re.sub(r',s*,', ',', text)
+              text = re.sub(r',\s*,', ',', text)
               parsed[key] = text.strip()
 
-          # --- 7. FINAL FILE (unchanged) ---
+          # --- 7. FINAL FILE ---
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
@@ -218,10 +219,12 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish ${{ github.run_id }} (${{ secrets.NEWSAPI_KEY[:8] }}...)"
+          commit_message: "content: publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: ${{ env.POSTS_DIR }}/*.md
           commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
+          # Usually GITHUB_TOKEN is enough for commits, but use PERSONAL if you have protected branches
+          # or need to trigger other workflows.
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
