@@ -1,22 +1,25 @@
-name: Twitter Test - Minimal
-on: 
-  workflow_dispatch:
-    inputs:
-      test:
-        type: boolean
-        default: true
+name: 🧪 Twitter LIVE Test
+on: workflow_dispatch
 
 jobs:
-  test:
+  tweet:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "✅ Workflow WORKS - secrets next"
-      
-      - name: Check secrets
-        env:
-          CK: ${{ secrets.TWITTER_CONSUMER_KEY }}
-          CS: ${{ secrets.TWITTER_CONSUMER_SECRET }}
-          AT: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          ATS: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-        run: |
-          echo "Keys: ${CK:0:5}... ${CS:0:5}... ${AT:0:5}... ${ATS:0:5}..."
+      - name: Tweet SpaceX Post
+        uses: Ethiack/twitter-api-v2-action@v1.4.1  # ✅ Verified working 2026
+        with:
+          api-key: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          api-secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          access-token-secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          consumer-key: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          consumer-secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          endpoint: statuses/update
+          status: |
+            🚀 SpaceX Files for 1 Million Solar Data Centres!
+            
+            Game-changing orbital tech!
+            
+            https://jonathanmwaniki.co.ke/posts/spacex-files-for-1-million-solar-satellite-data-centres 
+            
+            #SpaceX #TechNews #Kenya
