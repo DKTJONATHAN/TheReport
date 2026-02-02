@@ -1,4 +1,49 @@
-- name: Generate article with Gemini
+name: Autonomous Content Publisher
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)
+    - cron: '0 14 * * *'  # 5PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-generativeai
+
+      - name: Generate article with Gemini
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
@@ -70,7 +115,7 @@
           ]
           selected_hook = random.choice(hooks)
 
-          # FIX: Calculate category OUTSIDE the f-string to avoid syntax errors
+          # FIX: Define category map OUTSIDE the f-string
           cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business' }
           display_category = cat_map.get(topic, 'General')
 
@@ -172,3 +217,14 @@
               f.write(final_file)
           print(f"✅ Published: {slug}.md | {len(parsed['BODY'].split())} words")
           EOF
+
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: publish ${{ github.run_id }}"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
