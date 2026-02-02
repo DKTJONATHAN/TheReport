@@ -1,0 +1,12 @@
+name: Test Facebook Post
+on: workflow_dispatch  # This allows you to click a button to run it
+
+jobs:
+  post-hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Post to Facebook
+        run: |
+          curl -X POST "https://graph.facebook.com/v24.0/${{ secrets.FACEBOOK_PAGE_ID }}/feed" \
+          -d "message=Hello Welcome" \
+          -d "access_token=${{ secrets.FACEBOOK_PAGE_TOKEN }}"
