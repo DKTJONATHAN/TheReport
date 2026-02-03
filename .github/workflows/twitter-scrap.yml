@@ -1,0 +1,253 @@
+name: Auto Newser
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)
+    - cron: '0 14 * * *'  # 5PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Added ntscraper for Twitter access
+          pip install requests google-genai ntscraper
+
+      - name: Generate article with Gemini
+        env:
+          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
+          # NEWSAPI_KEY is no longer needed
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+        run: |
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, time
+          from google import genai
+          from google.genai import types
+          from ntscraper import Nitter
+
+          # --- 1. CONFIGURATION & TOPIC ---
+          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+          current_hour_utc = datetime.datetime.utcnow().hour
+          
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
+          if manual_input in ['sports', 'technology', 'business']:
+              topic = manual_input
+          else:
+              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
+              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
+              else: topic = 'business'
+          
+          print(f"🎯 Topic: {topic.upper()}")
+
+          # --- 2. FETCH REAL-TIME NEWS (Kenyan Twitter Scraper) ---
+          # Mapping topics to reliable Kenyan handles
+          SOURCES = {
+              'sports': ['MozzartSportKe', 'CapitalSportKE', 'NationSports'],
+              'technology': ['Techweez', 'Kachwanya', 'AndroidKenya'],
+              'business': ['BusinessDailyJC', 'StandardKenya', 'NationAfrica']
+          }
+
+          target_accounts = SOURCES.get(topic, SOURCES['business'])
+          scraper = Nitter(log_level=1, skip_instance_check=False)
+          
+          tweet_data = None
+          source_handle = ""
+
+          # Try each account until we find a valid tweet
+          for handle in target_accounts:
+              print(f"🕷️ Scraping @{handle}...")
+              try:
+                  # Get last 5 tweets
+                  results = scraper.get_tweets(handle, mode='user', number=5)
+                  tweets = results.get('tweets', [])
+                  
+                  if not tweets: continue
+
+                  # Filter: Find first tweet that is NOT a retweet and has decent length
+                  for t in tweets:
+                      if not t['is-retweet'] and len(t['text']) > 60:
+                          tweet_data = t
+                          source_handle = handle
+                          break
+                  
+                  if tweet_data: break # Found one, stop looking
+              except Exception as e:
+                  print(f"⚠️ Failed to scrape @{handle}: {e}")
+                  time.sleep(2)
+
+          if not tweet_data:
+              print("❌ No news found from any source.")
+              exit(0)
+
+          # Normalize data for Gemini
+          # Twitter doesn't have titles, so we use the first 10 words as a title
+          raw_text = tweet_data['text']
+          title = ' '.join(raw_text.split()[:10]) + "..."
+          snippet = raw_text
+          source = f"@{source_handle} (Twitter)"
+          pub_date = tweet_data['date']
+          
+          print(f"📺 Found story: {snippet[:80]}... ({source})")
+
+          # --- 3. IMAGE HELPER ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = "https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{}-no-humans?width=1200&height=630&nologo=true".format(query.replace(" ", "-"))
+              if not access_key:
+                  return fallback.format(query)
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except: pass
+              return fallback.format(query)
+
+          # --- 4. REPORTING-TONE PROMPT ---
+          hooks = [
+             "Straight reporting: What happened, when, where, who, why.",
+             "Key facts first: Timeline of events.",
+             "Source-led: What experts/officials said.",
+             "Data-driven: Numbers and impacts."
+          ]
+          selected_hook = random.choice(hooks)
+
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+
+          NEWS SOURCE (TWEET):
+          Source: {source}
+          Date: {pub_date}
+          Content: "{snippet}"
+
+          TASK: Write a SHORT news update based on this social media report.
+          - Contextualize this tweet (you know who {source_handle} is).
+          - If the tweet is about a match result, tech launch, or market shift, explain the background.
+          - Opening: {selected_hook}
+
+          OUTPUT FORMAT (exact):
+          TITLE: [News-style headline, 60 chars]
+          DESCRIPTION: [Factual 1-2 sentence summary, 160 chars]
+          CATEGORY: [{topic.capitalize()}]
+          TAGS: [3-5 relevant tags]
+          IMAGE_KEYWORD: [2-3 words for image]
+          BODY:
+          [Article: 600-800 words. Since source is short, expand using general knowledge of the entities mentioned.]
+
+          RULES:
+          - Facts only. No hallucinations.
+          - UK English.
+          '''
+
+          # --- 5. GEMINI 3 CALL ---
+          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          model_id = "gemini-3-flash-preview"
+          
+          print(f"🤖 Generating with {model_id}...")
+          
+          try:
+              response = client.models.generate_content(
+                  model=model_id,
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.1)
+              )
+              full_text = response.text.strip()
+          except Exception as e:
+              print(f"❌ Gemini Error: {e}")
+              exit(1)
+
+          # --- 6. PARSE & SAVE ---
+          parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          current_section = None
+          
+          for line in full_text.splitlines():
+              clean_line = line.strip().replace("**", "")
+              if clean_line.startswith("TITLE:"): parsed["TITLE"] = clean_line.replace("TITLE:", "").strip()
+              elif clean_line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
+              elif clean_line.startswith("CATEGORY:"): parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
+              elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
+              elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("BODY:"): current_section = "BODY"
+              elif current_section == "BODY": parsed["BODY"] += line + "\n"
+
+          # Final file creation (Same as before)
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
+          slug = re.sub(r'-+', '-', slug).strip('-')
+          tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
+
+          final_file = f"""---
+          title: "{parsed['TITLE'].replace('"', "'")}"
+          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+          date: "{date_str}"
+          author: "Jonathan Mwaniki"
+          image: "{image_url}"
+          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
+          imageAlt: "{parsed['IMAGE_KEYWORD']}"
+          category: "{parsed['CATEGORY']}"
+          tags: {json.dumps(tag_list)}
+          featured: true
+          draft: false
+          slug: "{slug}"
+          ---
+
+          # {parsed['TITLE']}
+
+          {parsed['BODY']}
+
+          <div class="article-meta">
+            <p><strong>Published:</strong> {date_str}</p>
+            <p><strong>Source:</strong> <a href="https://twitter.com/{source_handle}">@{source_handle}</a></p>
+          </div>
+          """
+
+          import textwrap
+          final_file = textwrap.dedent(final_file).strip()
+          out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
+          os.makedirs(out_dir, exist_ok=True)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+              f.write(final_file)
+          print(f"✅ Published: {slug}.md")
+          EOF
+
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: publish ${{ github.run_id }}"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Auto Newser"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
