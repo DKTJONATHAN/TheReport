@@ -52,7 +52,6 @@ jobs:
           # --- 1. CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           
-          # No pre-set topic. We just want whatever is latest.
           print(f"🎯 Target: THE NYAKUNDI REPORT (Latest)")
 
           # --- 2. THE SEARCH ---
@@ -60,6 +59,7 @@ jobs:
           found_story = None
           
           # We search these domains for ANY content indexed in the last 24h
+          # Priority is nyakundireport.com
           domains = ['nyakundireport.com', 'cnyakundi.com']
           
           for domain in domains:
