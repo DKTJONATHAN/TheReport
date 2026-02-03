@@ -1,13 +1,59 @@
-name: Test Facebook Post
-on: workflow_dispatch
+name: Social Blast
+on:
+  push:
+    paths:
+      - 'src/content/posts/**.md'
+      - 'src/content/posts/**.mdx'
+    branches:
+      - main  # Or 'master' if that is your default
 
 jobs:
-  post-hello:
+  publish-to-facebook:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Post to Facebook
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Needed to see which file changed
+
+      - name: Detect and Post Article
+        env:
+          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          SITE_URL: "https://jonathanmwaniki.co.ke"
         run: |
-          # We use 'me/feed' so the Token automatically finds the correct Page
-          curl -i -X POST "https://graph.facebook.com/v24.0/me/feed" \
-          -d "message=Hello Welcome" \
-          -d "access_token=${{ secrets.FACEBOOK_PAGE_TOKEN }}"
+          # 1. Find the file that was just changed/added
+          FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
+
+          if [ -z "$FILE" ]; then
+            echo "No post file detected in this commit. Exiting."
+            exit 0
+          fi
+
+          echo "Processing file: $FILE"
+
+          # 2. Extract the Title (Reads the 'title: ...' line from frontmatter)
+          # Removes quotes and extra spaces
+          TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+
+          # 3. Construct the Link
+          # Uses the filename as the slug (e.g., 'my-post.md' -> 'my-post')
+          FILENAME=$(basename "$FILE")
+          SLUG="${FILENAME%.*}"
+          LINK="$SITE_URL/posts/$SLUG/"
+
+          echo "Posting to Facebook: $TITLE ($LINK)"
+
+          # 4. Send to Facebook (Using the 'me/feed' trick we confirmed works)
+          RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+            -d "message=New Article: $TITLE" \
+            -d "link=$LINK" \
+            -d "access_token=$FB_TOKEN")
+
+          # 5. Check if it worked
+          if [[ $RESPONSE == *"\"id\""* ]]; then
+            echo "✅ Successfully posted to Facebook!"
+          else
+            echo "❌ Failed to post."
+            echo "$RESPONSE"
+            exit 1
+          fi
