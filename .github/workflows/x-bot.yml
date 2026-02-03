@@ -1,0 +1,56 @@
+name: Twitter Bot (3x Daily)
+on:
+  schedule:
+    # Kenya Time: 8:00, 13:00, 20:00
+    # UTC Time:   5:00, 10:00, 17:00
+    - cron: '0 5,10,17 * * *'
+  workflow_dispatch:
+
+jobs:
+  post-twitter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install Deps
+        run: pip install tweepy && sudo apt-get install -y jq
+
+      - name: Fetch Content
+        run: |
+          # Same logic: Random Quote or Joke
+          if [ $((RANDOM % 2)) -eq 0 ]; then
+             JSON=$(curl -s "https://zenquotes.io/api/random")
+             MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
+          else
+             JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
+             MSG="$(echo $JSON | jq -r '.joke') #Funny #TheReport"
+          fi
+          if [ -z "$MSG" ] || [ "$MSG" == "null #Funny #TheReport" ]; then MSG="Have a great day! #TheReport"; fi
+          echo "MSG=$MSG" >> $GITHUB_ENV
+
+      - name: Post to Twitter
+        env:
+          TW_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TW_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TW_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TW_SECRET_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          TWEET_TEXT: ${{ env.MSG }}
+        run: |
+          cat <<EOF > tweet.py
+          import tweepy, os
+          try:
+              client = tweepy.Client(
+                  consumer_key=os.environ['TW_KEY'],
+                  consumer_secret=os.environ['TW_SECRET'],
+                  access_token=os.environ['TW_TOKEN'],
+                  access_token_secret=os.environ['TW_SECRET_TOKEN']
+              )
+              client.create_tweet(text=os.environ['TWEET_TEXT'][:280])
+              print("✅ Tweet Sent")
+          except Exception as e:
+              print(f"❌ Error: {e}")
+          EOF
+          python tweet.py
