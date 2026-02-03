@@ -1,12 +1,22 @@
-name: Test Facebook Post
-on: workflow_dispatch  # This allows you to click a button to run it
+name: Debug Facebook Connection
+on: workflow_dispatch
 
 jobs:
-  post-hello:
+  debug-connection:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Post to Facebook
+      - name: Test Connection and Print Error
+        env:
+          FB_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          curl -X POST "https://graph.facebook.com/v24.0/${{ secrets.FACEBOOK_PAGE_ID }}/feed" \
-          -d "message=Hello Welcome" \
-          -d "access_token=${{ secrets.FACEBOOK_PAGE_TOKEN }}"
+          echo "Testing connection to Page ID: $FB_PAGE_ID..."
+          
+          # This command sends the post AND prints the full response from Facebook
+          RESPONSE=$(curl -i -X POST "https://graph.facebook.com/v24.0/$FB_PAGE_ID/feed" \
+            -d "message=Debug Test Post $(date)" \
+            -d "access_token=$FB_PAGE_TOKEN")
+          
+          echo "------ FACEBOOK RESPONSE ------"
+          echo "$RESPONSE"
+          echo "-------------------------------"
