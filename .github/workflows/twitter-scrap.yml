@@ -38,13 +38,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies (Playwright)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # We need playwright to mimic a real user
-          pip install requests google-genai playwright
-          # Install the browser engine
-          playwright install chromium --with-deps
+          # We use duckduckgo-search for the scraping
+          pip install requests google-genai duckduckgo-search
 
       - name: Generate article with Gemini
         env:
@@ -56,7 +54,7 @@ jobs:
           import os, json, datetime, requests, re, random, time
           from google import genai
           from google.genai import types
-          from playwright.sync_api import sync_playwright
+          from duckduckgo_search import DDGS
 
           # --- 1. CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -66,115 +64,73 @@ jobs:
           if manual_input in ['sports', 'technology', 'business']:
               topic = manual_input
           else:
-              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
-              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
+              # Simple time-based rotation
+              if current_hour_utc in [0, 14]: topic = 'sports'
+              elif current_hour_utc in [6, 22]: topic = 'technology'
               else: topic = 'business'
 
           print(f"🎯 Topic: {topic.upper()}")
 
-          # --- 2. THE NUCLEAR OPTION: PLAYWRIGHT SCRAPER ---
-          # We are searching Google News directly using a real browser engine.
+          # --- 2. THE 'REAL TIME' SEARCH ---
+          # We use DDGS.text() (Web Search) instead of News to find blogs/forums.
+          # timelimit="h" -> RESTRICTS RESULTS TO THE PAST HOUR.
           
-          # Google News Search URL (Kenya Edition)
-          # tbm=nws -> News Tab
-          # gl=KE -> Country Kenya
-          
-          SEARCH_QUERIES = {
-              'sports': 'Kenya Sports News Football Athletics',
-              'technology': 'Kenya Technology News Startup Safaricom',
-              'business': 'Kenya Business Finance Economy'
+          TOPIC_QUERIES = {
+              'sports': 'Kenya sports updates football breaking',
+              'technology': 'Kenya tech news startup MPESA updates',
+              'business': 'Kenya business economy breaking shilling'
           }
           
-          query_text = SEARCH_QUERIES.get(topic, 'Kenya News')
-          url = f"https://www.google.com/search?q={query_text}&gl=KE&tbm=nws"
+          # Add "breaking" to force urgent news
+          query = TOPIC_QUERIES.get(topic, 'Kenya News breaking')
+          print(f"🔎 Scanning Past Hour for: {query}...")
 
-          print(f"🕷️ Launching Headless Browser for: {url}")
+          results = []
+          try:
+              # timelimit="h" is the magic key for "Real Time"
+              # max_results=15 to cast a wide net
+              results = DDGS().text(keywords=query, region="ke-en", timelimit="h", max_results=15)
+          except Exception as e:
+              print(f"❌ Search Error: {e}")
+              exit(1)
 
-          scraped_items = []
-
-          with sync_playwright() as p:
-              # Launch Chrome. headless=True means it runs invisibly.
-              # We add arguments to hide the fact that it is a bot.
-              browser = p.chromium.launch(headless=True, args=[
-                  '--disable-blink-features=AutomationControlled',
-                  '--no-sandbox',
-                  '--disable-setuid-sandbox'
-              ])
-              
-              # Create a context with a real User-Agent
-              context = browser.new_context(
-                  user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                  viewport={'width': 1280, 'height': 720}
-              )
-              
-              page = context.new_page()
-              
+          if not results:
+              print("⚠️ No results in the past hour. Widening to Past Day ('d')...")
               try:
-                  page.goto(url, timeout=30000)
-                  # Wait for the search results container
-                  page.wait_for_selector('div#search', state='attached')
-                  
-                  # Extract news cards (Google News uses specific classes like 'SoaBEf' or 'WlydMc')
-                  # But the safest way is to look for the generic search result containers in the news tab
-                  results = page.locator('div[data-snhf]').all()
-                  
-                  if not results:
-                      # Fallback for different HTML structure
-                      results = page.locator('div.SoaBEf').all()
+                  results = DDGS().text(keywords=query, region="ke-en", timelimit="d", max_results=10)
+              except: pass
 
-                  print(f"🔎 Found {len(results)} raw results on page.")
-
-                  for res in results[:6]: # Check top 6
-                      try:
-                          # Extract Title
-                          title_el = res.locator('div[role="heading"]').first
-                          if not title_el.count(): continue
-                          title = title_el.inner_text()
-                          
-                          # Extract Link
-                          link_el = res.locator('a').first
-                          link = link_el.get_attribute('href')
-                          
-                          # Extract Source (often in a span or div below title)
-                          # This is "best effort" scraping
-                          text_content = res.inner_text()
-                          
-                          # Basic filters
-                          if len(title) > 20 and link and link.startswith('http'):
-                              scraped_items.append({
-                                  'title': title,
-                                  'link': link,
-                                  'raw': text_content
-                              })
-                      except: continue
-                      
-              except Exception as e:
-                  print(f"⚠️ Browser Error: {e}")
-              finally:
-                  browser.close()
-
-          if not scraped_items:
-              print("❌ No news found (Google blocked the browser or layout changed).")
+          if not results:
+              print("❌ No news found.")
               exit(0)
 
-          # --- 3. FILTERING ---
-          selected_item = scraped_items[0]
+          # --- 3. FILTER FOR 'NON-MAINSTREAM' / FAST SOURCES ---
+          # We prefer digital-first publishers over the big legacy papers if possible.
+          FAST_SOURCES = ['kahawatungu', 'ghafla', 'techweez', 'tuko', 'kenyans.co.ke', 'mpasho', 'pulselive', 'nairobiwire']
           
-          # Try to find a "Preferred" source if possible
-          PREFERRED = ['Nation', 'Standard', 'Capital', 'Business Daily', 'Techweez', 'Mozzart']
-          for item in scraped_items:
-              if any(p.lower() in item['raw'].lower() for p in PREFERRED):
-                  selected_item = item
+          selected_story = None
+          
+          # 1. Look for "Fast/Blog" sources first
+          for item in results:
+              url = item.get('href', '').lower()
+              if any(s in url for s in FAST_SOURCES):
+                  selected_story = item
+                  print(f"✅ Found Alternative Source: {item['href']}")
                   break
-
-          print(f"📺 Selected Story: {selected_item['title']}")
           
-          # --- 4. DATA PREP ---
-          headline = selected_item['title']
-          link = selected_item['link']
-          source_text = selected_item['raw'].replace('\n', ' ')[:50] # Snippet for context
+          # 2. If no blogs, take the absolute first result (Fastest)
+          if not selected_story:
+              selected_story = results[0]
+              print(f"⚡ Taking Top Result: {selected_story['href']}")
 
-          # --- 5. IMAGE HELPER (Unchanged) ---
+          # --- 4. PREP DATA ---
+          headline = selected_story['title']
+          link = selected_story['href']
+          snippet = selected_story['body']
+          
+          print(f"📺 Headline: {headline}")
+
+          # --- 5. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = f"https://image.pollinations.ai/prompt/journalistic-photo-of-{query.replace(' ', '-')}-news?width=1200&height=630&nologo=true"
@@ -187,27 +143,29 @@ jobs:
               except: pass
               return fallback
 
-          # --- 6. GEMINI CALL (Unchanged) ---
+          # --- 6. GEMINI CALL ---
           hooks = [
-             "Breaking Update: Here are the details on the developing story.",
-             "Market Watch: Analyzing the latest shift in the landscape.",
-             "Key Report: What this latest announcement means for Kenya."
+             "Developing Story: Details are still emerging, but here is what we know.",
+             "Just In: A significant update just hit the wires.",
+             "Rapid Report: Breaking down the latest information."
           ]
           selected_hook = random.choice(hooks)
 
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          NEWS SOURCE:
+          BREAKING NEWS SOURCE:
           Headline: "{headline}"
+          Snippet: "{snippet}"
           Link: {link}
-          Context: "{source_text}"
           
-          TASK: Write a news article (600-800 words) based on this headline.
-          - Use your internal knowledge to FILL IN DETAILS about this event.
+          TASK: Write a rapid news update (600 words).
+          - This is a BREAKING/DEVELOPING story. Treat it with urgency.
+          - Use internal knowledge to explain the entities mentioned (e.g. if it mentions a specific politician or company, explain who they are).
+          - Tone: Fast, factual, urgency.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
-          TITLE: [News-style headline, max 60 chars]
+          TITLE: [Urgent Headline, max 60 chars]
           DESCRIPTION: [Summary, max 160 chars]
           CATEGORY: [{topic.capitalize()}]
           TAGS: [3-5 tags, comma separated]
@@ -231,8 +189,8 @@ jobs:
               print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 7. PARSE & SAVE (Unchanged) ---
-          parsed = { "TITLE": headline[:60], "DESCRIPTION": headline[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news,kenya", "IMAGE_KEYWORD": topic, "BODY": "" }
+          # --- 7. PARSE & SAVE ---
+          parsed = { "TITLE": headline[:60], "DESCRIPTION": headline[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news,breaking", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
 
           for line in full_text.splitlines():
@@ -271,7 +229,7 @@ jobs:
 
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Source:</strong> Google News / {headline}</p>
+            <p><strong>Source:</strong> {headline}</p>
           </div>
           """
 
