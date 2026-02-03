@@ -30,18 +30,20 @@ jobs:
           if [ $ROLL -eq 0 ]; then
              echo "Chosen: QUOTE (Rare)"
              JSON=$(curl -s "https://zenquotes.io/api/random")
+             # Clean format: "Quote - Author"
              MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
           
           # If the number is 1, 2, or 3 (75% chance), pick a Joke
           else
              echo "Chosen: JOKE (Common)"
              JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
-             MSG="$(echo $JSON | jq -r '.joke') #Funny"
+             # Clean format: Just the joke, no tags
+             MSG="$(echo $JSON | jq -r '.joke')"
           fi
           
           # Safety Check
-          if [ -z "$MSG" ] || [ "$MSG" == "null #Funny" ]; then 
-            MSG="Consistency is key. Keep building. #TheReport"
+          if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
+            MSG="Consistency is key. Keep building."
           fi
           
           echo "MSG=$MSG" >> $GITHUB_ENV
@@ -63,6 +65,7 @@ jobs:
                   access_token=os.environ['TW_TOKEN'],
                   access_token_secret=os.environ['TW_SECRET_TOKEN']
               )
+              # Post clean text
               client.create_tweet(text=os.environ['TWEET_TEXT'][:280])
               print("✅ Tweet Sent Successfully")
           except Exception as e:
