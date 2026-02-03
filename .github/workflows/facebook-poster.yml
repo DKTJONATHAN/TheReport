@@ -6,6 +6,12 @@ on:
       - 'src/content/posts/**.mdx'
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      specific_slug:
+        description: 'Slug of the post (e.g., "my-new-article")'
+        required: false
+        type: string
 
 jobs:
   publish-to-facebook:
@@ -16,35 +22,47 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Wait for Site Deployment
+      - name: Wait for Deployment (Auto-Push Only)
+        if: github.event_name == 'push'
         run: |
-          echo "Waiting 3 minutes for the website to build and go live..."
-          sleep 180  # <--- THIS IS THE FIX (3 minutes)
+          echo "Waiting 60 seconds for site to build..."
+          sleep 60
 
       - name: Detect and Post Article
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
           SITE_URL: "https://jonathanmwaniki.co.ke"
+          INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
-          FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
-
-          if [ -z "$FILE" ]; then
-            echo "No post file detected. Exiting."
-            exit 0
+          # 1. Determine which file/slug to process
+          if [ -n "$INPUT_SLUG" ]; then
+            SLUG="$INPUT_SLUG"
+            FILE=$(find src/content/posts -name "${SLUG}.md*" | head -n 1)
+          else
+            FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
+            
+            if [ -z "$FILE" ]; then
+              echo "No post file detected. Exiting."
+              exit 0
+            fi
+            
+            FILENAME=$(basename "$FILE")
+            SLUG="${FILENAME%.*}"
           fi
 
-          # Extract Title
-          TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+          # 2. Extract Title
+          if [ -f "$FILE" ]; then
+            TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+          else
+            TITLE="$SLUG"
+          fi
 
-          # Construct Link
-          FILENAME=$(basename "$FILE")
-          SLUG="${FILENAME%.*}"
           LINK="$SITE_URL/posts/$SLUG/"
 
-          echo "Posting: $TITLE ($LINK)"
+          echo "Posting: $TITLE"
 
-          # Send to Facebook
+          # 3. Send to Facebook (Clean Version)
           curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-            -d "message=New Article: $TITLE" \
+            -d "message=$TITLE" \
             -d "link=$LINK" \
             -d "access_token=$FB_TOKEN"
