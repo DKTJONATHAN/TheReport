@@ -19,16 +19,27 @@ jobs:
 
       - name: Fetch Content
         run: |
-          # Randomly pick Quote or Joke
-          if [ $((RANDOM % 2)) -eq 0 ]; then
+          # ---------------------------------------------------------
+          # THE NEW LOGIC: 75% Chance of JOKE, 25% Chance of QUOTE
+          # ---------------------------------------------------------
+          
+          # Generate a number between 0 and 3
+          ROLL=$((RANDOM % 4))
+          
+          # If the number is 0 (25% chance), pick a Quote
+          if [ $ROLL -eq 0 ]; then
+             echo "Chosen: QUOTE (Rare)"
              JSON=$(curl -s "https://zenquotes.io/api/random")
              MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
+          
+          # If the number is 1, 2, or 3 (75% chance), pick a Joke
           else
+             echo "Chosen: JOKE (Common)"
              JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
              MSG="$(echo $JSON | jq -r '.joke') #Funny"
           fi
           
-          # Safety Check: If fetch failed, use default
+          # Safety Check
           if [ -z "$MSG" ] || [ "$MSG" == "null #Funny" ]; then 
             MSG="Consistency is key. Keep building. #TheReport"
           fi
@@ -37,7 +48,6 @@ jobs:
 
       - name: Post to Twitter
         env:
-          # UPDATED KEY NAMES TO MATCH YOUR WORKING FILE
           TW_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           TW_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TW_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
