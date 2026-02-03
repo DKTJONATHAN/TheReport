@@ -41,7 +41,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-genai ntscraper
+          # switched from ntscraper to feedparser (more reliable for CI/CD)
+          pip install requests google-genai feedparser
 
       - name: Generate article with Gemini
         env:
@@ -51,11 +52,11 @@ jobs:
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
+          import feedparser
           from google import genai
           from google.genai import types
-          from ntscraper import Nitter
 
-          # --- 1. CONFIGURATION & TOPIC ---
+          # --- 1. CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
 
@@ -69,84 +70,100 @@ jobs:
 
           print(f"🎯 Topic: {topic.upper()}")
 
-          # --- 2. FETCH REAL-TIME NEWS (Robust Scraper) ---
-          # Mapping topics to reliable Kenyan handles
+          # --- 2. FETCH REAL-TIME NEWS (RSS STRATEGY) ---
+          # RSS is lighter and less likely to be blocked by Nitter instances than full HTML scraping
           SOURCES = {
               'sports': ['MozzartSportKe', 'CapitalSportKE', 'NationSports', 'CitizentvKenya'],
               'technology': ['Techweez', 'Kachwanya', 'AndroidKenya', 'MosesKemibaro'],
               'business': ['BusinessDailyJC', 'StandardKenya', 'NationAfrica', 'KenyaBuzz']
           }
 
-          # Hardcoded list of working Nitter instances to bypass auto-check failure
-          NITTER_INSTANCES = [
+          # List of Nitter instances that support RSS
+          # Using specific RSS endpoints
+          NITTER_DOMAINS = [
               'https://nitter.privacydev.net',
               'https://nitter.poast.org',
               'https://nitter.lucabased.xyz',
               'https://nitter.net'
           ]
 
-          # Initialize with skip_instance_check=True to prevent startup crash
-          scraper = Nitter(log_level=1, skip_instance_check=True)
-
           target_accounts = SOURCES.get(topic, SOURCES['business'])
-          tweet_data = None
+          found_item = None
           source_handle = ""
 
-          # DOUBLE LOOP: Try every account on every instance until success
-          found = False
-          for handle in target_accounts:
-              if found: break
-              print(f"🕷️ Attempting to scrape @{handle}...")
-              
-              for instance in NITTER_INSTANCES:
-                  try:
-                      # Explicitly pass the instance to avoid random selection
-                      results = scraper.get_tweets(handle, mode='user', number=5, instance=instance)
-                      tweets = results.get('tweets', [])
-                      
-                      if not tweets:
-                          continue # Try next instance
+          # Header to look like a real browser (Helps bypass 403)
+          HEADERS = {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/xml,application/xhtml+xml,text/xml;q=0.9,text/plain;q=0.8'
+          }
 
-                      # Filter: Find first valid news tweet (not a retweet, decent length)
-                      for t in tweets:
-                          if not t['is-retweet'] and len(t['text']) > 50:
-                              tweet_data = t
+          print(f"📡 Starting RSS Scan for {len(target_accounts)} accounts...")
+
+          for handle in target_accounts:
+              if found_item: break
+              print(f"   🔎 Checking @{handle}...")
+              
+              for domain in NITTER_DOMAINS:
+                  rss_url = f"{domain}/{handle}/rss"
+                  try:
+                      # We use requests first to handle headers/timeouts manually
+                      resp = requests.get(rss_url, headers=HEADERS, timeout=8)
+                      
+                      if resp.status_code != 200:
+                          # print(f"      ❌ {domain} returned {resp.status_code}")
+                          continue
+
+                      # Parse the XML content
+                      feed = feedparser.parse(resp.content)
+                      
+                      if not feed.entries:
+                          continue
+
+                      # Look for a valid news item (recent & substantial)
+                      for entry in feed.entries:
+                          # Skip Retweets (Nitter RSS titles often start with "R to @...")
+                          if entry.title.startswith("R to "): 
+                              continue
+                          
+                          # content check
+                          content_text = entry.title # RSS title usually contains the tweet text
+                          if len(content_text) > 60:
+                              found_item = entry
                               source_handle = handle
-                              found = True
-                              print(f"   ✅ Success on {instance}")
+                              print(f"      ✅ Success on {domain}!")
                               break
                       
-                      if found: break
-                          
+                      if found_item: break
+
                   except Exception as e:
-                      # print(f"   ⚠️ {instance} failed: {e}") 
+                      # print(f"      ⚠️ Error on {domain}: {e}")
                       continue
               
-              if not found:
-                  print(f"   ❌ Failed to scrape @{handle} on all instances.")
-
-          if not tweet_data:
-              print("❌ No news found from any source. Exiting.")
+          if not found_item:
+              print("❌ No news found from any source (All RSS feeds failed or empty).")
               exit(0)
 
-          # Normalize data
-          raw_text = tweet_data['text']
-          # Clean up URL links from text for better title generation
-          clean_text = re.sub(r'http\S+', '', raw_text).strip()
-          title = ' '.join(clean_text.split()[:9]) + "..."
-          snippet = raw_text
-          source = f"@{source_handle} (Twitter)"
-          pub_date = tweet_data['date']
+          # --- 3. DATA NORMALIZATION ---
+          snippet = found_item.title
+          # Clean links out of snippet for better title generation
+          clean_snippet = re.sub(r'http\S+', '', snippet).strip()
+          title = ' '.join(clean_snippet.split()[:10]) + "..."
+          
+          # Handle Date (RSS date format parsing)
+          try:
+              pub_date = found_item.published
+          except:
+              pub_date = date_str
 
+          source = f"@{source_handle} (Twitter)"
           print(f"📺 Found story: {snippet[:80]}... ({source})")
 
-          # --- 3. IMAGE HELPER ---
+          # --- 4. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              # Fallback to AI generation if Unsplash fails
-              fallback = f"https://image.pollinations.ai/prompt/minimalist-journalistic-photo-of-{query.replace(' ', '-')}-news?width=1200&height=630&nologo=true"
-              if not access_key:
-                  return fallback
+              fallback = f"https://image.pollinations.ai/prompt/journalistic-photo-of-{query.replace(' ', '-')}-news-broadcast?width=1200&height=630&nologo=true"
+              if not access_key: return fallback
+              
               url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
               try:
                   resp = requests.get(url, timeout=5)
@@ -155,11 +172,11 @@ jobs:
               except: pass
               return fallback
 
-          # --- 4. REPORTING-TONE PROMPT ---
+          # --- 5. AI WRITER ---
           hooks = [
-             "Straight reporting: What happened, when, where, who, why.",
-             "Key facts first: Timeline of events.",
-             "Source-led: What experts/officials said."
+             "Breaking: A detailed look at the latest update.",
+             "Key Developments: What you need to know about this story.",
+             "Market Report: Analyzing the impact of this news."
           ]
           selected_hook = random.choice(hooks)
 
@@ -169,10 +186,9 @@ jobs:
           Date: {pub_date}
           Content: "{snippet}"
 
-          TASK: Write a news update (approx 600-800 words) based on this report.
-          - Contextualize this tweet. Use your internal knowledge to explain the entities/events mentioned.
-          - If it's a sports score, analyze the match context.
-          - If it's tech/business, explain the market impact.
+          TASK: Write a news update (600-800 words) based on this report.
+          - Contextualize this tweet. Use your internal knowledge (Gemini) to explain the entities, teams, or policies mentioned.
+          - If the tweet is brief, expand on the *topic* it refers to.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
@@ -185,13 +201,10 @@ jobs:
           [Article body with ## Headers]
           '''
 
-          # --- 5. GEMINI CALL ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          # Using 2.0 Flash for speed/reliability in automated tasks
-          model_id = "gemini-2.0-flash" 
-          
+          model_id = "gemini-2.0-flash"
+
           print(f"🤖 Generating with {model_id}...")
-          
           try:
               response = client.models.generate_content(
                   model=model_id,
@@ -203,7 +216,7 @@ jobs:
               print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 6. PARSE & SAVE ---
+          # --- 6. FILE SAVING ---
           parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
 
@@ -217,7 +230,6 @@ jobs:
               elif clean_line.startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          # Final file creation
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
