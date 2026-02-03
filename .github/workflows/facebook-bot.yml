@@ -1,0 +1,49 @@
+name: Facebook Bot (10x Daily)
+on:
+  schedule:
+    # Runs at hours: 6,8,10,12,14,16,18,20,22,00 (Kenya Time approx)
+    # UTC times: 3,5,7,9,11,13,15,17,19,21
+    - cron: '0 3,5,7,9,11,13,15,17,19,21 * * *'
+  workflow_dispatch:
+
+jobs:
+  post-facebook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: sudo apt-get install -y imagemagick jq
+
+      - name: Fetch Content (Quote or Joke)
+        run: |
+          # 50/50 Chance between Quote or Joke
+          if [ $((RANDOM % 2)) -eq 0 ]; then
+             echo "Chosen: QUOTE"
+             JSON=$(curl -s "https://zenquotes.io/api/random")
+             MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
+          else
+             echo "Chosen: JOKE"
+             JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
+             MSG="$(echo $JSON | jq -r '.joke') 🤣"
+          fi
+          # Fallback if empty
+          if [ -z "$MSG" ] || [ "$MSG" == "null 🤣" ]; then MSG="Keep moving forward. - The Report"; fi
+          echo "MSG=$MSG" >> $GITHUB_ENV
+
+      - name: Generate & Post Image
+        env:
+          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+        run: |
+          COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray")
+          RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
+          
+          convert -size 800x800 gradient:$RANDOM_COLOR \
+            -fill white -font DejaVu-Sans-Bold -pointsize 45 -gravity Center \
+            -size 700x700 caption:"$MSG" \
+            -composite status.jpg
+
+          curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
+            -F "source=@status.jpg" \
+            -F "access_token=$FB_TOKEN"
