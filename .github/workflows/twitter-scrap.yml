@@ -9,11 +9,6 @@ on:
     - cron: '0 18 * * *'  # 9PM EAT
     - cron: '0 22 * * *'  # 1AM EAT
   workflow_dispatch:
-    inputs:
-      manual_topic:
-        description: 'Force a topic'
-        required: false
-        default: ''
 
 permissions:
   contents: write
@@ -47,49 +42,39 @@ jobs:
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
+          import os, json, datetime, requests, re, random
           from google import genai
           from google.genai import types
           from duckduckgo_search import DDGS
 
           # --- 1. CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
-          current_hour_utc = datetime.datetime.utcnow().hour
+          
+          # No pre-set topic. We just want whatever is latest.
+          print(f"🎯 Target: THE NYAKUNDI REPORT (Latest)")
 
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
-          if manual_input: 
-              topic = manual_input
-          else:
-              if current_hour_utc in [0, 14]: topic = 'sports'
-              elif current_hour_utc in [6, 22]: topic = 'technology'
-              else: topic = 'business'
-
-          print(f"🎯 Topic: {topic.upper()}")
-
-          # --- 2. THE NYAKUNDI SEARCH (Corrected Domain) ---
+          # --- 2. THE SEARCH ---
           ddgs = DDGS()
           found_story = None
           
-          # Priority 1: Search nyakundireport.com (Official)
-          # We search for the specific topic or just "latest" if topic is generic
-          # timelimit="d" ensures we only get stories indexed in the last 24h
-          
-          domains = ['nyakundireport.com', 'cnyakundi.com'] # Added fallback just in case
+          # We search these domains for ANY content indexed in the last 24h
+          domains = ['nyakundireport.com', 'cnyakundi.com']
           
           for domain in domains:
               if found_story: break
               
-              query = f"site:{domain} {topic}"
-              print(f"1️⃣  Searching {domain}: '{query}'...")
+              # Query: "site:nyakundireport.com" (No keywords, just get the site's latest)
+              query = f"site:{domain}"
+              print(f"1️⃣  Scanning {domain} for today's posts...")
               
               try:
-                  # Strict search on the domain
+                  # timelimit="d" is CRITICAL. It ensures we only get today's posts.
                   results = list(ddgs.text(keywords=query, region="ke-en", timelimit="d", max_results=5))
                   
                   if results:
+                      # STRICT RULE: Pick the absolute first result.
                       item = results[0]
                       found_story = {
                           'title': item['title'],
@@ -97,51 +82,24 @@ jobs:
                           'body': item['body'],
                           'source': 'The Nyakundi Report'
                       }
-                      print(f"✅ Found Story on {domain}: {item['title']}")
+                      print(f"✅ Found Fresh Story: {item['title']}")
+                  else:
+                      print(f"⚠️  No posts found on {domain} in the last 24h.")
               except Exception as e:
-                  print(f"❌ Error searching {domain}: {e}")
-
-          # --- 3. FALLBACK (General Kenya News) ---
-          if not found_story:
-              print("2️⃣  Nyakundi hasn't posted on this topic today. Falling back to General News...")
-              try:
-                  # Search general news but look for other blogs
-                  fallback_query = f"Kenya {topic} news breaking"
-                  results = list(ddgs.text(keywords=fallback_query, region="ke-en", timelimit="d", max_results=10))
-                  
-                  if results:
-                      # Try to pick a blog if possible
-                      BLOGS = ['kahawatungu', 'ghafla', 'techweez', 'tuko']
-                      for item in results:
-                          if any(b in item['href'] for b in BLOGS):
-                              found_story = item
-                              found_story['source'] = 'Alternative Blog'
-                              break
-                      
-                      # Take top result if no blog found
-                      if not found_story:
-                          item = results[0]
-                          found_story = {
-                              'title': item['title'],
-                              'href': item['href'],
-                              'body': item['body'],
-                              'source': 'General Media'
-                          }
-              except: pass
+                  print(f"❌ Search Error on {domain}: {e}")
 
           if not found_story:
-              print("❌ FATAL: No news found anywhere.")
+              print("❌ FATAL: Nyakundi hasn't posted anything today (or Google hasn't indexed it yet).")
               exit(0)
 
-          # --- 4. DATA PREP ---
+          # --- 3. PREP DATA ---
           headline = found_story['title']
           link = found_story['href']
           snippet = found_story.get('body', headline)
-          source_label = found_story.get('source', 'News Source')
           
           print(f"📺 Selected Headline: {headline}")
 
-          # --- 5. IMAGE HELPER ---
+          # --- 4. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = f"https://image.pollinations.ai/prompt/journalistic-photo-of-{query.replace(' ', '-')}-news?width=1200&height=630&nologo=true"
@@ -154,31 +112,32 @@ jobs:
               except: pass
               return fallback
 
-          # --- 6. GEMINI CALL ---
+          # --- 5. GEMINI CALL ---
           hooks = [
-             "Leaked: A controversial report has just surfaced.",
-             "Developing: We have obtained details on a breaking situation.",
-             "Exclusive: Inside the latest report shaking the timeline."
+             "Developing: A report has just surfaced regarding this situation.",
+             "Just In: Details are emerging on this story.",
+             "The Latest: Here is what is being reported right now."
           ]
           selected_hook = random.choice(hooks)
 
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          SOURCE ({source_label}):
+          SOURCE (The Nyakundi Report):
           Headline: "{headline}"
           Snippet: "{snippet}"
           Link: {link}
           
-          TASK: Write a news update (600 words).
-          - Use the snippet provided to build the story. 
-          - Explain who the people/companies mentioned are.
-          - Tone: Fast, factual, urgent.
+          TASK: 
+          1. ANALYZE the snippet to determine the Category (Politics, Corruption, Business, Gossip, Crime, etc).
+          2. Write a news update (600 words) based on the story.
+          - Use internal knowledge to explain the people/companies mentioned.
+          - Tone: Urgent, Insider, Factual.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
           TITLE: [Urgent Headline, max 60 chars]
           DESCRIPTION: [Summary, max 160 chars]
-          CATEGORY: [{topic.capitalize()}]
+          CATEGORY: [One Word Category based on content]
           TAGS: [3-5 tags, comma separated]
           IMAGE_KEYWORD: [2-3 words for image]
           BODY:
@@ -200,8 +159,8 @@ jobs:
               print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 7. PARSE & SAVE ---
-          parsed = { "TITLE": headline[:60], "DESCRIPTION": headline[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news,breaking", "IMAGE_KEYWORD": topic, "BODY": "" }
+          # --- 6. PARSE & SAVE ---
+          parsed = { "TITLE": headline[:60], "DESCRIPTION": headline[:160], "CATEGORY": "News", "TAGS": "news,kenya", "IMAGE_KEYWORD": "kenya", "BODY": "" }
           current_section = None
 
           for line in full_text.splitlines():
@@ -240,7 +199,7 @@ jobs:
 
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Source:</strong> {source_label}</p>
+            <p><strong>Source:</strong> The Nyakundi Report</p>
           </div>
           """
 
