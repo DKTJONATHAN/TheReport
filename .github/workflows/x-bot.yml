@@ -1,8 +1,7 @@
 name: Twitter Bot (3x Daily)
 on:
   schedule:
-    # Kenya Time: 8:00, 13:00, 20:00
-    # UTC Time:   5:00, 10:00, 17:00
+    # 8 AM, 1 PM, 8 PM (Kenya Time)
     - cron: '0 5,10,17 * * *'
   workflow_dispatch:
 
@@ -16,31 +15,37 @@ jobs:
           python-version: '3.x'
       
       - name: Install Deps
-        run: pip install tweepy && sudo apt-get install -y jq
+        run: pip install tweepy jq
 
       - name: Fetch Content
         run: |
-          # Same logic: Random Quote or Joke
+          # Randomly pick Quote or Joke
           if [ $((RANDOM % 2)) -eq 0 ]; then
              JSON=$(curl -s "https://zenquotes.io/api/random")
              MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
           else
              JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
-             MSG="$(echo $JSON | jq -r '.joke') #Funny #TheReport"
+             MSG="$(echo $JSON | jq -r '.joke') #Funny"
           fi
-          if [ -z "$MSG" ] || [ "$MSG" == "null #Funny #TheReport" ]; then MSG="Have a great day! #TheReport"; fi
+          
+          # Safety Check: If fetch failed, use default
+          if [ -z "$MSG" ] || [ "$MSG" == "null #Funny" ]; then 
+            MSG="Consistency is key. Keep building. #TheReport"
+          fi
+          
           echo "MSG=$MSG" >> $GITHUB_ENV
 
       - name: Post to Twitter
         env:
-          TW_KEY: ${{ secrets.TWITTER_API_KEY }}
-          TW_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          # UPDATED KEY NAMES TO MATCH YOUR WORKING FILE
+          TW_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          TW_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TW_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TW_SECRET_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
           TWEET_TEXT: ${{ env.MSG }}
         run: |
           cat <<EOF > tweet.py
-          import tweepy, os
+          import tweepy, os, sys
           try:
               client = tweepy.Client(
                   consumer_key=os.environ['TW_KEY'],
@@ -49,8 +54,9 @@ jobs:
                   access_token_secret=os.environ['TW_SECRET_TOKEN']
               )
               client.create_tweet(text=os.environ['TWEET_TEXT'][:280])
-              print("✅ Tweet Sent")
+              print("✅ Tweet Sent Successfully")
           except Exception as e:
               print(f"❌ Error: {e}")
+              sys.exit(1)
           EOF
           python tweet.py
