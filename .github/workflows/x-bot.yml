@@ -17,32 +17,48 @@ jobs:
       - name: Install Deps
         run: pip install tweepy jq
 
-      - name: Fetch Content
+      - name: Fetch Content (Smart Fit)
         run: |
-          # ---------------------------------------------------------
-          # THE NEW LOGIC: 75% Chance of JOKE, 25% Chance of QUOTE
-          # ---------------------------------------------------------
+          # Initialize variables
+          MAX_RETRIES=5
+          COUNT=0
+          MSG=""
           
-          # Generate a number between 0 and 3
-          ROLL=$((RANDOM % 4))
-          
-          # If the number is 0 (25% chance), pick a Quote
-          if [ $ROLL -eq 0 ]; then
-             echo "Chosen: QUOTE (Rare)"
-             JSON=$(curl -s "https://zenquotes.io/api/random")
-             # Clean format: "Quote - Author"
-             MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
-          
-          # If the number is 1, 2, or 3 (75% chance), pick a Joke
-          else
-             echo "Chosen: JOKE (Common)"
-             JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
-             # Clean format: Just the joke, no tags
-             MSG="$(echo $JSON | jq -r '.joke')"
-          fi
-          
-          # Safety Check
-          if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
+          # Start "The Bouncer" Loop
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+             
+             # Roll the dice: 0 = Quote (25%), 1-3 = Joke (75%)
+             ROLL=$((RANDOM % 4))
+             
+             if [ $ROLL -eq 0 ]; then
+                echo "Attempting Quote..."
+                JSON=$(curl -s "https://zenquotes.io/api/random")
+                TEMP_MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
+             else
+                echo "Attempting Joke..."
+                # NOTE: We added '&maxLength=280' to the URL to force short jokes
+                JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single&maxLength=280")
+                TEMP_MSG="$(echo $JSON | jq -r '.joke')"
+             fi
+
+             # Measure Length
+             LEN=${#TEMP_MSG}
+             echo "Fetched Length: $LEN characters"
+
+             # Validation: Must be valid text, not 'null', and under 280 chars
+             if [ "$TEMP_MSG" != "null" ] && [ $LEN -gt 10 ] && [ $LEN -le 280 ]; then
+                echo "✅ Success! Found content within limit."
+                MSG="$TEMP_MSG"
+                break
+             else
+                echo "❌ Too long or invalid. Retrying ($((COUNT+1))/$MAX_RETRIES)..."
+                COUNT=$((COUNT+1))
+                sleep 2
+             fi
+          done
+
+          # Fallback: If we failed 5 times, post a safe default
+          if [ -z "$MSG" ]; then 
             MSG="Consistency is key. Keep building."
           fi
           
@@ -65,8 +81,8 @@ jobs:
                   access_token=os.environ['TW_TOKEN'],
                   access_token_secret=os.environ['TW_SECRET_TOKEN']
               )
-              # Post clean text
-              client.create_tweet(text=os.environ['TWEET_TEXT'][:280])
+              # No slicing needed anymore, we guaranteed the length above!
+              client.create_tweet(text=os.environ['TWEET_TEXT'])
               print("✅ Tweet Sent Successfully")
           except Exception as e:
               print(f"❌ Error: {e}")
