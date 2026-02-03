@@ -1,4 +1,4 @@
-***
+---
 title: "The Complete Guide to Marriage Certificates in Kenya: Everything You Need to Know in 2026"
 description: "How to obtain a marriage certificate in Kenya, costs, registration types, and legal importance. Updated 2026 guide covering civil, Christian, Islamic and customary marriages."
 date: 2026-02-03
@@ -11,7 +11,7 @@ tags: ["Marriage Certificate", "Kenya", "Legal", "eCitizen", "Wedding", "Registr
 featured: true
 draft: false
 slug: "complete-guide-marriage-certificates-kenya-2026"
-***
+---
 
 # The Complete Guide to Marriage Certificates in Kenya: Everything You Need to Know in 2026
 
