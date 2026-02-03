@@ -41,8 +41,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # We use duckduckgo-search for the scraping
-          pip install requests google-genai duckduckgo-search
+          # Explicitly install the upgraded version to avoid compatibility issues
+          pip install requests google-genai duckduckgo-search>=6.0.0
 
       - name: Generate article with Gemini
         env:
@@ -64,61 +64,64 @@ jobs:
           if manual_input in ['sports', 'technology', 'business']:
               topic = manual_input
           else:
-              # Simple time-based rotation
               if current_hour_utc in [0, 14]: topic = 'sports'
               elif current_hour_utc in [6, 22]: topic = 'technology'
               else: topic = 'business'
 
           print(f"🎯 Topic: {topic.upper()}")
 
-          # --- 2. THE 'REAL TIME' SEARCH ---
-          # We use DDGS.text() (Web Search) instead of News to find blogs/forums.
-          # timelimit="h" -> RESTRICTS RESULTS TO THE PAST HOUR.
-          
+          # --- 2. THE ROBUST SEARCH STRATEGY ---
+          # We define queries that explicitly ask for 'breaking' content.
           TOPIC_QUERIES = {
               'sports': 'Kenya sports updates football breaking',
               'technology': 'Kenya tech news startup MPESA updates',
               'business': 'Kenya business economy breaking shilling'
           }
           
-          # Add "breaking" to force urgent news
           query = TOPIC_QUERIES.get(topic, 'Kenya News breaking')
-          print(f"🔎 Scanning Past Hour for: {query}...")
+          print(f"🔎 Query: {query}")
 
           results = []
+          ddgs = DDGS()
+
+          # ATTEMPT 1: Try strict "Past Hour" (Real Time)
+          # We wrap this in a try/except because DDG sometimes crashes on 'h'
           try:
-              # timelimit="h" is the magic key for "Real Time"
-              # max_results=15 to cast a wide net
-              results = DDGS().text(keywords=query, region="ke-en", timelimit="h", max_results=15)
+              print("   ...Attempting strict 'Past Hour' search")
+              # backend="api" is often more stable for time-restricted searches
+              results = list(ddgs.text(keywords=query, region="ke-en", timelimit="h", max_results=10))
           except Exception as e:
-              print(f"❌ Search Error: {e}")
-              exit(1)
+              print(f"   ⚠️ Past Hour search failed ({e}). Switching to fallback.")
+              results = []
 
+          # ATTEMPT 2: Fallback to "Past Day" if Hour failed or returned nothing
           if not results:
-              print("⚠️ No results in the past hour. Widening to Past Day ('d')...")
+              print("   ...Switching to 'Past Day' (timelimit='d')")
               try:
-                  results = DDGS().text(keywords=query, region="ke-en", timelimit="d", max_results=10)
-              except: pass
+                  results = list(ddgs.text(keywords=query, region="ke-en", timelimit="d", max_results=15))
+              except Exception as e:
+                  print(f"❌ Search Critical Error: {e}")
+                  exit(1)
 
           if not results:
-              print("❌ No news found.")
+              print("❌ No news found even with fallback.")
               exit(0)
 
-          # --- 3. FILTER FOR 'NON-MAINSTREAM' / FAST SOURCES ---
-          # We prefer digital-first publishers over the big legacy papers if possible.
-          FAST_SOURCES = ['kahawatungu', 'ghafla', 'techweez', 'tuko', 'kenyans.co.ke', 'mpasho', 'pulselive', 'nairobiwire']
+          # --- 3. FILTER FOR BEST SOURCE ---
+          # We prioritize digital-first blogs ("Fast sources")
+          FAST_SOURCES = ['kahawatungu', 'ghafla', 'techweez', 'tuko', 'kenyans.co.ke', 'mpasho', 'pulselive', 'nairobiwire', 'citizen.digital']
           
           selected_story = None
           
-          # 1. Look for "Fast/Blog" sources first
+          # Priority 1: Find a "Fast Source"
           for item in results:
               url = item.get('href', '').lower()
               if any(s in url for s in FAST_SOURCES):
                   selected_story = item
-                  print(f"✅ Found Alternative Source: {item['href']}")
+                  print(f"✅ Found Priority Source: {item['href']}")
                   break
           
-          # 2. If no blogs, take the absolute first result (Fastest)
+          # Priority 2: If no fast source, take the freshest looking result (top of list)
           if not selected_story:
               selected_story = results[0]
               print(f"⚡ Taking Top Result: {selected_story['href']}")
@@ -160,7 +163,7 @@ jobs:
           
           TASK: Write a rapid news update (600 words).
           - This is a BREAKING/DEVELOPING story. Treat it with urgency.
-          - Use internal knowledge to explain the entities mentioned (e.g. if it mentions a specific politician or company, explain who they are).
+          - Use internal knowledge to explain the entities mentioned.
           - Tone: Fast, factual, urgency.
           - Opening: {selected_hook}
 
