@@ -41,8 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Explicitly install the upgraded version to avoid compatibility issues
-          pip install requests google-genai duckduckgo-search>=6.0.0
+          pip install requests google-genai duckduckgo-search>=6.0.0 feedparser
 
       - name: Generate article with Gemini
         env:
@@ -52,6 +51,7 @@ jobs:
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
+          import feedparser
           from google import genai
           from google.genai import types
           from duckduckgo_search import DDGS
@@ -70,70 +70,87 @@ jobs:
 
           print(f"🎯 Topic: {topic.upper()}")
 
-          # --- 2. THE ROBUST SEARCH STRATEGY ---
-          # We define queries that explicitly ask for 'breaking' content.
-          TOPIC_QUERIES = {
-              'sports': 'Kenya sports updates football breaking',
-              'technology': 'Kenya tech news startup MPESA updates',
-              'business': 'Kenya business economy breaking shilling'
-          }
-          
-          query = TOPIC_QUERIES.get(topic, 'Kenya News breaking')
-          print(f"🔎 Query: {query}")
-
+          # --- 2. SEARCH STRATEGY ---
           results = []
           ddgs = DDGS()
+          
+          # We use a broad search to ensure we catch blogs like Nyakundi
+          query = f"Kenya {topic} news breaking"
+          
+          # If specifically looking for gossip/leaks (often Business/Politics), hint at it
+          if topic == 'business': 
+              query += " scandal expose"
 
-          # ATTEMPT 1: Try strict "Past Hour" (Real Time)
-          # We wrap this in a try/except because DDG sometimes crashes on 'h'
+          print(f"🔎 Scanning: '{query}'")
+
           try:
-              print("   ...Attempting strict 'Past Hour' search")
-              # backend="api" is often more stable for time-restricted searches
-              results = list(ddgs.text(keywords=query, region="ke-en", timelimit="h", max_results=10))
-          except Exception as e:
-              print(f"   ⚠️ Past Hour search failed ({e}). Switching to fallback.")
-              results = []
+              # Search Past Day (d)
+              results = list(ddgs.text(keywords=query, region="ke-en", timelimit="d", max_results=15))
+          except: pass
 
-          # ATTEMPT 2: Fallback to "Past Day" if Hour failed or returned nothing
+          # Fallback: Broad Search
           if not results:
-              print("   ...Switching to 'Past Day' (timelimit='d')")
+              print(f"⚠️ Primary failed. Broadening...")
               try:
-                  results = list(ddgs.text(keywords=query, region="ke-en", timelimit="d", max_results=15))
-              except Exception as e:
-                  print(f"❌ Search Critical Error: {e}")
-                  exit(1)
+                  results = list(ddgs.text(keywords="Kenya News breaking", timelimit="d", max_results=10))
+              except: pass
 
+          # Backup: RSS
+          backup_item = None
           if not results:
-              print("❌ No news found even with fallback.")
+              print("⚠️ Search failed. Checking BBC RSS...")
+              try:
+                  feed = feedparser.parse("http://feeds.bbci.co.uk/news/world/africa/rss.xml")
+                  if feed.entries:
+                      e = feed.entries[0]
+                      backup_item = {'href': e.link, 'title': e.title, 'body': e.summary}
+              except: pass
+
+          if not results and not backup_item:
+              print("❌ FATAL: No news found.")
               exit(0)
 
-          # --- 3. FILTER FOR BEST SOURCE ---
-          # We prioritize digital-first blogs ("Fast sources")
-          FAST_SOURCES = ['kahawatungu', 'ghafla', 'techweez', 'tuko', 'kenyans.co.ke', 'mpasho', 'pulselive', 'nairobiwire', 'citizen.digital']
+          # --- 3. THE VIP LIST (Selection Logic) ---
+          # The bot checks this list FIRST. If it finds these URLs, it grabs them.
+          # I have added 'cnyakundi' to the top.
+          
+          VIP_SOURCES = [
+              'cnyakundi',      # The Nyakundi Report (Highest Priority)
+              'kahawatungu',    # Kahawa Tungu
+              'ghafla',         # Ghafla
+              'techweez',       # Techweez
+              'kenyans.co.ke',  # Kenyans
+              'nairobiwire',    # Nairobi Wire
+              'mpasho',         # Mpasho
+              'citizen.digital' # Citizen (Reliable Mainstream)
+          ]
           
           selected_story = None
           
-          # Priority 1: Find a "Fast Source"
-          for item in results:
-              url = item.get('href', '').lower()
-              if any(s in url for s in FAST_SOURCES):
-                  selected_story = item
-                  print(f"✅ Found Priority Source: {item['href']}")
-                  break
-          
-          # Priority 2: If no fast source, take the freshest looking result (top of list)
-          if not selected_story:
-              selected_story = results[0]
-              print(f"⚡ Taking Top Result: {selected_story['href']}")
+          if results:
+              # 1. Scan for VIPs
+              for item in results:
+                  url = item.get('href', '').lower()
+                  # Check if any VIP string is in the URL
+                  if any(vip in url for vip in VIP_SOURCES):
+                      selected_story = item
+                      print(f"✅ VIP Source Found: {item['href']}")
+                      break
+              
+              # 2. If no VIP, take Top Result
+              if not selected_story:
+                  selected_story = results[0]
+                  print(f"⚡ No VIP found. Taking Top Result: {selected_story['href']}")
+          else:
+              selected_story = backup_item
 
-          # --- 4. PREP DATA ---
+          # --- 4. PREP & WRITE ---
           headline = selected_story['title']
           link = selected_story['href']
-          snippet = selected_story['body']
+          snippet = selected_story.get('body', headline)
           
           print(f"📺 Headline: {headline}")
 
-          # --- 5. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = f"https://image.pollinations.ai/prompt/journalistic-photo-of-{query.replace(' ', '-')}-news?width=1200&height=630&nologo=true"
@@ -146,7 +163,6 @@ jobs:
               except: pass
               return fallback
 
-          # --- 6. GEMINI CALL ---
           hooks = [
              "Developing Story: Details are still emerging, but here is what we know.",
              "Just In: A significant update just hit the wires.",
@@ -156,15 +172,15 @@ jobs:
 
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          BREAKING NEWS SOURCE:
+          SOURCE DATA:
           Headline: "{headline}"
           Snippet: "{snippet}"
           Link: {link}
           
-          TASK: Write a rapid news update (600 words).
-          - This is a BREAKING/DEVELOPING story. Treat it with urgency.
+          TASK: Write a news update (600 words).
+          - If the source is a blog (like Nyakundi/KahawaTungu), keep the tone urgent but verify facts where possible.
           - Use internal knowledge to explain the entities mentioned.
-          - Tone: Fast, factual, urgency.
+          - Tone: Fast, factual, urgent.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
@@ -192,7 +208,6 @@ jobs:
               print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 7. PARSE & SAVE ---
           parsed = { "TITLE": headline[:60], "DESCRIPTION": headline[:160], "CATEGORY": topic.capitalize(), "TAGS": f"{topic},news,breaking", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
 
