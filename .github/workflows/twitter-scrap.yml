@@ -1,4 +1,56 @@
-import os, json, datetime, requests, re, random, time
+name: Auto Newser
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)
+    - cron: '0 14 * * *'  # 5PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai ntscraper
+
+      - name: Generate article with Gemini
+        env:
+          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+        run: |
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, time
           from google import genai
           from google.genai import types
           from ntscraper import Nitter
@@ -18,13 +70,14 @@ import os, json, datetime, requests, re, random, time
           print(f"🎯 Topic: {topic.upper()}")
 
           # --- 2. FETCH REAL-TIME NEWS (Robust Scraper) ---
+          # Mapping topics to reliable Kenyan handles
           SOURCES = {
-              'sports': ['MozzartSportKe', 'CapitalSportKE', 'NationSports'],
-              'technology': ['Techweez', 'Kachwanya', 'AndroidKenya'],
-              'business': ['BusinessDailyJC', 'StandardKenya', 'NationAfrica']
+              'sports': ['MozzartSportKe', 'CapitalSportKE', 'NationSports', 'CitizentvKenya'],
+              'technology': ['Techweez', 'Kachwanya', 'AndroidKenya', 'MosesKemibaro'],
+              'business': ['BusinessDailyJC', 'StandardKenya', 'NationAfrica', 'KenyaBuzz']
           }
 
-          # Hardcoded list of robust instances (Cloudflare-friendly)
+          # Hardcoded list of working Nitter instances to bypass auto-check failure
           NITTER_INSTANCES = [
               'https://nitter.privacydev.net',
               'https://nitter.poast.org',
@@ -32,52 +85,55 @@ import os, json, datetime, requests, re, random, time
               'https://nitter.net'
           ]
 
-          # Initialize WITHOUT checking instances (saves time and avoids startup crash)
+          # Initialize with skip_instance_check=True to prevent startup crash
           scraper = Nitter(log_level=1, skip_instance_check=True)
 
           target_accounts = SOURCES.get(topic, SOURCES['business'])
           tweet_data = None
           source_handle = ""
 
+          # DOUBLE LOOP: Try every account on every instance until success
+          found = False
           for handle in target_accounts:
+              if found: break
               print(f"🕷️ Attempting to scrape @{handle}...")
               
-              # Try multiple instances for each handle
               for instance in NITTER_INSTANCES:
                   try:
-                      print(f"   Using instance: {instance}...")
-                      # Explicitly pass the instance URL here
+                      # Explicitly pass the instance to avoid random selection
                       results = scraper.get_tweets(handle, mode='user', number=5, instance=instance)
                       tweets = results.get('tweets', [])
                       
                       if not tweets:
-                          print("   No tweets found or empty response.")
-                          continue
+                          continue # Try next instance
 
-                      # Filter for valid non-retweet news
+                      # Filter: Find first valid news tweet (not a retweet, decent length)
                       for t in tweets:
-                          if not t['is-retweet'] and len(t['text']) > 60:
+                          if not t['is-retweet'] and len(t['text']) > 50:
                               tweet_data = t
                               source_handle = handle
+                              found = True
+                              print(f"   ✅ Success on {instance}")
                               break
                       
-                      if tweet_data: 
-                          print("   ✅ Success!")
-                          break # Break instance loop
+                      if found: break
                           
                   except Exception as e:
-                      print(f"   ⚠️ Instance {instance} failed: {e}")
+                      # print(f"   ⚠️ {instance} failed: {e}") 
                       continue
               
-              if tweet_data: break # Break account loop if we found news
+              if not found:
+                  print(f"   ❌ Failed to scrape @{handle} on all instances.")
 
           if not tweet_data:
-              print("❌ No news found from any source after trying all instances.")
+              print("❌ No news found from any source. Exiting.")
               exit(0)
 
           # Normalize data
           raw_text = tweet_data['text']
-          title = ' '.join(raw_text.split()[:10]) + "..."
+          # Clean up URL links from text for better title generation
+          clean_text = re.sub(r'http\S+', '', raw_text).strip()
+          title = ' '.join(clean_text.split()[:9]) + "..."
           snippet = raw_text
           source = f"@{source_handle} (Twitter)"
           pub_date = tweet_data['date']
@@ -87,13 +143,13 @@ import os, json, datetime, requests, re, random, time
           # --- 3. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              # Updated fallback to avoid issues
+              # Fallback to AI generation if Unsplash fails
               fallback = f"https://image.pollinations.ai/prompt/minimalist-journalistic-photo-of-{query.replace(' ', '-')}-news?width=1200&height=630&nologo=true"
               if not access_key:
                   return fallback
               url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
               try:
-                  resp = requests.get(url, timeout=5) # Reduced timeout
+                  resp = requests.get(url, timeout=5)
                   if resp.status_code == 200:
                       return resp.json()['urls']['regular']
               except: pass
@@ -109,13 +165,14 @@ import os, json, datetime, requests, re, random, time
 
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          NEWS SOURCE (TWEET):
-          Source: {source}
+          NEWS SOURCE (TWEET from {source_handle}):
           Date: {pub_date}
           Content: "{snippet}"
 
-          TASK: Write a SHORT news update (approx 600 words) based on this report.
-          - Contextualize this tweet.
+          TASK: Write a news update (approx 600-800 words) based on this report.
+          - Contextualize this tweet. Use your internal knowledge to explain the entities/events mentioned.
+          - If it's a sports score, analyze the match context.
+          - If it's tech/business, explain the market impact.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
@@ -128,9 +185,10 @@ import os, json, datetime, requests, re, random, time
           [Article body with ## Headers]
           '''
 
-          # --- 5. GEMINI 3 CALL ---
+          # --- 5. GEMINI CALL ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model_id = "gemini-2.0-flash" # Switched to 2.0 Flash (more stable/faster than 3-preview for this)
+          # Using 2.0 Flash for speed/reliability in automated tasks
+          model_id = "gemini-2.0-flash" 
           
           print(f"🤖 Generating with {model_id}...")
           
@@ -159,6 +217,7 @@ import os, json, datetime, requests, re, random, time
               elif clean_line.startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
+          # Final file creation
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
@@ -196,3 +255,15 @@ import os, json, datetime, requests, re, random, time
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
               f.write(final_file)
           print(f"✅ Published: {slug}.md")
+          EOF
+
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: publish ${{ github.run_id }}"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Auto Newser"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
