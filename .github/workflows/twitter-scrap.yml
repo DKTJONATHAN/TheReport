@@ -1,4 +1,4 @@
-name:  Newser
+name: Auto Newser
 
 on:
   schedule:
@@ -55,16 +55,41 @@ jobs:
           from google import genai
           from google.genai import types
 
-          # --- 1. SEARCH NYAKUNDI REPORT ---
+          # --- 1. AGGRESSIVE DDG SCRAPER ---
           def get_nyakundi_news():
+              # We use a POST request to the html endpoint to bypass basic bot filters
               url = "https://html.duckduckgo.com/html/"
-              params = {'q': 'site:nyakundireport.com', 'df': 'd'}
-              headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."}
-              print(f"🕷️ Scanning nyakundireport.com for today's stories...")
+              query = "site:nyakundireport.com"
+              
+              payload = {
+                  'q': query,
+                  'df': 'd',  # Past day
+                  'kl': 'wt-wt'
+              }
+              
+              headers = {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                  "Accept-Language": "en-US,en;q=0.5",
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  "Origin": "https://html.duckduckgo.com",
+                  "Referer": "https://html.duckduckgo.com/"
+              }
+              
+              print(f"🕷️ Forcing search for {query}...")
               try:
-                  resp = requests.get(url, params=params, headers=headers, timeout=15)
+                  # Small sleep to avoid instant-triggering DDG's bot sense
+                  time.sleep(random.uniform(1, 3))
+                  resp = requests.post(url, data=payload, headers=headers, timeout=20)
+                  
+                  if resp.status_code != 200:
+                      print(f"❌ DDG rejected request: {resp.status_code}")
+                      return []
+
                   soup = BeautifulSoup(resp.text, "html.parser")
                   results = []
+                  
+                  # Look for results
                   for res in soup.select(".result"):
                       title_tag = res.select_one(".result__a")
                       snippet_tag = res.select_one(".result__snippet")
@@ -75,16 +100,18 @@ jobs:
                               "snippet": snippet_tag.get_text(strip=True) if snippet_tag else ""
                           })
                   return results
-              except: return []
+              except Exception as e:
+                  print(f"❌ Scraper error: {e}")
+                  return []
 
           # 1. Fetch latest
           news_data = get_nyakundi_news()
           if not news_data:
-              print("❌ No news found today on the site.")
+              print("❌ No news found today. Nyakundi might be quiet or DDG is blocking.")
               exit(0)
 
           target = news_data[0]
-          print(f"📺 Top Story: {target['title']}")
+          print(f"✅ Found: {target['title']}")
 
           # --- 2. IMAGE HELPER ---
           def get_real_image(query):
@@ -104,29 +131,30 @@ jobs:
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
           SOURCE: {target['title']}
           SNIPPET: {target['snippet']}
-          TASK: Write a 1200-1600 word news article. Expand on entities. Neutrally journalist tone.
+          TASK: Write a 1200-1600 word news article. Expand on names/entities. Professional tone.
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [Summary]
           CATEGORY: [Category]
           TAGS: [Tags]
           IMAGE_KEYWORD: [Keywords]
-          BODY: [Full text with ## Headers]
+          BODY: [Full article with ## Headers]
           '''
 
           full_text = ""
-          for attempt in range(3):
+          for attempt in range(4):
               try:
-                  print(f"🤖 Generating (Attempt {attempt+1})...")
+                  print(f"🤖 AI Generation (Attempt {attempt+1})...")
                   response = client.models.generate_content(model=model_id, contents=prompt)
                   full_text = response.text.strip()
                   break
               except Exception as e:
                   if "429" in str(e):
-                      print("⚠️ Quota hit. Waiting 20 seconds to retry...")
-                      time.sleep(20)
+                      wait_time = 25 + (attempt * 10)
+                      print(f"⚠️ Quota hit. Waiting {wait_time}s...")
+                      time.sleep(wait_time)
                   else:
-                      print(f"❌ Error: {e}")
+                      print(f"❌ Gemini Error: {e}")
                       exit(1)
 
           if not full_text: exit(1)
@@ -139,7 +167,7 @@ jobs:
               if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
               elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
               elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
-              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip() if 'clean_line' in locals() else clean.replace("TAGS:", "").strip()
+              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
               elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
               elif clean.startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
@@ -164,6 +192,7 @@ jobs:
           {parsed['BODY']}
 
           <div class="article-meta">
+            <p><strong>Published:</strong> {date_now}</p>
             <p><strong>Source:</strong> <a href="{target['url']}">The Nyakundi Report</a></p>
           </div>
           """
