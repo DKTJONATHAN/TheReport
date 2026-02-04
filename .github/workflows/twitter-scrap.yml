@@ -1,9 +1,19 @@
-name: Nyakundi Report Scraper
+name: Auto Newser
 
 on:
   schedule:
-    - cron: '0 0,6,12,18 * * *' # Runs 4 times a day (3AM, 9AM, 3PM, 9PM EAT)
+    - cron: '0 23 * * *'  # 2AM EAT (Previous Day UTC)
+    - cron: '0 5 * * *'   # 8AM EAT
+    - cron: '0 10 * * *'  # 1PM EAT
+    - cron: '0 13 * * *'  # 4PM EAT
+    - cron: '0 17 * * *'  # 8PM EAT
+    - cron: '0 21 * * *'  # 12AM EAT
   workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Optional keyword to refine search'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -13,13 +23,15 @@ env:
   POSTS_DIR: src/content/posts
 
 jobs:
-  scrape-and-publish:
+  generate-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,47 +40,46 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install requests beautifulsoup4 google-genai
 
-      - name: Scrape and Generate
+      - name: Scrape Nyakundi and Generate Article
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import requests
+          import os, json, datetime, requests, re, random
           from bs4 import BeautifulSoup
-          import json
-          import datetime
-          import os
-          import re
-          import random
           from google import genai
           from google.genai import types
 
-          # --- 1. RESEARCHED DDG SCRAPER (CONVERTS TO JSON) ---
-          def get_nyakundi_data():
-              # We use the HTML Lite endpoint to avoid JS/Cookie blocks
+          # --- 1. RESEARCHED DDG SEARCH TO JSON ---
+          def scrape_nyakundi_to_json():
+              # We use the HTML Lite endpoint to bypass JavaScript bot detection
               url = "https://html.duckduckgo.com/html/"
               
-              # df=d: Filter for past 24 hours
-              params = {'q': 'site:nyakundireport.com', 'df': 'd'}
+              # query: site:nyakundireport.com
+              # df:d ensures results from the past 24 hours
+              params = {
+                  'q': f'site:nyakundireport.com {os.environ.get("MANUAL_TOPIC", "")}'.strip(),
+                  'df': 'd'
+              }
               
               headers = {
                   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                   "Referer": "https://duckduckgo.com/"
               }
               
-              print(f"🕷️ Requesting SERP for nyakundireport.com...")
+              print(f"🕷️ Scraping Nyakundi Report from DuckDuckGo SERP...")
               try:
                   response = requests.get(url, params=params, headers=headers, timeout=15)
                   response.raise_for_status()
-                  
                   soup = BeautifulSoup(response.text, "html.parser")
+                  
                   results = []
-
-                  # Extract results into structured JSON
-                  # Classes based on researched 2026 DDG HTML layout
+                  # Each search result in DDG Lite is wrapped in a .result div
                   for res in soup.select(".result"):
                       title_tag = res.select_one(".result__a")
                       snippet_tag = res.select_one(".result__snippet")
@@ -77,92 +88,101 @@ jobs:
                           results.append({
                               "title": title_tag.get_text(strip=True),
                               "url": title_tag.get("href"),
-                              "snippet": snippet_tag.get_text(strip=True) if snippet_tag else "",
-                              "scraped_at": datetime.datetime.now().isoformat()
+                              "snippet": snippet_tag.get_text(strip=True) if snippet_tag else ""
                           })
-                  
                   return results
               except Exception as e:
                   print(f"❌ Scraper Failed: {e}")
                   return []
 
-          # 1. Capture JSON
-          news_list = get_nyakundi_data()
+          # 1. Capture structured news data
+          news_list = scrape_nyakundi_to_json()
 
           if not news_list:
-              print("❌ No fresh articles found on nyakundireport.com today. Exiting.")
+              print("❌ No news found on nyakundireport.com in the last 24h.")
               exit(0)
 
-          # 2. Pick the latest indexed story
+          # 2. Select the absolute latest story indexed
           target = news_list[0]
-          print(f"📦 Target JSON: {json.dumps(target, indent=2)}")
+          print(f"📦 Story Found: {target['title']}")
 
-          # 3. Feed to Gemini
+          # --- 2. IMAGE HELPER ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = "https://image.pollinations.ai/prompt/journalistic-photo-of-{}-kenya-news?width=1200&height=630".format(query.replace(" ", "-"))
+              if not access_key: return fallback
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200: return resp.json()['urls']['regular']
+              except: pass
+              return fallback
+
+          # --- 3. AI WRITER (GEMINI 2.0) ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          
-          prompt = f"""STRICT JOURNALISM MODE.
-          Review the following JSON search result from The Nyakundi Report:
-          TITLE: {target['title']}
-          SNIPPET: {target['snippet']}
-          URL: {target['url']}
+          model_id = "gemini-2.0-flash"
+
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+
+          NEWS INPUT:
+          Headline: "{target['title']}"
+          Snippet: "{target['snippet']}"
+          Source Link: {target['url']}
 
           TASK:
-          1. Determine the news category (Politics, Crime, Tech, Gossip, Business, etc).
-          2. Write a 600-word update. Expand on the entities and names mentioned using your knowledge.
-          3. Tone: Fast-paced, insider, investigative.
+          1. Analyze the content to determine its Category (e.g. Politics, Crime, Business, Gossip).
+          2. Write a professional journalistic article (1200-1600 words).
+          3. Expand on any names, locations, or organizations mentioned using your internal knowledge.
 
-          OUTPUT FORMAT (EXACT):
+          OUTPUT FORMAT (exact):
           TITLE: [Urgent Headline]
           DESCRIPTION: [Summary max 160 chars]
-          CATEGORY: [Single Word Category]
+          CATEGORY: [One word]
           TAGS: [3-5 tags, comma separated]
-          IMAGE_KEYWORD: [2-3 words for image search]
+          IMAGE_KEYWORD: [2-3 words for image]
           BODY:
-          [Article body with ## Headers]
-          """
+          [Full article with ## Headers. Include Background, Key Events, and Impacts.]
+          '''
 
-          print(f"🤖 Generating with Gemini 2.0...")
-          response = client.models.generate_content(
-              model="gemini-2.0-flash",
-              contents=prompt,
-              config=types.GenerateContentConfig(temperature=0.1)
-          )
-          full_text = response.text.strip()
+          print(f"🤖 Generating with {model_id}...")
+          try:
+              response = client.models.generate_content(
+                  model=model_id,
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.1)
+              )
+              full_text = response.text.strip()
+          except Exception as e:
+              print(f"❌ Gemini Error: {e}")
+              exit(1)
 
           # --- 4. PARSE & SAVE ---
-          parsed = {"TITLE": target['title'], "BODY": "", "CATEGORY": "News"}
+          parsed = { "TITLE": target['title'], "DESCRIPTION": target['snippet'][:160], "CATEGORY": "News", "TAGS": "news,kenya", "IMAGE_KEYWORD": "kenya", "BODY": "" }
           current_section = None
+          
           for line in full_text.splitlines():
-              if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
-              elif line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
-              elif line.startswith("CATEGORY:"): parsed["CATEGORY"] = line.replace("CATEGORY:", "").strip()
-              elif line.startswith("TAGS:"): parsed["TAGS"] = line.replace("TAGS:", "").strip()
-              elif line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
-              elif line.startswith("BODY:"): current_section = "BODY"
+              clean_line = line.strip().replace("**", "")
+              if clean_line.startswith("TITLE:"): parsed["TITLE"] = clean_line.replace("TITLE:", "").strip()
+              elif clean_line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
+              elif clean_line.startswith("CATEGORY:"): parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
+              elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
+              elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          # Handle Image
-          def get_img(kw):
-              fallback = f"https://image.pollinations.ai/prompt/journalistic-news-{kw.replace(' ', '-')}-kenya?width=1200&height=630"
-              key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if not key: return fallback
-              try:
-                  r = requests.get(f"https://api.unsplash.com/photos/random?query={kw}&orientation=landscape&client_id={key}", timeout=5)
-                  return r.json()['urls']['regular'] if r.status_code == 200 else fallback
-              except: return fallback
-
-          image_url = get_img(parsed.get('IMAGE_KEYWORD', 'Kenya'))
+          # Formatting slug and date
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          date_now = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+          date_now = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
 
           final_file = f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
-          description: "{parsed.get('DESCRIPTION', '').replace('"', "'")}"
+          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_now}"
           author: "Jonathan Mwaniki"
           image: "{image_url}"
           category: "{parsed['CATEGORY']}"
-          tags: {json.dumps([t.strip() for t in parsed.get('TAGS', 'news').split(',')])}
+          tags: {json.dumps([t.strip() for t in parsed['TAGS'].split(',')])}
           featured: true
           draft: false
           slug: "{slug}"
@@ -173,10 +193,13 @@ jobs:
           {parsed['BODY']}
 
           <div class="article-meta">
+            <p><strong>Published:</strong> {date_now}</p>
             <p><strong>Source:</strong> <a href="{target['url']}">The Nyakundi Report</a></p>
           </div>
           """
 
+          import textwrap
+          final_file = textwrap.dedent(final_file).strip()
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
@@ -184,10 +207,11 @@ jobs:
           print(f"✅ Published: {slug}.md")
           EOF
 
-      - name: Commit and Push
+      - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: update from nyakundireport.com"
-          file_pattern: 'src/content/posts/*.md'
-          commit_user_name: "Auto Newser"
+          commit_message: "content: publish update from nyakundireport.com"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
           commit_user_email: "actions@github.com"
