@@ -1,3 +1,5 @@
+How can you make this yml search for the most appropriate images on splash that are most appropriate and most closest related to the content of each article and without falling back 
+
 name: Autonomous Content Publisher
 
 on:
@@ -58,95 +60,29 @@ jobs:
           if manual_input:
               topic = manual_input
           else:
-              if current_hour_utc < 3: topic = 'emerging-tech'
-              elif current_hour_utc < 8: topic = 'global-finance'
-              elif current_hour_utc < 11: topic = 'world-politics'  
-              else: topic = 'kenya-news'
+              if current_hour_utc < 3: topic = 'tech'
+              elif current_hour_utc < 8: topic = 'finance'
+              elif current_hour_utc < 11: topic = 'international-politics'
+              else: topic = 'kenyan-social'
           
           print(f"🎯 Selected Topic: {topic}")
 
-          # --- 2. ENHANCED IMAGE HELPER ---
-          def get_best_image(title, description, image_keyword, category):
-              """
-              Intelligently search Unsplash with multiple strategies
-              """
+          # --- 2. IMAGE HELPER ---
+          def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
               if not access_key:
-                  print("⚠️ No Unsplash key found")
-                  return None
-              
-              # Build search queries in order of specificity
-              search_queries = []
-              
-              # 1. Primary: Use the explicit IMAGE_KEYWORD
-              if image_keyword:
-                  search_queries.append(image_keyword)
-              
-              # 2. Extract key entities from title (remove common words)
-              title_words = re.sub(r'[^ws]', '', title.lower()).split()
-              stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'can', 'how', 'what', 'when', 'where', 'why', 'who'}
-              key_words = [w for w in title_words if w not in stop_words and len(w) > 3]
-              
-              if len(key_words) >= 2:
-                  search_queries.append(' '.join(key_words[:3]))
-              
-              # 3. Fallback to category-specific visuals
-              category_visuals = {
-                  'Technology': 'modern technology abstract',
-                  'Business': 'business professional office',
-                  'Finance': 'financial data analytics',
-                  'Politics': 'government politics building',
-                  'Entertainment': 'entertainment media stage',
-                  'Sports': 'sports competition athlete',
-                  'Education': 'education learning books',
-                  'Opinion': 'debate discussion opinion'
-              }
-              if category in category_visuals:
-                  search_queries.append(category_visuals[category])
-              
-              # Try each query with retry logic
-              for query_idx, query in enumerate(search_queries):
-                  print(f"🔍 Image search attempt {query_idx + 1}: '{query}'")
-                  
-                  for attempt in range(3):
-                      try:
-                          url = f"https://api.unsplash.com/photos/random"
-                          params = {
-                              'query': query,
-                              'orientation': 'landscape',
-                              'content_filter': 'high',
-                              'client_id': access_key
-                          }
-                          
-                          resp = requests.get(url, params=params, timeout=15)
-                          
-                          if resp.status_code == 200:
-                              data = resp.json()
-                              image_url = data['urls']['regular']
-                              alt_description = data.get('alt_description', query)
-                              print(f"✅ Found image: {alt_description[:50]}...")
-                              return {
-                                  'url': image_url,
-                                  'alt': alt_description,
-                                  'query_used': query
-                              }
-                          elif resp.status_code == 403:
-                              print(f"⚠️ Rate limit hit, waiting...")
-                              time.sleep(5)
-                          else:
-                              print(f"⚠️ Status {resp.status_code} for '{query}'")
-                              break
-                              
-                      except Exception as e:
-                          print(f"⚠️ Request error: {e}")
-                          time.sleep(2)
-                  
-                  time.sleep(1)  # Brief pause between different queries
-              
-              print("❌ All Unsplash queries exhausted")
-              return None
+                  safe_query = query.replace(" ", "-")
+                  return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans?width=1200&height=630&nologo=true"
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except: pass
+              return fallback
 
-          # --- 3. DYNAMIC PROMPTS (ANTI-GEOPOLITICAL) ---
+          # --- 3. DYNAMIC PROMPTS ---
           hooks = [
              "A Direct Question: Start immediately with a hard-hitting analytical question.",
              "A Shocking Statistic: Start with a complex figure and explain its deeper meaning.",
@@ -155,52 +91,34 @@ jobs:
           ]
           selected_hook = random.choice(hooks)
 
-          # FIXED: Topic-specific prompts that AVOID "geopolitical"
-          topic_configs = {
-              'emerging-tech': {
-                  'focus': "Latest breakthrough in AI, quantum computing, space tech, or robotics. NO Kenya mentions.",
-                  'angle': "The hidden risks behind the hype."
-              },
-              'global-finance': {
-                  'focus': "Corporate mergers, market crashes, billionaire moves, or crypto scandals. NO generic IMF stories.",
-                  'angle': "Who really wins when markets move."
-              },
-              'world-politics': {
-                  'focus': "International power struggles, elections, diplomatic crises, or military tensions.",
-                  'angle': "The real winners and losers behind closed doors."
-              },
-              'kenya-news': {
-                  'focus': "Kenyan business deals, political scandals, entertainment drama, or social movements.",
-                  'angle': "What they're not telling you about the real story."
-              }
-          }
+          if topic == 'tech':
+              focus = "Global Emerging Tech (AI, Space, Quantum). NO Kenya mentions."
+              angle = "A dangerous breakthrough."
+          elif topic == 'finance':
+              focus = "Finance/Business. NO generic IMF stories."
+              angle = "Money and power dynamics often hidden from public view."
+          else:
+              focus = f"Topic: {topic}. Provide deep geopolitical analysis."
+              angle = "An ignored scandal, underdog story, or systemic shift."
 
-          config = topic_configs.get(topic, topic_configs['kenya-news'])
-          focus = config['focus']
-          angle = config['angle']
-
-          # --- 4. CONSTRUCT PROMPT (ENHANCED IMAGE KEYWORD REQUEST) ---
+          # --- 4. CONSTRUCT PROMPT ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
           TASK: Write a news article about: {focus}
           ANGLE: {angle}
           OPENING: {selected_hook}
-          
           *** STRICT OUTPUT FORMAT ***
           TITLE: [Insert punchy title]
           DESCRIPTION: [Insert 2-sentence description]
           CATEGORY: [One of: Business, Sports, Politics, Entertainment, Technology, Education, Opinion]
           TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [Provide a SPECIFIC, VISUAL search term - be descriptive and concrete. Examples: "quantum computer chip closeup", "wall street trading floor", "satellite orbiting earth", "ai robot hand typing". Avoid generic terms like "technology" or "business".]
+          IMAGE_KEYWORD: [Search term for Unsplash]
           BODY:
           [Write the full 1500-word article here using ## Headers. NO Title at start.]
-          
           *** CONTENT RULES ***
           - 6 Distinct Sections (250 words each).
           - USE COMMAS INSTEAD OF EM-DASHES (—).
           - Go deep. No fluff.
-          - NO repetitive analysis patterns. Vary your approach.
-          - For IMAGE_KEYWORD: Think about what VISUAL would best represent this story photographically.
           """
 
           # --- 5. CALL GEMINI (UPDATED: Gemini 3 Flash Preview) ---
@@ -249,7 +167,7 @@ jobs:
               raise SystemExit("Failed to get content from Gemini.")
 
           # --- 6. PARSE & SCRUB ---
-          parsed = { "TITLE": f"Daily {topic.replace('-', ' ').title()}", "DESCRIPTION": "Latest update.", "CATEGORY": "Opinion", "TAGS": "news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          parsed = { "TITLE": f"Daily {topic.capitalize()}", "DESCRIPTION": "Latest update.", "CATEGORY": "Opinion", "TAGS": "news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
           
           for line in full_text.splitlines():
@@ -260,35 +178,17 @@ jobs:
               elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
               elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
               elif clean_line.startswith("BODY:"): current_section = "BODY"
-              elif current_section == "BODY": parsed["BODY"] += line + "
-"
+              elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
           # 🧹 Em-Dash Scrubber
           for key in ["TITLE", "DESCRIPTION", "BODY"]:
               text = parsed[key]
               text = text.replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              text = re.sub(r',s*,', ',', text)
+              text = re.sub(r',\s*,', ',', text)
               parsed[key] = text.strip()
 
-          # --- 7. GET BEST MATCHING IMAGE (NO FALLBACK) ---
-          print(f"🖼️ Searching for image...")
-          image_result = get_best_image(
-              title=parsed['TITLE'],
-              description=parsed['DESCRIPTION'],
-              image_keyword=parsed['IMAGE_KEYWORD'],
-              category=parsed['CATEGORY']
-          )
-          
-          if not image_result:
-              raise SystemExit("❌ Failed to find appropriate image. Aborting to prevent generic fallback.")
-          
-          image_url = image_result['url']
-          image_alt = image_result['alt']
-          image_caption = f"Photo: {image_alt}"
-          
-          print(f"✅ Using image from query: '{image_result['query_used']}'")
-
-          # --- 8. ASSEMBLE FINAL FILE ---
+          # --- 7. ASSEMBLE FINAL FILE ---
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
@@ -299,8 +199,8 @@ jobs:
           date: "{date_str}"
           author: "Jonathan Mwaniki"
           image: "{image_url}"
-          imageCaption: "{image_caption}"
-          imageAlt: "{image_alt}"
+          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
+          imageAlt: "{parsed['IMAGE_KEYWORD']}"
           category: "{parsed['CATEGORY']}"
           tags: {json.dumps(tag_list)}
           featured: true
