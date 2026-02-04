@@ -1,5 +1,3 @@
-How can you make this yml search for the most appropriate images on splash that are most appropriate and most closest related to the content of each article and without falling back 
-
 name: Autonomous Content Publisher
 
 on:
@@ -50,7 +48,7 @@ jobs:
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
+          import os, json, datetime, requests, re, random, time, urllib.parse
 
           # --- 1. CONFIGURATION & TOPIC ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -67,20 +65,39 @@ jobs:
           
           print(f"🎯 Selected Topic: {topic}")
 
-          # --- 2. IMAGE HELPER ---
-          def get_real_image(query):
+          # --- 2. ENHANCED IMAGE HELPER ---
+          def get_real_image(query, category_topic):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              fallback = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200"
+              
+              # Professional topic-specific fallbacks to ensure "no bad images"
+              fallbacks = {
+                  'tech': "https://images.unsplash.com/photo-1518770660439-4636190af475",
+                  'finance': "https://images.unsplash.com/photo-1611974714658-058e11ee9d6f",
+                  'international-politics': "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620",
+                  'kenyan-social': "https://images.unsplash.com/photo-1523805009345-7448845a9e53"
+              }
+              selected_fallback = fallbacks.get(category_topic, fallbacks['tech'])
+
               if not access_key:
-                  safe_query = query.replace(" ", "-")
-                  return f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{safe_query}-no-humans?width=1200&height=630&nologo=true"
-              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+                  return selected_fallback
+
+              # Use /search/photos to get the most relevant ranked result instead of /random
+              encoded_query = urllib.parse.quote(query)
+              url = f"https://api.unsplash.com/search/photos?query={encoded_query}&orientation=landscape&per_page=1&client_id={access_key}"
+              
               try:
-                  resp = requests.get(url, timeout=10)
+                  resp = requests.get(url, timeout=15)
                   if resp.status_code == 200:
-                      return resp.json()['urls']['regular']
-              except: pass
-              return fallback
+                      data = resp.json()
+                      if data['results']:
+                          # Pull the top-ranked result from Unsplash's index
+                          return data['results'][0]['urls']['regular']
+                      else:
+                          print(f"⚠️ No results for: {query}. Using topic fallback.")
+              except Exception as e:
+                  print(f"⚠️ Image API Error: {e}")
+              
+              return selected_fallback
 
           # --- 3. DYNAMIC PROMPTS ---
           hooks = [
@@ -101,7 +118,7 @@ jobs:
               focus = f"Topic: {topic}. Provide deep geopolitical analysis."
               angle = "An ignored scandal, underdog story, or systemic shift."
 
-          # --- 4. CONSTRUCT PROMPT ---
+          # --- 4. CONSTRUCT PROMPT (ENHANCED FOR IMAGERY) ---
           spec_text = f"""
           You are an autonomous content agent for jonathanmwaniki.co.ke.
           TASK: Write a news article about: {focus}
@@ -112,7 +129,7 @@ jobs:
           DESCRIPTION: [Insert 2-sentence description]
           CATEGORY: [One of: Business, Sports, Politics, Entertainment, Technology, Education, Opinion]
           TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [Search term for Unsplash]
+          IMAGE_PROMPT: [A 4-6 word description of a physical, cinematic scene for a photo search. Avoid abstract words. Example: 'Modern data center glowing blue' or 'Busy stock exchange floor']
           BODY:
           [Write the full 1500-word article here using ## Headers. NO Title at start.]
           *** CONTENT RULES ***
@@ -121,15 +138,13 @@ jobs:
           - Go deep. No fluff.
           """
 
-          # --- 5. CALL GEMINI (UPDATED: Gemini 3 Flash Preview) ---
+          # --- 5. CALL GEMINI ---
           api_key = os.environ.get("GEMINI_API_KEY")
           if not api_key: raise SystemExit("Missing GEMINI_API_KEY")
 
-          # We use the v1beta endpoint for the preview model
           url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
           headers = { "Content-Type": "application/json" }
           
-          # Safety settings to allow geopolitical and critical discussion
           safety_settings = [
               {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
               {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -153,14 +168,8 @@ jobs:
                       if "candidates" in result and result["candidates"][0]["content"]["parts"]:
                           full_text = result["candidates"][0]["content"]["parts"][0]["text"]
                           break
-                      else:
-                          print(f"⚠️ Attempt {attempt+1}: Content was filtered by safety layer.")
-                  else:
-                      print(f"❌ Attempt {attempt+1}: Error {resp.status_code} - {resp.text[:400]}")
-                  
                   time.sleep(30)
-              except Exception as e:
-                  print(f"⚠️ Network/Request Error: {e}")
+              except Exception:
                   time.sleep(30)
 
           if not full_text: 
@@ -176,7 +185,7 @@ jobs:
               elif clean_line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
               elif clean_line.startswith("CATEGORY:"): parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
               elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
-              elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("IMAGE_PROMPT:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_PROMPT:", "").strip()
               elif clean_line.startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
@@ -188,7 +197,8 @@ jobs:
               parsed[key] = text.strip()
 
           # --- 7. ASSEMBLE FINAL FILE ---
-          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          # Passing the prompt and the topic to the new helper
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'], topic)
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
@@ -225,7 +235,7 @@ jobs:
           os.makedirs(out_dir, exist_ok=True)
           with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
               f.write(final_file)
-          print(f"✅ Success! Created {slug}.md")
+          print(f"✅ Success! Created {slug}.md with image from prompt: {parsed['IMAGE_KEYWORD']}")
           EOF
 
       - name: Commit and push article
