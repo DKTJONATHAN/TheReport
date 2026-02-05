@@ -1,7 +1,7 @@
-name: Facebook Bot (10x Daily)
+name: Facebook Pun Bot (10x Daily)
 on:
   schedule:
-    # Runs every 2 hours (Kenya Time approx)
+    # Runs every 2 hours from 6 AM to 12 AM (Kenya Time / EAT)
     - cron: '0 3,5,7,9,11,13,15,17,19,21 * * *'
   workflow_dispatch:
 
@@ -15,42 +15,46 @@ jobs:
       - name: Install Tools
         run: sudo apt-get install -y imagemagick jq
 
-      - name: Fetch Content
+      - name: Fetch Pure Pun
         run: |
-          if [ $((RANDOM % 2)) -eq 0 ]; then
-             echo "Chosen: QUOTE"
-             JSON=$(curl -s "https://zenquotes.io/api/random")
-             MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
-          else
-             echo "Chosen: JOKE"
-             JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single")
-             MSG="$(echo $JSON | jq -r '.joke') 🤣"
+          # Fetching only puns, allowing adult content (nsfw/explicit removed from blacklist)
+          JSON=$(curl -s "https://v2.jokeapi.dev/joke/Pun?blacklistFlags=religious,political,racist,sexist&type=single")
+          
+          # Extract the pun
+          MSG=$(echo $JSON | jq -r '.joke')
+          
+          # Safety check/Fallback
+          if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
+            MSG="I was wondering why the ball was getting bigger. Then it hit me."
           fi
           
-          if [ -z "$MSG" ] || [ "$MSG" == "null 🤣" ]; then MSG="Keep moving forward. - The Report"; fi
+          # Clean quotes that might break ImageMagick commands
+          # Also replace em dashes with commas for consistency
+          CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g' | sed 's/—/, /g')
           
-          # Clean quotes that might break code
-          CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g')
           echo "MSG=$CLEAN_MSG" >> $GITHUB_ENV
 
       - name: Generate & Post Image
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green")
+          # Selecting dynamic vibrant gradients for the background
+          COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray" "midnightblue-black")
           RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
           
-          echo "Generating Image with text: $MSG"
+          echo "Generating Image for Facebook with pun: $MSG"
 
-          # FIX: Simplified command.
-          # 1. Create gradient background
-          # 2. Write text on top with transparent background
-          convert -size 800x800 gradient:$RANDOM_COLOR \
-            -fill white -font DejaVu-Sans-Bold -pointsize 50 -gravity Center \
+          # 1. Create a 1080x1080 gradient background (Instagram/FB Square size)
+          # 2. Overlay the pun text with high contrast
+          convert -size 1080x1080 gradient:$RANDOM_COLOR \
+            -fill white -font DejaVu-Sans-Bold -pointsize 65 -gravity Center \
             -background none \
+            -interline-spacing 10 \
             caption:"$MSG" \
             -composite status.jpg
 
+          # Post to Facebook Page
           curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
             -F "source=@status.jpg" \
+            -F "message=Pun of the hour 🤣" \
             -F "access_token=$FB_TOKEN"
