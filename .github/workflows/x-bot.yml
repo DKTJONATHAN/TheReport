@@ -1,8 +1,8 @@
-name: Twitter Bot (3x Daily)
+name: Twitter Pun Bot (4x Daily)
 on:
   schedule:
-    # 8 AM, 1 PM, 8 PM (Kenya Time)
-    - cron: '0 5,10,17 * * *'
+    # 8 AM, 1 PM, 5 PM, 9 PM (Kenya Time / EAT)
+    - cron: '0 5,10,14,18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -17,49 +17,37 @@ jobs:
       - name: Install Deps
         run: pip install tweepy jq
 
-      - name: Fetch Content (Smart Fit)
+      - name: Fetch Latest Pun
         run: |
-          # Initialize variables
           MAX_RETRIES=5
           COUNT=0
           MSG=""
           
-          # Start "The Bouncer" Loop
           while [ $COUNT -lt $MAX_RETRIES ]; do
+             echo "Attempting to fetch a fresh pun..."
              
-             # Roll the dice: 0 = Quote (25%), 1-3 = Joke (75%)
-             ROLL=$((RANDOM % 4))
+             # API URL: Focused on Puns, Adult content ALLOWED (nsfw/explicit removed from blacklist)
+             # Blacklist still keeps religious, political, racist, and sexist content out to avoid account suspension.
+             JSON=$(curl -s "https://v2.jokeapi.dev/joke/Pun?blacklistFlags=religious,political,racist,sexist&type=single&maxLength=280")
              
-             if [ $ROLL -eq 0 ]; then
-                echo "Attempting Quote..."
-                JSON=$(curl -s "https://zenquotes.io/api/random")
-                TEMP_MSG="$(echo $JSON | jq -r '.[0].q') - $(echo $JSON | jq -r '.[0].a')"
-             else
-                echo "Attempting Joke..."
-                # NOTE: We added '&maxLength=280' to the URL to force short jokes
-                JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single&maxLength=280")
-                TEMP_MSG="$(echo $JSON | jq -r '.joke')"
-             fi
+             TEMP_MSG=$(echo $JSON | jq -r '.joke')
 
-             # Measure Length
+             # Validate length and content
              LEN=${#TEMP_MSG}
-             echo "Fetched Length: $LEN characters"
-
-             # Validation: Must be valid text, not 'null', and under 280 chars
-             if [ "$TEMP_MSG" != "null" ] && [ $LEN -gt 10 ] && [ $LEN -le 280 ]; then
-                echo "✅ Success! Found content within limit."
+             if [ "$TEMP_MSG" != "null" ] && [ $LEN -gt 5 ] && [ $LEN -le 280 ]; then
+                echo "✅ Success! Found a pun."
                 MSG="$TEMP_MSG"
                 break
              else
-                echo "❌ Too long or invalid. Retrying ($((COUNT+1))/$MAX_RETRIES)..."
+                echo "❌ Retrying for a better pun ($((COUNT+1))/$MAX_RETRIES)..."
                 COUNT=$((COUNT+1))
-                sleep 2
+                sleep 3
              fi
           done
 
-          # Fallback: If we failed 5 times, post a safe default
+          # Fallback if the API fails
           if [ -z "$MSG" ]; then 
-            MSG="Consistency is key. Keep building."
+            MSG="I'm reading a book on anti-gravity. It's impossible to put down."
           fi
           
           echo "MSG=$MSG" >> $GITHUB_ENV
@@ -81,9 +69,8 @@ jobs:
                   access_token=os.environ['TW_TOKEN'],
                   access_token_secret=os.environ['TW_SECRET_TOKEN']
               )
-              # No slicing needed anymore, we guaranteed the length above!
               client.create_tweet(text=os.environ['TWEET_TEXT'])
-              print("✅ Tweet Sent Successfully")
+              print("✅ Pun Tweeted Successfully")
           except Exception as e:
               print(f"❌ Error: {e}")
               sys.exit(1)
