@@ -57,7 +57,8 @@ jobs:
           APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
+          # FIX: Fallback to empty string if triggered by cron
+          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
@@ -70,11 +71,11 @@ jobs:
           def get_rotated_keys(prefix, count=5):
               return [os.environ.get(f"{prefix}{'' if i==0 else i}") for i in range(count)]
 
-          gemini_keys = get_rotated_keys("GEMINI_API_KEY", 3)
+          gemini_keys = [k for k in get_rotated_keys("GEMINI_API_KEY", 3) if k]
           if os.environ.get("GEMINI_WRITE_KEY"):
               gemini_keys.append(os.environ.get("GEMINI_WRITE_KEY"))
           
-          apify_tokens = get_rotated_keys("APIFY_API_TOKEN", 5)
+          apify_tokens = [t for t in get_rotated_keys("APIFY_API_TOKEN", 5) if t]
           
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
           key_map = {
@@ -83,7 +84,11 @@ jobs:
           }
           gemini_idx = key_map.get(cron, 0) % len(gemini_keys) if gemini_keys else 0
           selected_gemini_key = gemini_keys[gemini_idx] if gemini_keys else None
-          selected_apify = random.choice([t for t in apify_tokens if t]) if apify_tokens else None
+          selected_apify = random.choice(apify_tokens) if apify_tokens else None
+
+          if not selected_gemini_key:
+              print("Critical Error: No Gemini API keys found in secrets.")
+              exit(1)
 
           # Topic logic
           now = datetime.datetime.utcnow()
@@ -131,7 +136,7 @@ jobs:
               valid = [r for r in results if r.get('url') and r['url'] not in crawled_urls and r.get('markdown')]
               
               if not valid:
-                  print("No new articles.")
+                  print("No new content found.")
                   exit(0)
               
               target = valid[0]
@@ -143,7 +148,7 @@ jobs:
               print(f"Crawl error: {e}")
               exit(0)
 
-          # --- 3. GENERATE (Gemini 3 Flash Preview) ---
+          # --- 3. GENERATE ---
           client = genai.Client(api_key=selected_gemini_key)
           prompt = f"""SOURCE: {crawl_text[:10000]}
           Write a 1200+ word UK English news article for jonathanmwaniki.co.ke. 
@@ -166,12 +171,12 @@ jobs:
               print(f"Gemini error: {e}")
               exit(1)
 
-          # --- 4. PARSE & SAVE ---
+          # --- 4. PARSE & CLEAN ---
           def extract(label, text):
               match = re.search(rf'{label}:\s*(.*?)(?=\n[A-Z_]+:|$)', text, re.IGNORECASE | re.DOTALL)
               return match.group(1).strip() if match else ""
 
-          parsed_title = extract("TITLE", ai_out) or f"Update {date_str}"
+          parsed_title = extract("TITLE", ai_out) or f"Daily Update {date_str}"
           desc = extract("DESCRIPTION", ai_out)
           tags = extract("TAGS", ai_out)
           img_kw = extract("IMAGE_KEYWORD", ai_out) or topic
@@ -201,7 +206,6 @@ slug: "{slug}"
           os.makedirs(os.path.dirname(out_path), exist_ok=True)
           with open(out_path, "w", encoding="utf-8") as f:
               f.write(final_post)
-          print(f"File created: {out_path}")
           EOF
 
       - name: Commit and push
