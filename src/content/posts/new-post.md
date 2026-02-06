@@ -1,11 +1,11 @@
 ---
-title: "New Post"
-description: ""
+title: "Kenya Is Rotten To The Core"
+description: "A reflection of my life and of those surrounding me. The economy is bad, there are no jobs and kasongo is already campaigning."
 date: "2026-02-06"
 author: "Jonathan Mwaniki"
 image: "https://images.unsplash.com/photo-1521667815225-4d95a3f3a31a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NjY0ODl8MHwxfHNlYXJjaHwxfHxOYWlyb2JpJTIwbmlnaHR8ZW58MHx8fHwxNzcwMzY5OTg1fDA&ixlib=rb-4.1.0&q=80&w=1080"
 category: "Opinion"
-tags: ["news"]
+tags: ["news, kenya, kasongo"]
 slug: "new-post"
 ---
 
@@ -21,7 +21,7 @@ And don’t even get me started on the Adani bullshit or that SHIF nonsense. You
 
 The Housing Levy? Please. That’s just a fancy way of saying "Give us money so we can build houses you’ll never afford and then give the contracts to our cousins." It’s a scam, *buda*. A total, 100% organic, grass-fed scam. 
 
-And where’s the opposition? Baba found a nice warm seat at the AU and suddenly the "Enigma" is quiet. He traded his mandamano boots for some Italian leather shoes and left the rest of us hanging. That’s the problem with Kenyan politics, it’s just one big club, and you and I? We aren't invited. They fight on camera, then go share *nyama choma* and laugh about how easy it is to trigger us with tribal nonsense. 
+And where’s the opposition? Baba found a nice warm seat at the AU and suddenly the "Enigma" is quiet. He traded his mandamano boots for some Italian leather shoes and left the rest of us hanging, then decided to die before  taking us to Canaan! That’s the problem with Kenyan politics, it’s just one big club, and you and I? We aren't invited. They fight on camera, then go share *nyama choma* and laugh about how easy it is to trigger us with tribal nonsense. 
 
 Look across the border, it’s the same old story. Museveni is out there acting like Uganda is his family ranch, grooming his son like it’s some Netflix series about medieval kings. And Kagame? Cool, the streets are clean, but try opening your mouth to complain and see how fast you disappear. Africa is being run by a bunch of "Old Lions" who lost their teeth decades ago but still love the taste of blood. 
 
