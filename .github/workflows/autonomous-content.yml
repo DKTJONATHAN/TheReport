@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Generate Content
+      - name: Generate and Humanize Content
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -48,97 +48,105 @@ jobs:
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
 
-          # --- 1. TOPIC & DYNAMIC ANGLE LOGIC ---
           date_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
 
-          # Topic Mapping
+          # 1. TOPIC SELECTION
           if manual_input:
               topic, focus = manual_input, "User defined manual topic."
           elif 0 <= current_hour_utc < 4:
-              topic, focus = "Big World Technology", "Breakthroughs in AI, Space, and Quantum. Global focus."
+              topic, focus = "Big World Tech", "Cutting edge AI, space wars, and quantum control. Focus on power moves."
           elif 4 <= current_hour_utc < 9:
-              topic, focus = "Sports", "Kenyan Leagues (FKF-PL), European Leagues, and International Athletics."
+              topic, focus = "Sports Aggression", "FKF-PL rivalries, Athletics doping scandals, or European football greed."
           elif 9 <= current_hour_utc < 14:
-              topic, focus = "Politics", "Major international shifts mixed with African leadership and policy."
+              topic, focus = "Raw Politics", "Corruption, international betrayal, and the reality of African power dynamics."
           else:
-              topic, focus = "Social & Entertainment", "World celebrities mixed with Kenyan social trends and digital culture."
+              topic, focus = "Culture & Vice", "Kenyan social trends, celebrity collapses, and the unfiltered truth of digital fame."
 
-          # Original Hook System
-          hooks = [
-             "A Direct Question: Start immediately with a hard-hitting analytical question.",
-             "A Shocking Statistic: Start with a complex figure and explain its deeper meaning.",
-             "A Cynical Observation: Start by critically challenging a common global belief.",
-             "A Bold Critique: Start by identifying a specific group or policy and analyzing its failure."
-          ]
-          selected_hook = random.choice(hooks)
+          def call_gemini(prompt, temperature=0.9):
+              api_key = os.environ.get("GEMINI_API_KEY")
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+              payload = {
+                  "contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {"temperature": temperature, "maxOutputTokens": 8192},
+                  "safetySettings": [
+                      {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                  ]
+              }
+              try:
+                  resp = requests.post(url, json=payload, timeout=180)
+                  return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+              except Exception as e:
+                  print(f"Error: {e}")
+                  return None
 
-          # --- 2. THE COMMAND PROMPT (DEMANDING REAL-TIME DATA) ---
-          spec_text = f"""
-          You are an autonomous senior correspondent for jonathanmwaniki.co.ke.
-          TODAY'S DATE: {date_str}
+          # 2. GENERATION PASS (The Raw Content)
+          raw_prompt = f"""
+          Write a 1500-word, high-SEO, fearless article.
+          DATE: {date_str}
           TOPIC: {topic}
           FOCUS: {focus}
-          OPENING STYLE: {selected_hook}
 
-          CRITICAL INSTRUCTIONS:
-          1. REAL-TIME ANALYSIS: Use your most recent internal data to identify a REAL event that happened TODAY or this week regarding this topic. 
-          2. ACCURACY: If writing about Sports, report actual scores/standings. If Tech, report actual releases. 
-          3. NO HALLUCINATIONS: Do not invent fake news. If a specific event is unavailable, analyze the most recent confirmed trend.
-          4. ANTI-SPAM: NEVER use 'geopolitical', 'landscape', 'tapestry', 'delve', or 'pivotal'. 
-          5. DASH RULE: Use NO em dashes (—) or en dashes (–). Use commas.
-          6. FORMAT: Write 1500 words. 6 sections with ## Headers.
+          STYLE REQUIREMENTS:
+          - UNAPOLOGETIC: Do not use safe language. If someone is a fraud, call them a fraud. Use names.
+          - VULGARITY: Use strong language if it adds impact. Do not be polite.
+          - SEO: Use highly competitive, high-volume keywords in the title and headers.
+          - HUMANIZATION: Use sentence fragments. Start sentences with 'But' or 'And'. Use rhetorical questions. Use Kenyan slang where appropriate.
+          - NO AI-ISMS: No 'pivotal', 'delve', 'tapestry', 'landscape', or 'complex'.
+          - DASH RULE: NO em dashes (—). Use commas.
 
-          *** OUTPUT FORMAT ***
-          TITLE: [Punchy Title]
-          DESCRIPTION: [2-sentence SEO summary]
-          CATEGORY: [Sports/Business/Technology/Politics/Social]
-          TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [Specific cinematic scene for Unsplash]
-          BODY:
-          [Full article content. NO title at start.]
+          FORMAT:
+          TITLE: [Hard-hitting, SEO-heavy headline]
+          DESCRIPTION: [Savage 2-sentence meta summary]
+          CATEGORY: [Category]
+          TAGS: [tag1, tag2]
+          IMAGE_KEYWORD: [Cinematic prompt]
+          BODY: [Content]
           """
 
-          # --- 3. API CALL (GEMINI 3 FLASH PREVIEW) ---
-          api_key = os.environ.get("GEMINI_API_KEY")
-          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
-          payload = {
-              "contents": [{"parts": [{"text": spec_text}]}],
-              "generationConfig": {"temperature": 0.9, "maxOutputTokens": 4000},
-              "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}]
-          }
+          raw_content = call_gemini(raw_prompt)
 
-          full_text = ""
-          for _ in range(3):
-              try:
-                  resp = requests.post(url, json=payload, timeout=160)
-                  res_data = resp.json()
-                  if "candidates" in res_data:
-                      full_text = res_data["candidates"][0]["content"]["parts"][0]["text"]
-                      break
-                  time.sleep(20)
-              except: time.sleep(20)
+          # 3. VERIFICATION & HUMANIZATION PASS (The Filter)
+          humanizer_prompt = f"""
+          Review the following article. Rate its 'Human Sound' from 0-100.
+          An article sounds like AI if it is too balanced, too helpful, or uses perfect grammar.
+          
+          HUMAN CRITERIA:
+          - Does it sound angry, biased, or passionate? (Good)
+          - Does it use short, punchy sentences? (Good)
+          - Does it mention specific people and call out their bullshit? (Good)
+          - Does it sound like a corporate robot? (Bad - Rewrite)
 
-          if not full_text: exit(1)
+          IF SCORE < 90: Rewrite the entire article to be more chaotic, human, and visceral.
+          Otherwise, return the article exactly as is.
 
-          # --- 4. PARSING & SCRUBBING ---
-          parsed = {"TITLE": "Post", "DESCRIPTION": "", "CATEGORY": "Opinion", "TAGS": "news", "IMAGE_KEYWORD": "Nairobi"}
-          for line in full_text.splitlines():
+          ARTICLE:
+          {raw_content}
+          """
+
+          final_text = call_gemini(humanizer_prompt, temperature=1.0)
+          if not final_text: final_text = raw_content # Fallback
+
+          # 4. PARSING & ASSEMBLY
+          parsed = {"TITLE": "Untitled", "DESCRIPTION": "", "CATEGORY": "News", "TAGS": "news", "IMAGE_KEYWORD": "dark cinematic"}
+          for line in final_text.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
               elif line.startswith("CATEGORY:"): parsed["CATEGORY"] = line.replace("CATEGORY:", "").strip()
               elif line.startswith("TAGS:"): parsed["TAGS"] = line.replace("TAGS:", "").strip()
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
 
-          body_start = full_text.find("BODY:") + 5
-          raw_body = full_text[body_start:].strip()
+          body_start = final_text.find("BODY:") + 5
+          raw_body = final_text[body_start:].strip()
 
-          # DASH SCRUBBER
           def scrub(t): return t.replace("\u2014", ", ").replace("\u2013", ", ").replace("--", ", ")
           parsed["BODY"], parsed["TITLE"], parsed["DESCRIPTION"] = scrub(raw_body), scrub(parsed["TITLE"]), scrub(parsed["DESCRIPTION"])
 
-          # --- 5. IMAGE & FILE ASSEMBLY ---
+          # 5. IMAGE & FILE WRITE
           img_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           img_url = "https://images.unsplash.com/photo-1523805009345-7448845a9e53"
           if img_key:
@@ -157,8 +165,7 @@ jobs:
           date: "{date_str}"
           author: "Jonathan Mwaniki"
           image: "{img_url}"
-          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
-          imageAlt: "{parsed['IMAGE_KEYWORD']}"
+          imageCaption: "Unfiltered: {parsed['IMAGE_KEYWORD']}"
           category: "{parsed['CATEGORY']}"
           tags: {json.dumps(tag_list)}
           featured: true
@@ -167,12 +174,6 @@ jobs:
           ---
 
           {parsed['BODY']}
-
-          <div class="article-meta">
-            <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Author:</strong> Jonathan Mwaniki</p>
-            <p><strong>Tags:</strong> {parsed['TAGS']}</p>
-          </div>
           """
 
           out_dir = os.environ.get('POSTS_DIR', 'src/content/posts')
@@ -184,5 +185,5 @@ jobs:
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: autonomous real-time update [${{ github.run_id }}]"
+          commit_message: "content: human-verified autonomous update [${{ github.run_id }}]"
           branch: main
