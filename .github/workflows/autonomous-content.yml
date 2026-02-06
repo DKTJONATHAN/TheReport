@@ -58,7 +58,7 @@ jobs:
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random
+          import os, json, datetime, requests, re, random, time
           from google import genai
           from apify_client import ApifyClient
 
@@ -67,9 +67,9 @@ jobs:
           active_apify = [t for t in apify_tokens if t]
           selected_apify = random.choice(active_apify) if active_apify else None
 
+          # Gemini Key Fallback List
           gemini_keys = [os.environ.get("GEMINI_API_KEY"), os.environ.get("GEMINI_WRITE_KEY")]
           active_gemini = [k for k in gemini_keys if k]
-          selected_gemini = random.choice(active_gemini) if active_gemini else None
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
@@ -111,9 +111,12 @@ jobs:
               crawl_text = max(valid_md, key=len)
           except: exit(0)
 
-          # --- 3. GENERATE ---
-          if not selected_gemini: exit(1)
-          client = genai.Client(api_key=selected_gemini)
+          # --- 3. GENERATE (WITH FALLBACK LOGIC) ---
+          if not active_gemini: 
+              print("No Gemini keys found.")
+              exit(1)
+
+          ai_out = ""
           prompt = f"""SOURCE: {crawl_text}
           Write a 1200+ word UK English news article. NO [site.com] CITATIONS. NO EM-DASHES.
           Format precisely:
@@ -123,12 +126,23 @@ jobs:
           IMAGE_KEYWORD: [2-word search term]
           BODY: [Full Markdown Content]"""
 
-          try:
-              # FIXED: Using gemini-2.0-flash
-              resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
-              ai_out = resp.text.strip()
-          except Exception as e:
-              print(f"Gemini Error: {e}")
+          for key in active_gemini:
+              try:
+                  client = genai.Client(api_key=key)
+                  resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+                  ai_out = resp.text.strip()
+                  if ai_out: break # Success!
+              except Exception as e:
+                  if "429" in str(e):
+                      print(f"Key exhausted, trying next... Error: {e}")
+                      time.sleep(2) # Small cooldown
+                      continue
+                  else:
+                      print(f"Gemini error: {e}")
+                      exit(1)
+
+          if not ai_out:
+              print("All Gemini keys exhausted or failed.")
               exit(1)
 
           # --- 4. PARSE ---
