@@ -1,4 +1,4 @@
-name: Auto kenya
+name: Auto Newser
 
 on:
   schedule:
@@ -41,6 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # We need the NEWEST SDK for Gemini 2.0/3.0 support
           pip install requests google-genai apify-client
 
       - name: Generate article with Gemini
@@ -63,7 +64,7 @@ jobs:
           
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          # Determine Topic based on Schedule
+          # Topic Schedule
           if manual_input in ['sports', 'technology', 'business', 'politics']:
               topic = manual_input
           else:
@@ -72,19 +73,19 @@ jobs:
               elif current_hour_utc == 18: topic = 'finance'
               else: topic = 'business'
           
-          # --- 100% KENYAN SOURCE MAPPING ---
+          # 100% Kenyan Source Map
           url_map = {
-              'technology': 'https://techweez.com/',               # Best KE Tech
-              'sports': 'https://www.mozzartsport.co.ke/',         # Best KE/Int Sports
-              'business': 'https://www.standardmedia.co.ke/business', # Reliable Biz
-              'finance': 'https://www.standardmedia.co.ke/business',  # Reliable Finance
-              'politics': 'https://www.kenyans.co.ke/news'         # Political Heat
+              'technology': 'https://techweez.com/',
+              'sports': 'https://www.mozzartsport.co.ke/',
+              'business': 'https://www.standardmedia.co.ke/business',
+              'finance': 'https://www.standardmedia.co.ke/business',
+              'politics': 'https://www.kenyans.co.ke/news'
           }
           
           target_url = url_map.get(topic, 'https://www.kenyans.co.ke/news')
           print(f"🎯 Topic: {topic} | Target: {target_url}")
 
-          # --- 2. FETCH REAL-TIME CONTENT (APIFY) ---
+          # --- 2. FETCH CONTENT (APIFY) ---
           apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
           crawl_text = ""
           
@@ -98,9 +99,8 @@ jobs:
               }
               run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
               
-              # Get text from the crawl
               for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
-                  crawl_text += item.get('markdown', '')[:2500] 
+                  crawl_text += item.get('markdown', '')[:3000] 
           except Exception as e:
               print(f"❌ Apify Error: {e}")
               exit(0)
@@ -141,8 +141,7 @@ jobs:
           SOURCE DATA (CRAWLED FROM {target_url}):
           {crawl_text}
 
-          TASK: Identify the single most significant story in this data and write a FACTUAL news article.
-          - The story MUST be from the provided text.
+          TASK: Write a FACTUAL news article based on the most significant story above.
           - NO OPINIONS. NO HYPOTHESIS. NO HALLUCINATIONS.
           - Report in neutral, professional journalist tone.
           - Opening: {selected_hook}
@@ -161,9 +160,13 @@ jobs:
           - UK English, commas not em-dashes.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 5. GEMINI CALL ---
+          # --- 5. GEMINI CALL (Updated SDK) ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model_id = "gemini-1.5-flash" 
+          
+          # UPDATED MODEL ID:
+          # Try 'gemini-2.0-flash-exp' or 'gemini-1.5-pro' if available. 
+          # 'gemini-1.5-flash' is the standard stable fast model.
+          model_id = "gemini-2.0-flash-exp" 
           
           print(f"🤖 Generating with {model_id}...")
           
@@ -171,12 +174,24 @@ jobs:
               response = client.models.generate_content(
                   model=model_id,
                   contents=prompt,
-                  config=types.GenerateContentConfig(temperature=0.1)
+                  config=types.GenerateContentConfig(
+                      temperature=0.1
+                  )
               )
               full_text = response.text.strip()
           except Exception as e:
               print(f"❌ Gemini Error: {e}")
-              exit(1)
+              # Fallback to 1.5 Pro if 2.0 Flash is not yet rolled out to your key
+              try:
+                  print("⚠️ Retrying with gemini-1.5-pro...")
+                  response = client.models.generate_content(
+                      model="gemini-1.5-pro",
+                      contents=prompt
+                  )
+                  full_text = response.text.strip()
+              except Exception as e2:
+                  print(f"❌ Fatal Error: {e2}")
+                  exit(1)
 
           # --- 6. PARSE ---
           parsed = { "TITLE": f"News {date_str}", "DESCRIPTION": "Latest updates", "CATEGORY": display_category, "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
