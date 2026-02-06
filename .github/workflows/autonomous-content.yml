@@ -57,7 +57,7 @@ jobs:
           APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          # Use github.event.inputs for dispatch events, fallback to empty for cron
+          # FIX: Reference github.event.inputs and add a fallback for schedule runs
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
@@ -132,7 +132,7 @@ jobs:
               valid = [r for r in results if r.get('url') and r['url'] not in crawled_urls and r.get('markdown')]
               
               if not valid:
-                  print("No new articles.")
+                  print("No new content found.")
                   exit(0)
               
               target = valid[0]
@@ -146,15 +146,15 @@ jobs:
 
           # --- 3. GENERATE (Gemini 3 Flash Preview) ---
           client = genai.Client(api_key=selected_gemini_key)
-          prompt = f"""SOURCE: {crawl_text[:10000]}
-          Write a 1200+ word UK English news article for jonathanmwaniki.co.ke. 
-          NO em-dashes or en-dashes. NO [site.com] citations.
-          Format:
-          TITLE: [Headline]
-          DESCRIPTION: [Summary]
-          TAGS: [tag1, tag2]
-          IMAGE_KEYWORD: [Search term]
-          BODY: [Markdown Content]"""
+          prompt = f"SOURCE: {crawl_text[:10000]}\
+Write a 1200+ word UK English news article for jonathanmwaniki.co.ke.\
+NO em-dashes or en-dashes. NO [site.com] citations.\
+Format:\
+TITLE: [Headline]\
+DESCRIPTION: [Summary]\
+TAGS: [tag1, tag2]\
+IMAGE_KEYWORD: [Search term]\
+BODY: [Markdown Content]"
 
           try:
               response = client.models.generate_content(
@@ -183,21 +183,8 @@ jobs:
           image_url = f"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
           slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')[:100]
           
-          final_post = f"""---
-title: "{parsed_title.replace('"', "'")}"
-description: "{desc.replace('"', "'")}"
-date: "{date_str}"
-author: "Jonathan Mwaniki"
-image: "{image_url}"
-category: "{topic.title()}"
-tags: {json.dumps([t.strip() for t in tags.split(',') if t.strip()])}
-featured: true
-draft: false
-slug: "{slug}"
----
-
-{body}
-"""
+          final_post = f"---\ntitle: \"{parsed_title.replace('\"', \"'\")}\"\ndescription: \"{desc.replace('\"', \"'\")}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{topic.title()}\"\ntags: {json.dumps([t.strip() for t in tags.split(',') if t.strip()])}\nfeatured: true\ndraft: false\nslug: \"{slug}\"\n---\n\n{body}"
+          
           out_path = os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md")
           os.makedirs(os.path.dirname(out_path), exist_ok=True)
           with open(out_path, "w", encoding="utf-8") as f:
