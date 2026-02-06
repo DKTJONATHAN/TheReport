@@ -1,4 +1,4 @@
-name: Auto kenya
+name: Auto Newser
 
 on:
   schedule:
@@ -59,12 +59,11 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. DYNAMIC CONFIGURATION ---
+          # --- 1. CONFIG ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          # Logic to determine topic based on time
           if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
               topic = manual_input
           else:
@@ -74,125 +73,103 @@ jobs:
               elif current_hour_utc == 18: topic = 'finance'
               else: topic = 'business'
           
-          # Site Mapping and CSS Selectors for the "First Article" link
           site_config = {
-              'technology': {
-                  'url': 'https://techmoran.com/',
-                  'glob': 'https://techmoran.com/*',
-                  'selector': 'h2.entry-title a, h3.entry-title a'
-              },
-              'sports': {
-                  'url': 'https://www.pulsesports.co.ke/',
-                  'glob': 'https://www.pulsesports.co.ke/*/story/*',
-                  'selector': 'a[href*="/story/"]'
-              },
-              'business': {
-                  'url': 'https://www.kenyamoja.com/business',
-                  'glob': 'https://www.kenyamoja.com/business/*',
-                  'selector': '.item-list a, .news-title a'
-              },
-              'entertainment': {
-                  'url': 'https://www.mpasho.co.ke/',
-                  'glob': 'https://www.mpasho.co.ke/*',
-                  'selector': 'a.article-card__link, .latest-news a'
-              },
-              'politics': {
-                  'url': 'https://www.kenyans.co.ke/news',
-                  'glob': 'https://www.kenyans.co.ke/news/*',
-                  'selector': 'h2 a, .news-post a'
-              }
+              'technology': {'url': 'https://techmoran.com/', 'glob': 'https://techmoran.com/*'},
+              'sports': {'url': 'https://www.pulsesports.co.ke/', 'glob': 'https://www.pulsesports.co.ke/*/story/*'},
+              'business': {'url': 'https://www.kenyamoja.com/business', 'glob': 'https://www.kenyamoja.com/business/*'},
+              'entertainment': {'url': 'https://www.mpasho.co.ke/', 'glob': 'https://www.mpasho.co.ke/*'},
+              'politics': {'url': 'https://www.kenyans.co.ke/news', 'glob': 'https://www.kenyans.co.ke/news/*'}
           }
-          
           cfg = site_config.get(topic, site_config['politics'])
-          print(f"🎯 Topic: {topic} | Target: {cfg['url']}")
 
-          # --- 2. AUTONOMOUS DEEP CRAWL ---
+          # --- 2. AUTONOMOUS CRAWL ---
           apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
           crawl_text = ""
           try:
-              # We instruct Apify to find the first link matching the selector and "follow" it
-              run_input = {
+              run = apify.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": cfg['url']}],
-                  "maxCrawlPages": 2, # Page 1: Home, Page 2: The actual Story
+                  "maxCrawlPages": 2,
                   "maxCrawlDepth": 1,
                   "includeUrlGlobs": [{"glob": cfg['glob']}],
-                  "crawlerType": "cheerio",
-                  "removeElementsCssSelector": "nav, footer, script, style, .sidebar, .ad, .comments"
-              }
-              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
-              
-              # Extract the story content (usually the second item in the dataset)
+                  "crawlerType": "cheerio"
+              })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              if len(results) > 1:
-                  # Use the item with the longest text (which is the full article)
-                  crawl_text = max([r.get('markdown', '') for r in results], key=len)
-              else:
-                  crawl_text = results[0].get('markdown', '')
-                  
-          except Exception as e:
-              print(f"❌ Crawl Error: {e}")
-              exit(0)
+              crawl_text = max([r.get('markdown', '') for r in results], key=len)
+          except: exit(0)
 
-          if len(crawl_text) < 600:
-              print("⚠️ Content too short. Likely failed to hit the full article.")
-              exit(0)
-
-          # --- 3. PROMPT & GENERATION ---
+          # --- 3. PROMPT ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model_id = "gemini-2.5-flash"
-
-          prompt = f'''STRICT JOURNALISM MODE. 
-          SOURCE MATERIAL: {crawl_text}
-
-          TASK: Write a full factual news article (1200+ words).
-          RULES: NO CITATIONS [site.com]. NO URLS. NO FOOTERS. NO EM-DASHES. UK English.
-          
-          OUTPUT:
+          prompt = f"""SOURCE: {crawl_text}
+          Write a 1200+ word UK English news article. NO [site.com] CITATIONS. NO EM-DASHES.
+          Format precisely:
           TITLE: [Headline]
-          DESCRIPTION: [Summary]
-          CATEGORY: [{topic.title()}]
-          TAGS: [3-5 tags]
-          IMAGE_KEYWORD: [Image search term]
-          BODY:
-          [Full content with ## Headers]'''
+          DESCRIPTION: [160 char summary]
+          TAGS: [tag1, tag2, tag3]
+          IMAGE_KEYWORD: [2-word search term]
+          BODY: [Full Markdown Content]"""
 
           try:
-              resp = client.models.generate_content(model=model_id, contents=prompt)
-              full_text = resp.text.strip()
+              resp = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+              ai_out = resp.text.strip()
           except: exit(1)
 
-          # --- 4. PARSE & CLEANUP ---
-          parsed = {"TITLE":"", "BODY":""}
-          body_started = False
-          for line in full_text.splitlines():
-              if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
-              elif line.startswith("BODY:"): body_started = True
-              elif body_started: parsed["BODY"] += line + "\n"
+          # --- 4. PARSING ---
+          def get_field(label, text):
+              match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
+              return match.group(1).strip() if match else ""
 
-          # Final citation and dash removal
-          parsed["BODY"] = re.sub(r'\[.*?\]', '', parsed["BODY"])
-          parsed["BODY"] = parsed["BODY"].replace("—", ", ").replace("–", ", ")
+          title = get_field("TITLE", ai_out) or f"News {date_str}"
+          desc = get_field("DESCRIPTION", ai_out)
+          tags_raw = get_field("TAGS", ai_out)
+          tags = [t.strip() for t in tags_raw.split(',')] if tags_raw else [topic]
+          img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
+          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
 
-          # --- 5. SAVE ---
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          final_file = f"""---
-          title: "{parsed['TITLE'].replace('"', "'")}"
-          date: "{date_str}"
-          author: "Jonathan Mwaniki"
-          category: "{topic.title()}"
-          slug: "{slug}"
-          ---
+          # Scrub dashes and citations
+          body = re.sub(r'\[.*?\]', '', body)
+          body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
-          {parsed['BODY'].strip()}
-          """
+          # --- 5. IMAGE LOGIC (Unsplash -> Pollinations Fallback) ---
+          def fetch_image(q):
+              access = os.environ.get("UNSPLASH_ACCESS_KEY")
+              if access:
+                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={access}"
+                  try:
+                      r = requests.get(url, timeout=5)
+                      if r.status_code == 200: return r.json()['urls']['regular']
+                  except: pass
+              return f"https://image.pollinations.ai/prompt/{q.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
 
-          os.makedirs(os.environ.get("POSTS_DIR"), exist_ok=True)
-          with open(os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md"), "w") as f:
-              f.write(textwrap.dedent(final_file).strip())
+          image_url = fetch_image(img_kw)
+
+          # --- 6. ASSEMBLE FRONT MATTER ---
+          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
+          
+          front_matter = {
+              "title": title.replace('"', "'"),
+              "description": desc.replace('"', "'"),
+              "date": date_str,
+              "author": "Jonathan Mwaniki",
+              "image": image_url,
+              "imageCaption": f"Latest update on {img_kw}",
+              "imageAlt": f"News image for {title}",
+              "category": topic.title(),
+              "tags": tags,
+              "featured": True,
+              "draft": False,
+              "slug": slug
+          }
+
+          final_post = f"---\n{json.dumps(front_matter, indent=2)}\n---\n\n{body}"
+
+          out_path = os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md")
+          os.makedirs(os.path.dirname(out_path), exist_ok=True)
+          with open(out_path, "w", encoding="utf-8") as f:
+              f.write(final_post)
           EOF
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish news"
+          commit_message: "content: publish autonomous news article"
           branch: ${{ env.DEFAULT_BRANCH }}
