@@ -76,7 +76,7 @@ jobs:
           site_config = {
               'technology': {'url': 'https://techmoran.com/', 'glob': 'https://techmoran.com/*'},
               'sports': {'url': 'https://www.pulsesports.co.ke/', 'glob': 'https://www.pulsesports.co.ke/*/story/*'},
-              'business': {'url': 'https://www.kenyamoja.com/business', 'glob': 'https://www.kenyamoja.com/business/*'},
+              'business': {'url': 'https://www.businesstoday.co.ke', 'glob': 'https://www.businesstoday.co.ke/*'},
               'entertainment': {'url': 'https://www.mpasho.co.ke/', 'glob': 'https://www.mpasho.co.ke/*'},
               'politics': {'url': 'https://www.kenyans.co.ke/news', 'glob': 'https://www.kenyans.co.ke/news/*'}
           }
