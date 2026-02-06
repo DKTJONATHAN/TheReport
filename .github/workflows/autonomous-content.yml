@@ -1,4 +1,4 @@
-name: Auto kenya
+name: Auto Newser
 
 on:
   schedule:
@@ -63,6 +63,7 @@ jobs:
           
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
+          # Topic Schedule (EAT to UTC conversions)
           if manual_input in ['sports', 'technology', 'business', 'politics']:
               topic = manual_input
           else:
@@ -157,35 +158,37 @@ jobs:
           - UK English, NEVER use em-dashes or en-dashes; use commas or colons instead.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 5. GEMINI CALL (Updated to Gemini 3 Flash) ---
+          # --- 5. GEMINI CALL (Updated to Gemini 2.5 Flash) ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          
-          # TARGET MODEL: Gemini 3 Flash Preview
-          model_id = "gemini-3-flash-preview" 
+          model_id = "gemini-2.5-flash" 
           
           print(f"🤖 Generating with {model_id}...")
           
-          try:
-              response = client.models.generate_content(
-                  model=model_id,
-                  contents=prompt,
-                  config=types.GenerateContentConfig(
-                      temperature=0.1
-                  )
-              )
-              full_text = response.text.strip()
-          except Exception as e:
-              print(f"❌ Gemini 3 Flash Error: {e}")
-              try:
-                  print("⚠️ Retrying with gemini-2.0-flash...")
-                  response = client.models.generate_content(
-                      model="gemini-2.0-flash",
-                      contents=prompt
-                  )
-                  full_text = response.text.strip()
-              except Exception as e2:
-                  print(f"❌ Fatal Error: {e2}")
-                  exit(1)
+          def call_with_retry(model, prompt_text, retries=2):
+              for i in range(retries + 1):
+                  try:
+                      resp = client.models.generate_content(
+                          model=model,
+                          contents=prompt_text,
+                          config=types.GenerateContentConfig(temperature=0.1)
+                      )
+                      return resp.text.strip()
+                  except Exception as e:
+                      print(f"⚠️ Attempt {i+1} failed: {e}")
+                      if i < retries:
+                          time.sleep(15 * (i + 1))
+                      else:
+                          return None
+
+          full_text = call_with_retry(model_id, prompt)
+          
+          if not full_text:
+              print("🔄 Trying legacy fallback (Gemini 1.5 Flash)...")
+              full_text = call_with_retry("gemini-1.5-flash", prompt)
+
+          if not full_text:
+              print("❌ All models exhausted or quota reached.")
+              exit(1)
 
           # --- 6. PARSE & CLEANUP ---
           parsed = { "TITLE": f"News {date_str}", "DESCRIPTION": "Latest updates", "CATEGORY": display_category, "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
@@ -205,7 +208,7 @@ jobs:
 
           if not parsed["BODY"] and not body_started: parsed["BODY"] = full_text
 
-          # Strict character replacement for dashes as per user style
+          # Final cleaning for dashes as per user instructions
           for key in ["TITLE", "DESCRIPTION", "BODY"]:
               parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
@@ -250,7 +253,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish via Gemini 3 Flash ${{ github.run_id }}"
+          commit_message: "content: publish via Gemini 2.5 Flash ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: ${{ env.POSTS_DIR }}/*.md
           commit_user_name: "Content Bot"
