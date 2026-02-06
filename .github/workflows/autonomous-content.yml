@@ -1,4 +1,4 @@
-name: Autonomous Real-Time Publisher
+name: Autonomous Real-Time Publisher (Groq + Brave)
 
 on:
   schedule:
@@ -25,106 +25,110 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests groq
 
       - name: Research and Fearless Content Generation
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
           POSTS_DIR: src/content/posts
+          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
+          import os, json, datetime, requests, re, random
+          from groq import Groq
 
-          # --- DYNAMIC DATE (NO STUPID HARDCODING) ---
+          # 1. SETUP & DYNAMIC TIME
           now = datetime.datetime.utcnow()
           date_str = now.strftime('%Y-%m-%d')
           human_date = now.strftime('%B %d, %Y')
           
-          def call_gemini(prompt, use_search=False, temp=0.9):
-              api_key = os.environ.get("GEMINI_API_KEY")
-              # Using Gemini 3 Flash Preview as requested
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
-              
-              payload = {
-                  "contents": [{"parts": [{"text": prompt}]}],
-                  "tools": [{"google_search_retrieval": {}}] if use_search else [],
-                  "generationConfig": {"temperature": temp, "maxOutputTokens": 8192},
-                  "safetySettings": [
-                      {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                      {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                      {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                      {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                  ]
+          client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+          # Llama 3.3 70B is currently the 'sweet spot' for speed and reasoning on Groq
+          MODEL = "llama-3.3-70b-versatile"
+
+          def brave_news_scout(query):
+              url = "https://api.search.brave.com/res/v1/news/search"
+              headers = {
+                  "Accept": "application/json",
+                  "X-Subscription-Token": os.environ.get("BRAVE_API_KEY")
+              }
+              params = {
+                  "q": query,
+                  "count": 5,
+                  "freshness": "pd", # FORCES LAST 24 HOURS ONLY
+                  "country": "KE"   # Priority on Kenyan trends
               }
               try:
-                  resp = requests.post(url, json=payload, timeout=240)
-                  data = resp.json()
-                  if "candidates" in data and data["candidates"][0]["content"]["parts"]:
-                      return data["candidates"][0]["content"]["parts"][0]["text"]
-                  print(f"API Refusal/Error: {json.dumps(data, indent=2)}")
-                  return None
+                  resp = requests.get(url, headers=headers, params=params)
+                  results = resp.json().get('results', [])
+                  return "\\n".join([f"[{r.get('age', 'Recent')}] {r['title']}: {r['description']}" for r in results])
+              except: return "No recent news found."
+
+          def call_groq(prompt, temp=1.0):
+              try:
+                  chat = client.chat.completions.create(
+                      model=MODEL,
+                      messages=[{"role": "user", "content": prompt}],
+                      temperature=temp,
+                      max_tokens=4096
+                  )
+                  return chat.choices[0].message.content
               except Exception as e:
-                  print(f"Request Failed: {e}")
+                  print(f"Groq Error: {e}")
                   return None
 
-          # --- 1. RESEARCH PASS (STOPPING HALLUCINATIONS) ---
-          topic_map = ["Kenyan Politics Scandals", "Global Tech Tyranny", "FKF Premier League Dirty Truths", "Athletics Doping Realities"]
-          topic = os.environ.get('MANUAL_TOPIC') or random.choice(topic_map)
+          # 2. THE SEARCH PASS (Kill the Hallucinations)
+          topic_pool = ["Kenyan Politics", "Big Tech Scandals", "FKF Premier League", "Global Finance"]
+          topic = os.environ.get('MANUAL_TOPIC') or random.choice(topic_pool)
           
-          scout_prompt = f"Today is {human_date}. Search for the 3 most controversial, trending news items about {topic}. Verify if the people involved are ALIVE and in POWER as of today. Do not use data from before 2025."
-          research = call_gemini(scout_prompt, use_search=True)
-          if not research: 
-              print("Failed to gather research. Exiting.")
-              exit(1)
+          print(f"Searching for {topic} news from the last 24 hours...")
+          search_data = brave_news_scout(f"{topic} controversy")
 
-          # --- 2. BOLD ARTICLE GENERATION ---
+          # 3. THE SAVAGE GENERATION
+          # We force the AI to respect the 'age' of the news found.
           gen_prompt = f"""
-          TODAY: {human_date} | RESEARCH: {research}
-          Write a 1500-word, high-SEO, unapologetic article for jonathanmwaniki.co.ke.
+          TODAY'S DATE: {human_date}
+          REAL-TIME NEWS (LAST 24H):
+          {search_data}
+
+          TASK: Write a 1500-word, high-SEO, fearless, and unapologetic article.
           
-          STYLE: 
-          - Fearless: Mention names, call out the bullshit. 
-          - Unfiltered: Use vulgarity or rough language if it hits harder. 
-          - Human: Use Sheng (slang), sentence fragments, and bias. No 'pivotal' or 'tapestry'.
+          STRICT RULES:
+          1. REALITY CHECK: Only write about people confirmed as 'Recent' in the data. If someone is dead, do not put them in a seat.
+          2. BOLD TONE: Mention names. Use vulgar or rough language if it adds impact. No 'polite' AI talk.
+          3. HUMAN SOUND: Use sentence fragments, Sheng (slang), and strong bias. No 'pivotal' or 'tapestry'.
+          4. SEO: Headlines must be competitive and click-worthy for 2026.
           
           FORMAT:
-          TITLE: [Competitive Keyword Headline]
-          DESCRIPTION: [SEO summary]
-          IMAGE_KEYWORD: [Cinematic Prompt]
+          TITLE: [Headline]
+          DESCRIPTION: [SEO Meta]
           BODY: [Full Article Content]
           """
-          raw_article = call_gemini(gen_prompt, temp=1.0)
-          if not raw_article: exit(1)
-
-          # --- 3. THE HUMANIZER LOOP ---
-          human_test = f"Evaluate this article. If it sounds like a robot, rewrite it to be angry, human, and biased. Use Kenyan context and Sheng. ARTICLE: {raw_article}"
-          final_text = call_gemini(human_test, temp=1.0) or raw_article
-
-          # --- 4. PARSING & COMMIT ---
-          title_match = re.search(r"TITLE:\s*(.*)", final_text)
-          raw_title = title_match.group(1).strip() if title_match else "Savage News"
           
-          # FIX: Clean the title outside the f-string to avoid backslash error
-          clean_title = raw_title.replace('"', '')
+          article = call_groq(gen_prompt, temp=0.8)
+
+          # 4. THE HUMANIZER TEST
+          # Groq is fast, so we can afford a second pass to 'break' the AI structure.
+          final_text = call_groq(f"Rewrite this to sound like a pissed-off human expert in Nairobi. Use Sheng naturally. Make it visceral and unapologetic. Remove all 'AI smell'.\\n\\n{article}", temp=1.0) or article
+
+          # 5. PARSING & SAVING
+          title_match = re.search(r"TITLE:\s*(.*)", final_text)
+          clean_title = title_match.group(1).strip().replace('"', '') if title_match else f"News-{date_str}"
           slug = re.sub(r'[^a-z0-9-]', '-', clean_title.lower()).strip('-')
           
-          # Extract body and description
           desc_match = re.search(r"DESCRIPTION:\s*(.*)", final_text)
           clean_desc = desc_match.group(1).strip().replace('"', '') if desc_match else ""
           
-          body_parts = final_text.split("BODY:")
-          body = body_parts[-1].strip() if len(body_parts) > 1 else final_text
+          body = final_text.split("BODY:")[-1].strip()
 
-          # Construct Markdown
           final_md = (
-              f"---\n"
-              f"title: \"{clean_title}\"\n"
-              f"description: \"{clean_desc}\"\n"
-              f"date: \"{date_str}\"\n"
-              f"featured: true\n"
-              f"---\n\n"
+              f"---\\n"
+              f"title: \\"{clean_title}\\"\\n"
+              f"description: \\"{clean_desc}\\"\\n"
+              f"date: \\"{date_str}\\"\\n"
+              f"featured: true\\n"
+              f"---\\n\\n"
               f"{body}"
           )
           
@@ -137,4 +141,4 @@ jobs:
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: grounded autonomous update [${{ github.run_id }}]"
+          commit_message: "content: Groq-Brave autonomous update [${{ github.run_id }}]"
