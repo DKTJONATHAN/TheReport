@@ -1,4 +1,4 @@
-name: Auto Newser
+name: Auto kenya
 
 on:
   schedule:
@@ -45,7 +45,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests google-genai apify-client
 
-      - name: Generate article with Gemini
+      - name: Generate article with Gemini 3
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
@@ -58,31 +58,39 @@ jobs:
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
+          CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
           from google import genai
+          from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. CONFIG & ROTATION ---
-          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
-          active_apify = [t for t in apify_tokens if t]
-          selected_apify = random.choice(active_apify) if active_apify else None
+          # --- 1. CONFIG & CRON-SPECIFIC KEY MAPPING ---
+          cron = os.environ.get('CRON_SCHEDULE', 'manual')
+          
+          # Assign a specific Gemini key to each cron schedule to isolate quotas
+          key_map = {
+              '0 0 * * *': os.environ.get('GEMINI_API_KEY'),   # Sports (3AM)
+              '0 4 * * *': os.environ.get('GEMINI_API_KEY1'),  # Entertainment (7AM)
+              '0 6 * * *': os.environ.get('GEMINI_API_KEY2'),  # Tech (9AM)
+              '0 11 * * *': os.environ.get('GEMINI_WRITE_KEY'),# Finance (2PM)
+              '0 14 * * *': os.environ.get('GEMINI_API_KEY'),  # Sports (5PM)
+              '0 18 * * *': os.environ.get('GEMINI_API_KEY1'), # Finance (9PM)
+              '0 20 * * *': os.environ.get('GEMINI_API_KEY2'), # Entertainment (11PM)
+              '0 22 * * *': os.environ.get('GEMINI_WRITE_KEY') # Tech (1AM)
+          }
+          selected_gemini_key = key_map.get(cron, os.environ.get('GEMINI_WRITE_KEY'))
 
-          # Gemini Key Pool (Rotating through all 4 available)
-          gemini_keys = [
-              os.environ.get("GEMINI_API_KEY"),
-              os.environ.get("GEMINI_API_KEY1"),
-              os.environ.get("GEMINI_API_KEY2"),
-              os.environ.get("GEMINI_WRITE_KEY")
-          ]
-          active_gemini = [k for k in gemini_keys if k]
+          # Apify Token Pool (Random rotation)
+          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
+          selected_apify = random.choice([t for t in apify_tokens if t])
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
+          if manual_input:
               topic = manual_input
           else:
               if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
@@ -101,9 +109,7 @@ jobs:
           cfg = site_config.get(topic, site_config['politics'])
 
           # --- 2. CRAWL ---
-          if not selected_apify: exit(1)
           apify = ApifyClient(selected_apify)
-          crawl_text = ""
           try:
               run = apify.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": cfg['url']}],
@@ -114,58 +120,67 @@ jobs:
               })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
               valid_md = [r.get('markdown', '') for r in results if r.get('markdown')]
-              if not valid_md: exit(0)
-              crawl_text = max(valid_md, key=len)
+              crawl_text = max(valid_md, key=len) if valid_md else exit(0)
           except: exit(0)
 
-          # --- 3. GENERATE (WITH KEY SWAPPING) ---
-          if not active_gemini: exit(1)
-          ai_out = ""
-          prompt = f"SOURCE: {crawl_text}\nWrite a 1200+ word UK English news article. NO CITATIONS. NO EM-DASHES.\nFormat: TITLE:, DESCRIPTION:, TAGS:, IMAGE_KEYWORD:, BODY:"
+          # --- 3. GENERATE (Gemini 3 Flash Preview) ---
+          client = genai.Client(api_key=selected_gemini_key)
+          prompt = f"""SOURCE: {crawl_text}
+          Write a 1200+ word UK English news article for jonathanmwaniki.co.ke. 
+          NO [site.com] CITATIONS. NO EM-DASHES (use commas).
+          Format precisely:
+          TITLE: [Headline]
+          DESCRIPTION: [160 char summary]
+          TAGS: [tag1, tag2, tag3]
+          IMAGE_KEYWORD: [2-word search term]
+          BODY: [Full Markdown Content with ## Headers]"""
 
-          for key in active_gemini:
-              try:
-                  client = genai.Client(api_key=key)
-                  resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
-                  ai_out = resp.text.strip()
-                  if ai_out: break
-              except Exception as e:
-                  print(f"Key failed, trying next... Error: {e}")
-                  continue
+          try:
+              # Using the model ID gemini-3-flash-preview
+              response = client.models.generate_content(
+                  model="gemini-3-flash-preview",
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.2)
+              )
+              ai_out = response.text.strip()
+          except Exception as e:
+              print(f"Gemini 3 Error: {e}")
+              exit(1)
 
-          if not ai_out: exit(1)
-
-          # --- 4. PARSE ---
+          # --- 4. PARSE & CLEANUP ---
           def get_field(label, text):
               match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
               return match.group(1).strip() if match else ""
 
-          title = get_field("TITLE", ai_out) or f"News {date_str}"
+          parsed_title = get_field("TITLE", ai_out) or f"News {date_str}"
           desc = get_field("DESCRIPTION", ai_out)
-          tags_raw = get_field("TAGS", ai_out)
-          tags = [t.strip() for t in tags_raw.split(',')] if tags_raw else [topic]
+          tags = get_field("TAGS", ai_out)
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
           body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
+          
+          # Scrub dashes as per strict formatting rules
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
-          # --- 5. IMAGE ---
+          # --- 5. IMAGE & FRONT MATTER ---
           image_url = f"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')
+          
+          final_post = f"""---
+          title: "{parsed_title.replace('"', "'")}"
+          description: "{desc.replace('"', "'")}"
+          date: "{date_str}"
+          author: "Jonathan Mwaniki"
+          image: "{image_url}"
+          category: "{topic.title()}"
+          tags: {json.dumps([t.strip() for t in tags.split(',')])}
+          featured: true
+          draft: false
+          slug: "{slug}"
+          ---
 
-          # --- 6. SAVE ---
-          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
-          front_matter = {
-              "title": title.replace('"', "'"),
-              "description": desc.replace('"', "'"),
-              "date": date_str,
-              "author": "Jonathan Mwaniki",
-              "image": image_url,
-              "category": topic.title(),
-              "tags": tags,
-              "featured": True,
-              "draft": False,
-              "slug": slug
-          }
-          final_post = f"---\n{json.dumps(front_matter, indent=2)}\n---\n\n{body}"
+          {body}
+          """
+
           out_path = os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md")
           os.makedirs(os.path.dirname(out_path), exist_ok=True)
           with open(out_path, "w", encoding="utf-8") as f:
@@ -175,5 +190,5 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish autonomous news article"
+          commit_message: "content: publish Gemini 3 autonomous article"
           branch: ${{ env.DEFAULT_BRANCH }}
