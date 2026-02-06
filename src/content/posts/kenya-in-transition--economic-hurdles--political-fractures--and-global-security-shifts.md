@@ -3,7 +3,7 @@ title: "Kenya in Transition: Economic Hurdles, Political Fractures, and Global S
 description: "A comprehensive look at Kenya’s evolving landscape in February 2026, from TVET fee hikes and ODM party infighting to international security and trade deals."
 date: "2026-02-06"
 author: "Jonathan Mwaniki"
-image: "https://image.pollinations.ai/prompt/Nairobi-Skyline-news-photo?width=1200&height=630&nologo=true"
+image: "https://images.unsplash.com/photo-1741991109886-90e70988f27b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NjY0ODl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzAzOTE3ODh8&ixlib=rb-4.1.0&q=80&w=1080"
 category: "Politics"
 tags: ["Kenya News", "Politics", "Economy"]
 featured: true
