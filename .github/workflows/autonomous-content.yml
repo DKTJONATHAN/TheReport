@@ -1,8 +1,8 @@
-name: Autonomous Real-Time Publisher (Apify + Groq)
+name: Autonomous Real-Time Publisher (British Edition)
 
 on:
   schedule:
-    - cron: '0 1,6,10,15 * * *'
+    - cron: '0 1,6,10,15 * * *' # 4 AM, 9 AM, 1 PM, 6 PM EAT
   workflow_dispatch:
 
 permissions:
@@ -41,42 +41,57 @@ jobs:
           client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
           apify = ApifyClient(token=os.environ.get("APIFY_API_TOKEN"))
 
-          # 2. CRAWL KENYANS.CO.KE
-          print("Crawling kenyans.co.ke for real-time heat...")
+          # 2. CRAWL KENYANS.CO.KE (For facts only)
+          print("Crawling kenyans.co.ke for real-time intelligence...")
           run_input = {
               "startUrls": [{"url": "https://www.kenyans.co.ke/news"}],
               "maxCrawlPages": 2,
-              "crawlerType": "cheerio"
+              "crawlerType": "cheerio",
+              "removeElementsCssSelector": "nav, footer, .sidebar, .ads, script, style"
           }
           
           try:
               run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
               raw_data = ""
               for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
-                  raw_data += f"\nSTORY: {item.get('metadata', {}).get('title')}\nFACTS: {item.get('markdown', '')[:2500]}\n"
+                  # We strip the source title to just get facts
+                  raw_data += f"\nTOPIC: {item.get('metadata', {}).get('title')}\nDETAILS: {item.get('markdown', '')[:2500]}\n"
           except Exception as e:
               print(f"Crawler Failed: {e}")
               exit(1)
 
-          # 3. JSON CONSTRAINED GENERATION
-          # We force the model into JSON mode to protect the Title and Image.
+          if not raw_data:
+              print("No data found. Exiting.")
+              exit(0)
+
+          # 3. SINGLE-SHOT STRICT GENERATION
           system_msg = """
-          You are a senior Nairobi Investigative Journalist. 
-          LANGUAGE: Posh Nairobi English heavily infused with Sheng. NEVER write in pure Swahili. 
-          STYLE: Savage, unapologetic, name-names. Use phrases like 'Kimeumana', 'Vumbi tu', and 'Sema ukweli'.
-          OUTPUT: Return ONLY a valid JSON object.
+          You are a senior British International Correspondent based in Nairobi.
+          
+          CRITICAL LANGUAGE RULES:
+          1. STRICTLY BRITISH ENGLISH (UK Spelling: 'colour', 'honour', 'realise').
+          2. ABSOLUTELY NO SWAHILI. NO SHENG. NO LOCAL SLANG.
+          3. Tone: Cynical, fearless, and intellectually savage. Think "BBC gone rogue". 
+          4. Approach: You are analyzing Kenyan events with a sharp, critical international eye. Call out incompetence and corruption using sophisticated but cutting English.
+          
+          OUTPUT FORMAT:
+          Return ONLY a valid JSON object with these exact keys:
+          - title: A sharp, witty British-style headline.
+          - description: A dry, cynical 2-sentence summary.
+          - image_keyword: A cinematic prompt for an image.
+          - body: A 1500-word article in Markdown. Use ## Headers.
+          - tags: A list of 5 tags.
           """
 
           user_msg = f"""
           DATE: {date_str}
-          CRAWL DATA: {raw_data}
+          INTELLIGENCE REPORT:
+          {raw_data}
 
-          TASK: Create a 1500-word explosive article.
-          - TITLE: Must be a competitive, high-SEO headline in English/Sheng.
-          - IMAGE_KEYWORD: Specific cinematic prompt for Unsplash.
-          - BODY: Long-form, detailed, and fearless. Call out the corruption/betrayal found in the facts.
-          
-          JSON SCHEMA: {{"title": "", "description": "", "image_keyword": "", "body": "", "tags": []}}
+          TASK: Write a 1500-word exposé on the most significant story above.
+          - Deconstruct the political/social failure visible in the story.
+          - Use rhetorical wit and British sarcasm.
+          - Name names. Be unapologetic but articulate.
           """
 
           try:
@@ -84,41 +99,28 @@ jobs:
                   model="llama-3.3-70b-versatile",
                   messages=[{"role": "system", "content": system_msg}, {"role": "user", "content": user_msg}],
                   response_format={"type": "json_object"},
-                  temperature=0.8
+                  temperature=0.85 
               )
               res = json.loads(chat.choices[0].message.content)
           except Exception as e:
-              print(f"JSON Generation Failed: {e}")
+              print(f"Generation Failed: {e}")
               exit(1)
 
-          # 4. FINAL HUMANIZER (Protects Metadata)
-          # We only humanize the 'body' string, leaving the 'title' and 'image' untouched.
-          humanizer_prompt = f"Take this article and inject raw Nairobi energy. Use sentence fragments and aggressive Sheng for emphasis. Keep the language primarily English. ARTICLE: {res['body']}"
-          
-          final_body = client.chat.completions.create(
-              model="llama-3.3-70b-versatile",
-              messages=[{"role": "user", "content": humanizer_prompt}],
-              temperature=1.0
-          ).choices[0].message.content
-
-          # 5. ASSEMBLY
+          # 4. ASSEMBLY
+          # Direct save. No second pass to ruin the language.
           slug = re.sub(r'[^a-z0-9-]', '-', res['title'].lower()).strip('-')
           
-          # Fetch cinematic image keyword for meta
-          img_key = res.get('image_keyword', 'Nairobi Skyline')
-
           final_md = f"""---
           title: "{res['title']}"
           description: "{res['description']}"
           date: "{date_str}"
-          imageKeyword: "{img_key}"
+          imageKeyword: "{res['image_keyword']}"
+          tags: {json.dumps(res['tags'])}
           featured: true
           ---
 
-          {final_body}
+          {res['body']}
 
-          ---
-          *Verified Fact-check: Grounded via Kenyans.co.ke Real-time Crawl.*
           """
 
           os.makedirs(os.environ['POSTS_DIR'], exist_ok=True)
@@ -129,4 +131,4 @@ jobs:
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: savage apify crawl update [${{ github.run_id }}]"
+          commit_message: "content: British edition update [${{ github.run_id }}]"
