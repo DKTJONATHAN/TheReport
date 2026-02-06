@@ -1,13 +1,9 @@
-name: Autonomous Real-Time Publisher (Groq + Brave)
+name: Autonomous Real-Time Publisher (Apify + Groq)
 
 on:
   schedule:
     - cron: '0 1,6,10,15 * * *' # 4 AM, 9 AM, 1 PM, 6 PM EAT
   workflow_dispatch:
-    inputs:
-      manual_topic:
-        description: 'Hard-hitting topic override'
-        required: false
 
 permissions:
   contents: write
@@ -25,18 +21,18 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests groq
+        run: pip install requests groq apify-client
 
-      - name: Research and Fearless Content Generation
+      - name: Crawl Kenyans.co.ke and Generate Content
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           POSTS_DIR: src/content/posts
-          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random
+          import os, json, datetime, requests, re
           from groq import Groq
+          from apify_client import ApifyClient
 
           # 1. SETUP & DYNAMIC TIME
           now = datetime.datetime.utcnow()
@@ -44,77 +40,78 @@ jobs:
           human_date = now.strftime('%B %d, %Y')
           
           client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-          # Llama 3.3 70B is currently the 'sweet spot' for speed and reasoning on Groq
-          MODEL = "llama-3.3-70b-versatile"
+          apify = ApifyClient(token=os.environ.get("APIFY_API_TOKEN"))
 
-          def brave_news_scout(query):
-              url = "https://api.search.brave.com/res/v1/news/search"
-              headers = {
-                  "Accept": "application/json",
-                  "X-Subscription-Token": os.environ.get("BRAVE_API_KEY")
-              }
-              params = {
-                  "q": query,
-                  "count": 5,
-                  "freshness": "pd", # FORCES LAST 24 HOURS ONLY
-                  "country": "KE"   # Priority on Kenyan trends
-              }
-              try:
-                  resp = requests.get(url, headers=headers, params=params)
-                  results = resp.json().get('results', [])
-                  return "\\n".join([f"[{r.get('age', 'Recent')}] {r['title']}: {r['description']}" for r in results])
-              except: return "No recent news found."
-
-          def call_groq(prompt, temp=1.0):
-              try:
-                  chat = client.chat.completions.create(
-                      model=MODEL,
-                      messages=[{"role": "user", "content": prompt}],
-                      temperature=temp,
-                      max_tokens=4096
-                  )
-                  return chat.choices[0].message.content
-              except Exception as e:
-                  print(f"Groq Error: {e}")
-                  return None
-
-          # 2. THE SEARCH PASS (Kill the Hallucinations)
-          topic_pool = ["Kenyan Politics", "Big Tech Scandals", "FKF Premier League", "Global Finance"]
-          topic = os.environ.get('MANUAL_TOPIC') or random.choice(topic_pool)
+          # 2. APIFY CRAWLER (Targeting Kenyans.co.ke)
+          print(f"[{human_date}] Crawling Kenyans.co.ke for the latest heat...")
           
-          print(f"Searching for {topic} news from the last 24 hours...")
-          search_data = brave_news_scout(f"{topic} controversy")
+          run_input = {
+              "startUrls": [{"url": "https://www.kenyans.co.ke/news"}],
+              "maxCrawlPages": 3,
+              "crawlerType": "cheerio", # Fast, lightweight, bypasses most blocks
+              "maxCrawlDepth": 1,
+              "removeElementsCssSelector": "nav, footer, script, style, .sidebar, .ads"
+          }
 
-          # 3. THE SAVAGE GENERATION
-          # We force the AI to respect the 'age' of the news found.
-          gen_prompt = f"""
+          try:
+              # Run the Website Content Crawler Actor
+              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
+              
+              # Fetch Markdown results from the dataset
+              news_context = ""
+              for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
+                  # We only take the markdown content to keep it clean for the LLM
+                  title = item.get('metadata', {}).get('title', 'No Title')
+                  content = item.get('markdown', '')[:2000] # Cap per article for context limits
+                  news_context += f"\n--- STORY: {title} ---\n{content}\n"
+                  
+          except Exception as e:
+              print(f"Apify Error: {e}")
+              exit(1)
+
+          if not news_context.strip():
+              print("No fresh content found on Kenyans.co.ke. Exiting.")
+              exit(1)
+
+          # 3. SAVAGE CONTENT GENERATION (Llama 3.3 70B)
+          # First pass for raw, fearless facts
+          raw_prompt = f"""
           TODAY'S DATE: {human_date}
-          REAL-TIME NEWS (LAST 24H):
-          {search_data}
+          CRAWLED DATA FROM KENYANS.CO.KE:
+          {news_context}
 
-          TASK: Write a 1500-word, high-SEO, fearless, and unapologetic article.
+          TASK: Write a 1500-word, high-SEO, fearless, and unapologetic article based on these events.
           
-          STRICT RULES:
-          1. REALITY CHECK: Only write about people confirmed as 'Recent' in the data. If someone is dead, do not put them in a seat.
-          2. BOLD TONE: Mention names. Use vulgar or rough language if it adds impact. No 'polite' AI talk.
-          3. HUMAN SOUND: Use sentence fragments, Sheng (slang), and strong bias. No 'pivotal' or 'tapestry'.
+          RULES:
+          1. REALITY: If the crawl shows a person is dead or out of power, mention it as a legacy or failure.
+          2. STYLE: Be bold. Mention names. Use vulgar or rough language if it adds human impact. No 'polite' AI talk.
+          3. HUMANIZATION: Use sentence fragments, heavy Sheng (slang), and strong bias. No 'pivotal' or 'tapestry'.
           4. SEO: Headlines must be competitive and click-worthy for 2026.
           
           FORMAT:
-          TITLE: [Headline]
+          TITLE: [Savage Headline]
           DESCRIPTION: [SEO Meta]
-          BODY: [Full Article Content]
+          BODY: [Full Content]
           """
           
-          article = call_groq(gen_prompt, temp=0.8)
+          response = client.chat.completions.create(
+              model="llama-3.3-70b-versatile",
+              messages=[{"role": "user", "content": raw_prompt}],
+              temperature=0.9
+          )
+          article = response.choices[0].message.content
 
-          # 4. THE HUMANIZER TEST
-          # Groq is fast, so we can afford a second pass to 'break' the AI structure.
-          final_text = call_groq(f"Rewrite this to sound like a pissed-off human expert in Nairobi. Use Sheng naturally. Make it visceral and unapologetic. Remove all 'AI smell'.\\n\\n{article}", temp=1.0) or article
+          # 4. THE HUMANIZER TEST (Second Pass for the AI-Smell Removal)
+          final_response = client.chat.completions.create(
+              model="llama-3.3-70b-versatile",
+              messages=[{"role": "user", "content": f"Rewrite this as a pissed-off Nairobi expert. Use more Sheng and messy sentence fragments. Make it visceral. Remove all AI structure.\\n\\n{article}"}],
+              temperature=1.0
+          )
+          final_text = final_response.choices[0].message.content
 
           # 5. PARSING & SAVING
           title_match = re.search(r"TITLE:\s*(.*)", final_text)
-          clean_title = title_match.group(1).strip().replace('"', '') if title_match else f"News-{date_str}"
+          clean_title = title_match.group(1).strip().replace('"', '') if title_match else f"Kenyans-News-{date_str}"
           slug = re.sub(r'[^a-z0-9-]', '-', clean_title.lower()).strip('-')
           
           desc_match = re.search(r"DESCRIPTION:\s*(.*)", final_text)
@@ -123,22 +120,22 @@ jobs:
           body = final_text.split("BODY:")[-1].strip()
 
           final_md = (
-              f"---\\n"
-              f"title: \\"{clean_title}\\"\\n"
-              f"description: \\"{clean_desc}\\"\\n"
-              f"date: \\"{date_str}\\"\\n"
-              f"featured: true\\n"
-              f"---\\n\\n"
+              f"---\n"
+              f"title: \"{clean_title}\"\n"
+              f"description: \"{clean_desc}\"\n"
+              f"date: \"{date_str}\"\n"
+              f"featured: true\n"
+              f"---\n\n"
               f"{body}"
           )
           
           posts_dir = os.environ.get('POSTS_DIR', 'src/content/posts')
           os.makedirs(posts_dir, exist_ok=True)
-          with open(f"{posts_dir}/{slug}.md", "w") as f:
+          with open(f"{posts_dir}/{slug}.md", "w", encoding="utf-8") as f:
               f.write(final_md)
           EOF
 
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: Groq-Brave autonomous update [${{ github.run_id }}]"
+          commit_message: "content: savage Kenyans.co.ke crawl update [${{ github.run_id }}]"
