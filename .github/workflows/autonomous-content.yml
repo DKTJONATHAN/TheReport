@@ -3,15 +3,17 @@ name: Auto kenya
 on:
   schedule:
     - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 4 * * *'   # 7AM EAT (Entertainment)
     - cron: '0 6 * * *'   # 9AM EAT (Tech)
     - cron: '0 11 * * *'  # 2PM EAT (Finance)
     - cron: '0 14 * * *'  # 5PM EAT (Sports)
     - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 20 * * *'  # 11PM EAT (Entertainment)
     - cron: '0 22 * * *'  # 1AM EAT (Tech)
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business)'
+        description: 'Force a topic (sports, technology, business, entertainment)'
         required: false
         default: ''
 
@@ -57,103 +59,127 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. CONFIGURATION ---
+          # --- 1. DYNAMIC CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          if manual_input in ['sports', 'technology', 'business', 'politics']:
+          # Logic to determine topic based on time
+          if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
               topic = manual_input
           else:
               if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
+              elif current_hour_utc == 4 or current_hour_utc == 20: topic = 'entertainment'
               elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
               elif current_hour_utc == 18: topic = 'finance'
               else: topic = 'business'
           
-          url_map = {
-              'technology': 'https://techweez.com/',
-              'sports': 'https://www.mozzartsport.co.ke/',
-              'business': 'https://www.standardmedia.co.ke/business',
-              'finance': 'https://www.standardmedia.co.ke/business',
-              'politics': 'https://www.kenyans.co.ke/news'
+          # Site Mapping and CSS Selectors for the "First Article" link
+          site_config = {
+              'technology': {
+                  'url': 'https://techmoran.com/',
+                  'glob': 'https://techmoran.com/*',
+                  'selector': 'h2.entry-title a, h3.entry-title a'
+              },
+              'sports': {
+                  'url': 'https://www.pulsesports.co.ke/',
+                  'glob': 'https://www.pulsesports.co.ke/*/story/*',
+                  'selector': 'a[href*="/story/"]'
+              },
+              'business': {
+                  'url': 'https://www.kenyamoja.com/business',
+                  'glob': 'https://www.kenyamoja.com/business/*',
+                  'selector': '.item-list a, .news-title a'
+              },
+              'entertainment': {
+                  'url': 'https://www.mpasho.co.ke/',
+                  'glob': 'https://www.mpasho.co.ke/*',
+                  'selector': 'a.article-card__link, .latest-news a'
+              },
+              'politics': {
+                  'url': 'https://www.kenyans.co.ke/news',
+                  'glob': 'https://www.kenyans.co.ke/news/*',
+                  'selector': 'h2 a, .news-post a'
+              }
           }
-          target_url = url_map.get(topic, 'https://www.kenyans.co.ke/news')
+          
+          cfg = site_config.get(topic, site_config['politics'])
+          print(f"🎯 Topic: {topic} | Target: {cfg['url']}")
 
-          # --- 2. FETCH ---
+          # --- 2. AUTONOMOUS DEEP CRAWL ---
           apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
           crawl_text = ""
           try:
-              run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": target_url}], "maxCrawlPages": 1})
-              for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
-                  crawl_text += item.get('markdown', '')[:4000] 
-          except: exit(0)
+              # We instruct Apify to find the first link matching the selector and "follow" it
+              run_input = {
+                  "startUrls": [{"url": cfg['url']}],
+                  "maxCrawlPages": 2, # Page 1: Home, Page 2: The actual Story
+                  "maxCrawlDepth": 1,
+                  "includeUrlGlobs": [{"glob": cfg['glob']}],
+                  "crawlerType": "cheerio",
+                  "removeElementsCssSelector": "nav, footer, script, style, .sidebar, .ad, .comments"
+              }
+              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
+              
+              # Extract the story content (usually the second item in the dataset)
+              results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
+              if len(results) > 1:
+                  # Use the item with the longest text (which is the full article)
+                  crawl_text = max([r.get('markdown', '') for r in results], key=len)
+              else:
+                  crawl_text = results[0].get('markdown', '')
+                  
+          except Exception as e:
+              print(f"❌ Crawl Error: {e}")
+              exit(0)
 
-          # --- 3. PROMPT (STRICT ANTI-CITATION) ---
-          cat_map = {'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics': 'Politics', 'finance': 'Business'}
-          display_category = cat_map.get(topic, 'General')
+          if len(crawl_text) < 600:
+              print("⚠️ Content too short. Likely failed to hit the full article.")
+              exit(0)
+
+          # --- 3. PROMPT & GENERATION ---
+          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          model_id = "gemini-2.5-flash"
 
           prompt = f'''STRICT JOURNALISM MODE. 
           SOURCE MATERIAL: {crawl_text}
 
-          TASK: Write a factual news article. 
+          TASK: Write a full factual news article (1200+ words).
+          RULES: NO CITATIONS [site.com]. NO URLS. NO FOOTERS. NO EM-DASHES. UK English.
           
-          STRICT RULES:
-          1. NO CITATIONS: Do not use square brackets like [source.com] or [1]. 
-          2. NO URLS: Do not include any website links in the body text.
-          3. NO EXTERNAL FOOTERS: Do not add "Source:" or "Crawled from" at the end.
-          4. TONE: Neutral, professional UK English.
-          5. DASHES: NEVER use em-dashes (—) or en-dashes (–). Use commas or colons.
-
-          OUTPUT FORMAT:
+          OUTPUT:
           TITLE: [Headline]
           DESCRIPTION: [Summary]
-          CATEGORY: [{display_category}]
-          TAGS: [Tags]
-          IMAGE_KEYWORD: [Keyword]
+          CATEGORY: [{topic.title()}]
+          TAGS: [3-5 tags]
+          IMAGE_KEYWORD: [Image search term]
           BODY:
-          [Article content only]'''
+          [Full content with ## Headers]'''
 
-          # --- 4. EXECUTION ---
-          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model_id = "gemini-2.5-flash"
-          
           try:
-              resp = client.models.generate_content(
-                  model=model_id,
-                  contents=prompt,
-                  config=types.GenerateContentConfig(temperature=0.1)
-              )
+              resp = client.models.generate_content(model=model_id, contents=prompt)
               full_text = resp.text.strip()
           except: exit(1)
 
-          # --- 5. PARSE & CLEANUP ---
-          parsed = {"TITLE":"", "DESCRIPTION":"", "CATEGORY":display_category, "TAGS":"", "IMAGE_KEYWORD":"", "BODY":""}
+          # --- 4. PARSE & CLEANUP ---
+          parsed = {"TITLE":"", "BODY":""}
           body_started = False
           for line in full_text.splitlines():
-              clean = line.strip().replace("**", "")
-              if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
-              elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
-              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
-              elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
-              elif clean.startswith("BODY:"): body_started = True
+              if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
+              elif line.startswith("BODY:"): body_started = True
               elif body_started: parsed["BODY"] += line + "\n"
 
-          # REGEX CLEANUP: Remove any remaining [anything.com] or [1] citations
+          # Final citation and dash removal
           parsed["BODY"] = re.sub(r'\[.*?\]', '', parsed["BODY"])
-          # Remove em/en dashes just in case
           parsed["BODY"] = parsed["BODY"].replace("—", ", ").replace("–", ", ")
 
-          # --- 6. SAVE ---
+          # --- 5. SAVE ---
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
-          
           final_file = f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
-          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
-          category: "{parsed['CATEGORY']}"
-          tags: {json.dumps(tag_list)}
+          category: "{topic.title()}"
           slug: "{slug}"
           ---
 
