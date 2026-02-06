@@ -57,7 +57,7 @@ jobs:
           APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          # FIX: Reference github.event.inputs and add a fallback for schedule runs
+          # FIX: Reference github.event.inputs with fallback for schedule runs
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
@@ -67,124 +67,121 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. DYNAMIC KEY ROTATION ---
-          def get_rotated_keys(prefix, count=5):
-              return [os.environ.get(f"{prefix}{'' if i==0 else i}") for i in range(count)]
-
-          gemini_keys = get_rotated_keys("GEMINI_API_KEY", 3)
-          if os.environ.get("GEMINI_WRITE_KEY"):
-              gemini_keys.append(os.environ.get("GEMINI_WRITE_KEY"))
-          
-          apify_tokens = get_rotated_keys("APIFY_API_TOKEN", 5)
-          
+          # --- 1. CONFIG & CRON-SPECIFIC KEY MAPPING ---
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
+          
           key_map = {
-              '0 0 * * *': 0, '0 4 * * *': 1, '0 6 * * *': 2, '0 11 * * *': 3,
-              '0 14 * * *': 0, '0 18 * * *': 1, '0 20 * * *': 2, '0 22 * * *': 3
+              '0 0 * * *': os.environ.get('GEMINI_API_KEY'),
+              '0 4 * * *': os.environ.get('GEMINI_API_KEY1'),
+              '0 6 * * *': os.environ.get('GEMINI_API_KEY2'),
+              '0 11 * * *': os.environ.get('GEMINI_WRITE_KEY'),
+              '0 14 * * *': os.environ.get('GEMINI_API_KEY'),
+              '0 18 * * *': os.environ.get('GEMINI_API_KEY1'),
+              '0 20 * * *': os.environ.get('GEMINI_API_KEY2'),
+              '0 22 * * *': os.environ.get('GEMINI_WRITE_KEY')
           }
-          gemini_idx = key_map.get(cron, 0) % len(gemini_keys) if gemini_keys else 0
-          selected_gemini_key = gemini_keys[gemini_idx] if gemini_keys else None
-          selected_apify = random.choice([t for t in apify_tokens if t]) if apify_tokens else None
+          selected_gemini_key = key_map.get(cron, os.environ.get('GEMINI_WRITE_KEY'))
+          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
+          selected_apify = random.choice([t for t in apify_tokens if t])
 
-          # Topic logic
-          now = datetime.datetime.utcnow()
-          date_str = now.date().strftime("%Y-%m-%d")
-          current_hour_utc = now.hour
+          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+          current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
           if manual_input:
               topic = manual_input
           else:
-              hour_map = {0: 'sports', 4: 'entertainment', 6: 'technology', 11: 'business',
-                         14: 'sports', 18: 'business', 20: 'entertainment', 22: 'technology'}
-              topic = hour_map.get(current_hour_utc, 'politics')
+              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
+              elif current_hour_utc == 4 or current_hour_utc == 20: topic = 'entertainment'
+              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
+              elif current_hour_utc == 11 or current_hour_utc == 18: topic = 'business'
+              else: topic = 'politics'
           
-          # --- SITE CONFIG ---
           site_config = {
-              'technology': {'url': 'https://techweez.com/', 'glob': 'https://techweez.com/*', 'link_selector': 'article a[href*="/"]'},
-              'sports': {'url': 'https://www.pulsesports.co.ke/', 'glob': 'https://www.pulsesports.co.ke/*/story/*', 'link_selector': 'a[href*="/story/"]'},
-              'business': {'url': 'https://kenyanwallstreet.com/', 'glob': 'https://kenyanwallstreet.com/*', 'link_selector': '.post-title a'},
-              'entertainment': {'url': 'https://buzzcentral.co.ke/', 'glob': 'https://buzzcentral.co.ke/*', 'link_selector': 'a[href*="/"]'},
-              'politics': {'url': 'https://www.kenyans.co.ke/news', 'glob': 'https://www.kenyans.co.ke/news/*', 'link_selector': 'a[href^="/news/"]'}
+              'technology': {'url': 'https://techweez.com/', 'glob': 'https://techweez.com/*'},
+              'sports': {'url': 'https://www.pulsesports.co.ke/', 'glob': 'https://www.pulsesports.co.ke/*/story/*'},
+              'business': {'url': 'https://kenyanwallstreet.com/', 'glob': 'https://kenyanwallstreet.com/*'},
+              'entertainment': {'url': 'https://buzzcentral.co.ke/', 'glob': 'https://buzzcentral.co.ke/*'},
+              'politics': {'url': 'https://www.kenyans.co.ke/news', 'glob': 'https://www.kenyans.co.ke/news/*'}
           }
           cfg = site_config.get(topic, site_config['politics'])
 
-          # --- 2. CRAWL ---
-          cache_file = 'crawled_urls.json'
-          crawled_urls = set()
-          if os.path.exists(cache_file):
-              try:
-                  with open(cache_file, 'r') as f:
-                      crawled_urls = set(json.load(f))
-              except: pass
-
+          # --- 2. CRAWL (Full Articles, 10 Results Max) ---
           apify = ApifyClient(selected_apify)
-          run_input = {
-              "startUrls": [{"url": cfg['url']}],
-              "maxCrawlPages": 5,
-              "linkSelector": cfg['link_selector'],
-              "includeUrlGlobs": [{"glob": cfg['glob']}]
-          }
-
           try:
+              run_input = {
+                  "startUrls": [{"url": cfg['url']}],
+                  "maxCrawlPages": 20,      # High enough to find 10 candidates
+                  "maxResults": 10,         # Limit to 10 articles
+                  "maxCrawlDepth": 2,       # FOLLOW LINKS to get full article text
+                  "includeUrlGlobs": [{"glob": cfg['glob']}],
+                  "crawlerType": "cheerio"
+              }
               run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              valid = [r for r in results if r.get('url') and r['url'] not in crawled_urls and r.get('markdown')]
               
-              if not valid:
-                  print("No new content found.")
-                  exit(0)
-              
-              target = valid[0]
-              crawl_text = target.get('markdown', '')
-              crawled_urls.add(target['url'])
-              with open(cache_file, 'w') as f:
-                  json.dump(list(crawled_urls), f)
+              # Filter for results that actually have body text (longer articles)
+              valid_md = [r.get('markdown', '') for r in results if r.get('markdown') and len(r.get('markdown')) > 500]
+              crawl_text = max(valid_md, key=len) if valid_md else exit(0)
           except Exception as e:
-              print(f"Crawl error: {e}")
+              print(f"Apify Error: {e}")
               exit(0)
 
           # --- 3. GENERATE (Gemini 3 Flash Preview) ---
           client = genai.Client(api_key=selected_gemini_key)
-          prompt = f"SOURCE: {crawl_text[:10000]}\
-Write a 1200+ word UK English news article for jonathanmwaniki.co.ke.\
-NO em-dashes or en-dashes. NO [site.com] citations.\
-Format:\
-TITLE: [Headline]\
-DESCRIPTION: [Summary]\
-TAGS: [tag1, tag2]\
-IMAGE_KEYWORD: [Search term]\
-BODY: [Markdown Content]"
+          prompt = f"""SOURCE: {crawl_text}
+          Write a 1200+ word UK English news article for jonathanmwaniki.co.ke. 
+          NO [site.com] CITATIONS. NO EM-DASHES (use commas).
+          Format precisely:
+          TITLE: [Headline]
+          DESCRIPTION: [160 char summary]
+          TAGS: [tag1, tag2, tag3]
+          IMAGE_KEYWORD: [2-word search term]
+          BODY: [Full Markdown Content with ## Headers]"""
 
           try:
               response = client.models.generate_content(
                   model="gemini-3-flash-preview",
                   contents=prompt,
-                  config=types.GenerateContentConfig(temperature=0.7)
+                  config=types.GenerateContentConfig(temperature=0.2)
               )
               ai_out = response.text.strip()
           except Exception as e:
-              print(f"Gemini error: {e}")
+              print(f"Gemini 3 Error: {e}")
               exit(1)
 
-          # --- 4. PARSE & CLEAN ---
-          def extract(label, text):
-              match = re.search(rf'{label}:\s*(.*?)(?=\n[A-Z_]+:|$)', text, re.IGNORECASE | re.DOTALL)
+          # --- 4. PARSE & CLEANUP ---
+          def get_field(label, text):
+              match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
               return match.group(1).strip() if match else ""
 
-          parsed_title = extract("TITLE", ai_out) or f"News {date_str}"
-          desc = extract("DESCRIPTION", ai_out)
-          tags = extract("TAGS", ai_out)
-          img_kw = extract("IMAGE_KEYWORD", ai_out) or topic
-          body = extract("BODY", ai_out) or ai_out
+          parsed_title = get_field("TITLE", ai_out) or f"News {date_str}"
+          desc = get_field("DESCRIPTION", ai_out)
+          tags = get_field("TAGS", ai_out)
+          img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
+          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
           
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
+          # --- 5. IMAGE & FRONT MATTER ---
           image_url = f"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')[:100]
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')
           
-          final_post = f"---\ntitle: \"{parsed_title.replace('\"', \"'\")}\"\ndescription: \"{desc.replace('\"', \"'\")}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{topic.title()}\"\ntags: {json.dumps([t.strip() for t in tags.split(',') if t.strip()])}\nfeatured: true\ndraft: false\nslug: \"{slug}\"\n---\n\n{body}"
-          
+          final_post = f"""---
+title: "{parsed_title.replace('"', "'")}"
+description: "{desc.replace('"', "'")}"
+date: "{date_str}"
+author: "Jonathan Mwaniki"
+image: "{image_url}"
+category: "{topic.title()}"
+tags: {json.dumps([t.strip() for t in tags.split(',')])}
+featured: true
+draft: false
+slug: "{slug}"
+---
+
+{body}
+"""
           out_path = os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md")
           os.makedirs(os.path.dirname(out_path), exist_ok=True)
           with open(out_path, "w", encoding="utf-8") as f:
@@ -194,5 +191,5 @@ BODY: [Markdown Content]"
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish Gemini 3 article (${{ github.event.inputs.manual_topic || 'Scheduled' }})"
+          commit_message: "content: publish Gemini 3 autonomous article"
           branch: ${{ env.DEFAULT_BRANCH }}
