@@ -1,4 +1,4 @@
-name: Auto ke
+name: Auto Newser
 
 on:
   schedule:
@@ -57,13 +57,11 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. CONFIGURATION & TOPIC ---
+          # --- 1. CONFIGURATION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
-          
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          # Topic Schedule (EAT to UTC conversions)
           if manual_input in ['sports', 'technology', 'business', 'politics']:
               topic = manual_input
           else:
@@ -73,190 +71,102 @@ jobs:
               else: topic = 'business'
           
           url_map = {
-              'technology': 'https://techmoran.com/',
-              'sports': 'https://www.pulsesports.co.ke/',
+              'technology': 'https://techweez.com/',
+              'sports': 'https://www.mozzartsport.co.ke/',
               'business': 'https://www.standardmedia.co.ke/business',
-              'finance': 'https://www.kenyamoja.com/business',
+              'finance': 'https://www.standardmedia.co.ke/business',
               'politics': 'https://www.kenyans.co.ke/news'
           }
-          
           target_url = url_map.get(topic, 'https://www.kenyans.co.ke/news')
-          print(f"🎯 Topic: {topic} | Target: {target_url}")
 
-          # --- 2. FETCH CONTENT (APIFY) ---
+          # --- 2. FETCH ---
           apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
           crawl_text = ""
-          
-          print(f"🕷️ Crawling {target_url}...")
           try:
-              run_input = {
-                  "startUrls": [{"url": target_url}],
-                  "maxCrawlPages": 1, 
-                  "crawlerType": "cheerio",
-                  "removeElementsCssSelector": "nav, footer, script, style, .ad, .advertisement, .subscribe-widget"
-              }
-              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
-              
+              run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": target_url}], "maxCrawlPages": 1})
               for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
-                  crawl_text += item.get('markdown', '')[:3000] 
-          except Exception as e:
-              print(f"❌ Apify Error: {e}")
-              exit(0)
-          
-          if not crawl_text:
-              print("No content found via Apify.")
-              exit(0)
+                  crawl_text += item.get('markdown', '')[:4000] 
+          except: exit(0)
 
-          # --- 3. IMAGE HELPER ---
-          def get_real_image(query):
-              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              fallback = f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{query.replace(' ', '-')}-no-humans?width=1200&height=630&nologo=true"
-              
-              if not access_key: return fallback
-              
-              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
-              try:
-                  resp = requests.get(url, timeout=10)
-                  if resp.status_code == 200:
-                      return resp.json()['urls']['regular']
-              except: pass
-              return fallback
-
-          # --- 4. PROMPT ---
-          hooks = [
-             "Straight reporting: What happened, when, where, who, why.",
-             "Key facts first: Timeline of events.",
-             "Source-led: What experts/officials said.",
-             "Data-driven: Numbers and impacts."
-          ]
-          selected_hook = random.choice(hooks)
-
-          cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics': 'Politics', 'finance': 'Business' }
+          # --- 3. PROMPT (STRICT ANTI-CITATION) ---
+          cat_map = {'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics': 'Politics', 'finance': 'Business'}
           display_category = cat_map.get(topic, 'General')
 
-          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+          prompt = f'''STRICT JOURNALISM MODE. 
+          SOURCE MATERIAL: {crawl_text}
 
-          SOURCE DATA (CRAWLED FROM {target_url}):
-          {crawl_text}
+          TASK: Write a factual news article. 
+          
+          STRICT RULES:
+          1. NO CITATIONS: Do not use square brackets like [source.com] or [1]. 
+          2. NO URLS: Do not include any website links in the body text.
+          3. NO EXTERNAL FOOTERS: Do not add "Source:" or "Crawled from" at the end.
+          4. TONE: Neutral, professional UK English.
+          5. DASHES: NEVER use em-dashes (—) or en-dashes (–). Use commas or colons.
 
-          TASK: Write a FACTUAL news article based on the most significant story above.
-          - NO OPINIONS. NO HYPOTHESIS. NO HALLUCINATIONS.
-          - Report in neutral, professional journalist tone.
-          - Opening: {selected_hook}
-
-          OUTPUT FORMAT (exact):
-          TITLE: [News-style headline, 60 chars]
-          DESCRIPTION: [Factual 1-2 sentence summary, 160 chars]
+          OUTPUT FORMAT:
+          TITLE: [Headline]
+          DESCRIPTION: [Summary]
           CATEGORY: [{display_category}]
-          TAGS: [3-5 relevant tags]
-          IMAGE_KEYWORD: [2-3 words for image]
+          TAGS: [Tags]
+          IMAGE_KEYWORD: [Keyword]
           BODY:
-          [Full article: 1200-1600 words. ## Headers for sections. Cite sources inline.]
+          [Article content only]'''
 
-          RULES:
-          - Facts only. If unknown, say "details unclear".
-          - UK English, NEVER use em-dashes or en-dashes; use commas or colons instead.
-          - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
-
-          # --- 5. GEMINI CALL (Updated to Gemini 2.5 Flash) ---
+          # --- 4. EXECUTION ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
-          model_id = "gemini-2.5-flash" 
+          model_id = "gemini-2.5-flash"
           
-          print(f"🤖 Generating with {model_id}...")
-          
-          def call_with_retry(model, prompt_text, retries=2):
-              for i in range(retries + 1):
-                  try:
-                      resp = client.models.generate_content(
-                          model=model,
-                          contents=prompt_text,
-                          config=types.GenerateContentConfig(temperature=0.1)
-                      )
-                      return resp.text.strip()
-                  except Exception as e:
-                      print(f"⚠️ Attempt {i+1} failed: {e}")
-                      if i < retries:
-                          time.sleep(15 * (i + 1))
-                      else:
-                          return None
+          try:
+              resp = client.models.generate_content(
+                  model=model_id,
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.1)
+              )
+              full_text = resp.text.strip()
+          except: exit(1)
 
-          full_text = call_with_retry(model_id, prompt)
-          
-          if not full_text:
-              print("🔄 Trying legacy fallback (Gemini 1.5 Flash)...")
-              full_text = call_with_retry("gemini-1.5-flash", prompt)
-
-          if not full_text:
-              print("❌ All models exhausted or quota reached.")
-              exit(1)
-
-          # --- 6. PARSE & CLEANUP ---
-          parsed = { "TITLE": f"News {date_str}", "DESCRIPTION": "Latest updates", "CATEGORY": display_category, "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
-          
-          lines = full_text.splitlines()
+          # --- 5. PARSE & CLEANUP ---
+          parsed = {"TITLE":"", "DESCRIPTION":"", "CATEGORY":display_category, "TAGS":"", "IMAGE_KEYWORD":"", "BODY":""}
           body_started = False
-          
-          for line in lines:
+          for line in full_text.splitlines():
               clean = line.strip().replace("**", "")
               if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
               elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
-              elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
               elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
               elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
               elif clean.startswith("BODY:"): body_started = True
               elif body_started: parsed["BODY"] += line + "\n"
 
-          if not parsed["BODY"] and not body_started: parsed["BODY"] = full_text
+          # REGEX CLEANUP: Remove any remaining [anything.com] or [1] citations
+          parsed["BODY"] = re.sub(r'\[.*?\]', '', parsed["BODY"])
+          # Remove em/en dashes just in case
+          parsed["BODY"] = parsed["BODY"].replace("—", ", ").replace("–", ", ")
 
-          # Final cleaning for dashes as per user instructions
-          for key in ["TITLE", "DESCRIPTION", "BODY"]:
-              parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-
-          # --- 7. SAVE ---
-          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
-          slug = re.sub(r'-+', '-', slug).strip('-')
+          # --- 6. SAVE ---
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
-
+          
           final_file = f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
-          image: "{image_url}"
-          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
-          imageAlt: "{parsed['IMAGE_KEYWORD']}"
           category: "{parsed['CATEGORY']}"
           tags: {json.dumps(tag_list)}
-          featured: true
-          draft: false
           slug: "{slug}"
           ---
 
-          {parsed['BODY']}
-
-          <div class="article-meta">
-            <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Author:</strong> Jonathan Mwaniki</p>
-            <p><strong>Source:</strong> Crawled from {target_url}</p>
-          </div>
+          {parsed['BODY'].strip()}
           """
 
-          final_file = textwrap.dedent(final_file).strip()
-          out_dir = os.environ.get("POSTS_DIR", "src/content/posts")
-          os.makedirs(out_dir, exist_ok=True)
-          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
-              f.write(final_file)
-          print(f"✅ Published: {slug}.md")
+          os.makedirs(os.environ.get("POSTS_DIR"), exist_ok=True)
+          with open(os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md"), "w") as f:
+              f.write(textwrap.dedent(final_file).strip())
           EOF
 
-      - name: Commit and push article
+      - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish via Gemini 2.5 Flash ${{ github.run_id }}"
+          commit_message: "content: publish news"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: ${{ env.POSTS_DIR }}/*.md
-          commit_user_name: "Content Bot"
-          commit_user_email: "actions@github.com"
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
