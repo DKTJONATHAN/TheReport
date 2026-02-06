@@ -57,7 +57,7 @@ jobs:
           APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          # FIX: Reference github.event.inputs with fallback for schedule runs
+          # FIX: Use github.event.inputs and provide a fallback for the cron schedule
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
@@ -67,9 +67,8 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. CONFIG & CRON-SPECIFIC KEY MAPPING ---
+          # --- 1. CONFIG & KEY MAPPING ---
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
-          
           key_map = {
               '0 0 * * *': os.environ.get('GEMINI_API_KEY'),
               '0 4 * * *': os.environ.get('GEMINI_API_KEY1'),
@@ -91,10 +90,11 @@ jobs:
           if manual_input:
               topic = manual_input
           else:
-              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
-              elif current_hour_utc == 4 or current_hour_utc == 20: topic = 'entertainment'
-              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
-              elif current_hour_utc == 11 or current_hour_utc == 18: topic = 'business'
+              # Matching your original logic
+              if current_hour_utc in [0, 14]: topic = 'sports'
+              elif current_hour_utc in [4, 20]: topic = 'entertainment'
+              elif current_hour_utc in [6, 22]: topic = 'technology'
+              elif current_hour_utc in [11, 18]: topic = 'business'
               else: topic = 'politics'
           
           site_config = {
@@ -106,26 +106,22 @@ jobs:
           }
           cfg = site_config.get(topic, site_config['politics'])
 
-          # --- 2. CRAWL (Full Articles, 10 Results Max) ---
+          # --- 2. CRAWL (Depth 2 for Full Articles, Max 10) ---
           apify = ApifyClient(selected_apify)
           try:
-              run_input = {
+              run = apify.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": cfg['url']}],
-                  "maxCrawlPages": 20,      # High enough to find 10 candidates
+                  "maxCrawlPages": 20,
                   "maxResults": 10,         # Limit to 10 articles
-                  "maxCrawlDepth": 2,       # FOLLOW LINKS to get full article text
+                  "maxCrawlDepth": 2,       # Depth 2 follows links to actual articles
                   "includeUrlGlobs": [{"glob": cfg['glob']}],
                   "crawlerType": "cheerio"
-              }
-              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
+              })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              
-              # Filter for results that actually have body text (longer articles)
-              valid_md = [r.get('markdown', '') for r in results if r.get('markdown') and len(r.get('markdown')) > 500]
+              # Filter for results that look like real articles (over 600 chars)
+              valid_md = [r.get('markdown', '') for r in results if r.get('markdown') and len(r.get('markdown')) > 600]
               crawl_text = max(valid_md, key=len) if valid_md else exit(0)
-          except Exception as e:
-              print(f"Apify Error: {e}")
-              exit(0)
+          except: exit(0)
 
           # --- 3. GENERATE (Gemini 3 Flash Preview) ---
           client = genai.Client(api_key=selected_gemini_key)
@@ -159,7 +155,8 @@ jobs:
           desc = get_field("DESCRIPTION", ai_out)
           tags = get_field("TAGS", ai_out)
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
-          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
+          body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
+          body = body_match.group(1).strip() if body_match else ai_out
           
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
@@ -167,22 +164,21 @@ jobs:
           image_url = f"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
           slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')
           
-          final_post = f"""---
-title: "{parsed_title.replace('"', "'")}"
-description: "{desc.replace('"', "'")}"
-date: "{date_str}"
-author: "Jonathan Mwaniki"
-image: "{image_url}"
-category: "{topic.title()}"
-tags: {json.dumps([t.strip() for t in tags.split(',')])}
-featured: true
-draft: false
-slug: "{slug}"
----
+          # Use manual string concatenation to avoid f-string backslash issues in 3.11
+          final_post = "---\n" + \
+                       "title: \"" + parsed_title.replace('"', "'") + "\"\n" + \
+                       "description: \"" + desc.replace('"', "'") + "\"\n" + \
+                       "date: \"" + date_str + "\"\n" + \
+                       "author: \"Jonathan Mwaniki\"\n" + \
+                       "image: \"" + image_url + "\"\n" + \
+                       "category: \"" + topic.title() + "\"\n" + \
+                       "tags: " + json.dumps([t.strip() for t in tags.split(',')]) + "\n" + \
+                       "featured: true\n" + \
+                       "draft: false\n" + \
+                       "slug: \"" + slug + "\"\n" + \
+                       "---\n\n" + body
 
-{body}
-"""
-          out_path = os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md")
+          out_path = os.path.join(os.environ.get("POSTS_DIR"), slug + ".md")
           os.makedirs(os.path.dirname(out_path), exist_ok=True)
           with open(out_path, "w", encoding="utf-8") as f:
               f.write(final_post)
