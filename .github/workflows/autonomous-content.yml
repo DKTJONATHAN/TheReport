@@ -56,10 +56,9 @@ jobs:
           APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
-          POSTS_DIR: src/content/posts
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
+          import os, json, datetime, requests, re, random
           from google import genai
           from apify_client import ApifyClient
 
@@ -107,16 +106,10 @@ jobs:
                   "crawlerType": "cheerio"
               })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              
               valid_md = [r.get('markdown', '') for r in results if r.get('markdown')]
-              if not valid_md:
-                  print(f"Crawler found no markdown content for {topic}.")
-                  exit(0)
-              
+              if not valid_md: exit(0)
               crawl_text = max(valid_md, key=len)
-          except Exception as e:
-              print(f"Crawl failed: {e}")
-              exit(0)
+          except: exit(0)
 
           # --- 3. GENERATE ---
           if not selected_gemini: exit(1)
@@ -131,9 +124,12 @@ jobs:
           BODY: [Full Markdown Content]"""
 
           try:
+              # FIXED: Using gemini-2.0-flash
               resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
               ai_out = resp.text.strip()
-          except: exit(1)
+          except Exception as e:
+              print(f"Gemini Error: {e}")
+              exit(1)
 
           # --- 4. PARSE ---
           def get_field(label, text):
@@ -147,7 +143,7 @@ jobs:
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
           
           body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
-          body = body_match.group(1).strip() if body_match else ""
+          body = body_match.group(1).strip() if body_match else "Content unavailable."
 
           body = re.sub(r'\[.*?\]', '', body)
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
