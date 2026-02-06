@@ -1,4 +1,4 @@
-name: Auto kenya
+name: Auto Newser
 
 on:
   schedule:
@@ -48,6 +48,10 @@ jobs:
       - name: Generate article with Gemini
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
+          GEMINI_WRITE_KEY1: ${{ secrets.GEMINI_WRITE_KEY1 }}
+          GEMINI_WRITE_KEY2: ${{ secrets.GEMINI_WRITE_KEY2 }}
+          GEMINI_WRITE_KEY3: ${{ secrets.GEMINI_WRITE_KEY3 }}
+          GEMINI_WRITE_KEY4: ${{ secrets.GEMINI_WRITE_KEY4 }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
           APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
@@ -64,17 +68,27 @@ jobs:
           from apify_client import ApifyClient
 
           # --- 1. CONFIG & TOKEN ROTATION ---
-          # Collect all available tokens and pick one at random
-          tokens = [
+          # Apify Token Rotation
+          apify_tokens = [
               os.environ.get("APIFY_API_TOKEN"),
               os.environ.get("APIFY_API_TOKEN1"),
               os.environ.get("APIFY_API_TOKEN2"),
               os.environ.get("APIFY_API_TOKEN3"),
               os.environ.get("APIFY_API_TOKEN4")
           ]
-          # Filter out None values in case a secret isn't set
-          active_tokens = [t for t in tokens if t]
-          selected_token = random.choice(active_tokens) if active_tokens else None
+          active_apify_tokens = [t for t in apify_tokens if t]
+          selected_apify_token = random.choice(active_apify_tokens) if active_apify_tokens else None
+
+          # Gemini Key Rotation
+          gemini_keys = [
+              os.environ.get("GEMINI_WRITE_KEY"),
+              os.environ.get("GEMINI_WRITE_KEY1"),
+              os.environ.get("GEMINI_WRITE_KEY2"),
+              os.environ.get("GEMINI_WRITE_KEY3"),
+              os.environ.get("GEMINI_WRITE_KEY4")
+          ]
+          active_gemini_keys = [k for k in gemini_keys if k]
+          selected_gemini_key = random.choice(active_gemini_keys) if active_gemini_keys else None
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
@@ -99,11 +113,11 @@ jobs:
           cfg = site_config.get(topic, site_config['politics'])
 
           # --- 2. AUTONOMOUS CRAWL ---
-          if not selected_token:
+          if not selected_apify_token:
               print("Error: No Apify tokens found.")
               exit(1)
               
-          apify = ApifyClient(selected_token)
+          apify = ApifyClient(selected_apify_token)
           crawl_text = ""
           try:
               run = apify.actor("apify/website-content-crawler").call(run_input={
@@ -120,7 +134,11 @@ jobs:
               exit(0)
 
           # --- 3. PROMPT ---
-          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          if not selected_gemini_key:
+              print("Error: No Gemini keys found.")
+              exit(1)
+
+          client = genai.Client(api_key=selected_gemini_key)
           prompt = f"""SOURCE: {crawl_text}
           Write a 1200+ word UK English news article. NO [site.com] CITATIONS. NO EM-DASHES.
           Format precisely:
