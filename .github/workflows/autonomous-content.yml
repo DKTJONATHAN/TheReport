@@ -48,6 +48,8 @@ jobs:
       - name: Generate article with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
+          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
@@ -67,8 +69,13 @@ jobs:
           active_apify = [t for t in apify_tokens if t]
           selected_apify = random.choice(active_apify) if active_apify else None
 
-          # Gemini Key Fallback List
-          gemini_keys = [os.environ.get("GEMINI_API_KEY"), os.environ.get("GEMINI_WRITE_KEY")]
+          # Gemini Key Pool (Rotating through all 4 available)
+          gemini_keys = [
+              os.environ.get("GEMINI_API_KEY"),
+              os.environ.get("GEMINI_API_KEY1"),
+              os.environ.get("GEMINI_API_KEY2"),
+              os.environ.get("GEMINI_WRITE_KEY")
+          ]
           active_gemini = [k for k in gemini_keys if k]
 
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -111,39 +118,22 @@ jobs:
               crawl_text = max(valid_md, key=len)
           except: exit(0)
 
-          # --- 3. GENERATE (WITH FALLBACK LOGIC) ---
-          if not active_gemini: 
-              print("No Gemini keys found.")
-              exit(1)
-
+          # --- 3. GENERATE (WITH KEY SWAPPING) ---
+          if not active_gemini: exit(1)
           ai_out = ""
-          prompt = f"""SOURCE: {crawl_text}
-          Write a 1200+ word UK English news article. NO [site.com] CITATIONS. NO EM-DASHES.
-          Format precisely:
-          TITLE: [Headline]
-          DESCRIPTION: [160 char summary]
-          TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [2-word search term]
-          BODY: [Full Markdown Content]"""
+          prompt = f"SOURCE: {crawl_text}\nWrite a 1200+ word UK English news article. NO CITATIONS. NO EM-DASHES.\nFormat: TITLE:, DESCRIPTION:, TAGS:, IMAGE_KEYWORD:, BODY:"
 
           for key in active_gemini:
               try:
                   client = genai.Client(api_key=key)
                   resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
                   ai_out = resp.text.strip()
-                  if ai_out: break # Success!
+                  if ai_out: break
               except Exception as e:
-                  if "429" in str(e):
-                      print(f"Key exhausted, trying next... Error: {e}")
-                      time.sleep(2) # Small cooldown
-                      continue
-                  else:
-                      print(f"Gemini error: {e}")
-                      exit(1)
+                  print(f"Key failed, trying next... Error: {e}")
+                  continue
 
-          if not ai_out:
-              print("All Gemini keys exhausted or failed.")
-              exit(1)
+          if not ai_out: exit(1)
 
           # --- 4. PARSE ---
           def get_field(label, text):
@@ -155,25 +145,11 @@ jobs:
           tags_raw = get_field("TAGS", ai_out)
           tags = [t.strip() for t in tags_raw.split(',')] if tags_raw else [topic]
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
-          
-          body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
-          body = body_match.group(1).strip() if body_match else "Content unavailable."
-
-          body = re.sub(r'\[.*?\]', '', body)
+          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
           # --- 5. IMAGE ---
-          def fetch_image(q):
-              access = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if access:
-                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={access}"
-                  try:
-                      r = requests.get(url, timeout=5)
-                      if r.status_code == 200: return r.json()['urls']['regular']
-                  except: pass
-              return f"https://image.pollinations.ai/prompt/{q.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
-
-          image_url = fetch_image(img_kw)
+          image_url = f"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
 
           # --- 6. SAVE ---
           slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
@@ -183,8 +159,6 @@ jobs:
               "date": date_str,
               "author": "Jonathan Mwaniki",
               "image": image_url,
-              "imageCaption": f"Latest update on {img_kw}",
-              "imageAlt": f"News image for {title}",
               "category": topic.title(),
               "tags": tags,
               "featured": True,
