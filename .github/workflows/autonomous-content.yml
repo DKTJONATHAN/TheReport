@@ -1,15 +1,17 @@
-name: Autonomous Real-Time Publisher
+name: Auto kenya
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4 AM EAT: Big World Tech
-    - cron: '0 6 * * *'   # 9 AM EAT: Sports
-    - cron: '0 10 * * *'  # 1 PM EAT: Politics
-    - cron: '0 15 * * *'  # 6 PM EAT: Entertainment
+    - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)
+    - cron: '0 14 * * *'  # 5PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Topic Override'
+        description: 'Force a topic (sports, technology, business)'
         required: false
         default: ''
 
@@ -28,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
-          token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
       - name: Set up Python
@@ -37,155 +39,178 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests groq apify-client
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai apify-client
 
-      - name: Generate Content
+      - name: Generate article with Gemini
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+          POSTS_DIR: src/content/posts
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
-          from groq import Groq
+          import os, json, datetime, requests, re, random, time, textwrap
+          from google import genai
+          from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. TOPIC & DYNAMIC ANGLE LOGIC ---
-          date_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+          # --- 1. CONFIGURATION & TOPIC ---
+          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
-
-          # Topic Mapping
-          if manual_input:
-              topic, focus = manual_input, "User defined manual topic."
-          elif 0 <= current_hour_utc < 4:
-              topic, focus = "Big World Technology", "Breakthroughs in AI, Space, and Quantum. Global focus."
-          elif 4 <= current_hour_utc < 9:
-              topic, focus = "Sports", "Kenyan Leagues (FKF-PL), European Leagues, and International Athletics."
-          elif 9 <= current_hour_utc < 14:
-              topic, focus = "Politics", "Major international shifts mixed with African leadership and policy."
+          
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
+          
+          # Determine Topic based on Schedule
+          if manual_input in ['sports', 'technology', 'business', 'politics']:
+              topic = manual_input
           else:
-              topic, focus = "Social & Entertainment", "World celebrities mixed with Kenyan social trends."
+              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
+              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
+              elif current_hour_utc == 18: topic = 'finance'
+              else: topic = 'business'
+          
+          # --- 100% KENYAN SOURCE MAPPING ---
+          url_map = {
+              'technology': 'https://techweez.com/',               # Best KE Tech
+              'sports': 'https://www.mozzartsport.co.ke/',         # Best KE/Int Sports
+              'business': 'https://www.standardmedia.co.ke/business', # Reliable Biz
+              'finance': 'https://www.standardmedia.co.ke/business',  # Reliable Finance
+              'politics': 'https://www.kenyans.co.ke/news'         # Political Heat
+          }
+          
+          target_url = url_map.get(topic, 'https://www.kenyans.co.ke/news')
+          print(f"🎯 Topic: {topic} | Target: {target_url}")
 
-          # Original Hook System
+          # --- 2. FETCH REAL-TIME CONTENT (APIFY) ---
+          apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
+          crawl_text = ""
+          
+          print(f"🕷️ Crawling {target_url}...")
+          try:
+              run_input = {
+                  "startUrls": [{"url": target_url}],
+                  "maxCrawlPages": 1, 
+                  "crawlerType": "cheerio",
+                  "removeElementsCssSelector": "nav, footer, script, style, .ad, .advertisement, .subscribe-widget"
+              }
+              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
+              
+              # Get text from the crawl
+              for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
+                  crawl_text += item.get('markdown', '')[:2500] 
+          except Exception as e:
+              print(f"❌ Apify Error: {e}")
+              exit(0)
+          
+          if not crawl_text:
+              print("No content found via Apify.")
+              exit(0)
+
+          # --- 3. IMAGE HELPER ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = f"https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{query.replace(' ', '-')}-no-humans?width=1200&height=630&nologo=true"
+              
+              if not access_key: return fallback
+              
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except: pass
+              return fallback
+
+          # --- 4. PROMPT ---
           hooks = [
-             "A Direct Question: Start immediately with a hard-hitting analytical question.",
-             "A Shocking Statistic: Start with a complex figure and explain its deeper meaning.",
-             "A Cynical Observation: Start by critically challenging a common global belief.",
-             "A Bold Critique: Start by identifying a specific group or policy and analyzing its failure."
+             "Straight reporting: What happened, when, where, who, why.",
+             "Key facts first: Timeline of events.",
+             "Source-led: What experts/officials said.",
+             "Data-driven: Numbers and impacts."
           ]
           selected_hook = random.choice(hooks)
 
-          # --- 2. CONTEXT CRAWL (APIFY) ---
-          crawl_context = ""
-          try:
-              apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
-              run_input = {
-                  "startUrls": [{"url": "https://www.kenyans.co.ke/news"}],
-                  "maxCrawlPages": 1, 
-                  "crawlerType": "cheerio",
-                  "removeElementsCssSelector": "nav, footer, script, style, .sidebar, .ads"
-              }
-              # Run the crawler
-              run = apify.actor("apify/website-content-crawler").call(run_input=run_input)
-              
-              # Extract text
-              for item in apify.dataset(run["defaultDatasetId"]).iterate_items():
-                  title = item.get('metadata', {}).get('title', '')
-                  text = item.get('markdown', '')[:800] # Limit per article to save tokens
-                  crawl_context += f"NEWS ITEM: {title}\nDETAILS: {text}\n"
-          except Exception as e:
-              print(f"Apify Error: {e}")
-              crawl_context = "No real-time context available. Rely on general knowledge."
+          cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics': 'Politics', 'finance': 'Business' }
+          display_category = cat_map.get(topic, 'General')
 
-          # --- 3. THE COMMAND PROMPT (GROQ) ---
-          spec_text = f"""
-          You are an autonomous senior correspondent for jonathanmwaniki.co.ke.
-          TODAY'S DATE: {date_str}
-          TOPIC: {topic} | FOCUS: {focus}
-          OPENING STYLE: {selected_hook}
-          CONTEXT DATA: {crawl_context[:4000]}
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          CRITICAL INSTRUCTIONS:
-          1. REAL-TIME ANALYSIS: Use the CONTEXT DATA to write about a real event if matches topic.
-          2. LANGUAGE: STRICTLY British English (colour, honour). NO Swahili. NO Sheng.
-          3. TONE: Cynical, fearless, and intellectually savage. Name names.
-          4. ANTI-SPAM: NEVER use 'geopolitical', 'landscape', 'tapestry', 'delve', or 'pivotal'.
-          5. DASH RULE: Use NO em dashes (—) or en dashes (–). Use commas.
-          6. FORMAT: Write 1500 words. 6 sections with ## Headers.
+          SOURCE DATA (CRAWLED FROM {target_url}):
+          {crawl_text}
 
-          *** OUTPUT FORMAT ***
-          TITLE: [Punchy Title]
-          DESCRIPTION: [2-sentence SEO summary]
-          CATEGORY: [Sports/Business/Technology/Politics/Social]
-          TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [Specific cinematic noun for Unsplash]
+          TASK: Identify the single most significant story in this data and write a FACTUAL news article.
+          - The story MUST be from the provided text.
+          - NO OPINIONS. NO HYPOTHESIS. NO HALLUCINATIONS.
+          - Report in neutral, professional journalist tone.
+          - Opening: {selected_hook}
+
+          OUTPUT FORMAT (exact):
+          TITLE: [News-style headline, 60 chars]
+          DESCRIPTION: [Factual 1-2 sentence summary, 160 chars]
+          CATEGORY: [{display_category}]
+          TAGS: [3-5 relevant tags]
+          IMAGE_KEYWORD: [2-3 words for image]
           BODY:
-          [Full article content. NO title at start.]
-          """
+          [Full article: 1200-1600 words. ## Headers for sections. Cite sources inline.]
 
-          # --- 4. API CALL (GROQ) ---
-          client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+          RULES:
+          - Facts only. If unknown, say "details unclear".
+          - UK English, commas not em-dashes.
+          - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
+
+          # --- 5. GEMINI CALL ---
+          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          model_id = "gemini-1.5-flash" 
+          
+          print(f"🤖 Generating with {model_id}...")
+          
           try:
-              chat_completion = client.chat.completions.create(
-                  messages=[{"role": "user", "content": spec_text}],
-                  model="llama-3.3-70b-versatile",
-                  temperature=0.7,
-                  max_tokens=5000
+              response = client.models.generate_content(
+                  model=model_id,
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.1)
               )
-              full_text = chat_completion.choices[0].message.content
+              full_text = response.text.strip()
           except Exception as e:
-              print(f"Groq Error: {e}")
+              print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          if not full_text: exit(1)
-
-          # --- 5. PARSING & SCRUBBING ---
-          parsed = {"TITLE": "Post", "DESCRIPTION": "", "CATEGORY": "Opinion", "TAGS": "news", "IMAGE_KEYWORD": "Nairobi"}
-          for line in full_text.splitlines():
-              if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
-              elif line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
-              elif line.startswith("CATEGORY:"): parsed["CATEGORY"] = line.replace("CATEGORY:", "").strip()
-              elif line.startswith("TAGS:"): parsed["TAGS"] = line.replace("TAGS:", "").strip()
-              elif line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
-
-          if "BODY:" in full_text:
-              body_start = full_text.find("BODY:") + 5
-              raw_body = full_text[body_start:].strip()
-          else:
-              # Fallback if AI forgets BODY: tag
-              raw_body = full_text
-
-          def scrub(t): return t.replace("\u2014", ", ").replace("\u2013", ", ").replace("--", ", ")
-          parsed["BODY"], parsed["TITLE"], parsed["DESCRIPTION"] = scrub(raw_body), scrub(parsed["TITLE"]), scrub(parsed["DESCRIPTION"])
-
-          # --- 6. IMAGE GUARANTEE PROTOCOL ---
-          # 1. Define a high-quality fallback (Abstract News Background)
-          img_url = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80"
+          # --- 6. PARSE ---
+          parsed = { "TITLE": f"News {date_str}", "DESCRIPTION": "Latest updates", "CATEGORY": display_category, "TAGS": f"{topic},news", "IMAGE_KEYWORD": topic, "BODY": "" }
           
-          # 2. Try to get a real one
-          img_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-          if img_key:
-              try:
-                  query = parsed['IMAGE_KEYWORD'].replace(" ", "+")
-                  s_url = f"https://api.unsplash.com/search/photos?query={query}&client_id={img_key}&per_page=1&orientation=landscape"
-                  s_res = requests.get(s_url, timeout=10).json()
-                  if s_res.get('results') and len(s_res['results']) > 0:
-                      img_url = s_res['results'][0]['urls']['regular']
-              except:
-                  pass # Silently fail to the fallback
+          lines = full_text.splitlines()
+          body_started = False
+          
+          for line in lines:
+              clean = line.strip().replace("**", "")
+              if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
+              elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
+              elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
+              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
+              elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean.startswith("BODY:"): body_started = True
+              elif body_started: parsed["BODY"] += line + "\n"
 
-          # --- 7. FILE ASSEMBLY ---
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+          if not parsed["BODY"] and not body_started: parsed["BODY"] = full_text
+
+          for key in ["TITLE", "DESCRIPTION", "BODY"]:
+              parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+
+          # --- 7. SAVE ---
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
+          slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
 
-          final_md = f"""---
+          final_file = f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
-          image: "{img_url}"
+          image: "{image_url}"
           imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
           imageAlt: "{parsed['IMAGE_KEYWORD']}"
           category: "{parsed['CATEGORY']}"
@@ -200,18 +225,25 @@ jobs:
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
             <p><strong>Author:</strong> Jonathan Mwaniki</p>
-            <p><strong>Tags:</strong> {parsed['TAGS']}</p>
+            <p><strong>Source:</strong> Crawled from {target_url}</p>
           </div>
           """
 
-          out_dir = os.environ.get('POSTS_DIR', 'src/content/posts')
+          final_file = textwrap.dedent(final_file).strip()
+          out_dir = os.environ.get("POSTS_DIR", "src/content/posts")
           os.makedirs(out_dir, exist_ok=True)
-          with open(f"{out_dir}/{slug}.md", "w", encoding="utf-8") as f:
-              f.write(final_md)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+              f.write(final_file)
+          print(f"✅ Published: {slug}.md")
           EOF
 
-      - name: Commit and Push
+      - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: autonomous real-time update [${{ github.run_id }}]"
-          branch: main
+          commit_message: "content: publish ${{ github.run_id }}"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
