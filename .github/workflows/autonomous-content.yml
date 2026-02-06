@@ -2,11 +2,11 @@ name: Autonomous Real-Time Publisher
 
 on:
   schedule:
-    - cron: '0 1,6,10,15 * * *' # Optimized to run 4 times daily
+    - cron: '0 1,6,10,15 * * *' # 4 AM, 9 AM, 1 PM, 6 PM EAT
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic'
+        description: 'Hard-hitting topic override'
         required: false
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Research and Generate
+      - name: Research and Fearless Content Generation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -36,77 +36,80 @@ jobs:
           python << 'EOF'
           import os, json, datetime, requests, re, random, time
 
-          # --- DYNAMIC DATE FIX ---
-          # This ensures that even in 2027, it knows today's real date.
+          # --- DYNAMIC DATE (NO STUPID HARDCODING) ---
           now = datetime.datetime.utcnow()
           date_str = now.strftime('%Y-%m-%d')
           human_date = now.strftime('%B %d, %Y')
           
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
-
-          def call_gemini(prompt, use_search=False):
+          def call_gemini(prompt, use_search=False, temp=0.9):
               api_key = os.environ.get("GEMINI_API_KEY")
-              # Using Gemini 2.0 for superior grounding
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+              # Using Gemini 3 Flash Preview as requested
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
               
               payload = {
                   "contents": [{"parts": [{"text": prompt}]}],
                   "tools": [{"google_search_retrieval": {}}] if use_search else [],
-                  "generationConfig": {"temperature": 1.0},
-                  "safetySettings": [{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"}]
+                  "generationConfig": {"temperature": temp, "maxOutputTokens": 8192},
+                  "safetySettings": [
+                      {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                      {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                  ]
               }
               try:
                   resp = requests.post(url, json=payload, timeout=240)
-                  return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-              except Exception as e: 
-                  print(f"Error: {e}")
+                  data = resp.json()
+                  if "candidates" in data:
+                      return data["candidates"][0]["content"]["parts"][0]["text"]
+                  print(f"API Error: {data}")
+                  return None
+              except Exception as e:
+                  print(f"Request Failed: {e}")
                   return None
 
-          # --- 1. REAL-TIME FACT SCOUTING ---
-          topic_pool = ["Kenyan Politics", "Big Tech War", "FKF Premier League", "Global Scandals"]
-          base_topic = manual_input if manual_input else random.choice(topic_pool)
+          # --- 1. RESEARCH PASS (STOPPING HALLUCINATIONS) ---
+          topic_map = ["Kenyan Politics Scandals", "Global Tech Tyranny", "FKF Premier League Dirty Truths", "Athletics Doping Realities"]
+          topic = os.environ.get('MANUAL_TOPIC') or random.choice(topic_map)
           
-          # We force a search for the "Status" of players to avoid 2016 data.
-          research_prompt = f"Perform a deep search for the most controversial news regarding {base_topic} specifically on {human_date}. Verify who is currently in power, who is deceased, and what the actual scores or prices are today."
+          scout_prompt = f"Today is {human_date}. Search for the 3 most controversial, trending news items about {topic}. Verify if the people involved are ALIVE and in POWER. Do not use data from before 2025."
+          research = call_gemini(scout_prompt, use_search=True)
+          if not research: exit(1)
+
+          # --- 2. BOLD ARTICLE GENERATION ---
+          gen_prompt = f"""
+          TODAY: {human_date} | RESEARCH: {research}
+          Write a 1500-word, high-SEO, unapologetic article for jonathanmwaniki.co.ke.
           
-          print(f"Fact-Scouting for {human_date}...")
-          grounding_data = call_gemini(research_prompt, use_search=True)
-
-          if not grounding_data:
-              print("Search failed. Exiting to avoid hallucinations.")
-              exit(1)
-
-          # --- 2. FEARLESS WRITING ---
-          write_prompt = f"""
-          TODAY'S DATE: {human_date}
-          VERIFIED DATA: {grounding_data}
-
-          Write a 1500-word SEO article for jonathanmwaniki.co.ke. 
+          STYLE: 
+          - Fearless: Mention names, call out the bullshit. 
+          - Unfiltered: Use vulgarity or rough language if it hits harder. 
+          - Human: Use Sheng (slang), sentence fragments, and bias. No 'pivotal' or 'tapestry'.
           
-          STRICT RULES:
-          1. NO GHOSTS: If a person is deceased in the verified data, write about their legacy or the vacuum they left. Do not put them in office.
-          2. VULGAR & BOLD: Be unapologetic. Use names. Call out corruption or failure using strong language.
-          3. HUMAN SOUND: Use sentence fragments. Use Kenyan Sheng. No 'pivotal' or 'landscape'.
-          4. FORMAT: 
-             TITLE: [Headline]
-             DESCRIPTION: [SEO Meta]
-             BODY: [Article Content]
+          FORMAT:
+          TITLE: [Competitive Keyword Headline]
+          DESCRIPTION: [SEO summary]
+          IMAGE_KEYWORD: [Cinematic Prompt]
+          BODY: [Full Article Content]
           """
+          raw_article = call_gemini(gen_prompt, temp=1.0)
 
-          raw_article = call_gemini(write_prompt)
-
-          # --- 3. HUMANIZER PASS ---
-          final_content = call_gemini(f"Rewrite this to sound like a pissed-off human expert in Nairobi. Make it messy, brilliant, and aggressive. Remove the AI smell.\n\n{raw_article}") or raw_article
-
-          # --- 4. SAVE ---
-          parsed_title = re.search(r"TITLE:\s*(.*)", final_content)
-          title = parsed_title.group(1).strip() if parsed_title else "New Article"
-          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
+          # --- 3. THE HUMANIZER LOOP (AI-SOUND TEST) ---
+          human_test = f"""
+          Evaluate this article. If it sounds like a robot or a nice corporate AI, rewrite it to be 
+          angry, human, and biased. If it fails to sound like a Nairobi expert, rewrite it until it hits.
           
-          # Strip formatting junk
-          body = final_content.split("BODY:")[-1].strip()
+          ARTICLE: {raw_article}
+          """
+          final_text = call_gemini(human_test, temp=1.0) or raw_article
 
-          final_md = f"---\ntitle: \"{title}\"\ndate: \"{date_str}\"\n---\n\n{body}"
+          # --- 4. PARSING & COMMIT ---
+          title_match = re.search(r"TITLE:\s*(.*)", final_text)
+          title = title_match.group(1).strip() if title_match else "Savage News"
+          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
+          body = final_text.split("BODY:")[-1].strip()
+
+          final_md = f"---\ntitle: \"{title.replace('\"', '')}\"\ndate: \"{date_str}\"\nfeatured: true\n---\n\n{body}"
           
           os.makedirs(os.environ['POSTS_DIR'], exist_ok=True)
           with open(f"{os.environ['POSTS_DIR']}/{slug}.md", "w") as f:
@@ -116,4 +119,4 @@ jobs:
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Real-time Grounded Content: ${{ github.run_id }}"
+          commit_message: "content: grounded autonomous update [${{ github.run_id }}]"
