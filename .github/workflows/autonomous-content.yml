@@ -2,10 +2,10 @@ name: Autonomous Real-Time Publisher
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 4 AM EAT: Big World Tech
-    - cron: '0 6 * * *'   # 9 AM EAT: Sports (Kenyan, Euro, Athletics)
-    - cron: '0 10 * * *'  # 1 PM EAT: Politics (International & African)
-    - cron: '0 15 * * *'  # 6 PM EAT: Entertainment & Kenyan Social
+    - cron: '0 1 * * *'
+    - cron: '0 6 * * *'
+    - cron: '0 10 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -29,7 +29,6 @@ jobs:
         with:
           ref: ${{ env.DEFAULT_BRANCH }}
           token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
-          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -52,21 +51,22 @@ jobs:
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip()
 
-          # 1. TOPIC SELECTION
+          # 1. TOPIC LOGIC
           if manual_input:
               topic, focus = manual_input, "User defined manual topic."
           elif 0 <= current_hour_utc < 4:
-              topic, focus = "Big World Tech", "Cutting edge AI, space wars, and quantum control. Focus on power moves."
+              topic, focus = "Big World Tech", "Power moves in AI and global tech hegemony. Dark side of Silicon Valley."
           elif 4 <= current_hour_utc < 9:
-              topic, focus = "Sports Aggression", "FKF-PL rivalries, Athletics doping scandals, or European football greed."
+              topic, focus = "Sports Aggression", "FKF-PL rivalries, corruption in Athletics, and the greed of Euro football."
           elif 9 <= current_hour_utc < 14:
-              topic, focus = "Raw Politics", "Corruption, international betrayal, and the reality of African power dynamics."
+              topic, focus = "Raw African Politics", "Corruption, power shifts, and the real cost of leadership in Kenya and beyond."
           else:
-              topic, focus = "Culture & Vice", "Kenyan social trends, celebrity collapses, and the unfiltered truth of digital fame."
+              topic, focus = "Social & Celebrity Vice", "Kenyan social trends, the rot in digital culture, and celebrity vanity."
 
-          def call_gemini(prompt, temperature=0.9):
+          def call_gemini(prompt, temperature=1.0):
               api_key = os.environ.get("GEMINI_API_KEY")
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+              # Using the requested Gemini 3 Flash Preview
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
               payload = {
                   "contents": [{"parts": [{"text": prompt}]}],
                   "generationConfig": {"temperature": temperature, "maxOutputTokens": 8192},
@@ -78,61 +78,69 @@ jobs:
                   ]
               }
               try:
-                  resp = requests.post(url, json=payload, timeout=180)
-                  return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+                  resp = requests.post(url, json=payload, timeout=240)
+                  res_data = resp.json()
+                  if "candidates" in res_data and res_data["candidates"][0]["content"]["parts"]:
+                      return res_data["candidates"][0]["content"]["parts"][0]["text"]
+                  else:
+                      # Check if safety filters blocked it
+                      print(f"API returned no candidates. Likely safety block. Response: {res_data}")
+                      return None
               except Exception as e:
-                  print(f"Error: {e}")
+                  print(f"Request Error: {e}")
                   return None
 
-          # 2. GENERATION PASS (The Raw Content)
+          # 2. THE GENERATION PASS (Raw & Fearless)
           raw_prompt = f"""
-          Write a 1500-word, high-SEO, fearless article.
+          Write a 1500-word, high-SEO, fearless, and unapologetic article for jonathanmwaniki.co.ke.
           DATE: {date_str}
-          TOPIC: {topic}
-          FOCUS: {focus}
+          TOPIC: {topic} | FOCUS: {focus}
 
-          STYLE REQUIREMENTS:
-          - UNAPOLOGETIC: Do not use safe language. If someone is a fraud, call them a fraud. Use names.
-          - VULGARITY: Use strong language if it adds impact. Do not be polite.
-          - SEO: Use highly competitive, high-volume keywords in the title and headers.
-          - HUMANIZATION: Use sentence fragments. Start sentences with 'But' or 'And'. Use rhetorical questions. Use Kenyan slang where appropriate.
-          - NO AI-ISMS: No 'pivotal', 'delve', 'tapestry', 'landscape', or 'complex'.
-          - DASH RULE: NO em dashes (—). Use commas.
+          CRITICAL STYLE RULES:
+          - BOLD & FEARLESS: Do not use safe language. If someone is a failure, say it. Mention names.
+          - UNFILTERED: Use strong language or vulgarity if it adds human impact.
+          - NO AI-ISMS: Never use 'pivotal', 'tapestry', 'delve', or 'landscape'.
+          - DASH RULE: Use NO em dashes (—). Use commas.
+          - HUMANIZATION: Use sentence fragments, Sheng (Kenyan slang), and rhetorical anger.
 
-          FORMAT:
-          TITLE: [Hard-hitting, SEO-heavy headline]
-          DESCRIPTION: [Savage 2-sentence meta summary]
-          CATEGORY: [Category]
+          OUTPUT FORMAT:
+          TITLE: [Savage Keyword-Rich Headline]
+          DESCRIPTION: [Savage SEO Summary]
+          CATEGORY: [Sports/Technology/Politics/Social]
           TAGS: [tag1, tag2]
-          IMAGE_KEYWORD: [Cinematic prompt]
-          BODY: [Content]
+          IMAGE_KEYWORD: [Cinematic cinematic prompt]
+          BODY: [Full article]
           """
 
-          raw_content = call_gemini(raw_prompt)
-
-          # 3. VERIFICATION & HUMANIZATION PASS (The Filter)
-          humanizer_prompt = f"""
-          Review the following article. Rate its 'Human Sound' from 0-100.
-          An article sounds like AI if it is too balanced, too helpful, or uses perfect grammar.
+          raw_content = call_gemini(raw_prompt, temperature=0.9)
           
-          HUMAN CRITERIA:
-          - Does it sound angry, biased, or passionate? (Good)
-          - Does it use short, punchy sentences? (Good)
-          - Does it mention specific people and call out their bullshit? (Good)
-          - Does it sound like a corporate robot? (Bad - Rewrite)
+          # 3. THE HUMANIZER & AI-DETECTION BYPASS
+          if raw_content:
+              humanizer_prompt = f"""
+              The following article was written by an AI. It sounds too structured. 
+              REWRITE it to sound 100% human. 
+              HUMANIZATION TACTICS:
+              - Add personal anecdotes or 'I heard' stories.
+              - Use conversational fillers (Look, anyway, the thing is).
+              - Be biased, aggressive, and opinionated.
+              - Use Kenyan slang (Sheng) naturally.
+              - BREAK the rules of grammar for emphasis.
+              
+              IF THE RESULT SOUNDS LIKE AI, YOU FAIL.
+              
+              ARTICLE:
+              {raw_content}
+              """
+              final_text = call_gemini(humanizer_prompt, temperature=1.0)
+          else:
+              final_text = None
 
-          IF SCORE < 90: Rewrite the entire article to be more chaotic, human, and visceral.
-          Otherwise, return the article exactly as is.
+          if not final_text:
+              print("Workflow failed: Gemini refused to generate content.")
+              exit(1)
 
-          ARTICLE:
-          {raw_content}
-          """
-
-          final_text = call_gemini(humanizer_prompt, temperature=1.0)
-          if not final_text: final_text = raw_content # Fallback
-
-          # 4. PARSING & ASSEMBLY
-          parsed = {"TITLE": "Untitled", "DESCRIPTION": "", "CATEGORY": "News", "TAGS": "news", "IMAGE_KEYWORD": "dark cinematic"}
+          # 4. PARSING & SCRUBBING
+          parsed = {"TITLE": "New Post", "DESCRIPTION": "", "CATEGORY": "Opinion", "TAGS": "news", "IMAGE_KEYWORD": "Nairobi night"}
           for line in final_text.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = line.replace("DESCRIPTION:", "").strip()
@@ -141,10 +149,11 @@ jobs:
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = line.replace("IMAGE_KEYWORD:", "").strip()
 
           body_start = final_text.find("BODY:") + 5
-          raw_body = final_text[body_start:].strip()
+          raw_body = final_text[body_start:].strip() if "BODY:" in final_text else final_text
 
           def scrub(t): return t.replace("\u2014", ", ").replace("\u2013", ", ").replace("--", ", ")
-          parsed["BODY"], parsed["TITLE"], parsed["DESCRIPTION"] = scrub(raw_body), scrub(parsed["TITLE"]), scrub(parsed["DESCRIPTION"])
+          body = scrub(raw_body)
+          title = scrub(parsed["TITLE"])
 
           # 5. IMAGE & FILE WRITE
           img_key = os.environ.get("UNSPLASH_ACCESS_KEY")
@@ -156,24 +165,21 @@ jobs:
                   if s_res.get('results'): img_url = s_res['results'][0]['urls']['regular']
               except: pass
 
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
 
           final_md = f"""---
-          title: "{parsed['TITLE'].replace('"', "'")}"
-          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+          title: "{title}"
+          description: "{parsed['DESCRIPTION']}"
           date: "{date_str}"
           author: "Jonathan Mwaniki"
           image: "{img_url}"
-          imageCaption: "Unfiltered: {parsed['IMAGE_KEYWORD']}"
           category: "{parsed['CATEGORY']}"
           tags: {json.dumps(tag_list)}
-          featured: true
-          draft: false
           slug: "{slug}"
           ---
 
-          {parsed['BODY']}
+          {body}
           """
 
           out_dir = os.environ.get('POSTS_DIR', 'src/content/posts')
@@ -185,5 +191,5 @@ jobs:
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: human-verified autonomous update [${{ github.run_id }}]"
+          commit_message: "content: fearless AI-humanized update [${{ github.run_id }}]"
           branch: main
