@@ -1,4 +1,4 @@
-name: Auto
+name: Auto Newser
 
 on:
   schedule:
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business, entertainment)'
+        description: 'Force a topic (sports, technology, business, politics, entertainment)'
         required: false
         default: ''
 
@@ -64,12 +64,10 @@ jobs:
           from apify_client import ApifyClient
 
           # --- 1. CONFIG & ROTATION ---
-          # Apify Token Pool
           apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
           active_apify = [t for t in apify_tokens if t]
           selected_apify = random.choice(active_apify) if active_apify else None
 
-          # Gemini Key Pool (Strictly these two)
           gemini_keys = [os.environ.get("GEMINI_API_KEY"), os.environ.get("GEMINI_WRITE_KEY")]
           active_gemini = [k for k in gemini_keys if k]
           selected_gemini = random.choice(active_gemini) if active_gemini else None
@@ -84,14 +82,14 @@ jobs:
               if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
               elif current_hour_utc == 4 or current_hour_utc == 20: topic = 'entertainment'
               elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
-              elif current_hour_utc == 18: topic = 'finance'
-              else: topic = 'business'
+              elif current_hour_utc == 11 or current_hour_utc == 18: topic = 'business'
+              else: topic = 'politics'
           
           site_config = {
-              'technology': {'url': 'https://techmoran.com/', 'glob': 'https://techmoran.com/*'},
+              'technology': {'url': 'https://techweez.com/', 'glob': 'https://techweez.com/*'},
               'sports': {'url': 'https://www.pulsesports.co.ke/', 'glob': 'https://www.pulsesports.co.ke/*/story/*'},
-              'business': {'url': 'https://www.businesstoday.co.ke', 'glob': 'https://www.businesstoday.co.ke/*'},
-              'entertainment': {'url': 'https://www.mpasho.co.ke/', 'glob': 'https://www.mpasho.co.ke/*'},
+              'business': {'url': 'https://kenyanwallstreet.com/', 'glob': 'https://kenyanwallstreet.com/*'},
+              'entertainment': {'url': 'https://buzzcentral.co.ke/', 'glob': 'https://buzzcentral.co.ke/*'},
               'politics': {'url': 'https://www.kenyans.co.ke/news', 'glob': 'https://www.kenyans.co.ke/news/*'}
           }
           cfg = site_config.get(topic, site_config['politics'])
@@ -103,14 +101,22 @@ jobs:
           try:
               run = apify.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": cfg['url']}],
-                  "maxCrawlPages": 2,
+                  "maxCrawlPages": 3,
                   "maxCrawlDepth": 1,
                   "includeUrlGlobs": [{"glob": cfg['glob']}],
                   "crawlerType": "cheerio"
               })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              crawl_text = max([r.get('markdown', '') for r in results], key=len)
-          except: exit(0)
+              
+              valid_md = [r.get('markdown', '') for r in results if r.get('markdown')]
+              if not valid_md:
+                  print(f"Crawler found no markdown content for {topic}.")
+                  exit(0)
+              
+              crawl_text = max(valid_md, key=len)
+          except Exception as e:
+              print(f"Crawl failed: {e}")
+              exit(0)
 
           # --- 3. GENERATE ---
           if not selected_gemini: exit(1)
@@ -129,7 +135,7 @@ jobs:
               ai_out = resp.text.strip()
           except: exit(1)
 
-          # --- 4. PARSE & SCRUB ---
+          # --- 4. PARSE ---
           def get_field(label, text):
               match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
               return match.group(1).strip() if match else ""
@@ -139,7 +145,9 @@ jobs:
           tags_raw = get_field("TAGS", ai_out)
           tags = [t.strip() for t in tags_raw.split(',')] if tags_raw else [topic]
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
-          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
+          
+          body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
+          body = body_match.group(1).strip() if body_match else ""
 
           body = re.sub(r'\[.*?\]', '', body)
           body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
