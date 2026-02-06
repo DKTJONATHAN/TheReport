@@ -49,6 +49,10 @@ jobs:
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
+          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
+          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
+          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
           POSTS_DIR: src/content/posts
@@ -59,7 +63,19 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. CONFIG ---
+          # --- 1. CONFIG & TOKEN ROTATION ---
+          # Collect all available tokens and pick one at random
+          tokens = [
+              os.environ.get("APIFY_API_TOKEN"),
+              os.environ.get("APIFY_API_TOKEN1"),
+              os.environ.get("APIFY_API_TOKEN2"),
+              os.environ.get("APIFY_API_TOKEN3"),
+              os.environ.get("APIFY_API_TOKEN4")
+          ]
+          # Filter out None values in case a secret isn't set
+          active_tokens = [t for t in tokens if t]
+          selected_token = random.choice(active_tokens) if active_tokens else None
+
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
@@ -83,7 +99,11 @@ jobs:
           cfg = site_config.get(topic, site_config['politics'])
 
           # --- 2. AUTONOMOUS CRAWL ---
-          apify = ApifyClient(os.environ.get("APIFY_API_TOKEN"))
+          if not selected_token:
+              print("Error: No Apify tokens found.")
+              exit(1)
+              
+          apify = ApifyClient(selected_token)
           crawl_text = ""
           try:
               run = apify.actor("apify/website-content-crawler").call(run_input={
@@ -95,7 +115,9 @@ jobs:
               })
               results = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
               crawl_text = max([r.get('markdown', '') for r in results], key=len)
-          except: exit(0)
+          except Exception as e:
+              print(f"Crawl failed: {e}")
+              exit(0)
 
           # --- 3. PROMPT ---
           client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
@@ -109,9 +131,11 @@ jobs:
           BODY: [Full Markdown Content]"""
 
           try:
-              resp = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+              resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
               ai_out = resp.text.strip()
-          except: exit(1)
+          except Exception as e:
+              print(f"Gemini failed: {e}")
+              exit(1)
 
           # --- 4. PARSING ---
           def get_field(label, text):
@@ -123,7 +147,9 @@ jobs:
           tags_raw = get_field("TAGS", ai_out)
           tags = [t.strip() for t in tags_raw.split(',')] if tags_raw else [topic]
           img_kw = get_field("IMAGE_KEYWORD", ai_out) or topic
-          body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip()
+          
+          body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
+          body = body_match.group(1).strip() if body_match else "Content generation failed."
 
           # Scrub dashes and citations
           body = re.sub(r'\[.*?\]', '', body)
