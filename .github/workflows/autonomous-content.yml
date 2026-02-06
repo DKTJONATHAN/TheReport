@@ -73,10 +73,10 @@ jobs:
               else: topic = 'business'
           
           url_map = {
-              'technology': 'https://techweez.com/',
-              'sports': 'https://www.mozzartsport.co.ke/',
+              'technology': 'https://techmoran.com/',
+              'sports': 'https://www.pulsesports.co.ke/',
               'business': 'https://www.standardmedia.co.ke/business',
-              'finance': 'https://www.standardmedia.co.ke/business',
+              'finance': 'https://www.kenyamoja.com/business',
               'politics': 'https://www.kenyans.co.ke/news'
           }
           
