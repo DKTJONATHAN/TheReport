@@ -4,63 +4,81 @@ import { getCollection } from 'astro:content';
 
 // 1. GENERATE PATHS
 export async function getStaticPaths() {
-  const posts = await getCollection('posts');
-  const categories = [...new Set(posts.map(post => post.data.category))].filter(Boolean);
-  return categories.map(category => ({
-    params: { category: category.toLowerCase() },
-    props: { category, posts: posts.filter(p => p.data.category === category) }
-  }));
+  const allPosts = await getCollection('posts');
+  
+  // Get unique categories (e.g., "Politics", "World News")
+  const uniqueCategories = [...new Set(allPosts.map(post => post.data.category).filter(Boolean))];
+
+  return uniqueCategories.map(catName => {
+    // Slugify: "World News" -> "world-news"
+    const catSlug = catName.toLowerCase().trim().replace(/\s+/g, '-');
+
+    // Filter posts: Match category AND exclude drafts
+    const filteredPosts = allPosts.filter(p => 
+      p.data.category === catName && !p.data.draft
+    );
+
+    return {
+      params: { category: catSlug },
+      props: { 
+        categoryName: catName, 
+        posts: filteredPosts 
+      }
+    };
+  });
 }
 
-const { category, posts } = Astro.props;
+// 2. PROPS
+const { categoryName, posts } = Astro.props;
 
-// 2. SORT & SLICE DATA
-const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+// 3. SORT & SLICE DATA
+const sortedPosts = posts.sort((a, b) => 
+  new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf()
+);
 
 // Story Circles (Top 10 latest in this category)
 const storyPosts = sortedPosts.slice(0, 10);
 
-// Main Feed (Skip first 2 if you want variety, otherwise show all)
+// Main Feed
 const feedPosts = sortedPosts; 
 
-// Sidebar Data (Site-wide Trending)
+// Sidebar Data (Site-wide Trending, excluding current category)
 const allPosts = await getCollection('posts');
 const globalTrending = allPosts
-  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
-  .filter(p => p.data.category !== category) // Don't show current category in sidebar
+  .filter(p => !p.data.draft && p.data.category !== categoryName)
+  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 5);
 
-const optimizedTitle = `${category} News Kenya | Jonathan Mwaniki`;
-const optimizedDescription = `Latest ${category} news from Kenya. Breaking stories and updates.`;
+// SEO
+const pageTitle = `${categoryName} News Kenya | Jonathan Mwaniki`;
+const pageDescription = `Latest ${categoryName} news from Kenya. Breaking stories, deep analysis, and updates.`;
 
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
   { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
-  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
+  { name: 'Likes', count: '22k', icon: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z', bg: '#e1306c' }
 ];
 ---
 
-<Layout 
-  title={optimizedTitle}
-  description={optimizedDescription}
-  meta={[
-    { name: 'keywords', content: `${category} news Kenya, breaking ${category}, Jonathan Mwaniki` },
-    { name: 'og:title', content: optimizedTitle },
-    { name: 'og:description', content: optimizedDescription }
-  ]}
->
-  
+<Layout title={pageTitle} description={pageDescription}>
+
   <div class="page-wrapper">
-    
-    {/* --- 1. STORIES CAROUSEL (Category Specific) --- */}
+
+    {/* --- 1. STORIES CAROUSEL --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
           {storyPosts.map(post => (
             <a href={`/posts/${post.slug}`} class="story-item">
               <div class="story-img-ring">
-                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="eager" />
+                <img 
+                  src={post.data.image || '/default-image.jpg'} 
+                  alt={post.data.title} 
+                  loading="eager"
+                  width="60"
+                  height="60" 
+                />
               </div>
               <span class="story-label">{post.data.title}</span>
             </a>
@@ -70,16 +88,16 @@ const socialStats = [
     </section>
 
     <main class="main-container">
-      
+
       {/* HEADER */}
       <div class="cat-header">
-        <h1>{category} News</h1>
+        <h1>{categoryName} News</h1>
         <div class="header-line"></div>
       </div>
 
       {/* --- 2. MAIN CONTENT GRID --- */}
       <div class="content-grid">
-        
+
         {/* LEFT: Feed */}
         <div class="feed-column">
           <div class="compact-grid">
@@ -87,10 +105,16 @@ const socialStats = [
               <a href={`/posts/${post.slug}`} class="compact-card">
                 <div class="compact-img">
                   <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                  {post.data.status && <span class="status-badge">{post.data.status}</span>}
+                  
+                  {/* Optional: Show status only if it's 'Breaking' or 'Exclusive' */}
+                  {post.data.status && (
+                    <span class="status-badge">{post.data.status}</span>
+                  )}
                 </div>
                 <div class="card-content">
-                  <span class="card-date">{new Date(post.data.date).toLocaleDateString()}</span>
+                  <span class="card-date">
+                    {new Date(post.data.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
                   <h4>{post.data.title}</h4>
                   <p class="card-desc">{post.data.description}</p>
                 </div>
@@ -100,7 +124,7 @@ const socialStats = [
 
           {feedPosts.length === 0 && (
             <div class="empty-state">
-              <p>No stories found in {category}.</p>
+              <p>No stories found in {categoryName}.</p>
               <a href="/" class="back-link">Back Home</a>
             </div>
           )}
@@ -108,7 +132,7 @@ const socialStats = [
 
         {/* RIGHT: Sidebar */}
         <aside class="sidebar-column">
-          
+
           <div class="widget">
             <h3>Connect</h3>
             <div class="social-grid">
@@ -125,7 +149,12 @@ const socialStats = [
           <div class="widget ad-container">
              <span class="ad-label">Advertisement</span>
              <div class="ad-scroll-safe">
-               <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+               <ins class="adsbygoogle" 
+                 style="display:block" 
+                 data-ad-client="ca-pub-9291176772735390" 
+                 data-ad-slot="1358657931" 
+                 data-ad-format="auto" 
+                 data-full-width-responsive="true"></ins>
                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
              </div>
           </div>
@@ -149,10 +178,10 @@ const socialStats = [
   </div>
 
   <style>
-    /* SHARED VARS (Matches Index) */
+    /* SHARED VARS */
     :root {
       --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
-      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
       :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
@@ -178,33 +207,36 @@ const socialStats = [
 
     /* HEADER */
     .cat-header { padding: 1.5rem 0; text-align: center; margin-bottom: 1rem; }
-    .cat-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: uppercase; }
+    .cat-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: capitalize; letter-spacing: -0.5px; }
     .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
 
     /* LAYOUT */
     .content-grid { display: grid; gap: 2rem; padding-bottom: 3rem; }
     @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
 
-    /* CARDS (Dense) */
+    /* CARDS */
     .compact-grid { display: grid; gap: 1rem; }
     @media (min-width: 640px) { .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
 
-    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    .compact-img { height: 180px; position: relative; overflow: hidden; }
-    .status-badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
+    .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     
+    .compact-img { height: 180px; position: relative; overflow: hidden; }
+    .status-badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
     .card-content { padding: 1rem; }
-    .card-date { font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+    .card-date { font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 0.4rem; font-weight: 500; }
     .compact-card h4 { font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 700; line-height: 1.3; }
     .card-desc { font-size: 0.9rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
 
     /* SIDEBAR */
     .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
     .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; font-weight: 800; letter-spacing: 0.5px; }
 
     .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
-    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; }
+    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; transition: opacity 0.2s; }
+    .social-mini:hover { opacity: 0.9; }
     .social-mini svg { width: 16px; height: 16px; }
     .social-mini span { font-size: 0.7rem; font-weight: 700; }
 
@@ -212,15 +244,17 @@ const socialStats = [
     .side-item { padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
     .side-item:last-child { border: 0; padding: 0; }
     .side-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
-    .side-item h5 { font-size: 0.9rem; margin: 0.2rem 0 0 0; }
+    .side-item h5 { font-size: 0.95rem; margin: 0.2rem 0 0 0; font-weight: 600; line-height: 1.3; }
+    .side-item:hover h5 { color: var(--accent); }
 
-    /* ADS */
+    /* ADS & EMPTY STATES */
     .ad-container { text-align: center; }
     .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
     .ad-scroll-safe { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; min-height: 100px; background: var(--bg); }
     .ad-scroll-safe::-webkit-scrollbar { display: none; }
 
-    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
-    .back-link { display: inline-block; margin-top: 1rem; color: var(--accent); font-weight: 700; }
+    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--muted); background: var(--card); border-radius: 8px; border: 1px solid var(--border); }
+    .back-link { display: inline-block; margin-top: 1rem; color: var(--accent); font-weight: 700; border-bottom: 2px solid transparent; }
+    .back-link:hover { border-bottom-color: var(--accent); }
   </style>
 </Layout>
