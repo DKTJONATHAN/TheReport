@@ -1,9 +1,63 @@
-- name: Scrape and Report
+name: Auto Kenya Deep Reporter
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 3AM EAT (Sports)
+    - cron: '0 4 * * *'   # 7AM EAT (Entertainment)
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)
+    - cron: '0 14 * * *'  # 5PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)
+    - cron: '0 20 * * *'  # 11PM EAT (Entertainment)
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business, politics, entertainment)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests google-genai apify-client beautifulsoup4
+
+      - name: Deep Scrape and Report
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
+          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
+          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
+          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
+          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
+          CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time, hashlib
@@ -18,9 +72,22 @@
           os.makedirs(posts_dir, exist_ok=True)
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          apify_client = ApifyClient(os.environ.get('APIFY_API_TOKEN'))
-          gemini_client = genai.Client(api_key=os.environ.get('GEMINI_WRITE_KEY'))
+          # Rotate Gemini and Apify Keys
+          cron = os.environ.get('CRON_SCHEDULE', 'manual')
+          key_map = {
+              '0 0 * * *': 'GEMINI_API_KEY', 
+              '0 4 * * *': 'GEMINI_API_KEY1', 
+              '0 6 * * *': 'GEMINI_API_KEY2', 
+              '0 11 * * *': 'GEMINI_WRITE_KEY'
+          }
+          selected_gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY'))
+          
+          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
+          active_apify_tokens = [t for t in apify_tokens if t]
+          apify_client = ApifyClient(random.choice(active_apify_tokens))
+          gemini_client = genai.Client(api_key=selected_gemini_key)
 
+          # Topic Selection
           h = datetime.datetime.utcnow().hour
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
@@ -63,42 +130,38 @@
           # --- 4. IMAGE HELPER (UNSPLASH ONLY) ---
           def get_unsplash_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if not access_key:
-                  return ""
-              # Adding 'Kenya' to the query ensures localized results
-              search_query = f"{query} Kenya"
-              url = f"https://api.unsplash.com/photos/random?query={search_query}&orientation=landscape&client_id={access_key}"
+              if not access_key: return ""
+              # Appending Kenya to ensure relevance
+              url = f"https://api.unsplash.com/photos/random?query={query}+Kenya&orientation=landscape&client_id={access_key}"
               try:
                   resp = requests.get(url, timeout=10)
                   if resp.status_code == 200:
                       return resp.json()['urls']['regular']
-              except:
-                  pass
+              except: pass
               return ""
 
-          # --- 5. PROMPT (ENFORCING CONCRETE KEYWORDS) ---
+          # --- 5. PROMPT (STRICT REPORTING MODE) ---
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
-          SOURCE CONTENT:
+          SOURCE CONTENT FROM {final_target_link}:
           {full_raw_content}
 
-          TASK: Write a FACTUAL news article based on the source above. 
-          - Tone: Neutral, professional journalist. 
+          TASK: Write a FACTUAL news article. Neutral tone. No opinions.
           
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [160 char summary]
           CATEGORY: [{topic.title()}]
           TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [2-3 CONCRETE NOUNS for Unsplash search, e.g., "Nairobi Office" or "Football Stadium"]
+          IMAGE_KEYWORD: [2-3 concrete nouns for Unsplash]
           BODY:
           [1200-1600 words. ## Headers. No em-dashes.]
 
           RULES:
-          - UK English only.
+          - UK English.
           - NO em-dashes (—) or en-dashes (–). Use commas.
-          - Cite the source of information within the text.'''
+          - Cite the source inside the text.'''
 
-          # --- 6. GENERATION ---
+          # --- 6. GENERATION (GEMINI 3 FLASH PREVIEW) ---
           response = gemini_client.models.generate_content(
               model="gemini-3-flash-preview",
               contents=prompt,
@@ -133,5 +196,11 @@
               f.write(final_md)
           with open(memory_path, 'w') as f:
               json.dump(memory[-200:], f)
-          print(f"Published: {slug}")
+          print(f"✅ Published: {slug} using keyword: {parsed['IMAGE_KEYWORD']}")
           EOF
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: deep report with full key rotation"
+          branch: ${{ env.DEFAULT_BRANCH }}
