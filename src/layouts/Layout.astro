@@ -1,30 +1,59 @@
 ---
-// 1. Import your existing components
+// src/layouts/Layout.astro
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
-// 2. Define Props for SEO
 export interface Props {
   title: string;
   description?: string;
   image?: string;
   canonical?: string;
   type?: 'website' | 'article';
+  publishDate?: Date; // Optional: Useful for article schema
 }
 
-// 3. Destructure props with defaults
 const { 
   title, 
   description = "Breaking news, politics, and trending stories from Kenya. The Mwaniki Report is your trusted source for truth.",
-  image = "/default-social-card.jpg", // Ensure this image exists in /public
+  image = "/default-social-card.jpg",
   canonical,
-  type = 'website'
+  type = 'website',
+  publishDate
 } = Astro.props;
 
-// 4. Construct Absolute URLs for Social Sharing
-const siteUrl = "https://jonathanmwaniki.co.ke";
-const canonicalURL = canonical || new URL(Astro.url.pathname, siteUrl).href;
-const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
+// 1. ROBUST URL CONSTRUCTION
+// Uses Astro.site from astro.config.mjs if available, otherwise falls back
+const siteUrl = Astro.site ? Astro.site.href : "https://jonathanmwaniki.co.ke";
+
+// Ensure canonical URL is absolute and clean
+const canonicalURL = canonical 
+  ? new URL(canonical, siteUrl).href 
+  : new URL(Astro.url.pathname, siteUrl).href;
+
+// Ensure social image is absolute
+const socialImage = image.startsWith('http') 
+  ? image 
+  : new URL(image, siteUrl).href;
+
+// 2. JSON-LD SCHEMA GENERATION
+// This helps Google understand if this is a News Article or just the Home Page
+const schema = type === 'article' ? {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": title,
+  "image": [socialImage],
+  "datePublished": publishDate ? publishDate.toISOString() : new Date().toISOString(),
+  "author": [{
+      "@type": "Person",
+      "name": "Jonathan Mwaniki",
+      "url": "https://jonathanmwaniki.co.ke/about" // Adjust if you have an author page
+    }]
+} : {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Jonathan Mwaniki",
+  "url": siteUrl,
+};
 ---
 
 <!DOCTYPE html>
@@ -35,7 +64,10 @@ const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#dc2626" />
-<meta name="yandex-verification" content="4ec79656b15aa799" />
+    <meta name="yandex-verification" content="4ec79656b15aa799" />
+    
+    {/* --- SITEMAP --- */}
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     {/* --- SEO MAIN --- */}
     <title>{title}</title>
@@ -59,31 +91,32 @@ const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
 
-    {/* --- GOOGLE ADSENSE (Global Script) --- */}
+    {/* --- JSON-LD STRUCTURED DATA --- */}
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+
+    {/* --- GOOGLE ADSENSE --- */}
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
-    {/* --- GLOBAL FONTS (Optional) --- */}
+    {/* --- FONTS --- */}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
   </head>
-  
+
   <body>
-    
-    {/* Use your existing Header Component */}
     <Header />
 
-    {/* The Page Content goes here */}
-    <slot />
+    {/* WRAPPED IN MAIN FOR STICKY FOOTER & SEMANTICS */}
+    <main>
+      <slot />
+    </main>
 
-    {/* Use your existing Footer Component */}
     <Footer />
-
   </body>
 </html>
 
 <style is:global>
-  /* --- GLOBAL VARIABLES (Used by Index & Slug pages) --- */
+  /* --- VARIABLES --- */
   :root {
     --accent: #dc2626;        /* Kenyan Red */
     --accent-hover: #b91c1c;
@@ -96,7 +129,7 @@ const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
 
     --font-head: 'Inter', system-ui, -apple-system, sans-serif;
     --font-body: 'Merriweather', Georgia, serif;
-    
+
     --max-width: 1200px;
   }
 
@@ -110,14 +143,15 @@ const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
     }
   }
 
-  /* --- BASIC RESETS --- */
+  /* --- RESETS --- */
   html {
     font-family: var(--font-head);
     background-color: var(--bg-color);
     color: var(--text-color);
-    overflow-x: hidden; /* Prevent horizontal scroll globally */
+    overflow-x: hidden; 
+    scroll-behavior: smooth;
   }
-  
+
   body {
     margin: 0;
     padding: 0;
@@ -126,9 +160,12 @@ const socialImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
     min-height: 100vh;
   }
 
-  /* Make sure slot pushes footer down if content is short */
-  body > :global(main) {
+  /* Ensures Footer stays at bottom even on short pages */
+  main {
     flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   img { max-width: 100%; height: auto; display: block; }
