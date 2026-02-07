@@ -5,6 +5,8 @@ Allow: /about
 Allow: /contact
 Allow: /privacy
 Allow: /terms
+Allow: /tags
+Allow: /category
 
 # Allow category and author pages for discovery
 Allow: /category/
