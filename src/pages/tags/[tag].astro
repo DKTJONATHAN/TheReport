@@ -1,29 +1,30 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 
-// 1. GENERATE PATHS
+// 1. GENERATE PATHS (Build Time)
 export async function getStaticPaths() {
   const allPosts = await getCollection('posts');
 
-  // Helper Function: Defined INSIDE to prevent scope errors
-  function createTagSlug(tag) {
-    return tag.toLowerCase().trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-   
-  // Get unique tags from all posts
+  // Helper: Normalize tags (slugify)
+  const createSlug = (str: string) => str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  // Get unique tags (Safe access with empty array fallback)
   const uniqueTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))];
 
   return uniqueTags.map(tag => {
-    // Filter posts that contain this specific tag
-    const filteredPosts = allPosts.filter(post => post.data.tags?.includes(tag));
+    const tagSlug = createSlug(tag);
     
-    // Create the URL-friendly slug
-    const tagSlug = createTagSlug(tag);
+    // Filter posts for this specific tag
+    // Note: We filter by the original tag string to match exact entries
+    const filteredPosts = allPosts.filter(post => 
+      post.data.tags?.includes(tag)
+    );
 
     return {
       params: { tag: tagSlug },
@@ -32,28 +33,40 @@ export async function getStaticPaths() {
   });
 }
 
+// 2. DEFINE PROPS
+interface Props {
+  tag: string;
+  posts: CollectionEntry<'posts'>[];
+}
+
 const { tag, posts } = Astro.props;
 
-// 2. DATA SORTING
-const sortedPosts = posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+// 3. DATA PROCESSING
+// Sort by Date (Newest First)
+const sortedPosts = posts.sort((a, b) => 
+  new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf()
+);
 
 // Story Circles (Top 10 latest in this TAG)
 const storyPosts = sortedPosts.slice(0, 10);
 
-// Main Feed
+// Main Feed (All posts in this tag)
 const feedPosts = sortedPosts; 
 
-// Sidebar Data (Global Trending)
-const allPosts = await getCollection('posts');
-const globalTrending = allPosts
-  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+// 4. SIDEBAR DATA (Global Trending)
+// We fetch this again because 'posts' prop is filtered, but sidebar needs GLOBAL data
+const globalData = await getCollection('posts');
+const globalTrending = globalData
+  .filter(p => !p.data.draft) // Ensure no drafts in sidebar
+  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 5);
 
-// SEO
+// 5. SEO METADATA
 const formattedTag = tag.charAt(0).toUpperCase() + tag.slice(1);
 const pageTitle = `#${formattedTag} News - Jonathan Mwaniki`;
-const pageDescription = `Latest news and updates tagged with #${formattedTag}.`;
+const pageDescription = `Breaking news, updates, and stories about ${formattedTag}. Read the latest reports here.`;
 
+// Social Stats Data
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -73,7 +86,13 @@ const socialStats = [
           {storyPosts.map(post => (
             <a href={`/posts/${post.slug}`} class="story-item">
               <div class="story-img-ring">
-                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="eager" />
+                <img 
+                  src={post.data.image || '/default-image.jpg'} 
+                  alt={post.data.title} 
+                  loading="eager" 
+                  width="60" 
+                  height="60"
+                />
               </div>
               <span class="story-label">{post.data.title}</span>
             </a>
@@ -86,7 +105,7 @@ const socialStats = [
 
       {/* HEADER */}
       <div class="tag-header">
-        <span class="tag-eyebrow">Tag Archives</span>
+        <span class="tag-eyebrow">Topic Archives</span>
         <h1>#{formattedTag}</h1>
         <div class="header-line"></div>
       </div>
@@ -102,12 +121,14 @@ const socialStats = [
                 <div class="compact-img">
                   <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
 
-                  {/* Status Badge */}
-                  {post.data.status && (
-                    <span class={`status-badge ${post.data.status.toLowerCase()}`}>
-                      {post.data.status}
-                    </span>
-                  )}
+                  {/* Optional Status Badge (e.g., Breaking) */}
+                  {/* Assuming 'status' isn't in your main schema, but if you add it later: */}
+                  {/* {post.data.status && (
+                      <span class={`status-badge ${post.data.status.toLowerCase()}`}>
+                        {post.data.status}
+                      </span>
+                    )} 
+                  */}
 
                   {/* Category Overlay */}
                   <span class="cat-overlay">{post.data.category}</span>
@@ -116,7 +137,7 @@ const socialStats = [
                 <div class="card-content">
                   <div class="card-meta">
                     <span class="card-date">
-                      {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(post.data.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                   <h4>{post.data.title}</h4>
@@ -134,7 +155,7 @@ const socialStats = [
             <h3>Connect</h3>
             <div class="social-grid">
               {socialStats.map(s => (
-                <a href="#" class="social-mini" style={`--bg:${s.bg}`}>
+                <a href="#" class="social-mini" style={`--bg:${s.bg}`} aria-label={`Connect on ${s.name}`}>
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
                   <span>{s.count}</span>
                 </a>
@@ -146,7 +167,12 @@ const socialStats = [
           <div class="widget ad-container">
              <span class="ad-label">Advertisement</span>
              <div class="ad-scroll-safe">
-               <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+               <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-9291176772735390"
+                 data-ad-slot="1358657931"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
                <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
              </div>
           </div>
@@ -168,84 +194,83 @@ const socialStats = [
       </div>
     </main>
   </div>
-
-  <style>
-    /* SHARED VARS */
-    :root {
-      --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
-      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
-    }
-
-    * { box-sizing: border-box; min-width: 0; }
-    html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; line-height: 1.4; }
-    img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    a { text-decoration: none; color: inherit; display: block; }
-
-    .page-wrapper { width: 100%; overflow: hidden; }
-    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; }
-    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
-
-    /* STORIES */
-    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
-    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0 0.8rem; scrollbar-width: none; }
-    .stories-scroll::-webkit-scrollbar { display: none; }
-    .story-item { flex: 0 0 auto; width: 64px; text-align: center; }
-    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
-    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
-    .story-label { font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-
-    /* HEADER */
-    .tag-header { padding: 1.5rem 0; text-align: center; margin-bottom: 1rem; }
-    .tag-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 0.3rem; }
-    .tag-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: capitalize; }
-    .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
-
-    /* LAYOUT */
-    .content-grid { display: grid; gap: 2rem; padding-bottom: 3rem; }
-    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
-
-    /* CARDS */
-    .compact-grid { display: grid; gap: 1rem; }
-    @media (min-width: 640px) { .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
-
-    .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
-    .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-    .compact-img { height: 180px; position: relative; overflow: hidden; }
-    .cat-overlay { position: absolute; bottom: 0; left: 0; background: var(--accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px 2px 6px; border-radius: 0 6px 0 0; text-transform: uppercase; }
-
-    /* Status Badge */
-    .status-badge { position: absolute; top: 8px; right: 8px; background: #dc2626; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; animation: pulse 2s infinite; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-
-    .card-content { padding: 1rem; }
-    .card-date { font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
-    .compact-card h4 { font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 700; line-height: 1.3; }
-    .card-desc { font-size: 0.9rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
-
-    /* SIDEBAR */
-    .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
-    .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-    .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
-
-    .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
-    .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; }
-    .social-mini svg { width: 16px; height: 16px; }
-    .social-mini span { font-size: 0.7rem; font-weight: 700; }
-
-    .sidebar-list { display: flex; flex-direction: column; gap: 0.8rem; }
-    .side-item { padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
-    .side-item:last-child { border: 0; padding: 0; }
-    .side-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
-    .side-item h5 { font-size: 0.9rem; margin: 0.2rem 0 0 0; }
-
-    /* ADS */
-    .ad-container { text-align: center; }
-    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
-    .ad-scroll-safe { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; min-height: 100px; background: var(--bg); }
-    .ad-scroll-safe::-webkit-scrollbar { display: none; }
-  </style>
 </Layout>
+
+<style>
+  /* SHARED VARS */
+  :root {
+    --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #dc2626; --border: #e2e8f0;
+    --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
+  }
+
+  * { box-sizing: border-box; min-width: 0; }
+  
+  /* Removed overflow-x: hidden on body to prevent sticky issues */
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  a { text-decoration: none; color: inherit; display: block; }
+
+  .page-wrapper { width: 100%; }
+  .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; }
+  @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
+
+  /* STORIES */
+  .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 1.5rem; }
+  .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0 0.8rem; scrollbar-width: none; }
+  .stories-scroll::-webkit-scrollbar { display: none; }
+  .story-item { flex: 0 0 auto; width: 64px; text-align: center; }
+  .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
+  .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
+  .story-label { font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+  /* HEADER */
+  .tag-header { padding: 1.5rem 0; text-align: center; margin-bottom: 1rem; }
+  .tag-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 0.3rem; }
+  .tag-header h1 { font-size: 1.8rem; font-weight: 800; margin: 0 0 0.5rem 0; text-transform: capitalize; letter-spacing: -0.5px; }
+  .header-line { width: 40px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
+
+  /* LAYOUT */
+  .content-grid { display: grid; gap: 2rem; padding-bottom: 3rem; }
+  @media (min-width: 1024px) { .content-grid { grid-template-columns: 2.5fr 1fr; } }
+
+  /* CARDS */
+  .compact-grid { display: grid; gap: 1rem; }
+  @media (min-width: 640px) { .compact-grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+
+  .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
+  .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  .compact-img { height: 180px; position: relative; overflow: hidden; }
+  .cat-overlay { position: absolute; bottom: 0; left: 0; background: var(--accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px 2px 6px; border-radius: 0 6px 0 0; text-transform: uppercase; }
+
+  .card-content { padding: 1rem; }
+  .card-date { font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+  .compact-card h4 { font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 700; line-height: 1.3; }
+  .card-desc { font-size: 0.9rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+
+  /* SIDEBAR */
+  .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
+  .widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .widget h3 { font-size: 0.9rem; text-transform: uppercase; margin: 0 0 0.8rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; font-weight: 800; letter-spacing: 0.5px; }
+
+  .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; }
+  .social-mini { background: var(--bg); color: white; border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; transition: opacity 0.2s; }
+  .social-mini:hover { opacity: 0.9; }
+  .social-mini svg { width: 16px; height: 16px; }
+  .social-mini span { font-size: 0.7rem; font-weight: 700; }
+
+  .sidebar-list { display: flex; flex-direction: column; gap: 0.8rem; }
+  .side-item { padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+  .side-item:last-child { border: 0; padding: 0; }
+  .side-cat { font-size: 0.65rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+  .side-item h5 { font-size: 0.95rem; margin: 0.2rem 0 0 0; font-weight: 600; line-height: 1.3; }
+  .side-item:hover h5 { color: var(--accent); }
+
+  /* ADS */
+  .ad-container { text-align: center; }
+  .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+  .ad-scroll-safe { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; justify-content: center; min-height: 100px; background: var(--bg); }
+  .ad-scroll-safe::-webkit-scrollbar { display: none; }
+</style>
