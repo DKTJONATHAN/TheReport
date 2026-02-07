@@ -1,23 +1,17 @@
 User-agent: *
+# 1. ALLOW ALL (Default)
 Allow: /
-Allow: /posts/
-Allow: /about
-Allow: /contact
-Allow: /privacy
-Allow: /terms
-Allow: /tags
-Allow: /category
 
-# Allow category and author pages for discovery
-Allow: /category/
-Allow: /author/
-
-# Block only non-essential pages
+# 2. BLOCK SPECIFIC AREAS (Exceptions)
+# Block internal search results (Prevents SEO spam/bloat)
 Disallow: /search
+Disallow: /search?q=*
 
-# Block admin and API endpoints
+# Block admin and system files
 Disallow: /admin
 Disallow: /api/
+Disallow: /_vercel/  # If deploying on Vercel, block their internal routes
 
-# Allow sitemap
-Sitemap: https://www.jonathanmwaniki.co.ke/sitemap-0.xml
+# 3. SITEMAP LOCATION
+# Ensure this matches the URL in your astro.config.mjs
+Sitemap: https://jonathanmwaniki.co.ke/sitemap-index.xml
