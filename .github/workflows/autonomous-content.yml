@@ -1,4 +1,4 @@
-name: Auto kenya
+name: Auto Kenya Deep Reporter
 
 on:
   schedule:
@@ -44,19 +44,12 @@ jobs:
         run: |
           pip install requests google-genai apify-client beautifulsoup4
 
-      - name: Deep Scrape and Generate
+      - name: Scrape and Report
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
-          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
-          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
-          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
-          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
-          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
-          CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
           import os, json, datetime, requests, re, random, time, hashlib
@@ -71,19 +64,16 @@ jobs:
           os.makedirs(posts_dir, exist_ok=True)
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # Rotate Gemini and Apify Keys
-          cron = os.environ.get('CRON_SCHEDULE', 'manual')
-          key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 4 * * *': 'GEMINI_API_KEY1', '0 6 * * *': 'GEMINI_API_KEY2', '0 11 * * *': 'GEMINI_WRITE_KEY'}
-          selected_gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY'))
-          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
-          apify_client = ApifyClient(random.choice([t for t in apify_tokens if t]))
+          # Clients
+          apify_client = ApifyClient(os.environ.get('APIFY_API_TOKEN'))
+          gemini_client = genai.Client(api_key=os.environ.get('GEMINI_WRITE_KEY'))
 
-          # Determine Topic
+          # Topic logic (aligned to EAT schedule)
           h = datetime.datetime.utcnow().hour
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
 
-          # --- 2. FIND EXTERNAL LINK ON KENYA MOJA ---
+          # --- 2. FIND EXTERNAL LINK ---
           res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'})
           soup = BeautifulSoup(res.text, 'html.parser')
           news_items = soup.select('li.news-item')
@@ -101,13 +91,12 @@ jobs:
                           break
 
           if not final_target_link:
-              print("No new external links found on Kenya Moja.")
+              print("No new external links found.")
               exit(0)
 
-          # --- 3. SCRAPE THE WHOLE EXTERNAL PAGE ---
-          print(f"Opening and scraping parent article: {final_target_link}")
+          # --- 3. SCRAPE CONTENT (APIFY) ---
+          print(f"Scraping source: {final_target_link}")
           try:
-              # Use the general website-content-crawler to get the full markdown of the page
               run = apify_client.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": final_target_link}],
                   "maxCrawlPages": 1,
@@ -117,72 +106,84 @@ jobs:
               })
               data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())[0]
               full_raw_content = data.get('markdown', data.get('text', ''))
-              
-              if len(full_raw_content) < 300:
-                  print("Scraped content too thin, skipping.")
-                  exit(0)
           except Exception as e:
-              print(f"Failed to scrape parent site: {e}")
-              exit(0)
+              print(f"Scrape failed: {e}"); exit(0)
 
-          # --- 4. GEMINI GENERATE (AI DECIDES CONTENT) ---
-          client = genai.Client(api_key=selected_gemini_key)
-          prompt = f"""RAW PAGE CONTENT FROM {final_target_link}:
+          # --- 4. IMAGE HELPER (UNSPLASH) ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = f"https://image.pollinations.ai/prompt/{query.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
+              if not access_key: return fallback
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200: return resp.json()['urls']['regular']
+              except: pass
+              return fallback
+
+          # --- 5. REPORTING PROMPT (AUTO NEWSER STYLE) ---
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+          SOURCE CONTENT:
           {full_raw_content}
 
-          INSTRUCTIONS:
-          Identify the main news story within the text above. 
-          Write a detailed 1200+ word UK English news article for jonathanmwaniki.co.ke. 
-          Ignore all navigation links, related stories lists, or copyright footers.
-          NO em-dashes (use commas). NO citations.
-
-          FORMAT:
-          TITLE: [Professional Headline]
-          DESCRIPTION: [160 character SEO summary]
+          TASK: Write a FACTUAL news article based on the source above. 
+          - Tone: Neutral, professional journalist. No opinions.
+          - Opening: Straight reporting (Who, what, where, when, why).
+          
+          OUTPUT FORMAT:
+          TITLE: [Headline]
+          DESCRIPTION: [160 char summary]
+          CATEGORY: [{topic.title()}]
           TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [2-word search term]
-          BODY: [Full Markdown Content with ## Headers]"""
+          IMAGE_KEYWORD: [2-3 words for image]
+          BODY:
+          [1200-1600 words. ## Headers for sections. No em-dashes.]
 
-          try:
-              response = client.models.generate_content(
-                  model="gemini-3-flash-preview",
-                  contents=prompt,
-                  config=types.GenerateContentConfig(temperature=0.2)
-              )
-              ai_out = response.text.strip()
-          except Exception as e:
-              print(f"Gemini 3 Error: {e}")
-              exit(1)
+          RULES:
+          - UK English only.
+          - No em-dashes (—) or en-dashes (–). Use commas.
+          - Cite the source of information within the text.'''
 
-          # --- 5. PARSE & SAVE ---
-          def get_field(label, text):
-              match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
-              return match.group(1).strip() if match else ""
+          # --- 6. GENERATION (GEMINI 3 FLASH PREVIEW) ---
+          response = gemini_client.models.generate_content(
+              model="gemini-3-flash-preview",
+              contents=prompt,
+              config=types.GenerateContentConfig(temperature=0.1)
+          )
+          ai_out = response.text.strip()
 
-          title = get_field("TITLE", ai_out) or f"News {int(time.time())}"
-          desc = get_field("DESCRIPTION", ai_out)
-          tags = get_field("TAGS", ai_out)
-          img_kw = get_field("IMAGE_KEYWORD", ai_out)
-          body_match = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE)
-          body = body_match.group(1).strip() if body_match else ai_out
-          body = body.replace("—", ", ").replace("–", ", ").replace("--", ", ")
+          # --- 7. PARSE & SCRUB ---
+          parsed = {"TITLE": "", "DESCRIPTION": "", "CATEGORY": topic.title(), "TAGS": "", "IMAGE_KEYWORD": topic, "BODY": ""}
+          current_section = None
+          for line in ai_out.splitlines():
+              clean = line.strip().replace("**", "")
+              if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
+              elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
+              elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
+              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
+              elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean.startswith("BODY:"): current_section = "BODY"
+              elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
+          for key in ["TITLE", "DESCRIPTION", "BODY"]:
+              parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+
+          # --- 8. SAVE ---
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           
-          final_post = f"---\ntitle: \"{title}\"\ndescription: \"{desc}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true\"\ncategory: \"{topic.title()}\"\ntags: {json.dumps([t.strip() for t in tags.split(',')])}\nslug: \"{slug}\"\n---\n\n{body}"
-
-          with open(os.path.join(posts_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
-              f.write(final_post)
+          final_md = f"---\ntitle: \"{parsed['TITLE']}\"\ndescription: \"{parsed['DESCRIPTION']}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{parsed['CATEGORY']}\"\ntags: {json.dumps([t.strip() for t in parsed['TAGS'].split(',')])}\nslug: \"{slug}\"\n---\n\n# {parsed['TITLE']}\n\n{parsed['BODY']}\n\n<div class=\"source-credit\">Source: {final_target_link}</div>"
           
-          # Update Memory
+          with open(os.path.join(posts_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+              f.write(final_md)
           with open(memory_path, 'w') as f:
               json.dump(memory[-200:], f)
-          print(f"Successfully published: {title}")
+          print(f"Published: {slug}")
           EOF
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish article from deep scrape"
+          commit_message: "content: publish article from deep report"
           branch: ${{ env.DEFAULT_BRANCH }}
