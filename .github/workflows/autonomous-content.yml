@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business, politics, entertainment)'
+        description: 'Force a topic'
         required: false
         default: ''
 
@@ -65,32 +65,25 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. SETUP & MEMORY ---
+          # --- 1. SETUP ---
           memory_path = os.environ.get('MEMORY_FILE')
           posts_dir = os.environ.get('POSTS_DIR')
           os.makedirs(posts_dir, exist_ok=True)
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # Key Rotation
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
           key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 4 * * *': 'GEMINI_API_KEY1', '0 6 * * *': 'GEMINI_API_KEY2', '0 11 * * *': 'GEMINI_WRITE_KEY'}
           gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY'))
           apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
           apify_client = ApifyClient(random.choice([t for t in apify_tokens if t]))
 
-          # Topic Selection
           h = datetime.datetime.utcnow().hour
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
-          
-          # KenyaMoja targets
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
 
-          # --- 2. SELECTOR SCRAPE (KenyaMoja Feed) ---
-          headers = {'User-Agent': 'Mozilla/5.0'}
-          res = requests.get(km_url, headers=headers)
+          # --- 2. FIND LINK ---
+          res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'})
           soup = BeautifulSoup(res.text, 'html.parser')
-          
-          # Target precisely based on provided HTML structure
           news_items = soup.select('li.news-item')
           final_target_link = None
           
@@ -98,7 +91,6 @@ jobs:
               link_tag = item.select_one('.news-title a')
               if link_tag and 'href' in link_tag.attrs:
                   url = link_tag['href']
-                  # Ensure it's an external news link
                   if "kenyamoja.com" not in url and url.startswith("http"):
                       link_hash = hashlib.md5(url.encode()).hexdigest()
                       if link_hash not in memory:
@@ -107,23 +99,34 @@ jobs:
                           break
 
           if not final_target_link:
-              print("No new external stories found.")
+              print("No new stories.")
               exit(0)
 
-          # --- 3. DEEP SCRAPE (Target Site) ---
-          print(f"Deep scraping parent article: {final_target_link}")
+          # --- 3. DEEP SCRAPE (Fix: Lower word limit + Custom Selectors) ---
+          print(f"Deep scraping: {final_target_link}")
           try:
-              run = apify_client.actor("lukaskrivka/article-extractor-smart").call(run_input={"articleUrls": [{"url": final_target_link}]})
-              data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())[0]
-              full_text = data.get('content', data.get('text', ''))
-              if len(full_text) < 800: exit(0)
-          except: exit(0)
+              run = apify_client.actor("lukaskrivka/article-extractor-smart").call(run_input={
+                  "articleUrls": [{"url": final_target_link}],
+                  "minWords": 50,
+                  "proxyConfiguration": {"useApifyProxy": True},
+                  "extendOutputFunction": "($) => { return { fullText: $('.article-body, .post-content, article').text() }; }"
+              })
+              dataset = apify_client.dataset(run["defaultDatasetId"]).list_items().items
+              if not dataset: exit(0)
+              data = dataset[0]
+              full_text = data.get('fullText') or data.get('content') or data.get('text', '')
+              if len(full_text) < 150: 
+                  print("Article too short.")
+                  exit(0)
+          except Exception as e:
+              print(f"Scrape failed: {e}")
+              exit(0)
 
-          # --- 4. GENERATE WITH GEMINI 3 ---
+          # --- 4. GEMINI GENERATE ---
           client = genai.Client(api_key=gemini_key)
-          prompt = f"SOURCE: {full_text}\nWrite a 1200+ word UK English news article for jonathanmwaniki.co.ke. Focus on the core news story. Ignore website policies. No em-dashes. TITLE: [Headline] DESCRIPTION: [Summary] TAGS: [tags] IMAGE_KEYWORD: [keyword] BODY: [Markdown Content]"
+          prompt = f"SOURCE ARTICLE:\n{full_text}\n\nTask: Write a 1200+ word UK English news article for jonathanmwaniki.co.ke. No em-dashes. No citations.\n\nFORMAT:\nTITLE: [Headline]\nDESCRIPTION: [160 char summary]\nTAGS: [tag1, tag2]\nIMAGE_KEYWORD: [2-word search term]\nBODY: [Markdown Content]"
           
-          response = client.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+          response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=prompt)
           ai_out = response.text.strip()
 
           # --- 5. PARSE & SAVE ---
@@ -131,16 +134,18 @@ jobs:
               match = re.search(rf'{label}:\s*(.*)', text, re.IGNORECASE)
               return match.group(1).strip() if match else ""
 
-          parsed_title = get_field("TITLE", ai_out)
+          title = get_field("TITLE", ai_out)
           desc = get_field("DESCRIPTION", ai_out)
           tags = get_field("TAGS", ai_out)
+          img_kw = get_field("IMAGE_KEYWORD", ai_out)
           body = re.search(r'BODY:\s*([\s\S]*)', ai_out, re.IGNORECASE).group(1).strip().replace("—", ", ")
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')
+          slug = re.sub(r'[^a-z0-9-]', '-', title.lower()).strip('-')
           
-          final_post = f"---\ntitle: \"{parsed_title}\"\ndescription: \"{desc}\"\ndate: \"{datetime.datetime.utcnow().strftime('%Y-%m-%d')}\"\nauthor: \"Jonathan Mwaniki\"\ncategory: \"{topic.title()}\"\ntags: {json.dumps([t.strip() for t in tags.split(',')])}\nslug: \"{slug}\"\n---\n\n{body}"
+          final_post = f"---\ntitle: \"{title}\"\ndescription: \"{desc}\"\ndate: \"{datetime.datetime.utcnow().strftime('%Y-%m-%d')}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"https://image.pollinations.ai/prompt/{img_kw.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true\"\ncategory: \"{topic.title()}\"\ntags: {json.dumps([t.strip() for t in tags.split(',')])}\nslug: \"{slug}\"\n---\n\n{body}"
 
           with open(os.path.join(posts_dir, f"{slug}.md"), "w") as f: f.write(final_post)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
+          print(f"Published: {title}")
           EOF
 
       - name: Commit and push
