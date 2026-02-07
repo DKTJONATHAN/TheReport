@@ -89,7 +89,6 @@ jobs:
           soup = BeautifulSoup(res.text, 'html.parser')
           news_items = soup.select('li.news-item')
           final_target_link = None
-          
           for item in news_items:
               link_tag = item.select_one('.news-title a')
               if link_tag and 'href' in link_tag.attrs:
@@ -115,32 +114,37 @@ jobs:
               full_raw_content = data.get('markdown', data.get('text', ''))
           except: exit(0)
 
-          # --- 4. IMAGE (UNSPLASH ONLY) ---
-          def get_unsplash_image(query):
+          # --- 4. IMPROVED IMAGE LOGIC (NO EMPTY FRONTMATTER) ---
+          def get_unsplash_image(query, fallback_topic):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if not access_key: return ""
-              url = f"https://api.unsplash.com/photos/random?query={query}+Kenya&orientation=landscape&client_id={access_key}"
-              try:
-                  resp = requests.get(url, timeout=10)
-                  return resp.json()['urls']['regular'] if resp.status_code == 200 else ""
-              except: return ""
+              if not access_key: return "https://images.unsplash.com/photo-1501504905252-473c47e087f8" # Global news fallback
+              
+              # Strategy: Try specific keyword first, then broad topic
+              search_queries = [f"{query} news", query, fallback_topic, "Kenya"]
+              
+              for q in search_queries:
+                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={access_key}"
+                  try:
+                      resp = requests.get(url, timeout=10)
+                      if resp.status_code == 200:
+                          return resp.json()['urls']['regular']
+                  except: continue
+              return "https://images.unsplash.com/photo-1501504905252-473c47e087f8"
 
-          # --- 5. PROMPT (STRICT NO-CREDIT) ---
+          # --- 5. PROMPT ---
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
           SOURCE CONTENT: {full_raw_content}
 
           TASK: Write a detailed news article. 
           - Write as the primary and only reporter. 
-          - DO NOT mention any external websites, sources, or "as reported by" lines.
-          - DO NOT include a bibliography or reference list.
-          - The article must stand alone as original content.
+          - NO conversational filler, meta-talk, or external source mentions.
 
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [160 char summary]
           CATEGORY: [{topic.title()}]
           TAGS: [tag1, tag2]
-          IMAGE_KEYWORD: [2-3 concrete nouns]
+          IMAGE_KEYWORD: [Searchable concrete noun like "stadium", "bank", "smartphone", or "city"]
           BODY:
           [1200-1600 words. ## Headers only. No em-dashes.]'''
 
@@ -165,12 +169,11 @@ jobs:
               elif clean.upper().startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          # Aggressive cleaning of citations and meta-talk
           body_clean = re.sub(r'(?i)(Sources?|References?|Original story|As reported|Credit|Link|http).*', '', parsed["BODY"], flags=re.DOTALL).strip()
           body_clean = body_clean.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
           # --- 8. SAVE ---
-          image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'])
+          image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'], topic)
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           
@@ -185,5 +188,5 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish original deep report"
+          commit_message: "content: automated publish with guaranteed image"
           branch: ${{ env.DEFAULT_BRANCH }}
