@@ -3,7 +3,7 @@ title: "South Korean Crypto Exchange Bithumb Erroneously Distributes Forty Billi
 description: "Bithumb accidentally sent 620,000 Bitcoin worth $40 billion to users during a promotion, causing a flash crash and a massive recovery operation in South Korea."
 date: "2026-02-07"
 author: "Jonathan Mwaniki"
-image: "https://image.pollinations.ai/prompt/Bitcoin-Exchange-news-photo?width=1200&height=630&nologo=true"
+image: "https://images.unsplash.com/photo-1741991109886-90e70988f27b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NjY0ODl8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzAzOTE3ODh8&ixlib=rb-4.1.0&q=80&w=1080"
 category: "Politics"
 tags: ["Bithumb", "Bitcoin", "Cryptocurrency", "South Korea", "Financial News"]
 slug: "south-korean-crypto-exchange-bithumb-erroneously-distributes-forty-billion-dollars-in-bitcoin-to-customers"
