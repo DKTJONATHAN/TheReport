@@ -1,50 +1,4 @@
-name: Auto Kenya Deep Reporter
-
-on:
-  schedule:
-    - cron: '0 0 * * *'   # 3AM EAT (Sports)
-    - cron: '0 4 * * *'   # 7AM EAT (Entertainment)
-    - cron: '0 6 * * *'   # 9AM EAT (Tech)
-    - cron: '0 11 * * *'  # 2PM EAT (Finance)
-    - cron: '0 14 * * *'  # 5PM EAT (Sports)
-    - cron: '0 18 * * *'  # 9PM EAT (Finance)
-    - cron: '0 20 * * *'  # 11PM EAT (Entertainment)
-    - cron: '0 22 * * *'  # 1AM EAT (Tech)
-  workflow_dispatch:
-    inputs:
-      manual_topic:
-        description: 'Force a topic (sports, technology, business, politics, entertainment)'
-        required: false
-        default: ''
-
-permissions:
-  contents: write
-
-env:
-  DEFAULT_BRANCH: main
-  POSTS_DIR: src/content/posts
-  MEMORY_FILE: .github/scrape_memory.json
-
-jobs:
-  generate-and-publish:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.DEFAULT_BRANCH }}
-          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install requests google-genai apify-client beautifulsoup4
-
-      - name: Scrape and Report
+- name: Scrape and Report
         env:
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
@@ -64,11 +18,9 @@ jobs:
           os.makedirs(posts_dir, exist_ok=True)
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # Clients
           apify_client = ApifyClient(os.environ.get('APIFY_API_TOKEN'))
           gemini_client = genai.Client(api_key=os.environ.get('GEMINI_WRITE_KEY'))
 
-          # Topic logic (aligned to EAT schedule)
           h = datetime.datetime.utcnow().hour
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
@@ -95,7 +47,6 @@ jobs:
               exit(0)
 
           # --- 3. SCRAPE CONTENT (APIFY) ---
-          print(f"Scraping source: {final_target_link}")
           try:
               run = apify_client.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": final_target_link}],
@@ -109,42 +60,45 @@ jobs:
           except Exception as e:
               print(f"Scrape failed: {e}"); exit(0)
 
-          # --- 4. IMAGE HELPER (UNSPLASH) ---
-          def get_real_image(query):
+          # --- 4. IMAGE HELPER (UNSPLASH ONLY) ---
+          def get_unsplash_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              fallback = f"https://image.pollinations.ai/prompt/{query.replace(' ', '-')}-news-photo?width=1200&height=630&nologo=true"
-              if not access_key: return fallback
-              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              if not access_key:
+                  return ""
+              # Adding 'Kenya' to the query ensures localized results
+              search_query = f"{query} Kenya"
+              url = f"https://api.unsplash.com/photos/random?query={search_query}&orientation=landscape&client_id={access_key}"
               try:
                   resp = requests.get(url, timeout=10)
-                  if resp.status_code == 200: return resp.json()['urls']['regular']
-              except: pass
-              return fallback
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except:
+                  pass
+              return ""
 
-          # --- 5. REPORTING PROMPT (AUTO NEWSER STYLE) ---
+          # --- 5. PROMPT (ENFORCING CONCRETE KEYWORDS) ---
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
           SOURCE CONTENT:
           {full_raw_content}
 
           TASK: Write a FACTUAL news article based on the source above. 
-          - Tone: Neutral, professional journalist. No opinions.
-          - Opening: Straight reporting (Who, what, where, when, why).
+          - Tone: Neutral, professional journalist. 
           
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [160 char summary]
           CATEGORY: [{topic.title()}]
           TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [2-3 words for image]
+          IMAGE_KEYWORD: [2-3 CONCRETE NOUNS for Unsplash search, e.g., "Nairobi Office" or "Football Stadium"]
           BODY:
-          [1200-1600 words. ## Headers for sections. No em-dashes.]
+          [1200-1600 words. ## Headers. No em-dashes.]
 
           RULES:
           - UK English only.
-          - No em-dashes (—) or en-dashes (–). Use commas.
+          - NO em-dashes (—) or en-dashes (–). Use commas.
           - Cite the source of information within the text.'''
 
-          # --- 6. GENERATION (GEMINI 3 FLASH PREVIEW) ---
+          # --- 6. GENERATION ---
           response = gemini_client.models.generate_content(
               model="gemini-3-flash-preview",
               contents=prompt,
@@ -156,7 +110,7 @@ jobs:
           parsed = {"TITLE": "", "DESCRIPTION": "", "CATEGORY": topic.title(), "TAGS": "", "IMAGE_KEYWORD": topic, "BODY": ""}
           current_section = None
           for line in ai_out.splitlines():
-              clean = line.strip().replace("**", "")
+              clean = line.strip().replace("**", "").replace('"', '')
               if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
               elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
               elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
@@ -169,7 +123,7 @@ jobs:
               parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
           # --- 8. SAVE ---
-          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           
@@ -181,9 +135,3 @@ jobs:
               json.dump(memory[-200:], f)
           print(f"Published: {slug}")
           EOF
-
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "content: publish article from deep report"
-          branch: ${{ env.DEFAULT_BRANCH }}
