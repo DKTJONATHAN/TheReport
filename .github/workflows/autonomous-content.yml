@@ -66,33 +66,25 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. SETUP & MEMORY ---
+          # --- 1. SETUP & KEY ROTATION ---
           memory_path = os.environ.get('MEMORY_FILE')
           posts_dir = os.environ.get('POSTS_DIR')
           os.makedirs(posts_dir, exist_ok=True)
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # Rotate Gemini and Apify Keys
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
-          key_map = {
-              '0 0 * * *': 'GEMINI_API_KEY', 
-              '0 4 * * *': 'GEMINI_API_KEY1', 
-              '0 6 * * *': 'GEMINI_API_KEY2', 
-              '0 11 * * *': 'GEMINI_WRITE_KEY'
-          }
+          key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 4 * * *': 'GEMINI_API_KEY1', '0 6 * * *': 'GEMINI_API_KEY2', '0 11 * * *': 'GEMINI_WRITE_KEY'}
           selected_gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY'))
           
           apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
-          active_apify_tokens = [t for t in apify_tokens if t]
-          apify_client = ApifyClient(random.choice(active_apify_tokens))
+          apify_client = ApifyClient(random.choice([t for t in apify_tokens if t]))
           gemini_client = genai.Client(api_key=selected_gemini_key)
 
-          # Topic Selection
           h = datetime.datetime.utcnow().hour
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
 
-          # --- 2. FIND EXTERNAL LINK ---
+          # --- 2. FIND LINK ---
           res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'})
           soup = BeautifulSoup(res.text, 'html.parser')
           news_items = soup.select('li.news-item')
@@ -108,12 +100,9 @@ jobs:
                           final_target_link = url
                           memory.append(url_hash)
                           break
+          if not final_target_link: exit(0)
 
-          if not final_target_link:
-              print("No new external links found.")
-              exit(0)
-
-          # --- 3. SCRAPE CONTENT (APIFY) ---
+          # --- 3. SCRAPE ---
           try:
               run = apify_client.actor("apify/website-content-crawler").call(run_input={
                   "startUrls": [{"url": final_target_link}],
@@ -124,44 +113,38 @@ jobs:
               })
               data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())[0]
               full_raw_content = data.get('markdown', data.get('text', ''))
-          except Exception as e:
-              print(f"Scrape failed: {e}"); exit(0)
+          except: exit(0)
 
-          # --- 4. IMAGE HELPER (UNSPLASH ONLY) ---
+          # --- 4. IMAGE (UNSPLASH ONLY) ---
           def get_unsplash_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               if not access_key: return ""
-              # Appending Kenya to ensure relevance
               url = f"https://api.unsplash.com/photos/random?query={query}+Kenya&orientation=landscape&client_id={access_key}"
               try:
                   resp = requests.get(url, timeout=10)
-                  if resp.status_code == 200:
-                      return resp.json()['urls']['regular']
-              except: pass
-              return ""
+                  return resp.json()['urls']['regular'] if resp.status_code == 200 else ""
+              except: return ""
 
-          # --- 5. PROMPT (STRICT REPORTING MODE) ---
+          # --- 5. PROMPT (STRICT NO-CREDIT) ---
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
-          SOURCE CONTENT FROM {final_target_link}:
-          {full_raw_content}
+          SOURCE CONTENT: {full_raw_content}
 
-          TASK: Write a FACTUAL news article. Neutral tone. No opinions.
-          
+          TASK: Write a detailed news article. 
+          - Write as the primary and only reporter. 
+          - DO NOT mention any external websites, sources, or "as reported by" lines.
+          - DO NOT include a bibliography or reference list.
+          - The article must stand alone as original content.
+
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [160 char summary]
           CATEGORY: [{topic.title()}]
-          TAGS: [tag1, tag2, tag3]
-          IMAGE_KEYWORD: [2-3 concrete nouns for Unsplash]
+          TAGS: [tag1, tag2]
+          IMAGE_KEYWORD: [2-3 concrete nouns]
           BODY:
-          [1200-1600 words. ## Headers. No em-dashes.]
+          [1200-1600 words. ## Headers only. No em-dashes.]'''
 
-          RULES:
-          - UK English.
-          - NO em-dashes (—) or en-dashes (–). Use commas.
-          - Cite the source inside the text.'''
-
-          # --- 6. GENERATION (GEMINI 3 FLASH PREVIEW) ---
+          # --- 6. GENERATION ---
           response = gemini_client.models.generate_content(
               model="gemini-3-flash-preview",
               contents=prompt,
@@ -169,38 +152,38 @@ jobs:
           )
           ai_out = response.text.strip()
 
-          # --- 7. PARSE & SCRUB ---
+          # --- 7. PARSE & CLEAN ---
           parsed = {"TITLE": "", "DESCRIPTION": "", "CATEGORY": topic.title(), "TAGS": "", "IMAGE_KEYWORD": topic, "BODY": ""}
           current_section = None
           for line in ai_out.splitlines():
               clean = line.strip().replace("**", "").replace('"', '')
-              if clean.startswith("TITLE:"): parsed["TITLE"] = clean.replace("TITLE:", "").strip()
-              elif clean.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean.replace("DESCRIPTION:", "").strip()
-              elif clean.startswith("CATEGORY:"): parsed["CATEGORY"] = clean.replace("CATEGORY:", "").strip()
-              elif clean.startswith("TAGS:"): parsed["TAGS"] = clean.replace("TAGS:", "").strip()
-              elif clean.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean.replace("IMAGE_KEYWORD:", "").strip()
-              elif clean.startswith("BODY:"): current_section = "BODY"
+              if clean.upper().startswith("TITLE:"): parsed["TITLE"] = clean[6:].strip()
+              elif clean.upper().startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean[12:].strip()
+              elif clean.upper().startswith("CATEGORY:"): parsed["CATEGORY"] = clean[9:].strip()
+              elif clean.upper().startswith("TAGS:"): parsed["TAGS"] = clean[5:].strip()
+              elif clean.upper().startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean[14:].strip()
+              elif clean.upper().startswith("BODY:"): current_section = "BODY"
               elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-          for key in ["TITLE", "DESCRIPTION", "BODY"]:
-              parsed[key] = parsed[key].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+          # Aggressive cleaning of citations and meta-talk
+          body_clean = re.sub(r'(?i)(Sources?|References?|Original story|As reported|Credit|Link|http).*', '', parsed["BODY"], flags=re.DOTALL).strip()
+          body_clean = body_clean.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
           # --- 8. SAVE ---
           image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           
-          final_md = f"---\ntitle: \"{parsed['TITLE']}\"\ndescription: \"{parsed['DESCRIPTION']}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{parsed['CATEGORY']}\"\ntags: {json.dumps([t.strip() for t in parsed['TAGS'].split(',')])}\nslug: \"{slug}\"\n---\n\n# {parsed['TITLE']}\n\n{parsed['BODY']}\n\n<div class=\"source-credit\">Source: {final_target_link}</div>"
+          final_md = f"---\ntitle: \"{parsed['TITLE']}\"\ndescription: \"{parsed['DESCRIPTION']}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{parsed['CATEGORY']}\"\ntags: {json.dumps([t.strip() for t in parsed['TAGS'].split(',')])}\nslug: \"{slug}\"\n---\n\n# {parsed['TITLE']}\n\n{body_clean}"
           
           with open(os.path.join(posts_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
               f.write(final_md)
           with open(memory_path, 'w') as f:
               json.dump(memory[-200:], f)
-          print(f"✅ Published: {slug} using keyword: {parsed['IMAGE_KEYWORD']}")
           EOF
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: deep report with full key rotation"
+          commit_message: "content: publish original deep report"
           branch: ${{ env.DEFAULT_BRANCH }}
