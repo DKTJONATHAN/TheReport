@@ -1,7 +1,8 @@
+---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// DATA LOGIC
+// 1. DATA LOGIC
 const allPosts = (await getCollection('posts'))
   .filter(p => !p.data.draft)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
@@ -10,43 +11,43 @@ if (allPosts.length === 0) {
   throw new Error("No posts found!");
 }
 
-// Hero section (top 4 stories)
-const heroStories = allPosts.slice(0, 4);
-const mainStory = heroStories[0];
-const subStories = heroStories.slice(1, 4);
-
-// Initial feed load (next 12 posts after hero)
-const initialFeedPosts = allPosts.slice(4, 16);
-
-// Story circles
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
+
+// STORY CIRCLES DATA
 const categoryCircles = majorCategories.map(cat => {
   const latest = allPosts.find(p => p.data.category === cat);
   return { 
-    type: 'category', label: cat, image: latest?.data.image, 
+    type: 'category', 
+    label: cat, 
+    image: latest?.data.image, 
     link: `/category/${cat.toLowerCase()}` 
   };
 });
-const latestStoryCircles = allPosts.slice(0, 5).map(post => ({
-  type: 'story', label: post.data.category || 'News', 
-  image: post.data.image, link: `/posts/${post.slug}`
+
+const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
+  type: 'story', 
+  label: post.data.category || 'News', 
+  image: post.data.image, 
+  link: `/posts/${post.slug}`
 }));
+
 const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 
-// Pass all posts to client for infinite scroll
-const postsJson = JSON.stringify(allPosts.map(p => ({
-  slug: p.slug,
-  data: {
-    title: p.data.title,
-    description: p.data.description,
-    category: p.data.category,
-    date: p.data.date,
-    image: p.data.image,
-    author: p.data.author || 'Jonathan Mwaniki'
-  }
-})));
+// HERO SECTION DATA
+const mainStory = allPosts[0];
+const subStories = allPosts.slice(1, 3);
 
-// Social stats
+// DYNAMIC FEED DATA (Everything after the Hero stories)
+const feedData = allPosts.slice(3).map(post => ({
+  title: post.data.title,
+  description: post.data.description,
+  date: post.data.date,
+  category: post.data.category,
+  image: post.data.image,
+  slug: post.slug,
+  author: post.data.author || 'Jonathan Mwaniki'
+}));
+
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -54,18 +55,18 @@ const socialStats = [
 ];
 ---
 
-<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news, politics, and analysis from Kenya.">
+<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news and analysis.">
 
   <div class="page-wrapper">
 
-    {/* STORIES BAR */}
+    {/* --- 1. STORIES BAR --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
-          {combinedCircles.map((item, idx) => (
-            <a href={item.link} class="story-item" key={idx}>
+          {combinedCircles.map(item => (
+            <a href={item.link} class="story-item">
               <div class="story-img-ring">
-                <img src={item.image || '/default-image.jpg'} alt={item.label} loading="eager" width="70" height="70" />
+                <img src={item.image || '/default-image.jpg'} alt={item.label} width="70" height="70" />
               </div>
               <span class="story-label">{item.label}</span>
             </a>
@@ -76,654 +77,263 @@ const socialStats = [
 
     <main class="main-container">
 
-      {/* VIEW TOGGLE */}
-      <section class="view-toggle-section">
-        <div class="toggle-container">
-          <div class="toggle-group">
-            <button class="toggle-btn active" data-mode="latest" aria-label="Latest first">
-              <span class="btn-text">Latest First</span>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </button>
-            <button class="toggle-btn" data-mode="categories" aria-label="By category">
-              <span class="btn-text">By Category</span>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
-              </svg>
-            </button>
-          </div>
-          <span class="toggle-desc">Scroll down for more stories</span>
-        </div>
-      </section>
-
-      {/* HERO SECTION */}
-      {mainStory && (
-        <section class="hero-wrapper">
-          <article class="hero-main card-box">
-            <a href={`/posts/${mainStory.slug}`} class="hero-link">
-              <div class="hero-img-box">
-                <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
-                <span class="hero-badge">Breaking</span>
-              </div>
-              <div class="hero-text-box">
-                <div class="meta-row">
+      {/* --- 2. HERO SECTION --- */}
+      <section class="hero-wrapper">
+        <div class="hero-main card-box">
+          <a href={`/posts/${mainStory.slug}`} class="hero-link">
+            <div class="hero-img-box">
+              <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
+              <span class="hero-badge">Top Story</span>
+            </div>
+            <div class="hero-text-box">
+              <div class="meta-row">
                   <span class="cat-tag">{mainStory.data.category}</span>
                   <span class="bullet">•</span>
-                  <span class="date">{new Date(mainStory.data.date).toLocaleDateString('en-GB')}</span>
-                </div>
-                <h1>{mainStory.data.title}</h1>
-                <p class="hero-excerpt">{mainStory.data.description}</p>
+                  <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
+              </div>
+              <h1>{mainStory.data.title}</h1>
+              <p class="hero-excerpt">{mainStory.data.description}</p>
+            </div>
+          </a>
+        </div>
+
+        <div class="hero-side">
+          {subStories.map(post => (
+            <a href={`/posts/${post.slug}`} class="sub-card card-box">
+              <div class="sub-img">
+                <img src={post.data.image} alt={post.data.title} loading="eager" />
+              </div>
+              <div class="sub-text">
+                <span class="sub-cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
               </div>
             </a>
-          </article>
-
-          <div class="hero-side">
-            {subStories.map(post => (
-              <a href={`/posts/${post.slug}`} class="sub-card card-box" key={post.slug}>
-                <div class="sub-img">
-                  <img src={post.data.image} alt={post.data.title} loading="eager" />
-                </div>
-                <div class="sub-text">
-                  <span class="sub-cat">{post.data.category}</span>
-                  <h3>{post.data.title}</h3>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* INFINITE SCROLL FEED */}
-      <section class="infinite-feed">
-        <header class="feed-header">
-          <h2 class="feed-title">Latest News</h2>
-          <div class="header-line"></div>
-        </header>
-
-        <div class="feed-container" id="feed-container">
-          <div class="news-river" id="news-river">
-            {initialFeedPosts.map(post => (
-              <article class="river-item card-box fade-in" key={post.slug}>
-                <a href={`/posts/${post.slug}`} class="river-link">
-                  <div class="river-content">
-                    <header class="river-meta">
-                      <span class="river-cat">{post.data.category}</span>
-                      <span class="bullet">•</span>
-                      <span class="river-time">
-                        {new Date(post.data.date).toLocaleDateString('en-GB')}
-                      </span>
-                    </header>
-                    <h3 class="river-title">{post.data.title}</h3>
-                    <p class="river-excerpt">{post.data.description}</p>
-                  </div>
-                  <div class="river-img">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                  </div>
-                </a>
-              </article>
-            ))}
-          </div>
-
-          <div class="load-more-section" id="load-more-section">
-            <button class="load-more-btn" id="load-more-btn">
-              <span class="btn-text">Load More Stories</span>
-              <div class="btn-spinner" aria-hidden="true"></div>
-            </button>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* DESKTOP SIDEBAR */}
-      <div class="desktop-layout">
-        <div class="sidebar-placeholder"></div>
+      {/* --- 3. FEED CONTROLS --- */}
+      <div class="feed-header-bar">
+        <div class="section-header">
+            <h2>The Latest News</h2>
+            <div class="header-line"></div>
+        </div>
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="latest-toggle">Latest First</button>
+            <button class="toggle-btn" id="category-toggle">By Category</button>
+        </div>
+      </div>
+
+      {/* --- 4. MAIN LAYOUT GRID --- */}
+      <div class="layout-grid">
+        <div class="feed-column">
+          <div id="posts-container" class="news-river">
+            {/* JavaScript will inject 30 cards here */}
+          </div>
+
+          <div class="pagination-area">
+            <button id="load-more-btn" class="more-btn">
+              <span>Unroll More Stories</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+            </button>
+          </div>
+        </div>
+
         <aside class="sidebar-column">
           <div class="sticky-wrapper">
-            
-            {/* Social Connect */}
             <div class="widget social-widget card-box">
-              <h3 class="widget-title">Connect With Us</h3>
+              <h3 class="widget-title">Connect</h3>
               <div class="social-list">
-                {socialStats.map((stat, idx) => (
-                  <a href="#" class="social-row" style={`--bg:${stat.bg}`} key={idx}>
-                    <div class="social-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d={stat.icon}/>
-                      </svg>
+                {socialStats.map(s => (
+                  <div class="social-row">
+                    <div class="social-icon" style={`background:${s.bg}`}>
+                      <svg viewBox="0 0 24 24" fill="white"><path d={s.icon}/></svg>
                     </div>
                     <div class="social-text">
-                      <span class="count">{stat.count}</span>
-                      <span class="label">{stat.name}</span>
+                      <span class="count">{s.count}</span>
+                      <span class="label">{s.name}</span>
                     </div>
-                    <div class="social-arrow">→</div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Advertisement */}
-            <div class="widget ad-widget card-box">
-              <span class="ad-label">Advertisement</span>
-              <div class="ad-box">
-                <ins class="adsbygoogle" 
-                     style="display:block" 
-                     data-ad-client="ca-pub-9291176772735390" 
-                     data-ad-slot="1358657931" 
-                     data-ad-format="auto" 
-                     data-full-width-responsive="true"></ins>
-                <script is:inline>
-                  (adsbygoogle = window.adsbygoogle || []).push({});
-                </script>
-              </div>
-            </div>
-
-            {/* Newsletter Signup */}
             <div class="widget cta-widget card-box">
-              <h3 class="widget-title">The Mwaniki Report</h3>
-              <p>Independent Kenyan journalism. Straight to your inbox every day.</p>
-              <form class="cta-form" onsubmit="event.preventDefault(); alert('Thanks for subscribing!');">
-                <input type="email" placeholder="Enter your email" required aria-label="Email address" />
-                <button type="submit" class="cta-submit">Subscribe Free</button>
+              <h3>The Mwaniki Report</h3>
+              <p>Independent journalism. Straight to your inbox.</p>
+              <form class="cta-form">
+                <input type="email" placeholder="Email address" required />
+                <button type="submit">Subscribe</button>
               </form>
             </div>
-
           </div>
         </aside>
       </div>
     </main>
   </div>
 
-  <!-- INFINITE SCROLL JAVASCRIPT -->
-  <script define:vars={{ postsJson }}>
-    class InfiniteFeed {
-      constructor() {
-        this.posts = JSON.parse(postsJson);
-        this.currentIndex = 16; // After hero + initial 12
-        this.isLoading = false;
-        this.currentMode = 'latest';
-        this.categoryPosts = {};
-        
-        this.init();
+  <script is:inline define:vars={{ feedData }}>
+    let currentMode = 'time';
+    let visibleCount = 30; // Shows 30 stories immediately
+    const step = 15;
+    
+    const container = document.getElementById('posts-container');
+    const loadBtn = document.getElementById('load-more-btn');
+    const latestBtn = document.getElementById('latest-toggle');
+    const catBtn = document.getElementById('category-toggle');
+
+    function renderFeed(isAppend = false) {
+      let posts = [...feedData];
+      
+      if (currentMode === 'category') {
+        posts.sort((a, b) => a.category.localeCompare(b.category));
       }
 
-      init() {
-        this.groupByCategory();
-        this.bindEvents();
-        this.observeScroll();
-      }
+      const slice = posts.slice(isAppend ? visibleCount - step : 0, visibleCount);
+      if (!isAppend) container.innerHTML = '';
 
-      groupByCategory() {
-        this.posts.forEach(post => {
-          const cat = post.data.category || 'General';
-          if (!this.categoryPosts[cat]) this.categoryPosts[cat] = [];
-          this.categoryPosts[cat].push(post);
-        });
-      }
-
-      bindEvents() {
-        // Toggle buttons
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-          btn.addEventListener('click', () => this.switchMode(btn.dataset.mode));
-        });
-
-        // Load more button
-        document.getElementById('load-more-btn').addEventListener('click', () => {
-          this.loadMore();
-        });
-      }
-
-      switchMode(mode) {
-        this.currentMode = mode;
-        this.currentIndex = 16;
-        
-        // Update UI
-        document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
-        
-        // Clear and reload feed
-        const river = document.getElementById('news-river');
-        river.innerHTML = '';
-        
-        const initialPosts = mode === 'latest' ? 
-          this.posts.slice(4, 16) : 
-          this.getCategoryInitialPosts();
-          
-        this.renderPosts(initialPosts, river);
-        this.updateLoadMoreState();
-      }
-
-      getCategoryInitialPosts() {
-        const initial = [];
-        Object.values(this.categoryPosts).forEach(catPosts => {
-          initial.push(...catPosts.slice(0, 3));
-        });
-        return initial.slice(0, 12);
-      }
-
-      loadMore() {
-        if (this.isLoading || this.currentIndex >= this.posts.length) return;
-        
-        this.isLoading = true;
-        const btn = document.getElementById('load-more-btn');
-        const text = btn.querySelector('.btn-text');
-        const spinner = btn.querySelector('.btn-spinner');
-        
-        text.textContent = 'Loading...';
-        spinner.style.opacity = '1';
-        btn.disabled = true;
-
-        // Simulate network delay
-        setTimeout(() => {
-          const postsToLoad = this.currentMode === 'latest' ? 
-            this.posts.slice(this.currentIndex, this.currentIndex + 10) :
-            this.getNextCategoryPosts(10);
-            
-          if (postsToLoad.length > 0) {
-            this.renderPosts(postsToLoad);
-            this.currentIndex += postsToLoad.length;
-          }
-          
-          this.updateLoadMoreState();
-          this.isLoading = false;
-        }, 600);
-      }
-
-      getNextCategoryPosts(count) {
-        const nextPosts = [];
-        const cats = Object.keys(this.categoryPosts);
-        const perCat = Math.ceil(count / cats.length);
-        
-        cats.forEach(cat => {
-          const catIndex = Math.floor(this.currentIndex / cats.length);
-          nextPosts.push(...this.categoryPosts[cat].slice(catIndex, catIndex + perCat));
-        });
-        
-        return nextPosts.slice(0, count);
-      }
-
-      renderPosts(posts, container = document.getElementById('news-river')) {
-        posts.forEach(post => {
-          const article = this.createPostElement(post);
-          article.classList.add('fade-in');
-          container.appendChild(article);
-        });
-      }
-
-      createPostElement(post) {
+      slice.forEach(post => {
         const article = document.createElement('article');
         article.className = 'river-item card-box';
         article.innerHTML = `
           <a href="/posts/${post.slug}" class="river-link">
             <div class="river-content">
-              <header class="river-meta">
-                <span class="river-cat">${post.data.category}</span>
-                <span class="bullet">•</span>
-                <span class="river-time">${new Date(post.data.date).toLocaleDateString('en-GB')}</span>
-              </header>
-              <h3 class="river-title">${post.data.title}</h3>
-              <p class="river-excerpt">${post.data.description}</p>
+              <div class="river-meta">
+                <span class="river-cat">${post.category}</span>
+                <span class="river-time">${new Date(post.date).toLocaleDateString()}</span>
+              </div>
+              <h3 class="river-title">${post.title}</h3>
+              <p class="river-desc">${post.description}</p>
             </div>
             <div class="river-img">
-              <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" />
+              <img src="${post.image}" alt="${post.title}" />
             </div>
           </a>
         `;
-        return article;
-      }
+        container.appendChild(article);
+      });
 
-      updateLoadMoreState() {
-        const btn = document.getElementById('load-more-btn');
-        const text = btn.querySelector('.btn-text');
-        const spinner = btn.querySelector('.btn-spinner');
-        
-        spinner.style.opacity = '0';
-        btn.disabled = false;
-        
-        if (this.currentIndex >= this.posts.length) {
-          text.textContent = 'All stories loaded';
-          btn.style.opacity = '0.6';
-        } else {
-          text.textContent = 'Load More Stories';
-          btn.style.opacity = '1';
-        }
-      }
-
-      observeScroll() {
-        const observer = new IntersectionObserver(
-          ([entry]) => {
-            if (entry.isIntersecting && !this.isLoading) {
-              this.loadMore();
-            }
-          },
-          { threshold: 0.1, rootMargin: '100px' }
-        );
-
-        observer.observe(document.getElementById('load-more-section'));
-      }
+      loadBtn.style.display = (visibleCount >= posts.length) ? 'none' : 'flex';
     }
 
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => new InfiniteFeed());
-    } else {
-      new InfiniteFeed();
-    }
+    latestBtn.addEventListener('click', () => {
+      latestBtn.classList.add('active'); catBtn.classList.remove('active');
+      currentMode = 'time'; visibleCount = 30; renderFeed();
+    });
+
+    catBtn.addEventListener('click', () => {
+      catBtn.classList.add('active'); latestBtn.classList.remove('active');
+      currentMode = 'category'; visibleCount = 30; renderFeed();
+    });
+
+    loadBtn.addEventListener('click', () => {
+      visibleCount += step;
+      renderFeed(true);
+    });
+
+    renderFeed();
   </script>
 
   <style>
-    /* === CORE VARIABLES === */
+    /* --- RESTORED ORIGINAL THEME & SPECIFICITY HAMMER --- */
     :root {
-      --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b; 
-      --accent: #dc2626; --border: #e2e8f0; --success: #10b981;
-      --font-body: 'Merriweather', Georgia, serif; --font-head: 'Inter', -apple-system, sans-serif;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05); --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px 0 rgb(0 0 0 / 0.05);
-      --radius: 12px; --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --bg: #0f172a; 
+      --card: #1e293b; 
+      --text: #f1f5f9; 
+      --muted: #94a3b8; 
+      --accent: #dc2626; 
+      --border: #334155;
+      --font-body: 'Merriweather', Georgia, serif;
+      --font-head: 'Inter', system-ui, sans-serif;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root { 
-        --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; 
-        --border: #334155; --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px 0 rgb(0 0 0 / 0.1);
-      }
-    }
-
-    /* === RESET & BASE === */
     * { box-sizing: border-box; }
-    body { 
-      margin: 0; padding: 0; background: var(--bg); color: var(--text); 
-      font-family: var(--font-body); line-height: 1.6; overflow-x: hidden;
-    }
-    img { max-width: 100%; height: auto; display: block; }
-    a { text-decoration: none; color: inherit; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-body); margin: 0; }
     
-    h1,h2,h3,h4,h5,h6 { font-family: var(--font-head); font-weight: 700; line-height: 1.2; margin: 0 0 0.75em 0; }
-    p { margin: 0 0 1em 0; color: var(--muted); }
-
-    .main-container { 
-      max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; 
+    /* NUCLEAR LINK RESET: Kills blue/purple default styles */
+    a, a:link, a:visited, a:hover, a:active {
+      text-decoration: none !important;
+      color: inherit !important;
     }
-    @media (max-width: 640px) { .main-container { padding: 0 1rem; } }
 
-    /* === CARD SYSTEM === */
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    h1, h2, h3 { font-family: var(--font-head); font-weight: 800; color: var(--text); }
+
+    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+
+    /* ORIGINAL CARD BOX STYLE */
     .card-box {
-      background: var(--card); border: 1px solid var(--border); 
-      border-radius: var(--radius); overflow: hidden;
-      transition: var(--transition);
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: border-color 0.2s;
     }
-    .card-box:hover {
-      transform: translateY(-2px); box-shadow: var(--shadow-md);
-      border-color: var(--accent);
-    }
+    .card-box:hover { border-color: var(--accent) !important; }
 
-    /* === STORY CIRCLES === */
-    .stories-section { 
-      background: var(--card); border-bottom: 1px solid var(--border); 
-      padding: 1rem 0; margin-bottom: 2rem;
-    }
-    .stories-scroll { 
-      display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; 
-      scrollbar-width: none; -webkit-overflow-scrolling: touch;
-    }
-    .stories-scroll::-webkit-scrollbar { display: none; }
-    .story-item { 
-      flex: 0 0 72px; text-align: center; cursor: pointer;
-    }
-    .story-img-ring { 
-      width: 72px; height: 72px; border-radius: 50%; 
-      border: 3px solid var(--accent); padding: 2px; margin: 0 auto 0.5rem;
-      background: var(--card); transition: var(--transition);
-    }
-    .story-item:hover .story-img-ring { transform: scale(1.05); }
-    .story-img-ring img { 
-      width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
-    }
-    .story-label { 
-      font-family: var(--font-head); font-size: 0.7rem; font-weight: 600; 
-      color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    /* STORIES SECTION */
+    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 0; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
+    .story-item { flex: 0 0 auto; width: 75px; text-align: center; }
+    .story-img-ring { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 2px solid var(--accent); margin: 0 auto 0.5rem; }
+    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
+    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
 
-    /* === VIEW TOGGLE === */
-    .view-toggle-section { 
-      padding: 1.5rem 0; border-bottom: 2px solid var(--border); margin-bottom: 2rem;
-      background: var(--card); border-radius: var(--radius); margin-top: -1rem;
-    }
-    .toggle-container { text-align: center; }
-    .toggle-group { 
-      display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .toggle-btn { 
-      display: flex; items: center; gap: 0.5rem; padding: 0.875rem 1.5rem; 
-      border: 2px solid var(--border); background: transparent; 
-      border-radius: 50px; font-family: var(--font-head); font-weight: 600; 
-      font-size: 0.9rem; color: var(--text); cursor: pointer; transition: var(--transition);
-      white-space: nowrap;
-    }
-    .toggle-btn:hover:not(.active) { border-color: var(--muted); }
-    .toggle-btn.active { 
-      background: var(--accent); color: white; border-color: var(--accent);
-      box-shadow: var(--shadow-sm);
-    }
-    .btn-icon { width: 20px; height: 20px; flex-shrink: 0; }
-    .toggle-desc { 
-      font-size: 0.85rem; color: var(--muted); font-family: var(--font-head);
-    }
-
-    /* === HERO SECTION === */
-    .hero-wrapper { 
-      display: grid; gap: 2rem; margin-bottom: 3rem; 
-      grid-template-columns: 1fr; 
-    }
+    /* HERO SECTION */
+    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3rem; }
     @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
+    .hero-img-box { position: relative; aspect-ratio: 16/9; }
+    .hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--accent); color: white; padding: 4px 10px; font-weight: 800; font-size: 0.7rem; border-radius: 4px; }
+    .hero-text-box { padding: 1.5rem; }
+    .hero-text-box h1 { font-size: 2.2rem; line-height: 1.1; margin: 0.5rem 0; }
+    .meta-row { display: flex; gap: 0.5rem; font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .cat-tag { color: var(--accent) !important; }
 
-    .hero-main { height: 100%; }
-    .hero-link { display: block; height: 100%; }
-    .hero-img-box { 
-      position: relative; width: 100%; aspect-ratio: 16/9; 
-      border-bottom: 1px solid var(--border);
-    }
-    .hero-img-box img { width: 100%; height: 100%; object-fit: cover; }
-    .hero-badge { 
-      position: absolute; top: 1.25rem; left: 1.25rem; 
-      background: var(--accent); color: white; padding: 0.5rem 1rem; 
-      font-size: 0.75rem; font-weight: 700; border-radius: 6px;
-      font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .hero-text-box { padding: 2rem; }
-    .hero-main h1 { 
-      font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 1rem 0 0.75rem 0; 
-      line-height: 1.15; color: var(--text);
-    }
-    .hero-excerpt { 
-      font-size: 1.1rem; color: var(--muted); margin-top: 1rem;
-    }
-    .meta-row { 
-      display: flex; align-items: center; gap: 0.75rem; 
-      font-size: 0.85rem; font-weight: 600; color: var(--muted);
-      margin-bottom: 1rem; text-transform: uppercase;
-    }
-    .cat-tag { color: var(--accent); }
+    .hero-side { display: flex; flex-direction: column; gap: 1rem; }
+    .sub-card { display: flex; gap: 1rem; padding: 1rem; align-items: center; }
+    .sub-img { width: 100px; height: 70px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
+    .sub-text h3 { margin: 0; font-size: 1rem; line-height: 1.3; }
 
-    .hero-side { display: flex; flex-direction: column; gap: 1.25rem; }
-    .sub-card { 
-      display: flex; gap: 1.25rem; padding: 1.25rem; align-items: flex-start;
-    }
-    .sub-img { 
-      width: 90px; height: 70px; flex-shrink: 0; border-radius: 8px; overflow: hidden;
-    }
-    .sub-text h3 { 
-      font-size: 1.05rem; line-height: 1.4; margin: 0; font-weight: 700;
-    }
-    .sub-cat { 
-      display: block; font-size: 0.7rem; color: var(--accent); 
-      font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;
-    }
+    /* FEED HEADER */
+    .feed-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .section-header { display: flex; align-items: center; gap: 1rem; flex: 1; }
+    .header-line { height: 1px; background: var(--border); width: 100%; }
+    .toggle-container { display: flex; background: var(--card); padding: 4px; border-radius: 50px; border: 1px solid var(--border); }
+    .toggle-btn { border: none; background: transparent; padding: 0.5rem 1.2rem; border-radius: 50px; font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; cursor: pointer; color: var(--muted); }
+    .toggle-btn.active { background: var(--accent); color: white !important; }
 
-    /* === INFINITE FEED === */
-    .infinite-feed { margin-bottom: 4rem; }
-    .feed-header { 
-      display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
-      padding-bottom: 1rem; border-bottom: 2px solid var(--border);
-    }
-    .feed-title { 
-      font-size: 1.875rem; margin: 0; font-weight: 700; 
-      background: linear-gradient(135deg, var(--text), var(--muted)); 
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .header-line { flex: 1; height: 2px; background: var(--border); }
-
-    .feed-container { position: relative; }
-    .news-river { display: flex; flex-direction: column; gap: 2rem; }
-
-    .river-item { animation: slideInUp 0.4s ease-out; }
-    @keyframes slideInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in { animation-delay: 0.1s; }
-
-    .river-link { 
-      display: flex; flex-direction: column-reverse; gap: 1.5rem;
-    }
-    @media (min-width: 768px) {
-      .river-link { flex-direction: row; align-items: flex-start; }
-    }
-
+    /* RIVER FEED CARDS */
+    .layout-grid { display: grid; gap: 3rem; }
+    @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
+    .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
+    .river-item { padding: 1.5rem; }
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
+    @media (min-width: 768px) { .river-link { flex-direction: row; } }
     .river-content { flex: 1; }
-    .river-meta { 
-      display: flex; align-items: center; gap: 0.75rem; 
-      font-size: 0.8rem; font-weight: 600; color: var(--muted);
-      margin-bottom: 1rem; text-transform: uppercase;
-    }
-    .river-cat { color: var(--accent); }
-    .bullet { color: var(--border); font-size: 1rem; }
-    .river-title { 
-      font-size: 1.5rem; line-height: 1.3; margin: 0 0 1rem 0; 
-      font-weight: 700;
-    }
-    @media (min-width: 768px) { .river-title { font-size: 1.3rem; } }
-    .river-excerpt { 
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
-      overflow: hidden; font-size: 1rem; color: var(--muted);
-    }
+    .river-title { font-family: var(--font-head); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; }
+    .river-desc { color: var(--muted); font-size: 1rem; line-height: 1.6; margin: 0; }
+    .river-meta { display: flex; gap: 0.8rem; font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+    .river-img { width: 100%; height: 200px; border-radius: 6px; flex-shrink: 0; overflow: hidden; }
+    @media (min-width: 768px) { .river-img { width: 220px; height: 150px; } }
 
-    .river-img { 
-      width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden;
-      margin-top: 1rem;
-    }
-    @media (min-width: 768px) {
-      .river-img { 
-        width: 280px; height: 180px; margin-top: 0; margin-left: 1.5rem; 
-        flex-shrink: 0;
-      }
-    }
+    /* PAGINATION */
+    .pagination-area { margin-top: 3rem; text-align: center; }
+    .more-btn { background: var(--text); color: var(--bg) !important; border: none; padding: 1rem 2.5rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; }
 
-    /* === LOAD MORE BUTTON === */
-    .load-more-section { 
-      text-align: center; padding: 3rem 1rem; 
-    }
-    .load-more-btn { 
-      position: relative; display: inline-flex; align-items: center; gap: 0.75rem;
-      padding: 1.25rem 3rem; background: var(--card); border: 2px solid var(--border);
-      border-radius: 50px; font-family: var(--font-head); font-weight: 600;
-      font-size: 1rem; color: var(--text); cursor: pointer; transition: var(--transition);
-      min-height: 56px;
-    }
-    .load-more-btn:hover:not(:disabled) { 
-      background: var(--accent); color: white; border-color: var(--accent);
-      transform: translateY(-2px); box-shadow: var(--shadow-md);
-    }
-    .load-more-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    
-    .btn-spinner {
-      width: 20px; height: 20px; border: 2px solid transparent;
-      border-top: 2px solid currentColor; border-radius: 50%;
-      animation: spin 1s linear infinite; opacity: 0; transition: opacity 0.2s;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* === LAYOUT & SIDEBAR === */
-    .desktop-layout { 
-      display: grid; grid-template-columns: 1fr; gap: 3rem; 
-    }
-    @media (min-width: 1200px) { 
-      .desktop-layout { grid-template-columns: 1fr 340px; } 
-    }
-    .sidebar-placeholder { display: none; }
-    @media (min-width: 1200px) { .sidebar-placeholder { display: block; height: 800px; } }
-
+    /* SIDEBAR */
     .sidebar-column { display: none; }
-    @media (min-width: 1200px) { .sidebar-column { display: block; } }
-    .sticky-wrapper { 
-      position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;
-    }
+    @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; } }
+    .widget { padding: 1.5rem; }
+    .widget-title { font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+    .social-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .social-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .social-text { line-height: 1.1; font-family: var(--font-head); }
+    .social-text .count { font-weight: 800; font-size: 0.9rem; display: block; }
+    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
 
-    /* === WIDGETS === */
-    .widget { padding: 1.75rem; }
-    .widget-title { 
-      font-size: 0.95rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px; margin-bottom: 1.5rem; 
-      padding-bottom: 0.75rem; border-bottom: 2px solid var(--border);
-      color: var(--text);
-    }
-
-    .social-list { display: flex; flex-direction: column; gap: 1rem; }
-    .social-row { 
-      display: flex; align-items: center; gap: 1rem; padding: 1rem;
-      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
-      transition: var(--transition);
-    }
-    .social-row:hover { 
-      transform: translateX(8px); border-color: var(--muted); 
-    }
-    .social-icon { 
-      width: 40px; height: 40px; border-radius: 50%; 
-      background: var(--text); color: white; padding: 8px; flex-shrink: 0;
-    }
-    .social-icon svg { width: 24px; height: 24px; }
-    .social-text { flex: 1; }
-    .social-text .count { 
-      display: block; font-weight: 800; font-size: 1.1rem; color: var(--text);
-    }
-    .social-text .label { 
-      font-size: 0.8rem; color: var(--muted); text-transform: uppercase;
-    }
-    .social-arrow { 
-      font-size: 1.5rem; color: var(--border); font-weight: 300;
-    }
-
-    .ad-widget { text-align: center; }
-    .ad-label { 
-      display: block; font-size: 0.7rem; color: var(--muted); 
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;
-      font-family: var(--font-head);
-    }
-    .ad-box { 
-      background: var(--bg); min-height: 280px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .cta-widget { background: linear-gradient(135deg, var(--text), #1e293b); color: white; }
-    .cta-widget p { color: #cbd5e1; margin-bottom: 1.5rem; }
-    .cta-form { display: flex; flex-direction: column; gap: 1rem; }
-    .cta-form input { 
-      padding: 1rem 1.25rem; border: none; border-radius: 8px; 
-      font-size: 1rem; background: rgba(255,255,255,0.1);
-    }
-    .cta-submit { 
-      background: var(--accent); color: white; border: none; 
-      padding: 1rem 1.5rem; border-radius: 8px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
-      transition: var(--transition);
-    }
-    .cta-submit:hover { background: #b91c1c; transform: translateY(-1px); }
-
-    /* === RESPONSIVE === */
-    @media (max-width: 768px) {
-      .toggle-group { gap: 0.5rem; }
-      .toggle-btn { padding: 0.75rem 1.25rem; font-size: 0.85rem; }
-      .hero-text-box { padding: 1.5rem; }
-      .river-title { font-size: 1.3rem; }
-    }
+    .cta-widget { background: var(--text); color: var(--bg); text-align: center; }
+    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+    .cta-form input { padding: 0.8rem; border-radius: 4px; border: none; }
+    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
   </style>
 </Layout>
