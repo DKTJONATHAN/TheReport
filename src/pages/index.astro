@@ -13,7 +13,7 @@ if (allPosts.length === 0) {
 
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// --- STORIES BAR DATA ---
+// STORIES BAR DATA
 const categoryCircles = majorCategories.map(cat => {
   const latest = allPosts.find(p => p.data.category === cat);
   return { 
@@ -33,11 +33,11 @@ const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
 
 const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 
-// --- HERO SECTION DATA ---
+// HERO SECTION DATA
 const mainStory = allPosts[0];
 const subStories = allPosts.slice(1, 3);
 
-// --- DYNAMIC FEED DATA (Starting from post 4) ---
+// DYNAMIC FEED DATA (Starting from post 4)
 const feedData = allPosts.slice(3).map(post => ({
   title: post.data.title,
   description: post.data.description,
@@ -56,11 +56,11 @@ const socialStats = [
 ];
 ---
 
-<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news, politics, and analysis from Kenya.">
+<Layout title="The Mwaniki Report" description="Latest breaking news and analysis.">
 
   <div class="page-wrapper">
 
-    {/* --- 1. STORIES BAR (Restored) --- */}
+    {/* --- 1. STORIES BAR --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
@@ -78,7 +78,7 @@ const socialStats = [
 
     <main class="main-container">
 
-      {/* --- 2. HERO SECTION (Restored) --- */}
+      {/* --- 2. HERO SECTION --- */}
       <section class="hero-wrapper">
         <div class="hero-main card-box">
           <a href={`/posts/${mainStory.slug}`} class="hero-link">
@@ -113,7 +113,7 @@ const socialStats = [
         </div>
       </section>
 
-      {/* --- 3. FEED CONTROLS --- */}
+      {/* --- 3. FEED HEADER & TOGGLE --- */}
       <div class="feed-header-bar">
         <div class="section-header">
             <h2>The Latest News</h2>
@@ -125,11 +125,11 @@ const socialStats = [
         </div>
       </div>
 
-      {/* --- 4. MAIN CONTENT LAYOUT --- */}
+      {/* --- 4. THE FEED LAYOUT --- */}
       <div class="layout-grid">
         <div class="feed-column">
           <div id="posts-container" class="news-river">
-            {/* Feed injected here (30 initial) */}
+            {/* 30 posts injected here via script */}
           </div>
 
           <div class="pagination-trigger">
@@ -176,7 +176,7 @@ const socialStats = [
 
   <script is:inline define:vars={{ feedData }}>
     let currentMode = 'time';
-    let visibleCount = 30; // Shows 30 stories immediately
+    let visibleCount = 30; 
     const step = 15;
     
     const container = document.getElementById('posts-container');
@@ -196,6 +196,8 @@ const socialStats = [
       slice.forEach(post => {
         const article = document.createElement('article');
         article.className = 'river-item card-box fade-in';
+        
+        // Ensure strictly styled HTML to avoid default browser link colors
         article.innerHTML = `
           <a href="/posts/${post.slug}" class="river-link">
             <div class="river-content">
@@ -203,8 +205,8 @@ const socialStats = [
                 <span class="river-cat">${post.category}</span>
                 <span class="river-time">${new Date(post.date).toLocaleDateString()}</span>
               </div>
-              <h3>${post.title}</h3>
-              <p>${post.description}</p>
+              <h3 class="river-title">${post.title}</h3>
+              <p class="river-desc">${post.description}</p>
             </div>
             <div class="river-img">
               <img src="${post.image}" alt="${post.title}" loading="lazy" />
@@ -235,114 +237,111 @@ const socialStats = [
   </script>
 
   <style>
+    /* --- THEME SYSTEM --- */
     :root {
-      --bg: #f8fafc;  
-      --card: #ffffff;
-      --text: #1e293b; 
-      --muted: #64748b; 
+      --bg: #0f172a; 
+      --card: #1e293b; 
+      --text: #f1f5f9; 
+      --muted: #94a3b8; 
       --accent: #dc2626; 
-      --border: #e2e8f0; 
+      --border: #334155;
       --font-body: 'Merriweather', Georgia, serif;
       --font-head: 'Inter', system-ui, sans-serif;
       --radius: 8px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a; 
-        --card: #1e293b; 
-        --text: #f1f5f9; 
-        --muted: #94a3b8; 
-        --border: #334155;
-      }
-    }
-
+    /* Force global reset to prevent blue/purple links */
     * { box-sizing: border-box; }
     body { background: var(--bg); color: var(--text); font-family: var(--font-body); margin: 0; }
-    a { text-decoration: none; color: inherit; transition: 0.2s; }
+    a { text-decoration: none; color: inherit; }
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 800; color: var(--text); }
 
     .main-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 
-    /* CARD SYSTEM */
+    /* CARD STYLE */
     .card-box {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
     }
+    .card-box:hover { border-color: var(--accent); }
 
-    /* --- 1. STORIES BAR --- */
+    /* STORIES SECTION */
     .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 0; }
-    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none; }
+    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
     .stories-scroll::-webkit-scrollbar { display: none; }
-    .story-item { flex: 0 0 auto; width: 75px; text-align: center; }
-    .story-img-ring { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 2px solid var(--accent); margin-bottom: 0.5rem; }
+    .story-item { flex: 0 0 auto; width: 75px; text-align: center; display: block; }
+    .story-img-ring { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 2px solid var(--accent); margin: 0 auto 0.5rem; }
     .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
-    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; color: var(--text); text-transform: uppercase; }
+    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; color: var(--text); text-transform: uppercase; display: block; }
 
-    /* --- 2. HERO SECTION --- */
+    /* HERO SECTION */
     .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3rem; }
     @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
 
     .hero-img-box { position: relative; aspect-ratio: 16/9; }
     .hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--accent); color: white; padding: 4px 10px; font-weight: 800; font-size: 0.7rem; border-radius: 4px; }
     .hero-text-box { padding: 1.5rem; }
-    .hero-text-box h1 { font-size: 2.2rem; line-height: 1.1; margin: 0.5rem 0; }
+    .hero-text-box h1 { font-family: var(--font-head); font-size: 2.2rem; line-height: 1.1; margin: 0.5rem 0; color: var(--text); }
     .meta-row { display: flex; gap: 0.5rem; font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
     .cat-tag { color: var(--accent); }
 
     .hero-side { display: flex; flex-direction: column; gap: 1rem; }
     .sub-card { display: flex; gap: 1rem; padding: 1rem; align-items: center; }
     .sub-img { width: 100px; height: 70px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
-    .sub-text h3 { margin: 0; font-size: 1rem; line-height: 1.3; }
+    .sub-text h3 { margin: 0; font-family: var(--font-head); font-size: 1rem; line-height: 1.3; color: var(--text); }
     .sub-cat { font-family: var(--font-head); font-size: 0.7rem; color: var(--accent); font-weight: 800; text-transform: uppercase; }
 
-    /* --- 3. FEED CONTROLS --- */
+    /* FEED HEADER & TOGGLE */
     .feed-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
     .section-header { display: flex; align-items: center; gap: 1rem; flex: 1; }
-    .section-header h2 { margin: 0; white-space: nowrap; font-size: 1.5rem; }
+    .section-header h2 { font-family: var(--font-head); color: var(--text); margin: 0; font-size: 1.5rem; }
     .header-line { height: 1px; background: var(--border); width: 100%; }
 
     .toggle-container { display: flex; background: var(--card); padding: 4px; border-radius: 50px; border: 1px solid var(--border); }
     .toggle-btn { border: none; background: transparent; padding: 0.5rem 1.2rem; border-radius: 50px; font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; cursor: pointer; color: var(--muted); }
     .toggle-btn.active { background: var(--accent); color: white; }
 
-    /* --- 4. THE RIVER --- */
+    /* THE RIVER LIST */
     .layout-grid { display: grid; gap: 3rem; }
     @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
 
     .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
-    .river-item { padding: 1.5rem; }
-    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
+    .river-item { padding: 1.5rem; display: block; }
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; color: inherit; text-decoration: none; }
     @media (min-width: 768px) { .river-link { flex-direction: row; } }
 
     .river-content { flex: 1; }
-    .river-content h3 { font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; }
-    .river-content p { color: var(--muted); font-size: 1rem; line-height: 1.6; }
+    .river-title { font-family: var(--font-head); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; color: var(--text) !important; }
+    .river-desc { color: var(--muted) !important; font-size: 1rem; line-height: 1.6; margin: 0; }
     .river-meta { display: flex; gap: 0.8rem; font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
     .river-cat { color: var(--accent); }
-    .river-img { width: 100%; height: 180px; border-radius: 6px; flex-shrink: 0; overflow: hidden; }
+    .river-img { width: 100%; height: 200px; border-radius: 6px; flex-shrink: 0; overflow: hidden; }
     @media (min-width: 768px) { .river-img { width: 220px; height: 150px; } }
 
-    /* --- SIDEBAR --- */
+    /* SIDEBAR */
     .sidebar-column { display: none; }
     @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; } }
     .widget { padding: 1.5rem; }
-    .widget-title { font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text); }
     .social-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    .social-icon { width: 32px; height: 32px; color: white; background: var(--text); border-radius: 50%; padding: 6px; }
-    .cta-widget { background: var(--text); color: white; text-align: center; }
-    .cta-widget h3 { color: white; }
+    .social-icon { width: 32px; height: 32px; color: white; background: var(--bg); border-radius: 50%; padding: 6px; }
+    .social-text { line-height: 1.1; font-family: var(--font-head); }
+    .social-text .count { font-weight: 800; font-size: 0.9rem; color: var(--text); }
+    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+
+    .cta-widget { background: var(--card); text-align: center; border: 2px solid var(--accent); }
+    .cta-widget h3 { color: var(--text); }
     .cta-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
-    .cta-form input { padding: 0.8rem; border-radius: 4px; border: none; }
+    .cta-form input { padding: 0.8rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
     .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
 
-    /* --- PAGINATION --- */
+    /* PAGINATION */
     .pagination-trigger { margin-top: 3rem; text-align: center; }
-    .more-btn { background: var(--text); color: var(--bg); border: none; padding: 1rem 2.5rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; }
-    
+    .more-btn { background: var(--accent); color: white; border: none; padding: 1.2rem 3rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; }
+
     .fade-in { animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
