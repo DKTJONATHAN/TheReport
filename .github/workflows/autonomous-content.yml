@@ -1,4 +1,4 @@
-name: International News (Human Core & GEO)
+name: International News (Perfected SEO & Human Core)
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic'
+        description: 'Force a topic (politics, sports, business, technology, entertainment)'
         required: false
         default: ''
 
@@ -32,6 +32,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ env.DEFAULT_BRANCH }}
           token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: true
@@ -46,10 +47,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests google-genai apify-client
 
-      - name: Generate article
+      - name: Generate Content
         env:
+          # --- POOLS ---
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
+          # --- KEYS ---
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
@@ -62,14 +65,16 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. KEY ROTATION ---
-          def get_pool(env_val): return [k.strip() for k in env_val.split(",") if k.strip()]
-          gem_pool = get_pool(os.environ.get("GEMINI_POOL", ""))
-          api_pool = get_pool(os.environ.get("APIFY_POOL", ""))
+          # --- 1. KEY ROTATION & RESILIENCE ---
+          def get_clean_list(env_val):
+              return [k.strip() for k in env_val.split(",") if k.strip()]
+
+          gemini_keys = get_clean_list(os.environ.get("GEMINI_POOL", ""))
+          apify_tokens = get_clean_list(os.environ.get("APIFY_POOL", ""))
 
           def run_gemini(prompt):
-              random.shuffle(gem_pool)
-              for k in gem_pool:
+              random.shuffle(gemini_keys)
+              for k in gemini_keys:
                   try:
                       client = genai.Client(api_key=k)
                       return client.models.generate_content(
@@ -78,77 +83,81 @@ jobs:
                           config=types.GenerateContentConfig(temperature=0.82, max_output_tokens=8192)
                       ).text.strip()
                   except Exception as e:
-                      print(f"Key failed: {e}"); continue
+                      print(f"⚠️ Gemini Key Failed: {e}"); continue
               return None
 
           def run_apify(actor, payload):
-              random.shuffle(api_pool)
-              for t in api_pool:
+              random.shuffle(apify_tokens)
+              for t in apify_tokens:
                   try:
                       client = ApifyClient(t)
-                      r = client.actor(actor).call(run_input=payload)
-                      return list(client.dataset(r["defaultDatasetId"]).iterate_items())
+                      run = client.actor(actor).call(run_input=payload)
+                      return list(client.dataset(run["defaultDatasetId"]).iterate_items())
                   except Exception as e:
-                      print(f"Token failed: {e}"); continue
+                      print(f"⚠️ Apify Token Failed: {e}"); continue
               return None
 
-          # --- 2. LOGIC ---
+          # --- 2. TOPIC & DISCOVERY ---
           cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
+          
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          n_api = os.environ.get("NEWSAPI_KEY")
-          n_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={n_api}"
-          arts = requests.get(n_url).json().get('articles', [])
+          news_api = os.environ.get("NEWSAPI_KEY")
+          news_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={news_api}"
+          articles = requests.get(news_url).json().get('articles', [])
 
-          raw_text, f_hash = None, None
-          for a in arts[:10]:
-              u = a.get('url', '')
-              h = hashlib.md5(u.encode()).hexdigest()
-              if h not in memory:
-                  data = run_apify("apify/website-content-crawler", {"startUrls": [{"url": u}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
-                  if data and len(data[0].get('markdown', '')) > 1000:
-                      raw_text, f_hash = data[0]['markdown'], h
+          full_raw_text, final_hash = None, None
+          for art in articles[:12]:
+              url = art.get('url', '')
+              u_hash = hashlib.md5(url.encode()).hexdigest()
+              if u_hash not in memory:
+                  print(f"🕷️ Scraping: {url}")
+                  data = run_apify("apify/website-content-crawler", {
+                      "startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .sidebar"
+                  })
+                  if data and len(data[0].get('markdown', '')) > 1100:
+                      full_raw_text = data[0]['markdown']
+                      final_hash = u_hash
                       break
 
-          if not raw_text: exit(0)
+          if not full_raw_text:
+              print("❌ Termination: No new content found."); exit(0)
 
-          # --- 3. THE PERFECTED SEO/GEO/HUMAN PROMPT ---
-          # Integrated strategies from provided General Strategies, GEO Fundamentals, and Prompting Tips.
+          # --- 3. PROMPT (HUMAN CORE / GEO / SEO) ---
           prompt = f"""You are operating as a human intelligence disguised as conversation. 
-          Perform a deep-dive investigative report based on this source:
-          SOURCE: {raw_text[:20000]}
+          Perform a deep-dive investigative report based on this real-time source:
+          SOURCE: {full_raw_text[:20000]}
 
-          HUMANIZATION STRATEGIES:
-          1. Human Core Engine: Blend warmth with finality. Avoid robotic phrasing.
-          2. Sentence Rhythm: Mix long, complex sentences with short, blunt fragments to break predictable patterns.
-          3. Micro-Signals: Add small human asides like "Honestly," "surprisingly," or "the part that actually matters is...".
-          4. No AI Slop: Ban words like 'delve', 'tapestry', 'testament', 'comprehensive', 'vibrant'.
-          5. NO Conclusion: Never use 'In conclusion' or 'To summarize'. End with a provocative cliffhanger that leaves the reader questioning the status quo.
+          HUMANIZATION & STYLE:
+          - Sentence Rhythm: Mix long sentences with short, blunt fragments.
+          - Micro-Signals: Add human asides like "Honestly," or "the part that actually matters is...".
+          - No AI Slop: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'comprehensive'.
+          - NO EM-DASHES: Use commas only.
+          - NO CONCLUSION: Do not use 'In conclusion' or 'To summarize'. 
+          - Cliffhanger: End abruptly with a provocative question or a dark realization that leaves the reader stunned.
 
-          GEO & SEO OPTIMIZATION:
-          1. Answer-First Approach: Directly answer the core question of the news in the first two paragraphs.
-          2. Quotable Structure: Use clear, punchy headers and short sections to make the content "quotable" for AI search engines.
-          3. Contrarian Twist: Identify the mainstream consensus and report from the DIRECTLY OPPOSITE angle.
-          4. FAQ Integration: Include a "Key Takeaways" section at the end of the body to match conversational AI queries.
-
-          STRICT RULES: NO EM-DASHES (use commas). UK English. 1600+ words.
+          GEO/SEO STRATEGY:
+          - Answer-First: Directly answer the core news hook in the first two paragraphs.
+          - Quotable Content: Use punchy ## headers and short, quotable takeaways.
+          - Contrarian Twist: Frame the story from the DIRECTLY OPPOSITE angle of the mainstream narrative.
 
           OUTPUT FORMAT:
-          TITLE: [Provocative, non-clickbait headline]
+          TITLE: [Provocative headline]
           DESCRIPTION: [One blunt, high-GEO sentence]
           CATEGORY: [{topic.title()}]
-          TAGS: [tags]
+          TAGS: [3 tags]
           IMAGE_KEYWORD: [2 words]
           BODY:
-          [The full article starting with a direct answer. Use ## headers. End with a cliffhanger.]"""
+          [The full article. No conclusion. Min 1500 words.]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 4. PARSE & CLEAN ---
-          parsed = {"TITLE": "", "DESC": "", "IMG": topic, "BODY": ""}
+          # --- 4. PARSE & SCRUB ---
+          parsed = {"TITLE": "Report", "DESC": "", "IMG": topic, "BODY": ""}
           cur = None
           for line in output.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
@@ -157,21 +166,22 @@ jobs:
               elif line.startswith("BODY:"): cur = "BODY"
               elif cur == "BODY": parsed["BODY"] += line + "\n"
 
-          # Final Dash/Slop Scrub
           for k in ["TITLE", "DESC", "BODY"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)In conclusion,?', '', parsed[k])
 
-          # Image Fallback
-          u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+          # --- 5. IMAGE & SAVE ---
           def get_img(q):
+              u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              fallback = "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+              if not u_key: return fallback
               try:
                   r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                  return r.json()['urls']['regular'] if r.status_code == 200 else "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
-              except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+                  return r.json()['urls']['regular'] if r.status_code == 200 else fallback
+              except: return fallback
 
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          final = f"""---
+          final_file = f"""---
           title: "{parsed['TITLE']}"
           description: "{parsed['DESC']}"
           date: "{datetime.datetime.utcnow().date()}"
@@ -185,17 +195,26 @@ jobs:
 
           {parsed['BODY']}
           """
-
-          os.makedirs(os.environ.get("POSTS_DIR"), exist_ok=True)
-          with open(os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md"), "w") as f:
-              import textwrap
-              f.write(textwrap.dedent(final).strip())
-
-          memory.append(f_hash)
+          
+          import textwrap
+          out_dir = os.environ.get("POSTS_DIR")
+          os.makedirs(out_dir, exist_ok=True)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w") as f:
+              f.write(textwrap.dedent(final_file).strip())
+          
+          memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
+          print(f"✅ Published: {slug}")
           EOF
 
-      - name: Commit and push article
+      - name: Git Integration
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git pull origin main --rebase
+
+      - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "content: human-core GEO publish"
