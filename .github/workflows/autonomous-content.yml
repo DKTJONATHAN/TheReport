@@ -2,18 +2,18 @@ name: Auto Kenya Deep Reporter
 
 on:
   schedule:
-    - cron: '30 3 * * *'  # 6:30 AM EAT (Politics/Business)
-    - cron: '0 5 * * *'   # 8:00 AM EAT (Entertainment)
-    - cron: '0 7 * * *'   # 10:00 AM EAT (Tech)
-    - cron: '0 10 * * *'  # 1:00 PM EAT (Finance)
-    - cron: '0 12 * * *'  # 3:00 PM EAT (Sports)
-    - cron: '0 14 * * *'  # 5:00 PM EAT (Sports)
-    - cron: '0 17 * * *'  # 8:00 PM EAT (Finance)
-    - cron: '0 19 * * *'  # 10:00 PM EAT (Tech)
+    - cron: '30 3 * * *'  # 6:30 AM EAT
+    - cron: '0 5 * * *'   # 8:00 AM EAT
+    - cron: '0 7 * * *'   # 10:00 AM EAT
+    - cron: '0 10 * * *'  # 1:00 PM EAT
+    - cron: '0 12 * * *'  # 3:00 PM EAT
+    - cron: '0 14 * * *'  # 5:00 PM EAT
+    - cron: '0 17 * * *'  # 8:00 PM EAT
+    - cron: '0 19 * * *'  # 10:00 PM EAT
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business, politics, entertainment)'
+        description: 'Force a topic'
         required: false
         default: ''
 
@@ -73,7 +73,6 @@ jobs:
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
           cron = os.environ.get('CRON_SCHEDULE', 'manual')
-          # Updated key map to reflect new UTC schedule
           key_map = {
               '30 3 * * *': 'GEMINI_API_KEY', 
               '0 5 * * *': 'GEMINI_API_KEY1', 
@@ -91,7 +90,6 @@ jobs:
           gemini_client = genai.Client(api_key=selected_gemini_key)
 
           h = datetime.datetime.utcnow().hour
-          # Updated hour logic (UTC) to determine topic
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or (
               'sports' if h in [12, 14] else 
               'entertainment' if h in [5] else 
@@ -165,10 +163,14 @@ jobs:
           [1200-1600 words. ## Headers only. No em-dashes.]'''
 
           # --- 6. GENERATION ---
+          # FIXED: Added max_output_tokens to prevent truncation
           response = gemini_client.models.generate_content(
               model="gemini-3-flash-preview",
               contents=prompt,
-              config=types.GenerateContentConfig(temperature=0.1)
+              config=types.GenerateContentConfig(
+                  temperature=0.1,
+                  max_output_tokens=8192
+              )
           )
           ai_out = response.text.strip()
 
@@ -204,160 +206,5 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: automated publish with guaranteed image"
-          branch: ${{ env.DEFAULT_BRANCH }}
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install requests google-genai apify-client beautifulsoup4
-
-      - name: Deep Scrape and Report
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
-          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
-          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
-          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
-          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
-          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
-          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
-          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic || '' }}
-          CRON_SCHEDULE: ${{ github.event.schedule }}
-        run: |
-          python << 'EOF'
-          import os, json, datetime, requests, re, random, time, hashlib
-          from bs4 import BeautifulSoup
-          from google import genai
-          from google.genai import types
-          from apify_client import ApifyClient
-
-          # --- 1. SETUP & KEY ROTATION ---
-          memory_path = os.environ.get('MEMORY_FILE')
-          posts_dir = os.environ.get('POSTS_DIR')
-          os.makedirs(posts_dir, exist_ok=True)
-          memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
-
-          cron = os.environ.get('CRON_SCHEDULE', 'manual')
-          key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 4 * * *': 'GEMINI_API_KEY1', '0 6 * * *': 'GEMINI_API_KEY2', '0 11 * * *': 'GEMINI_WRITE_KEY'}
-          selected_gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY'))
-          
-          apify_tokens = [os.environ.get(f"APIFY_API_TOKEN{i}" if i > 0 else "APIFY_API_TOKEN") for i in range(5)]
-          apify_client = ApifyClient(random.choice([t for t in apify_tokens if t]))
-          gemini_client = genai.Client(api_key=selected_gemini_key)
-
-          h = datetime.datetime.utcnow().hour
-          topic = os.environ.get('MANUAL_TOPIC', '').lower() or ('sports' if h in [0, 14] else 'entertainment' if h in [4, 20] else 'technology' if h in [6, 22] else 'business' if h in [11, 18] else 'politics')
-          km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
-
-          # --- 2. FIND LINK ---
-          res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'})
-          soup = BeautifulSoup(res.text, 'html.parser')
-          news_items = soup.select('li.news-item')
-          final_target_link = None
-          for item in news_items:
-              link_tag = item.select_one('.news-title a')
-              if link_tag and 'href' in link_tag.attrs:
-                  url = link_tag['href']
-                  if "kenyamoja.com" not in url and url.startswith("http"):
-                      url_hash = hashlib.md5(url.encode()).hexdigest()
-                      if url_hash not in memory:
-                          final_target_link = url
-                          memory.append(url_hash)
-                          break
-          if not final_target_link: exit(0)
-
-          # --- 3. SCRAPE ---
-          try:
-              run = apify_client.actor("apify/website-content-crawler").call(run_input={
-                  "startUrls": [{"url": final_target_link}],
-                  "maxCrawlPages": 1,
-                  "maxCrawlDepth": 0,
-                  "crawlerType": "playwright:firefox",
-                  "removeElementsCssSelector": "nav, footer, script, style, .ads, header"
-              })
-              data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())[0]
-              full_raw_content = data.get('markdown', data.get('text', ''))
-          except: exit(0)
-
-          # --- 4. IMPROVED IMAGE LOGIC (NO EMPTY FRONTMATTER) ---
-          def get_unsplash_image(query, fallback_topic):
-              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if not access_key: return "https://images.unsplash.com/photo-1501504905252-473c47e087f8" # Global news fallback
-              
-              # Strategy: Try specific keyword first, then broad topic
-              search_queries = [f"{query} news", query, fallback_topic, "Kenya"]
-              
-              for q in search_queries:
-                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={access_key}"
-                  try:
-                      resp = requests.get(url, timeout=10)
-                      if resp.status_code == 200:
-                          return resp.json()['urls']['regular']
-                  except: continue
-              return "https://images.unsplash.com/photo-1501504905252-473c47e087f8"
-
-          # --- 5. PROMPT ---
-          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
-          SOURCE CONTENT: {full_raw_content}
-
-          TASK: Write a detailed news article. 
-          - Write as the primary and only reporter. 
-          - NO conversational filler, meta-talk, or external source mentions.
-
-          OUTPUT FORMAT:
-          TITLE: [Headline]
-          DESCRIPTION: [160 char summary]
-          CATEGORY: [{topic.title()}]
-          TAGS: [tag1, tag2]
-          IMAGE_KEYWORD: [Searchable concrete noun like "stadium", "bank", "smartphone", or "city"]
-          BODY:
-          [1200-1600 words. ## Headers only. No em-dashes.]'''
-
-          # --- 6. GENERATION ---
-          response = gemini_client.models.generate_content(
-              model="gemini-3-flash-preview",
-              contents=prompt,
-              config=types.GenerateContentConfig(temperature=0.1)
-          )
-          ai_out = response.text.strip()
-
-          # --- 7. PARSE & CLEAN ---
-          parsed = {"TITLE": "", "DESCRIPTION": "", "CATEGORY": topic.title(), "TAGS": "", "IMAGE_KEYWORD": topic, "BODY": ""}
-          current_section = None
-          for line in ai_out.splitlines():
-              clean = line.strip().replace("**", "").replace('"', '')
-              if clean.upper().startswith("TITLE:"): parsed["TITLE"] = clean[6:].strip()
-              elif clean.upper().startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean[12:].strip()
-              elif clean.upper().startswith("CATEGORY:"): parsed["CATEGORY"] = clean[9:].strip()
-              elif clean.upper().startswith("TAGS:"): parsed["TAGS"] = clean[5:].strip()
-              elif clean.upper().startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean[14:].strip()
-              elif clean.upper().startswith("BODY:"): current_section = "BODY"
-              elif current_section == "BODY": parsed["BODY"] += line + "\n"
-
-          body_clean = re.sub(r'(?i)(Sources?|References?|Original story|As reported|Credit|Link|http).*', '', parsed["BODY"], flags=re.DOTALL).strip()
-          body_clean = body_clean.replace("—", ", ").replace("–", ", ").replace("--", ", ")
-
-          # --- 8. SAVE ---
-          image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'], topic)
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
-          
-          final_md = f"---\ntitle: \"{parsed['TITLE']}\"\ndescription: \"{parsed['DESCRIPTION']}\"\ndate: \"{date_str}\"\nauthor: \"Jonathan Mwaniki\"\nimage: \"{image_url}\"\ncategory: \"{parsed['CATEGORY']}\"\ntags: {json.dumps([t.strip() for t in parsed['TAGS'].split(',')])}\nslug: \"{slug}\"\n---\n\n# {parsed['TITLE']}\n\n{body_clean}"
-          
-          with open(os.path.join(posts_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
-              f.write(final_md)
-          with open(memory_path, 'w') as f:
-              json.dump(memory[-200:], f)
-          EOF
-
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "content: automated publish with guaranteed image"
+          commit_message: "content: automated publish with full length fix"
           branch: ${{ env.DEFAULT_BRANCH }}
