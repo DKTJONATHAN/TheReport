@@ -2,12 +2,11 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. DATA LOGIC (Server-Side)
+// 1. DATA LOGIC
 const allPosts = (await getCollection('posts'))
   .filter(p => !p.data.draft)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
 
-// Preparation for client-side consumption
 const serializedPosts = allPosts.map(post => ({
   title: post.data.title,
   description: post.data.description,
@@ -18,6 +17,8 @@ const serializedPosts = allPosts.map(post => ({
   author: post.data.author || 'Jonathan Mwaniki'
 }));
 
+const categories = ['Politics', 'Business', 'Tech', 'Life', 'Opinion'];
+
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -27,72 +28,95 @@ const socialStats = [
 
 <Layout title="The Mwaniki Report | News Feed" description="Latest breaking news and analysis.">
 
+  {/* --- STICKY NAVIGATION --- */}
+  <nav class="sticky-nav">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">JM</a>
+        <div class="nav-divider"></div>
+        <div class="nav-links">
+          {categories.map(cat => (
+            <a href={`/category/${cat.toLowerCase()}`} class="nav-item">{cat}</a>
+          ))}
+        </div>
+      </div>
+      <div class="nav-right">
+        <button class="search-trigger" aria-label="Search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
   <div class="page-wrapper">
     <main class="main-container">
 
-      {/* --- FEED CONTROLS --- */}
-      <section class="feed-header">
-        <div class="control-panel card-box">
-          <div class="feed-info">
-            <h2>The Newsroom</h2>
-            <p>Chronological feed of latest events</p>
+      {/* --- HEADER --- */}
+      <header class="feed-header">
+        <div class="header-content">
+          <div class="brand-meta">
+            <span class="live-indicator">LIVE Newsroom</span>
+            <h1>The Mwaniki Report</h1>
+            <p>Independent journalism for the digital age</p>
           </div>
           
-          <div class="toggle-wrapper">
-            <span class="toggle-label">Sort By:</span>
-            <div class="toggle-group" id="feed-toggle">
-              <button class="toggle-btn active" data-mode="time">Latest First</button>
-              <button class="toggle-btn" data-mode="category">Category</button>
+          <div class="filter-controls">
+            <span class="filter-label">Sort Feed</span>
+            <div class="toggle-pill" id="feed-toggle">
+              <button class="pill-btn active" data-mode="time">Recent</button>
+              <button class="pill-btn" data-mode="category">Sections</button>
             </div>
           </div>
         </div>
-      </section>
+        <div class="header-border"></div>
+      </header>
 
       <div class="layout-grid">
 
-        {/* --- DYNAMIC FEED COLUMN --- */}
+        {/* --- DYNAMIC FEED --- */}
         <div class="feed-column">
           <div id="posts-container" class="news-river">
-            {/* Posts are injected here via script */}
+            {/* Posts injected via JS */}
           </div>
 
-          <div class="load-more-area">
-            <button id="load-more-btn" class="more-btn">
-              <span>Unroll More Stories</span>
+          <div class="feed-footer">
+            <button id="load-more-btn" class="unroll-btn">
+              <span>View More Stories</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
             </button>
-            <p id="end-message" class="end-text hidden">You have reached the end of the newsroom.</p>
+            <p id="end-message" class="end-text hidden">End of feed updates</p>
           </div>
         </div>
 
         {/* --- SIDEBAR --- */}
         <aside class="sidebar-column">
-          <div class="sticky-wrapper">
-            <div class="widget social-widget card-box">
-              <h3 class="widget-title">Connect</h3>
-              <div class="social-list">
+          <div class="sidebar-sticky">
+            
+            <section class="sidebar-widget newsletter">
+              <h4>The Briefing</h4>
+              <p>Top insights delivered daily.</p>
+              <form class="newsletter-form">
+                <input type="email" placeholder="Your email" required />
+                <button type="submit">Join</button>
+              </form>
+            </section>
+
+            <section class="sidebar-widget social">
+              <h5>Coverage Networks</h5>
+              <div class="social-row">
                 {socialStats.map(s => (
-                  <a href="#" class="social-row" style={`--accent-color:${s.bg}`}>
-                    <div class="social-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
-                    </div>
-                    <div class="social-details">
-                      <span class="count">{s.count}</span>
-                      <span class="label">{s.name}</span>
-                    </div>
+                  <a href="#" class="social-icon" style={`--accent:${s.bg}`} title={s.name}>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
                   </a>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div class="widget cta-widget card-box dark-theme">
-              <h3>Newsletter</h3>
-              <p>Get the morning brief delivered to your inbox daily.</p>
-              <form class="cta-form">
-                <input type="email" placeholder="Enter your email" required />
-                <button type="submit">Join</button>
-              </form>
-            </div>
+            <section class="sidebar-widget advertisement">
+              <span class="ad-label">Advertisement</span>
+              <div class="ad-box"></div>
+            </section>
+
           </div>
         </aside>
 
@@ -100,192 +124,195 @@ const socialStats = [
     </main>
   </div>
 
-  {/* --- INTERACTION SCRIPT --- */}
   <script is:inline define:vars={{ serializedPosts }}>
     let currentMode = 'time';
-    let visibleCount = 6;
-    const increment = 6;
+    let visibleCount = 30; // Initial load of 30 posts
+    const step = 15;
     
     const container = document.getElementById('posts-container');
-    const loadMoreBtn = document.getElementById('load-more-btn');
+    const loadBtn = document.getElementById('load-more-btn');
     const endMsg = document.getElementById('end-message');
-    const toggleBtns = document.querySelectorAll('.toggle-btn');
+    const pills = document.querySelectorAll('.pill-btn');
 
     function getSortedPosts() {
-      if (currentMode === 'time') {
-        return [...serializedPosts].sort((a, b) => new Date(b.date) - new Date(a.date));
-      } else {
-        return [...serializedPosts].sort((a, b) => a.category.localeCompare(b.category));
-      }
+      if (currentMode === 'time') return [...serializedPosts];
+      return [...serializedPosts].sort((a, b) => a.category.localeCompare(b.category));
     }
 
-    function renderPosts(isAppend = false) {
-      const allSorted = getSortedPosts();
-      const slice = allSorted.slice(isAppend ? visibleCount - increment : 0, visibleCount);
+    function renderPosts(append = false) {
+      const posts = getSortedPosts();
+      const currentSlice = posts.slice(append ? visibleCount - step : 0, visibleCount);
 
-      if (!isAppend) container.innerHTML = '';
+      if (!append) container.innerHTML = '';
 
-      slice.forEach(post => {
+      currentSlice.forEach(post => {
         const dateStr = new Date(post.date).toLocaleDateString('en-KE', { 
-          day: 'numeric', month: 'short', year: 'numeric' 
+          month: 'short', day: 'numeric'
         });
         
-        const html = `
-          <article class="river-item card-box entry-animation">
-            <a href="/posts/${post.slug}" class="river-link">
-              <div class="river-content">
-                <div class="river-meta">
-                  <span class="cat-badge">${post.category}</span>
-                  <span class="time-stamp">${dateStr}</span>
+        const card = `
+          <article class="news-card slide-in">
+            <a href="/posts/${post.slug}" class="card-link">
+              <div class="card-visual">
+                <img src="${post.image}" alt="${post.title}" loading="lazy" />
+                <span class="tag">${post.category}</span>
+              </div>
+              <div class="card-body">
+                <div class="meta">
+                  <span class="author">${post.author}</span>
+                  <span class="dot"></span>
+                  <span class="date">${dateStr}</span>
                 </div>
                 <h3>${post.title}</h3>
                 <p>${post.description}</p>
               </div>
-              <div class="river-img">
-                <img src="${post.image}" alt="${post.title}" loading="lazy" />
-              </div>
             </a>
           </article>
         `;
-        container.insertAdjacentHTML('beforeend', html);
+        container.insertAdjacentHTML('beforeend', card);
       });
 
-      // Update Visibility of Load More
-      if (visibleCount >= allSorted.length) {
-        loadMoreBtn.classList.add('hidden');
+      if (visibleCount >= posts.length) {
+        loadBtn.classList.add('hidden');
         endMsg.classList.remove('hidden');
       } else {
-        loadMoreBtn.classList.remove('hidden');
+        loadBtn.classList.remove('hidden');
         endMsg.classList.add('hidden');
       }
     }
 
-    // Toggle Listeners
-    toggleBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        toggleBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentMode = btn.dataset.mode;
-        visibleCount = 6; // Reset count on sort change
-        renderPosts();
-      });
-    });
+    pills.forEach(p => p.addEventListener('click', () => {
+      pills.forEach(b => b.classList.remove('active'));
+      p.classList.add('active');
+      currentMode = p.dataset.mode;
+      visibleCount = 30;
+      renderPosts();
+    }));
 
-    // Load More Listener
-    loadMoreBtn.addEventListener('click', () => {
-      visibleCount += increment;
+    loadBtn.addEventListener('click', () => {
+      visibleCount += step;
       renderPosts(true);
     });
 
-    // Init
     renderPosts();
   </script>
 
   <style>
-    /* --- VARIABLES & CORE --- */
+    /* --- CORE SYSTEM --- */
     :root {
-      --bg: #fdfdfd;  
-      --card: #ffffff;
-      --text: #111827; 
-      --muted: #6b7280; 
-      --accent: #b91c1c; 
-      --border: #f3f4f6; 
-      --font-head: 'Inter', sans-serif;
-      --radius: 12px;
+      --ink: #000000;
+      --paper: #ffffff;
+      --smoke: #f9f9f9;
+      --muted: #717171;
+      --accent: #d0021b;
+      --line: #efefef;
+      --sans: 'Inter', system-ui, sans-serif;
+      --serif: 'Charter', 'Georgia', serif;
+      --nav-height: 64px;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #030712; --card: #111827; --text: #f9fafb; --muted: #9ca3af; --border: #1f2937;
+        --ink: #f1f1f1;
+        --paper: #0a0a0a;
+        --smoke: #141414;
+        --muted: #a0a0a0;
+        --line: #222222;
       }
     }
 
-    body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; margin: 0; }
-    .main-container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
-    .card-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    body { background: var(--paper); color: var(--ink); font-family: var(--sans); margin: 0; }
     .hidden { display: none !important; }
 
-    /* --- FEED HEADER --- */
-    .feed-header { margin-bottom: 2rem; }
-    .control-panel { 
-      display: flex; justify-content: space-between; align-items: center; 
-      padding: 1.5rem; gap: 1rem; flex-wrap: wrap; 
+    /* --- STICKY NAV --- */
+    .sticky-nav {
+      position: sticky; top: 0; z-index: 100;
+      height: var(--nav-height);
+      background: rgba(var(--paper), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
     }
-    .feed-info h2 { margin: 0; font-family: var(--font-head); font-size: 1.5rem; }
-    .feed-info p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.9rem; }
-
-    .toggle-wrapper { display: flex; align-items: center; gap: 1rem; }
-    .toggle-label { font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: var(--muted); }
-    
-    .toggle-group { display: flex; background: var(--bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border); }
-    .toggle-btn {
-      border: none; background: transparent; padding: 0.4rem 1rem; border-radius: 6px;
-      font-family: var(--font-head); font-weight: 600; font-size: 0.85rem; cursor: pointer;
-      color: var(--muted); transition: 0.2s;
+    .nav-container {
+      max-width: 1300px; margin: 0 auto; padding: 0 1.5rem;
+      display: flex; justify-content: space-between; align-items: center; height: 100%;
     }
-    .toggle-btn.active { background: var(--accent); color: white; }
+    .nav-left { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-logo { font-weight: 900; font-size: 1.4rem; color: var(--accent); text-decoration: none; }
+    .nav-divider { width: 1px; height: 24px; background: var(--line); }
+    .nav-links { display: none; gap: 1.5rem; }
+    @media (min-width: 768px) { .nav-links { display: flex; } }
+    .nav-item { text-decoration: none; color: var(--muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; transition: color 0.2s; }
+    .nav-item:hover { color: var(--ink); }
+    .search-trigger { background: none; border: none; color: var(--muted); cursor: pointer; }
 
-    /* --- FEED ITEMS --- */
-    .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
-    .river-item { padding: 1.5rem; transition: transform 0.2s; }
-    .river-item:hover { transform: translateY(-2px); border-color: var(--accent); }
-    
-    .river-link { display: flex; gap: 1.5rem; text-decoration: none; color: inherit; }
-    .river-content { flex: 1; }
-    .river-meta { display: flex; gap: 0.8rem; align-items: center; margin-bottom: 0.5rem; }
-    .cat-badge { font-family: var(--font-head); font-size: 0.7rem; font-weight: 800; color: var(--accent); text-transform: uppercase; }
-    .time-stamp { font-family: var(--font-head); font-size: 0.75rem; color: var(--muted); }
-    
-    .river-content h3 { font-family: var(--font-head); font-size: 1.3rem; margin: 0.5rem 0; line-height: 1.3; }
-    .river-content p { font-size: 0.95rem; line-height: 1.5; color: var(--muted); margin: 0; }
-    
-    .river-img { width: 180px; height: 120px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-    .river-img img { width: 100%; height: 100%; object-fit: cover; }
+    /* --- HEADER --- */
+    .main-container { max-width: 1300px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .feed-header { margin-bottom: 4rem; }
+    .header-content { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem; }
+    .brand-meta h1 { font-family: var(--serif); font-size: 3.5rem; margin: 0; font-weight: 950; letter-spacing: -2px; }
+    .brand-meta p { color: var(--muted); font-size: 1.1rem; margin: 0.5rem 0 0; }
+    .live-indicator { font-size: 0.7rem; font-weight: 800; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+    .live-indicator::before { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
+    .header-border { height: 6px; background: var(--ink); margin-top: 1.5rem; }
 
-    /* --- LOAD MORE --- */
-    .load-more-area { margin-top: 3rem; text-align: center; }
-    .more-btn {
-      background: var(--text); color: var(--bg); border: none; padding: 1rem 2rem;
-      border-radius: 50px; font-family: var(--font-head); font-weight: 800;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 0.8rem;
-      transition: opacity 0.2s;
-    }
-    .more-btn:hover { opacity: 0.9; }
-    .end-text { font-family: var(--font-head); font-weight: 600; color: var(--muted); }
+    /* --- FILTER PILL --- */
+    .filter-controls { display: flex; flex-direction: column; gap: 0.8rem; }
+    .filter-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+    .toggle-pill { background: var(--smoke); padding: 4px; border-radius: 50px; display: flex; border: 1px solid var(--line); }
+    .pill-btn { border: none; background: none; padding: 0.6rem 1.4rem; border-radius: 50px; font-size: 0.8rem; font-weight: 800; cursor: pointer; color: var(--muted); }
+    .pill-btn.active { background: var(--paper); color: var(--ink); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
-    /* --- LAYOUT & SIDEBAR --- */
-    .layout-grid { display: grid; gap: 2.5rem; }
+    /* --- GRID & CARDS --- */
+    .layout-grid { display: grid; gap: 4rem; }
     @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 300px; } }
+    .news-river { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 3rem 2rem; }
     
-    .sidebar-column { display: none; }
-    @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; } }
+    .news-card { border-bottom: 1px solid var(--line); padding-bottom: 2rem; }
+    .card-link { text-decoration: none; color: inherit; display: block; }
+    .card-visual { position: relative; aspect-ratio: 16/10; margin-bottom: 1.5rem; overflow: hidden; }
+    .card-visual img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+    .news-card:hover .card-visual img { transform: scale(1.08); }
+    .tag { position: absolute; top: 0; left: 0; background: var(--accent); color: white; padding: 6px 10px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
 
-    .widget { padding: 1.5rem; }
-    .widget-title { font-family: var(--font-head); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    
-    .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
-    .social-row { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit; }
-    .social-icon { width: 32px; height: 32px; color: var(--accent-color); border: 1px solid var(--border); border-radius: 50%; padding: 6px; }
-    .social-details { display: flex; flex-direction: column; line-height: 1.1; font-family: var(--font-head); }
-    .social-details .count { font-weight: 800; font-size: 0.9rem; }
-    .social-details .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .meta { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.8rem; }
+    .dot { width: 4px; height: 4px; background: var(--line); border-radius: 50%; }
+    .card-body h3 { font-family: var(--serif); font-size: 1.6rem; line-height: 1.2; margin: 0 0 1rem; font-weight: 800; }
+    .card-body p { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .dark-theme { background: var(--text); color: var(--bg); }
-    .cta-form { display: flex; gap: 0.5rem; margin-top: 1rem; }
-    .cta-form input { flex: 1; padding: 0.6rem; border-radius: 4px; border: none; font-size: 0.8rem; }
-    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.6rem 1rem; border-radius: 4px; font-weight: 700; cursor: pointer; }
+    /* --- SIDEBAR --- */
+    .sidebar-sticky { position: sticky; top: calc(var(--nav-height) + 2rem); display: flex; flex-direction: column; gap: 3rem; }
+    .sidebar-widget h4, .sidebar-widget h5 { font-family: var(--serif); font-size: 1.2rem; margin: 0 0 1rem; }
+    .newsletter { background: var(--smoke); padding: 2rem; border-top: 4px solid var(--accent); }
+    .newsletter-form { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
+    .newsletter-form input { padding: 0.8rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+    .newsletter-form button { background: var(--ink); color: var(--paper); border: none; padding: 0.8rem; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+    .social-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .social-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--smoke); color: var(--ink); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .social-icon:hover { background: var(--accent); color: white; }
+    .social-icon svg { width: 16px; }
+    .ad-box { height: 500px; background: var(--smoke); border: 1px dashed var(--line); }
+    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
 
-    /* --- ANIMATION --- */
-    .entry-animation { animation: slideUp 0.4s ease forwards; }
-    @keyframes slideUp { 
-      from { opacity: 0; transform: translateY(20px); } 
-      to { opacity: 1; transform: translateY(0); } 
+    /* --- FOOTER --- */
+    .feed-footer { margin-top: 5rem; text-align: center; border-top: 1px solid var(--line); padding-top: 4rem; }
+    .unroll-btn { 
+      background: var(--ink); color: var(--paper); border: none; padding: 1.4rem 3.5rem; 
+      border-radius: 4px; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; 
+      cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; transition: transform 0.2s;
     }
+    .unroll-btn:hover { transform: scale(1.02); }
+    .end-text { color: var(--muted); font-weight: 700; }
+
+    /* --- ANIMS --- */
+    .slide-in { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
     @media (max-width: 768px) {
-      .river-link { flex-direction: column-reverse; }
-      .river-img { width: 100%; height: 200px; }
-      .control-panel { flex-direction: column; align-items: flex-start; }
+      .brand-meta h1 { font-size: 2.5rem; }
+      .header-content { flex-direction: column; align-items: flex-start; }
+      .news-river { grid-template-columns: 1fr; }
     }
   </style>
 </Layout>
