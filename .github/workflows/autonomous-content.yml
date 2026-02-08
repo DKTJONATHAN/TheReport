@@ -1,4 +1,4 @@
-name: Auto Newser
+name: International News
 
 on:
   schedule:
@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-genai apify-client beautifulsoup4
+          pip install requests google-genai apify-client beautifulsoup4 lxml
 
       - name: Generate article with Gemini
         env:
@@ -66,7 +66,7 @@ jobs:
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time, hashlib
+          import os, json, datetime, requests, re, random, time, hashlib, base64
           from google import genai
           from google.genai import types
           from apify_client import ApifyClient
@@ -120,51 +120,63 @@ jobs:
           
           print(f"🎯 Topic: {topic}")
 
-          # --- 4. FETCH CANDIDATES (UPI REPLACEMENT) ---
+          # --- 4. FETCH CANDIDATES (GOOGLE NEWS RSS) ---
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # Map topics to UPI URL structure
-          base_upi = "https://www.upi.com"
-          upi_map = {
-              'politics': 'Top_News/World',
-              'sports': 'Sports_News',
-              'business': 'Business_News',
-              'technology': 'Science_News', # UPI bundles Tech under Science/Tech
-              'entertainment': 'Entertainment_News'
+          # Use Google News RSS Search to get latest international news
+          # 'when:1d' ensures we only get news from the last 24 hours
+          base_rss = "https://news.google.com/rss/search"
+          params = {
+              'q': f"{topic} when:1d",
+              'hl': 'en-US',
+              'gl': 'US',
+              'ceid': 'US:en'
           }
           
-          section_path = upi_map.get(topic, 'Top_News/World')
-          target_url = f"{base_upi}/{section_path}/"
-          
-          print(f"📡 Fetching Feed: {target_url}")
+          print(f"📡 Fetching RSS Feed for: {topic}...")
           
           try:
-              res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}, timeout=15)
-              soup = BeautifulSoup(res.text, 'html.parser')
+              res = requests.get(base_rss, params=params, timeout=15)
+              # Use lxml-xml for parsing RSS
+              soup = BeautifulSoup(res.content, 'xml')
+              items = soup.find_all('item')
           except Exception as e:
               print(f"Error fetching source feed: {e}")
               exit(0)
 
           candidates = []
-          # UPI logic: Links are typically in anchors. We filter for article links.
-          # We look for links containing the section path and ending in an ID (digits)
           
-          for a_tag in soup.find_all('a', href=True):
-              href = a_tag['href']
-              full_url = href if href.startswith('http') else f"{base_upi}{href}"
-              
-              # Filter logic: Must contain the section path and look like an article 
-              # (UPI articles usually end with specific ID codes)
-              if section_path in full_url and full_url not in candidates:
-                  # Exclude non-article links (pages, indexes) by checking for numeric ID at end
-                  # e.g., .../Article-Title/123456789/
-                  if re.search(r'/[0-9]+/?$', full_url):
-                      url_hash = hashlib.md5(full_url.encode()).hexdigest()
-                      if url_hash not in memory:
-                          candidates.append((full_url, url_hash))
+          # Helper to resolve Google Redirect URLs to real URLs
+          def resolve_google_url(google_url):
+              try:
+                  # Google News RSS links are redirects. We must resolve them.
+                  # Often a simple HEAD request follows the redirect.
+                  r = requests.head(google_url, allow_redirects=True, timeout=5)
+                  return r.url
+              except:
+                  return google_url
 
-          print(f"🔎 Found {len(candidates)} new candidates.")
+          print(f"🔎 Found {len(items)} items in RSS. Filtering...")
+
+          for item in items:
+              title = item.title.text if item.title else "No Title"
+              link = item.link.text if item.link else ""
+              pub_date = item.pubDate.text if item.pubDate else ""
+              
+              if link and "news.google.com" in link:
+                  # Generate hash based on title + date to avoid reprocessing same story even if URL rotates
+                  # (Google URLs sometimes change, titles usually stable)
+                  unique_str = f"{title}-{topic}"
+                  url_hash = hashlib.md5(unique_str.encode()).hexdigest()
+                  
+                  if url_hash not in memory:
+                      # We delay resolving the URL until we are sure we want to use it
+                      candidates.append({
+                          "google_url": link,
+                          "hash": url_hash,
+                          "title": title
+                      })
 
           if not candidates:
               print("No new links found in memory.")
@@ -176,15 +188,26 @@ jobs:
           final_url = None
           final_hash = None
 
-          for url, url_hash in candidates[:3]: # Try top 3 freshest
-              print(f"Attempting to scrape: {url}")
+          # Try top 3 freshest candidates
+          for candidate in candidates[:3]:
+              print(f"Processing candidate: {candidate['title']}")
+              
+              # Resolve real URL now
+              real_url = resolve_google_url(candidate['google_url'])
+              print(f"Resolved URL: {real_url}")
+
+              # Skip if resolution failed or it's a blocked domain
+              if "google.com" in real_url: 
+                  print("Skipping: Could not resolve to external site.")
+                  continue
+                  
               try:
                   run = apify_client.actor("apify/website-content-crawler").call(run_input={
-                      "startUrls": [{"url": url}],
+                      "startUrls": [{"url": real_url}],
                       "maxCrawlPages": 1,
                       "maxCrawlDepth": 0,
                       "crawlerType": "playwright:firefox",
-                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .upi-video-container",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .cookie-banner",
                       "proxyConfiguration": {"useApifyProxy": True}
                   })
                   
@@ -192,10 +215,12 @@ jobs:
                   if dataset_items:
                       data = dataset_items[0]
                       text = data.get('markdown', data.get('text', ''))
+                      
+                      # Check quality
                       if text and len(text) > 800:
                           full_raw_content = text
-                          final_url = url
-                          final_hash = url_hash
+                          final_url = real_url
+                          final_hash = candidate['hash']
                           print("Scrape successful!")
                           break
                   print("Scrape empty or too short, trying next...")
@@ -238,7 +263,7 @@ jobs:
 
           TASK: Write FACTUAL international news article. NO OPINIONS. NO HYPOTHESIS.
           - Write as the primary and only reporter.
-          - NO mentions of "Original story by", "UPI", or "Source:". 
+          - NO mentions of "Original story by" or "Source:". 
           - Report in neutral, professional journalist tone.
           - Opening: {selected_hook}
 
@@ -308,7 +333,7 @@ jobs:
           slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
           
-          # Updated Author
+          # Author updated
           author_name = "Jonathan Mwaniki"
 
           final_file = f"""---
