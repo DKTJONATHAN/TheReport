@@ -1,4 +1,4 @@
-name: International news 
+name: Auto Newser
 
 on:
   schedule:
@@ -73,9 +73,6 @@ jobs:
           from bs4 import BeautifulSoup
 
           # --- 1. KEY ROTATION (GEMINI) ---
-          # Timings are in UTC. EAT is UTC+3.
-          # 2 UTC = 5 AM EAT
-          # 18 UTC = 9 PM EAT
           cron = os.environ.get('CRON_SCHEDULE', '')
           key_map = {
               '0 2 * * *': 'GEMINI_API_KEY',
@@ -123,29 +120,51 @@ jobs:
           
           print(f"🎯 Topic: {topic}")
 
-          # --- 4. FETCH CANDIDATES ---
+          # --- 4. FETCH CANDIDATES (UPI REPLACEMENT) ---
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
+          # Map topics to UPI URL structure
+          base_upi = "https://www.upi.com"
+          upi_map = {
+              'politics': 'Top_News/World',
+              'sports': 'Sports_News',
+              'business': 'Business_News',
+              'technology': 'Science_News', # UPI bundles Tech under Science/Tech
+              'entertainment': 'Entertainment_News'
+          }
+          
+          section_path = upi_map.get(topic, 'Top_News/World')
+          target_url = f"{base_upi}/{section_path}/"
+          
+          print(f"📡 Fetching Feed: {target_url}")
           
           try:
-              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+              res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}, timeout=15)
               soup = BeautifulSoup(res.text, 'html.parser')
-              news_items = soup.select('li.news-item')
           except Exception as e:
               print(f"Error fetching source feed: {e}")
               exit(0)
 
           candidates = []
-          for item in news_items:
-              link_tag = item.select_one('.news-title a')
-              if link_tag and 'href' in link_tag.attrs:
-                  url = link_tag['href']
-                  if "kenyamoja.com" not in url and url.startswith("http"):
-                      url_hash = hashlib.md5(url.encode()).hexdigest()
+          # UPI logic: Links are typically in anchors. We filter for article links.
+          # We look for links containing the section path and ending in an ID (digits)
+          
+          for a_tag in soup.find_all('a', href=True):
+              href = a_tag['href']
+              full_url = href if href.startswith('http') else f"{base_upi}{href}"
+              
+              # Filter logic: Must contain the section path and look like an article 
+              # (UPI articles usually end with specific ID codes)
+              if section_path in full_url and full_url not in candidates:
+                  # Exclude non-article links (pages, indexes) by checking for numeric ID at end
+                  # e.g., .../Article-Title/123456789/
+                  if re.search(r'/[0-9]+/?$', full_url):
+                      url_hash = hashlib.md5(full_url.encode()).hexdigest()
                       if url_hash not in memory:
-                          candidates.append((url, url_hash))
+                          candidates.append((full_url, url_hash))
+
+          print(f"🔎 Found {len(candidates)} new candidates.")
 
           if not candidates:
               print("No new links found in memory.")
@@ -157,7 +176,7 @@ jobs:
           final_url = None
           final_hash = None
 
-          for url, url_hash in candidates:
+          for url, url_hash in candidates[:3]: # Try top 3 freshest
               print(f"Attempting to scrape: {url}")
               try:
                   run = apify_client.actor("apify/website-content-crawler").call(run_input={
@@ -165,7 +184,7 @@ jobs:
                       "maxCrawlPages": 1,
                       "maxCrawlDepth": 0,
                       "crawlerType": "playwright:firefox",
-                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .upi-video-container",
                       "proxyConfiguration": {"useApifyProxy": True}
                   })
                   
@@ -217,9 +236,9 @@ jobs:
           SOURCE CONTENT:
           {full_raw_content[:15000]}
 
-          TASK: Write FACTUAL news article. NO OPINIONS. NO HYPOTHESIS.
+          TASK: Write FACTUAL international news article. NO OPINIONS. NO HYPOTHESIS.
           - Write as the primary and only reporter.
-          - NO mentions of "Original story by" or "Source:". 
+          - NO mentions of "Original story by", "UPI", or "Source:". 
           - Report in neutral, professional journalist tone.
           - Opening: {selected_hook}
 
@@ -258,7 +277,7 @@ jobs:
               exit(1)
 
           # --- 9. PARSE ---
-          parsed = { "TITLE": "", "DESCRIPTION": "", "CATEGORY": display_category, "TAGS": f"{topic},kenya,news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          parsed = { "TITLE": "", "DESCRIPTION": "", "CATEGORY": display_category, "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
           
           for line in full_text.splitlines():
@@ -288,12 +307,15 @@ jobs:
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
+          
+          # Updated Author
+          author_name = "Jonathan Mwaniki"
 
           final_file = f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_str}"
-          author: "Jonathan Mwaniki"
+          author: "{author_name}"
           image: "{image_url}"
           imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
           imageAlt: "{parsed['IMAGE_KEYWORD']}"
@@ -310,7 +332,7 @@ jobs:
 
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Author:</strong> Belinda Achieng'</p>
+            <p><strong>Author:</strong> {author_name}</p>
             <p><strong>Tags:</strong> {parsed['TAGS']}</p>
           </div>
           """
