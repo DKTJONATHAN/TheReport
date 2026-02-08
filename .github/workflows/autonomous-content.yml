@@ -1,7 +1,6 @@
-name: International News (Human Core & GEO)
+name: International News (News API & Gemini)
 
 on:
-  # Loop fixed: only runs on schedule or manual trigger.
   schedule:
     - cron: '0 2 * * *'   # 5:00 AM EAT (Politics)
     - cron: '0 5 * * *'   # 8:00 AM EAT (Sports)
@@ -44,12 +43,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-genai apify-client
+          pip install requests google-genai
 
       - name: Generate Content
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
-          APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
@@ -60,15 +58,13 @@ jobs:
           import os, json, datetime, requests, re, random, hashlib, time
           from google import genai
           from google.genai import types
-          from apify_client import ApifyClient
           import textwrap
 
-          # --- 1. ROTATION LOGIC (FIXED) ---
+          # --- 1. ROTATION LOGIC ---
           def get_clean_pool(v): 
               return [k.strip() for k in v.split(",") if k.strip()]
           
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
-          api_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
           def run_gemini(p):
               random.shuffle(gem_pool)
@@ -80,20 +76,11 @@ jobs:
                           contents=p,
                           config=types.GenerateContentConfig(temperature=0.88, max_output_tokens=8192)
                       ).text.strip()
-                  except: continue
+                  except Exception as e:
+                      print(f"⚠️ Gemini Key Failed: {e}"); continue
               return None
 
-          def run_apify(act, pay):
-              random.shuffle(api_pool)
-              for t in api_pool:
-                  try:
-                      c = ApifyClient(t)
-                      r = c.actor(act).call(run_input=pay)
-                      return list(c.dataset(r["defaultDatasetId"]).iterate_items())
-                  except: continue
-              return None
-
-          # --- 2. DISCOVERY ---
+          # --- 2. TOPIC & DISCOVERY (News API Only) ---
           cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
           memory_path = os.environ.get('MEMORY_FILE')
@@ -101,35 +88,39 @@ jobs:
 
           news_api = os.environ.get("NEWSAPI_KEY")
           news_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={news_api}"
-          arts = requests.get(news_url).json().get('articles', [])
+          articles = requests.get(news_url).json().get('articles', [])
 
-          raw_text, f_hash = None, None
-          for a in arts[:15]:
+          target_article, final_hash = None, None
+          for a in articles:
               u = a.get('url', '')
               h = hashlib.md5(u.encode()).hexdigest()
-              if h not in memory:
-                  data = run_apify("apify/website-content-crawler", {"startUrls": [{"url": u}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
-                  if data and len(data[0].get('markdown', '')) > 1200:
-                      raw_text, f_hash = data[0]['markdown'], h
-                      break
+              # We need a decent snippet for Gemini to work with
+              if h not in memory and len(a.get('description', '')) > 50:
+                  target_article = a
+                  final_hash = h
+                  break
 
-          if not raw_text: exit(0)
+          if not target_article:
+              print("❌ Termination: No new content found via News API."); exit(0)
 
           # --- 3. THE "HUMAN CORE" GEO PROMPT ---
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
-          Write a 1700-word investigative report based on this: {raw_text[:20000]}
+          Write a 1700-word investigative report based on this real-time news snippet:
+          TITLE: {target_article['title']}
+          SUMMARY: {target_article['description']}
+          SNIPPET: {target_article['content']}
 
           STYLE GUIDE (CRITICAL):
           1. ANSWER-FIRST: Directly address the core news hook in the first two paragraphs.
-          2. HUMAN RHYTHM: Vary sentence lengths. Use short fragments. Add asides like "Honestly," or "What's actually wild is...".
+          2. HUMAN RHYTHM: Vary sentence lengths. Mix long sentences with short, blunt fragments. Add asides like "Honestly," or "What's actually wild is...".
           3. NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
           4. NO CONCLUSION: Never use 'In conclusion' or 'Summary'. Stop abruptly with a provocative cliffhanger.
-          5. CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of the mainstream news. 
+          5. CONTRARIAN TWIST: Identify the mainstream consensus and write from the DIRECTLY OPPOSITE angle.
 
           STRICT: NO EM-DASHES. UK English. ## Headers only.
 
           OUTPUT:
-          TITLE: [headline]
+          TITLE: [provocative headline]
           DESCRIPTION: [blunt sentence]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
@@ -153,7 +144,7 @@ jobs:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Summary|Conclusion),?.*', '', parsed[k])
 
-          # --- 5. SAVE ---
+          # --- 5. IMAGE & SAVE ---
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           def get_img(q):
@@ -179,10 +170,11 @@ jobs:
 
           out_dir = os.environ.get("POSTS_DIR")
           os.makedirs(out_dir, exist_ok=True)
-          with open(os.path.join(out_dir, f"{slug}.md"), "w") as f: f.write(final_md)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
           
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
+          print(f"✅ Published: {slug}")
           EOF
 
       - name: Git Safety Pull
@@ -194,6 +186,6 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: human-core publish"
+          commit_message: "content: News API humanized publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
