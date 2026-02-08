@@ -1,4 +1,4 @@
-name: International News (High-Resilience)
+name: International News (Human Core & GEO)
 
 on:
   push:
@@ -48,10 +48,8 @@ jobs:
 
       - name: Generate article
         env:
-          # --- POOLS ---
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
-          # --- SINGLE KEYS ---
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
@@ -64,109 +62,121 @@ jobs:
           from google.genai import types
           from apify_client import ApifyClient
 
-          # --- 1. ROTATION HELPERS ---
-          def get_clean_list(env_val):
-              return [k.strip() for k in env_val.split(",") if k.strip()]
+          # --- 1. KEY ROTATION ---
+          def get_pool(env_val): return [k.strip() for k in env_val.split(",") if k.strip()]
+          gem_pool = get_pool(os.environ.get("GEMINI_POOL", ""))
+          api_pool = get_pool(os.environ.get("APIFY_POOL", ""))
 
-          gemini_keys = get_clean_list(os.environ.get("GEMINI_POOL", ""))
-          apify_tokens = get_clean_list(os.environ.get("APIFY_POOL", ""))
-
-          def call_gemini_resilient(prompt):
-              random.shuffle(gemini_keys)
-              for k in gemini_keys:
+          def run_gemini(prompt):
+              random.shuffle(gem_pool)
+              for k in gem_pool:
                   try:
                       client = genai.Client(api_key=k)
                       return client.models.generate_content(
                           model="gemini-3-flash-preview", 
                           contents=prompt,
-                          config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=8192)
+                          config=types.GenerateContentConfig(temperature=0.82, max_output_tokens=8192)
                       ).text.strip()
                   except Exception as e:
-                      print(f"⚠️ Gemini Rotation: Key {k[:5]} failed. Reason: {e}")
-                      continue
+                      print(f"Key failed: {e}"); continue
               return None
 
-          def call_apify_resilient(actor, payload):
-              random.shuffle(apify_tokens)
-              for t in apify_tokens:
+          def run_apify(actor, payload):
+              random.shuffle(api_pool)
+              for t in api_pool:
                   try:
                       client = ApifyClient(t)
-                      run = client.actor(actor).call(run_input=payload)
-                      return list(client.dataset(run["defaultDatasetId"]).iterate_items())
+                      r = client.actor(actor).call(run_input=payload)
+                      return list(client.dataset(r["defaultDatasetId"]).iterate_items())
                   except Exception as e:
-                      print(f"⚠️ Apify Rotation: Token {t[:5]} failed. Reason: {e}")
-                      continue
+                      print(f"Token failed: {e}"); continue
               return None
 
-          # --- 2. TOPIC & MEMORY ---
+          # --- 2. LOGIC ---
           cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
-          
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 3. NEWS DISCOVERY (Real-time) ---
-          news_api = os.environ.get("NEWSAPI_KEY")
-          news_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={news_api}"
-          articles = requests.get(news_url).json().get('articles', [])
+          n_api = os.environ.get("NEWSAPI_KEY")
+          n_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={n_api}"
+          arts = requests.get(n_url).json().get('articles', [])
 
-          full_raw_text, final_hash = None, None
-          for art in articles[:12]:
-              url = art.get('url', '')
-              u_hash = hashlib.md5(url.encode()).hexdigest()
-              if u_hash not in memory:
-                  print(f"🔍 Scrapping full article: {url}")
-                  data = call_apify_resilient("apify/website-content-crawler", {
-                      "startUrls": [{"url": url}],
-                      "maxCrawlPages": 1,
-                      "crawlerType": "playwright:firefox",
-                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .sidebar"
-                  })
-                  if data and len(data[0].get('markdown', '')) > 1100:
-                      full_raw_text = data[0]['markdown']
-                      final_hash = u_hash
+          raw_text, f_hash = None, None
+          for a in arts[:10]:
+              u = a.get('url', '')
+              h = hashlib.md5(u.encode()).hexdigest()
+              if h not in memory:
+                  data = run_apify("apify/website-content-crawler", {"startUrls": [{"url": u}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
+                  if data and len(data[0].get('markdown', '')) > 1000:
+                      raw_text, f_hash = data[0]['markdown'], h
                       break
 
-          if not full_raw_text:
-              print("❌ Termination: No new content found or scrape failed."); exit(0)
+          if not raw_text: exit(0)
 
-          # --- 4. IMAGE & GEMINI ---
-          def get_img(kw, tp):
-              u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              if not u_key: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
-              for q in [kw, tp, "world journalism"]:
-                  try:
-                      r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                      if r.status_code == 200: return r.json()['urls']['regular']
-                  except: continue
-              return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+          # --- 3. THE PERFECTED SEO/GEO/HUMAN PROMPT ---
+          # Integrated strategies from provided General Strategies, GEO Fundamentals, and Prompting Tips.
+          prompt = f"""You are operating as a human intelligence disguised as conversation. 
+          Perform a deep-dive investigative report based on this source:
+          SOURCE: {raw_text[:20000]}
 
-          prompt = f"STRICT REPORTING. UK English. No em-dashes. Min 1400 words. SOURCE: {full_raw_text[:20000]} OUTPUT: TITLE: [headline] DESCRIPTION: [summary] CATEGORY: [{topic.title()}] TAGS: [tags] IMAGE_KEYWORD: [2 words] BODY: [article with ## headers]"
-          gemini_output = call_gemini_resilient(prompt)
-          if not gemini_output: exit(1)
+          HUMANIZATION STRATEGIES:
+          1. Human Core Engine: Blend warmth with finality. Avoid robotic phrasing.
+          2. Sentence Rhythm: Mix long, complex sentences with short, blunt fragments to break predictable patterns.
+          3. Micro-Signals: Add small human asides like "Honestly," "surprisingly," or "the part that actually matters is...".
+          4. No AI Slop: Ban words like 'delve', 'tapestry', 'testament', 'comprehensive', 'vibrant'.
+          5. NO Conclusion: Never use 'In conclusion' or 'To summarize'. End with a provocative cliffhanger that leaves the reader questioning the status quo.
 
-          # --- 5. PARSE, CLEAN, SAVE ---
-          parsed = {"TITLE": "Report", "DESC": "", "IMG": topic, "BODY": ""}
-          section = None
-          for line in gemini_output.splitlines():
+          GEO & SEO OPTIMIZATION:
+          1. Answer-First Approach: Directly answer the core question of the news in the first two paragraphs.
+          2. Quotable Structure: Use clear, punchy headers and short sections to make the content "quotable" for AI search engines.
+          3. Contrarian Twist: Identify the mainstream consensus and report from the DIRECTLY OPPOSITE angle.
+          4. FAQ Integration: Include a "Key Takeaways" section at the end of the body to match conversational AI queries.
+
+          STRICT RULES: NO EM-DASHES (use commas). UK English. 1600+ words.
+
+          OUTPUT FORMAT:
+          TITLE: [Provocative, non-clickbait headline]
+          DESCRIPTION: [One blunt, high-GEO sentence]
+          CATEGORY: [{topic.title()}]
+          TAGS: [tags]
+          IMAGE_KEYWORD: [2 words]
+          BODY:
+          [The full article starting with a direct answer. Use ## headers. End with a cliffhanger.]"""
+
+          output = run_gemini(prompt)
+          if not output: exit(1)
+
+          # --- 4. PARSE & CLEAN ---
+          parsed = {"TITLE": "", "DESC": "", "IMG": topic, "BODY": ""}
+          cur = None
+          for line in output.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESC"] = line.replace("DESCRIPTION:", "").strip()
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMG"] = line.replace("IMAGE_KEYWORD:", "").strip()
-              elif line.startswith("BODY:"): section = "BODY"
-              elif section == "BODY": parsed["BODY"] += line + "\n"
+              elif line.startswith("BODY:"): cur = "BODY"
+              elif cur == "BODY": parsed["BODY"] += line + "\n"
 
+          # Final Dash/Slop Scrub
           for k in ["TITLE", "DESC", "BODY"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-          
-          img_url = get_img(parsed["IMG"], topic)
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+              parsed[k] = re.sub(r'(?i)In conclusion,?', '', parsed[k])
 
-          final_file = f"""---
+          # Image Fallback
+          u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+          def get_img(q):
+              try:
+                  r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
+                  return r.json()['urls']['regular'] if r.status_code == 200 else "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+              except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+          final = f"""---
           title: "{parsed['TITLE']}"
           description: "{parsed['DESC']}"
-          date: "{datetime.datetime.utcnow().date().strftime('%Y-%m-%d')}"
+          date: "{datetime.datetime.utcnow().date()}"
           author: "Jonathan Mwaniki"
-          image: "{img_url}"
+          image: "{get_img(parsed['IMG'])}"
           category: "{topic.title()}"
           slug: "{slug}"
           ---
@@ -175,21 +185,19 @@ jobs:
 
           {parsed['BODY']}
           """
-          
-          import textwrap
-          out = os.environ.get("POSTS_DIR")
-          os.makedirs(out, exist_ok=True)
-          with open(os.path.join(out, f"{slug}.md"), "w") as f:
-              f.write(textwrap.dedent(final_file).strip())
-          
-          memory.append(final_hash)
+
+          os.makedirs(os.environ.get("POSTS_DIR"), exist_ok=True)
+          with open(os.path.join(os.environ.get("POSTS_DIR"), f"{slug}.md"), "w") as f:
+              import textwrap
+              f.write(textwrap.dedent(final).strip())
+
+          memory.append(f_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f"✅ Published: {slug}")
           EOF
 
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: resilient publish via Gemini 3"
+          commit_message: "content: human-core GEO publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
