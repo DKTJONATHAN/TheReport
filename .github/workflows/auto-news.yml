@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business)'
+        description: 'Force a topic'
         required: false
         default: ''
 
@@ -30,7 +30,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required for reading archive for internal links
+          fetch-depth: 0 
           ref: ${{ env.DEFAULT_BRANCH }}
           token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: true
@@ -70,131 +70,132 @@ jobs:
           from bs4 import BeautifulSoup
           import textwrap
 
-          # --- 1. HELPERS: INTERNAL LINKING & KEY ROTATION ---
+          # --- 1. KEY ROTATION & HELPERS ---
+          def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
+          
+          def get_gemini_key():
+              cron = os.environ.get('CRON_SCHEDULE', '')
+              key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 6 * * *': 'GEMINI_API_KEY1', '0 11 * * *': 'GEMINI_API_KEY2', '0 14 * * *': 'GEMINI_API_KEY', '0 18 * * *': 'GEMINI_API_KEY1', '0 22 * * *': 'GEMINI_WRITE_KEY'}
+              target = key_map.get(cron, 'GEMINI_WRITE_KEY')
+              return os.environ.get(target) or os.environ.get('GEMINI_WRITE_KEY')
+
           def get_internal_link_context():
-              posts_path = os.environ.get('POSTS_DIR')
-              if not os.path.exists(posts_path): return ""
-              files = [f for f in os.listdir(posts_path) if f.endswith('.md')]
+              p_path = os.environ.get('POSTS_DIR')
+              if not os.path.exists(p_path): return ""
+              files = [f for f in os.listdir(p_path) if f.endswith('.md')]
               if not files: return ""
               sample = random.sample(files, min(len(files), 3))
-              context = "PAST ARTICLES FOR INTERNAL LINKING REFERENCE:\n"
+              ctx = "PAST ARTICLES FOR INTERNAL LINKING:\n"
               for f in sample:
                   try:
-                      with open(os.path.join(posts_path, f), 'r') as content:
-                          txt = content.read()
+                      with open(os.path.join(p_path, f), 'r') as c:
+                          txt = c.read()
                           t_match = re.search(r'title:\s*"(.*?)"', txt)
-                          title = t_match.group(1) if t_match else f
-                          context += f"- Title: {title} | Slug: /posts/{f.replace('.md', '')}\n"
+                          ctx += f"- {t_match.group(1) if t_match else f}: /posts/{f.replace('.md', '')}\n"
                   except: continue
-              return context
+              return ctx
 
-          cron = os.environ.get('CRON_SCHEDULE', '')
-          key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 6 * * *': 'GEMINI_API_KEY1', '0 11 * * *': 'GEMINI_API_KEY2', '0 14 * * *': 'GEMINI_API_KEY', '0 18 * * *': 'GEMINI_API_KEY1', '0 22 * * *': 'GEMINI_WRITE_KEY'}
-          gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY')) or os.environ.get('GEMINI_WRITE_KEY')
-
-          apify_pool = [os.environ.get(v) for v in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5'] if os.environ.get(v)]
-          selected_apify_token = random.choice(apify_pool) if apify_pool else None
-
-          # --- 2. TOPIC & DISCOVERY ---
-          current_hour_utc = datetime.datetime.utcnow().hour
+          # --- 2. DISCOVERY & SCRAPE ---
+          current_hour = datetime.datetime.utcnow().hour
           manual = os.environ.get('MANUAL_TOPIC', '').strip().lower()
-          topic = manual if manual in ['sports', 'technology', 'business', 'politics', 'entertainment'] else ('sports' if current_hour_utc in [0, 14] else 'technology' if current_hour_utc in [6, 22] else 'business' if current_hour_utc in [11, 18] else 'politics')
+          topic = manual if manual in ['sports', 'technology', 'business', 'politics'] else ('sports' if current_hour in [0, 14] else 'technology' if current_hour in [6, 22] else 'business' if current_hour in [11, 18] else 'politics')
           
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
           
-          full_raw_content, final_hash = None, None
+          full_raw_text, final_hash = None, None
           try:
-              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
               news_items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
-              apify_client = ApifyClient(selected_apify_token)
               
+              apify_pool = [os.environ.get(v) for v in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5'] if os.environ.get(v)]
+              client_apify = ApifyClient(random.choice(apify_pool))
+
               for item in news_items:
                   link_tag = item.select_one('.news-title a')
                   if link_tag and 'href' in link_tag.attrs:
                       url = link_tag['href']
                       u_hash = hashlib.md5(url.encode()).hexdigest()
-                      if u_hash not in memory and url.startswith("http"):
-                          run = apify_client.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox", "removeElementsCssSelector": "nav, footer, script, style, .ads, header"})
-                          data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+                      if u_hash not in memory:
+                          run = client_apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
+                          data = list(client_apify.dataset(run["defaultDatasetId"]).iterate_items())
                           if data and len(data[0].get('markdown', '')) > 800:
-                              full_raw_content, final_hash = data[0]['markdown'], u_hash
+                              full_raw_text, final_hash = data[0]['markdown'], u_hash
                               break
           except: exit(0)
 
-          if not full_raw_content: exit(0)
+          if not full_raw_text: exit(0)
 
-          # --- 3. THE HUMAN CORE & GEO PROMPT ---
-          internal_context = get_internal_link_context()
+          # --- 3. THE PROMPT ---
+          internal_linking = get_internal_link_context()
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
-          Write a 1700-word investigative piece for jonathanmwaniki.co.ke. 
-          SOURCE DATA: {full_raw_content[:15000]}
-          
-          {internal_context}
+          Write a 1700-word investigative report.
+          SOURCE: {full_raw_text[:15000]}
+          {internal_linking}
 
-          STYLE RULES:
-          - ANSWER-FIRST (GEO): Directly answer the core news hook in the first two paragraphs.
-          - HUMAN RHYTHM: Use varying sentence lengths, blunt fragments, and cynical human asides.
-          - INTERNAL LINKING: Mention 1 of the PAST ARTICLES naturally in the text using its slug.
-          - NO AI SLOP: Ban 'tapestry', 'delve', 'realm', 'vibrant', 'testament'.
+          STYLE:
+          - ANSWER-FIRST: Address core hook in first 2 paragraphs.
+          - HUMAN RHYTHM: Blunt fragments, human asides, no robotic parallel structure.
+          - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
           - NO CONCLUSION: Stop abruptly with a provocative cliffhanger.
-          - CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of the mainstream media narrative.
+          - CONTRARIAN: Frame from the DIRECTLY OPPOSITE angle of mainstream media.
+          - LINKING: Naturally weave in 1 slug from the provided past articles.
 
-          STRICT: NO EM-DASHES. UK English. ## Headers only.
+          STRICT: NO EM-DASHES. UK English. ## Headers. 
 
           OUTPUT FORMAT:
-          TITLE: [provocative headline]
-          DESCRIPTION: [blunt 155 char summary]
-          IMAGE_CAPTION: [cynical 1-sentence caption]
+          TITLE: [headline]
+          DESCRIPTION: [summary]
+          IMAGE_CAPTION: [cynical caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 words]
           BODY:
-          [Full investigative article. Do not repeat the title.]"""
+          [Full article content here]"""
 
-          # --- 4. GENERATION ---
-          client = genai.Client(api_key=gemini_key)
-          response = client.models.generate_content(
+          # --- 4. GENERATION & GREEDY PARSING ---
+          client_gemini = genai.Client(api_key=get_gemini_key())
+          resp = client_gemini.models.generate_content(
               model="gemini-3-flash-preview", 
               contents=prompt, 
-              config=types.GenerateContentConfig(temperature=0.85, max_output_tokens=8192)
+              config=types.GenerateContentConfig(temperature=0.88, max_output_tokens=8192)
           )
-          output_text = response.text.strip()
+          raw_output = resp.text.strip()
 
-          # --- 5. ROBUST BLOCK PARSING ---
-          def extract(k, t):
-              m = re.search(rf"^{k}:\s*(.*)", t, re.M | re.I)
-              return m.group(1).strip() if m else None
+          def get_field(field_name, text):
+              match = re.search(rf"^{field_name}:\s*(.*)", text, re.M | re.I)
+              return match.group(1).strip() if match else None
 
           parsed = {
-              "TITLE": extract("TITLE", output_text) or "The Unseen Angle",
-              "DESC": extract("DESCRIPTION", output_text) or "An analytical look at today's news.",
-              "CAPTION": extract("IMAGE_CAPTION", output_text) or "Business as usual.",
-              "TAGS": extract("TAGS", output_text) or topic,
-              "IMG": extract("IMAGE_KEYWORD", output_text) or topic,
+              "TITLE": get_field("TITLE", raw_output) or "Analysis",
+              "DESC": get_field("DESCRIPTION", raw_output) or "Deep dive analysis.",
+              "CAPTION": get_field("IMAGE_CAPTION", raw_output) or "Progress.",
+              "TAGS": get_field("TAGS", raw_output) or topic,
+              "IMG": get_field("IMAGE_KEYWORD", raw_output) or topic,
               "BODY": ""
           }
 
-          body_m = re.search(rf"BODY:\s*(.*)", output_text, re.S | re.I)
-          if body_m: parsed["BODY"] = body_m.group(1).strip()
+          # GREEDY BODY CAPTURE: Grabs everything from 'BODY:' to the end
+          body_match = re.search(r"BODY:\s*(.*)", raw_output, re.S | re.I)
+          if body_match:
+              parsed["BODY"] = body_match.group(1).strip()
 
-          # Scrub dashes and AI slop from all keys
           for k in parsed:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|Summary|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 6. GEO SCHEMA & IMAGE ---
-          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
+          # --- 5. SCHEMA & SAVE ---
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           def get_img(q):
               try:
                   r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
                   return r.json()['urls']['regular']
               except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
-          
+
           img_url = get_img(parsed['IMG'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
 
           schema = {
               "@context": "https://schema.org",
@@ -225,9 +226,9 @@ jobs:
           </script>
           """).strip()
 
-          out_dir = os.environ.get("POSTS_DIR")
-          os.makedirs(out_dir, exist_ok=True)
-          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
+          o_dir = os.environ.get("POSTS_DIR")
+          os.makedirs(o_dir, exist_ok=True)
+          with open(os.path.join(o_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
           
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
@@ -246,7 +247,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: human-core publish ${{ github.run_id }}"
+          commit_message: "content: full publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
         env:
