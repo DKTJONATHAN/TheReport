@@ -146,6 +146,7 @@ jobs:
               return "https://images.unsplash.com/photo-1501504905252-473c47e087f8"
 
           # --- 5. PROMPT ---
+          # FIXED: Increased request to 1350+ to ensure we pass the validator
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
           SOURCE CONTENT: {full_raw_content}
 
@@ -160,10 +161,9 @@ jobs:
           TAGS: [tag1, tag2]
           IMAGE_KEYWORD: [Searchable concrete noun like "stadium", "bank", "smartphone", or "city"]
           BODY:
-          [1200-1600 words. ## Headers only. No em-dashes.]'''
+          [1350-2000 words. ## Headers only. No em-dashes.]'''
 
           # --- 6. GENERATION ---
-          # FIXED: Added max_output_tokens to prevent truncation
           response = gemini_client.models.generate_content(
               model="gemini-3-flash-preview",
               contents=prompt,
@@ -190,7 +190,13 @@ jobs:
           body_clean = re.sub(r'(?i)(Sources?|References?|Original story|As reported|Credit|Link|http).*', '', parsed["BODY"], flags=re.DOTALL).strip()
           body_clean = body_clean.replace("—", ", ").replace("–", ", ").replace("--", ", ")
 
-          # --- 8. SAVE ---
+          # --- 8. WORD COUNT VALIDATOR ---
+          word_count = len(body_clean.split())
+          if word_count < 1300:
+              print(f"REJECTED: Content length ({word_count} words) is below the 1300 word limit.")
+              exit(0) # Exiting here means no file is saved, so nothing is published.
+
+          # --- 9. SAVE ---
           image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'], topic)
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -206,5 +212,5 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: automated publish with full length fix"
+          commit_message: "content: automated publish with length check"
           branch: ${{ env.DEFAULT_BRANCH }}
