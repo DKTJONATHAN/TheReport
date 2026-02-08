@@ -1,4 +1,4 @@
-name: International News (NewsAPI Version)
+name: International News (Specialized Sources)
 
 on:
   push:
@@ -60,20 +60,30 @@ jobs:
           from google import genai
           from google.genai import types
 
-          # --- 1. CONFIG ---
+          # --- 1. TOPIC & SPECIALIZED SOURCE MAPPING ---
+          # We map topics to the best specialized domains for that field
+          source_map = {
+              'politics': 'reuters.com,apnews.com,nytimes.com',
+              'sports': 'espn.com,bleacherreport.com,skysports.com',
+              'business': 'bloomberg.com,wsj.com,ft.com',
+              'technology': 'theverge.com,techcrunch.com,wired.com',
+              'entertainment': 'variety.com,hollywoodreporter.com,rollingstone.com'
+          }
+
           cron = os.environ.get('CRON_SCHEDULE', '')
           current_hour = datetime.datetime.utcnow().hour
           manual = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           
-          topic_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
-          topic = manual if manual else topic_map.get(cron, 'politics')
+          cron_topic_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
+          topic = manual if manual else cron_topic_map.get(cron, 'politics')
+          target_domains = source_map.get(topic, 'reuters.com')
 
           # --- 2. IMAGE FALLBACK ---
           def get_image(kw, tp):
               key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
               if not key: return fallback
-              for q in [kw, tp, "news"]:
+              for q in [kw, tp, "journalism"]:
                   try:
                       r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={key}", timeout=10)
                       if r.status_code == 200: return r.json()['urls']['regular']
@@ -85,39 +95,38 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # Query NewsAPI specifically for CNN articles in the chosen category
-          url = f"https://newsapi.org/v2/everything?sources=cnn&q={topic}&language=en&sortBy=publishedAt&apiKey={news_key}"
+          # Fetching from specialized domains for the current topic
+          url = f"https://newsapi.org/v2/everything?domains={target_domains}&q={topic}&language=en&sortBy=publishedAt&apiKey={news_key}"
           response = requests.get(url).json()
           
           articles = response.get('articles', [])
           target_article = None
+          final_hash = None
           
           for art in articles:
-              content = art.get('content', '')
-              title = art.get('title', '')
               link = art.get('url', '')
               u_hash = hashlib.md5(link.encode()).hexdigest()
-              
-              # Ensure it's not a duplicate and has enough content for Gemini to expand
-              if u_hash not in memory and len(content) > 100:
+              if u_hash not in memory and len(art.get('content', '')) > 100:
                   target_article = art
                   final_hash = u_hash
                   break
 
           if not target_article:
-              print("No new articles found via NewsAPI."); exit(0)
+              print(f"No new specialized articles found for {topic}."); exit(0)
 
           # --- 4. REWRITE WITH GEMINI ---
-          prompt = f"""STRICT REPORTING MODE. 
+          prompt = f"""STRICT REPORTING MODE for jonathanmwaniki.co.ke. 
           UK English. No em-dashes (use commas). 
-          Target length: 1400 words.
+          Length: 1400 to 1800 words.
           
           SOURCE DATA:
           Title: {target_article['title']}
+          Source Domain: {target_article['source']['name']}
           Description: {target_article['description']}
           Snippet: {target_article['content']}
 
-          TASK: Based on this news snippet, research and write a full detailed report.
+          TASK: Write a comprehensive, primary-source style news report. 
+          Use the snippet as a foundation and expand with deep factual analysis.
           OUTPUT FORMAT:
           TITLE: [headline]
           DESCRIPTION: [summary]
@@ -127,6 +136,7 @@ jobs:
           BODY: [Full article with ## headers: Background, Detailed Analysis, Global Impact, Reactions, Outlook]"""
 
           client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
+          # Using 2.0-flash for high-speed, long-context reasoning
           resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
           
           # --- 5. PARSE & CLEAN ---
@@ -140,8 +150,10 @@ jobs:
               elif line.startswith("BODY:"): section = "BODY"
               elif section == "BODY": parsed["BODY"] += line + "\n"
 
+          # Strip dashes and normalize commas
           for k in ["TITLE", "DESC", "BODY"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+              parsed[k] = re.sub(r',\s*,', ',', parsed[k])
 
           img_url = get_image(parsed["IMG"], topic)
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
@@ -159,6 +171,11 @@ jobs:
           # {parsed['TITLE']}
 
           {parsed['BODY']}
+
+          <div class="article-meta">
+            <p><strong>Published:</strong> {datetime.datetime.utcnow().date().strftime('%Y-%m-%d')}</p>
+            <p><strong>Category:</strong> {topic.title()}</p>
+          </div>
           """
           
           # --- 6. SAVE ---
@@ -176,6 +193,6 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: publish newsapi report"
+          commit_message: "content: specialized publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
