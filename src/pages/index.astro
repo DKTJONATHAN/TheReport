@@ -4,16 +4,17 @@ import { getCollection } from 'astro:content';
 
 // 1. DATA LOGIC
 const allPosts = (await getCollection('posts'))
-  .filter(p => !p.data.draft)
+  .filter(p => !p.data.draft) // OPTIMIZATION: Hide drafts
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
 
+// Safety Check: Stop build crash if 0 posts exist
 if (allPosts.length === 0) {
-  throw new Error("No posts found!");
+  throw new Error("No posts found! Add at least one post to build the homepage.");
 }
 
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
 
-// STORY CIRCLES DATA
+// 2. STORY CIRCLES
 const categoryCircles = majorCategories.map(cat => {
   const latest = allPosts.find(p => p.data.category === cat);
   return { 
@@ -33,21 +34,16 @@ const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
 
 const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 
-// HERO SECTION DATA
+// 3. SECTIONS
 const mainStory = allPosts[0];
 const subStories = allPosts.slice(1, 3);
+const trendingPosts = allPosts.slice(3, 9); 
 
-// DYNAMIC FEED DATA (Everything after the Hero stories)
-const feedData = allPosts.slice(3).map(post => ({
-  title: post.data.title,
-  description: post.data.description,
-  date: post.data.date,
-  category: post.data.category,
-  image: post.data.image,
-  slug: post.slug,
-  author: post.data.author || 'Jonathan Mwaniki'
-}));
+// Smart Opinion Logic: Fallback to general news if no Opinions exist yet
+const opinionPosts = allPosts.filter(p => p.data.category === 'Opinion').slice(0, 3);
+const displayOpinion = opinionPosts.length > 0 ? opinionPosts : allPosts.slice(9, 12);
 
+// Social Stats (Data)
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -55,18 +51,18 @@ const socialStats = [
 ];
 ---
 
-<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news and analysis.">
+<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news, politics, and analysis from Kenya.">
 
   <div class="page-wrapper">
 
-    {/* --- 1. STORIES BAR --- */}
+    {/* --- 1. STORIES BAR (Card Style) --- */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
           {combinedCircles.map(item => (
             <a href={item.link} class="story-item">
               <div class="story-img-ring">
-                <img src={item.image || '/default-image.jpg'} alt={item.label} width="70" height="70" />
+                <img src={item.image || '/default-image.jpg'} alt={item.label} loading="eager" width="70" height="70" />
               </div>
               <span class="story-label">{item.label}</span>
             </a>
@@ -78,262 +74,367 @@ const socialStats = [
     <main class="main-container">
 
       {/* --- 2. HERO SECTION --- */}
-      <section class="hero-wrapper">
-        <div class="hero-main card-box">
-          <a href={`/posts/${mainStory.slug}`} class="hero-link">
-            <div class="hero-img-box">
-              <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
-              <span class="hero-badge">Top Story</span>
-            </div>
-            <div class="hero-text-box">
-              <div class="meta-row">
-                  <span class="cat-tag">{mainStory.data.category}</span>
-                  <span class="bullet">•</span>
-                  <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
+      {mainStory && (
+        <section class="hero-wrapper">
+          <div class="hero-main card-box">
+            <a href={`/posts/${mainStory.slug}`} class="hero-link">
+              <div class="hero-img-box">
+                <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
+                <span class="hero-badge">Top Story</span>
               </div>
-              <h1>{mainStory.data.title}</h1>
-              <p class="hero-excerpt">{mainStory.data.description}</p>
-            </div>
-          </a>
-        </div>
-
-        <div class="hero-side">
-          {subStories.map(post => (
-            <a href={`/posts/${post.slug}`} class="sub-card card-box">
-              <div class="sub-img">
-                <img src={post.data.image} alt={post.data.title} loading="eager" />
-              </div>
-              <div class="sub-text">
-                <span class="sub-cat">{post.data.category}</span>
-                <h3>{post.data.title}</h3>
+              <div class="hero-text-box">
+                <div class="meta-row">
+                    <span class="cat-tag">{mainStory.data.category}</span>
+                    <span class="bullet">•</span>
+                    <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
+                </div>
+                <h1>{mainStory.data.title}</h1>
+                <p class="hero-excerpt">{mainStory.data.description}</p>
               </div>
             </a>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      {/* --- 3. FEED CONTROLS --- */}
-      <div class="feed-header-bar">
-        <div class="section-header">
-            <h2>The Latest News</h2>
-            <div class="header-line"></div>
-        </div>
-        <div class="toggle-container">
-            <button class="toggle-btn active" id="latest-toggle">Latest First</button>
-            <button class="toggle-btn" id="category-toggle">By Category</button>
-        </div>
-      </div>
+          <div class="hero-side">
+            {subStories.map(post => (
+              <a href={`/posts/${post.slug}`} class="sub-card card-box">
+                <div class="sub-img">
+                  <img src={post.data.image} alt={post.data.title} loading="eager" />
+                </div>
+                <div class="sub-text">
+                  <span class="sub-cat">{post.data.category}</span>
+                  <h3>{post.data.title}</h3>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* --- 4. MAIN LAYOUT GRID --- */}
+      {/* --- 3. MAIN CONTENT LAYOUT --- */}
       <div class="layout-grid">
+
+        {/* LEFT COLUMN: THE FEED */}
         <div class="feed-column">
-          <div id="posts-container" class="news-river">
-            {/* JavaScript will inject 30 cards here */}
+
+          {/* SECTION A: LATEST NEWS RIVER */}
+          <div class="section-header">
+            <h2>The Latest</h2>
+            <div class="header-line"></div>
           </div>
 
-          <div class="pagination-area">
-            <button id="load-more-btn" class="more-btn">
-              <span>Unroll More Stories</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
-            </button>
+          <div class="news-river">
+            {trendingPosts.map(post => (
+              <article class="river-item card-box">
+                <a href={`/posts/${post.slug}`} class="river-link">
+                  <div class="river-content">
+                    <div class="river-meta">
+                      <span class="river-cat">{post.data.category}</span>
+                      <span class="river-time">{new Date(post.data.date).toLocaleDateString()}</span>
+                    </div>
+                    <h3>{post.data.title}</h3>
+                    <p>{post.data.description}</p>
+                  </div>
+                  <div class="river-img">
+                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                  </div>
+                </a>
+              </article>
+            ))}
           </div>
+
+          {/* SECTION B: OPINION BLOCK (Dark Slate Theme) */}
+          <section class="opinion-block">
+            <div class="opinion-header">
+              <h3>Opinion & Analysis</h3>
+              <a href="/category/opinion">View All &rarr;</a>
+            </div>
+            <div class="opinion-grid">
+              {displayOpinion.map((post) => (
+                <a href={`/posts/${post.slug}`} class="opinion-card">
+                  <span class="opinion-tag">Opinion</span>
+                  <h4>{post.data.title}</h4>
+                  <div class="author-row">
+                    <div class="author-dot"></div>
+                    {/* OPTIMIZATION: Use dynamic author if available */}
+                    <span>{post.data.author || 'Jonathan Mwaniki'}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          {/* SECTION C: CATEGORY GRIDS */}
+          {majorCategories.slice(0, 3).map(category => {
+              // OPTIMIZATION: Ensure we don't show the main story again in categories
+              const catPosts = allPosts
+                .filter(p => p.data.category === category && p.slug !== mainStory?.slug)
+                .slice(0, 4);
+              
+              if (catPosts.length === 0) return null;
+              
+              return (
+                <section class="category-section" key={category}>
+                  <div class="section-header small">
+                    <h2>{category}</h2>
+                    <a href={`/category/${category.toLowerCase()}`}>More {category} &rarr;</a>
+                  </div>
+                  <div class="grid-4">
+                    {catPosts.map(post => (
+                      <a href={`/posts/${post.slug}`} class="grid-card card-box">
+                        <div class="grid-img">
+                            <img src={post.data.image} alt={post.data.title} loading="lazy"/>
+                        </div>
+                        <h4>{post.data.title}</h4>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )
+          })}
         </div>
 
+        {/* RIGHT COLUMN: STICKY SIDEBAR */}
         <aside class="sidebar-column">
           <div class="sticky-wrapper">
+
+            {/* Widget: Socials */}
             <div class="widget social-widget card-box">
               <h3 class="widget-title">Connect</h3>
               <div class="social-list">
                 {socialStats.map(s => (
-                  <div class="social-row">
-                    <div class="social-icon" style={`background:${s.bg}`}>
-                      <svg viewBox="0 0 24 24" fill="white"><path d={s.icon}/></svg>
+                  <a href="#" class="social-row" style={`--bg:${s.bg}`}>
+                    <div class="social-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
                     </div>
                     <div class="social-text">
                       <span class="count">{s.count}</span>
                       <span class="label">{s.name}</span>
                     </div>
-                  </div>
+                    <div class="social-arrow">&rarr;</div>
+                  </a>
                 ))}
               </div>
             </div>
 
-            <div class="widget cta-widget card-box">
+            {/* Widget: Advertisement */}
+            <div class="widget ad-widget card-box">
+               <span class="ad-label">Advertisement</span>
+               <div class="ad-box">
+                 <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                 <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+               </div>
+            </div>
+
+            {/* Widget: Newsletter / CTA */}
+            <div class="widget cta-widget">
               <h3>The Mwaniki Report</h3>
               <p>Independent journalism. Straight to your inbox.</p>
-              <form class="cta-form">
+              <form class="cta-form" onsubmit="event.preventDefault(); alert('Subscribed!');">
                 <input type="email" placeholder="Email address" required />
                 <button type="submit">Subscribe</button>
               </form>
             </div>
+
           </div>
         </aside>
+
       </div>
     </main>
   </div>
 
-  <script is:inline define:vars={{ feedData }}>
-    let currentMode = 'time';
-    let visibleCount = 30; // Shows 30 stories immediately
-    const step = 15;
-    
-    const container = document.getElementById('posts-container');
-    const loadBtn = document.getElementById('load-more-btn');
-    const latestBtn = document.getElementById('latest-toggle');
-    const catBtn = document.getElementById('category-toggle');
-
-    function renderFeed(isAppend = false) {
-      let posts = [...feedData];
-      
-      if (currentMode === 'category') {
-        posts.sort((a, b) => a.category.localeCompare(b.category));
-      }
-
-      const slice = posts.slice(isAppend ? visibleCount - step : 0, visibleCount);
-      if (!isAppend) container.innerHTML = '';
-
-      slice.forEach(post => {
-        const article = document.createElement('article');
-        article.className = 'river-item card-box';
-        article.innerHTML = `
-          <a href="/posts/${post.slug}" class="river-link">
-            <div class="river-content">
-              <div class="river-meta">
-                <span class="river-cat">${post.category}</span>
-                <span class="river-time">${new Date(post.date).toLocaleDateString()}</span>
-              </div>
-              <h3 class="river-title">${post.title}</h3>
-              <p class="river-desc">${post.description}</p>
-            </div>
-            <div class="river-img">
-              <img src="${post.image}" alt="${post.title}" />
-            </div>
-          </a>
-        `;
-        container.appendChild(article);
-      });
-
-      loadBtn.style.display = (visibleCount >= posts.length) ? 'none' : 'flex';
-    }
-
-    latestBtn.addEventListener('click', () => {
-      latestBtn.classList.add('active'); catBtn.classList.remove('active');
-      currentMode = 'time'; visibleCount = 30; renderFeed();
-    });
-
-    catBtn.addEventListener('click', () => {
-      catBtn.classList.add('active'); latestBtn.classList.remove('active');
-      currentMode = 'category'; visibleCount = 30; renderFeed();
-    });
-
-    loadBtn.addEventListener('click', () => {
-      visibleCount += step;
-      renderFeed(true);
-    });
-
-    renderFeed();
-  </script>
-
   <style>
-    /* --- RESTORED ORIGINAL THEME & SPECIFICITY HAMMER --- */
+    /* --- 1. GLOBAL VARIABLES --- */
     :root {
-      --bg: #0f172a; 
-      --card: #1e293b; 
-      --text: #f1f5f9; 
-      --muted: #94a3b8; 
+      --bg: #f8fafc;  
+      --card: #ffffff;
+      --text: #1e293b; 
+      --muted: #64748b; 
       --accent: #dc2626; 
-      --border: #334155;
+      --border: #e2e8f0; 
+
       --font-body: 'Merriweather', Georgia, serif;
       --font-head: 'Inter', system-ui, sans-serif;
+
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --radius: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a; 
+        --card: #1e293b; 
+        --text: #f1f5f9; 
+        --muted: #94a3b8; 
+        --border: #334155;
+      }
     }
 
     * { box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font-body); margin: 0; }
-    
-    /* NUCLEAR LINK RESET: Kills blue/purple default styles */
-    a, a:link, a:visited, a:hover, a:active {
-      text-decoration: none !important;
-      color: inherit !important;
+    body { 
+      background: var(--bg); color: var(--text); 
+      font-family: var(--font-body); margin: 0; 
+      overflow-x: hidden; 
     }
-
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    h1, h2, h3 { font-family: var(--font-head); font-weight: 800; color: var(--text); }
+    a { text-decoration: none; color: inherit; transition: all 0.2s ease; }
+    
+    /* Typography Resets */
+    h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+    p { color: var(--muted); line-height: 1.6; }
 
     .main-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
 
-    /* ORIGINAL CARD BOX STYLE */
+    /* HELPER: Card Box Style */
     .card-box {
-        background: var(--card) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         overflow: hidden;
-        transition: border-color 0.2s;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
-    .card-box:hover { border-color: var(--accent) !important; }
+    .card-box:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent);
+    }
 
-    /* STORIES SECTION */
-    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 0; }
-    .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
-    .story-item { flex: 0 0 auto; width: 75px; text-align: center; }
-    .story-img-ring { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 2px solid var(--accent); margin: 0 auto 0.5rem; }
+    /* --- STORIES SECTION --- */
+    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; }
+    .stories-scroll { 
+      display: flex; gap: 1rem; overflow-x: auto; 
+      padding-bottom: 5px; scrollbar-width: none; 
+    }
+    .stories-scroll::-webkit-scrollbar { display: none; }
+
+    .story-item { flex: 0 0 auto; width: 70px; text-align: center; }
+    .story-img-ring { 
+      width: 70px; height: 70px; border-radius: 50%; padding: 3px; 
+      border: 2px solid var(--accent); margin-bottom: 0.5rem; 
+    }
     .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
-    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text); }
 
-    /* HERO SECTION */
-    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3rem; }
+    /* --- HERO SECTION --- */
+    .hero-wrapper { display: grid; gap: 2rem; margin-bottom: 3rem; }
     @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
-    .hero-img-box { position: relative; aspect-ratio: 16/9; }
-    .hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--accent); color: white; padding: 4px 10px; font-weight: 800; font-size: 0.7rem; border-radius: 4px; }
+
+    /* Main Hero */
+    .hero-main { display: flex; flex-direction: column; height: 100%; border: none; background: transparent; }
+    .hero-main.card-box { padding: 0; background: var(--card); border: 1px solid var(--border); }
+    
+    .hero-link { display: block; height: 100%; }
+    .hero-img-box { position: relative; width: 100%; aspect-ratio: 16/9; border-bottom: 1px solid var(--border); }
+    .hero-badge { 
+      position: absolute; top: 1rem; left: 1rem; 
+      background: var(--accent); color: white; 
+      padding: 0.3rem 0.8rem; font-weight: 700; font-family: var(--font-head);
+      font-size: 0.7rem; text-transform: uppercase; border-radius: 4px;
+    }
     .hero-text-box { padding: 1.5rem; }
-    .hero-text-box h1 { font-size: 2.2rem; line-height: 1.1; margin: 0.5rem 0; }
-    .meta-row { display: flex; gap: 0.5rem; font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .cat-tag { color: var(--accent) !important; }
+    .hero-main h1 { font-size: 1.8rem; margin: 0.5rem 0; line-height: 1.2; }
+    .hero-excerpt { font-size: 1.05rem; margin: 0; }
+    .meta-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; font-family: var(--font-head); }
+    .cat-tag { color: var(--accent); }
 
+    @media (min-width: 768px) { .hero-main h1 { font-size: 2.5rem; } }
+
+    /* Side Heros */
     .hero-side { display: flex; flex-direction: column; gap: 1rem; }
-    .sub-card { display: flex; gap: 1rem; padding: 1rem; align-items: center; }
-    .sub-img { width: 100px; height: 70px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
-    .sub-text h3 { margin: 0; font-size: 1rem; line-height: 1.3; }
+    
+    .sub-card { display: flex; gap: 1rem; align-items: center; padding: 1rem; }
+    .sub-img { width: 100px; height: 70px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+    .sub-text h3 { margin: 0; font-size: 1rem; line-height: 1.4; transition: color 0.2s; }
+    .sub-cat { font-family: var(--font-head); font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-bottom: 0.2rem; display: block; }
 
-    /* FEED HEADER */
-    .feed-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-    .section-header { display: flex; align-items: center; gap: 1rem; flex: 1; }
-    .header-line { height: 1px; background: var(--border); width: 100%; }
-    .toggle-container { display: flex; background: var(--card); padding: 4px; border-radius: 50px; border: 1px solid var(--border); }
-    .toggle-btn { border: none; background: transparent; padding: 0.5rem 1.2rem; border-radius: 50px; font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; cursor: pointer; color: var(--muted); }
-    .toggle-btn.active { background: var(--accent); color: white !important; }
-
-    /* RIVER FEED CARDS */
+    /* --- MAIN LAYOUT --- */
     .layout-grid { display: grid; gap: 3rem; }
     @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
-    .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
-    .river-item { padding: 1.5rem; }
-    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
-    @media (min-width: 768px) { .river-link { flex-direction: row; } }
-    .river-content { flex: 1; }
-    .river-title { font-family: var(--font-head); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; }
-    .river-desc { color: var(--muted); font-size: 1rem; line-height: 1.6; margin: 0; }
-    .river-meta { display: flex; gap: 0.8rem; font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-    .river-img { width: 100%; height: 200px; border-radius: 6px; flex-shrink: 0; overflow: hidden; }
-    @media (min-width: 768px) { .river-img { width: 220px; height: 150px; } }
 
-    /* PAGINATION */
-    .pagination-area { margin-top: 3rem; text-align: center; }
-    .more-btn { background: var(--text); color: var(--bg) !important; border: none; padding: 1rem 2.5rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; }
+    /* HEADERS */
+    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .section-header h2 { font-size: 1.5rem; margin: 0; white-space: nowrap; }
+    .header-line { flex: 1; height: 1px; background: var(--border); }
+    .section-header.small { justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .section-header.small a { font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--accent); }
 
-    /* SIDEBAR */
+    /* NEWS RIVER */
+    .news-river { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem; }
+    .river-item { padding: 1.5rem; } 
+    
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1rem; }
+    .river-content h3 { font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; }
+    .river-content p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.95rem; }
+    .river-meta { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .river-cat { color: var(--accent); }
+    
+    .river-img { width: 100%; height: 200px; border-radius: 6px; overflow: hidden; }
+
+    @media (min-width: 768px) {
+      .river-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+      .river-content { flex: 1; }
+      .river-img { width: 220px; height: 150px; flex-shrink: 0; }
+    }
+
+    /* OPINION BLOCK */
+    .opinion-block { 
+        background: #1e293b; 
+        color: white; padding: 2rem; border-radius: var(--radius); margin-bottom: 3rem; 
+        box-shadow: var(--shadow-md);
+    }
+    .opinion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+    .opinion-header h3 { margin: 0; font-size: 1.5rem; color: white; }
+    .opinion-header a { color: var(--accent); font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+
+    .opinion-grid { display: grid; gap: 1.5rem; }
+    @media (min-width: 600px) { .opinion-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .opinion-card { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+    .opinion-tag { color: var(--accent); font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+    .opinion-card h4 { font-size: 1.1rem; margin: 0 0 1rem 0; line-height: 1.4; color: #f1f5f9; }
+    .author-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; font-family: var(--font-head); }
+    .author-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+
+    /* CATEGORY GRIDS */
+    .category-section { margin-bottom: 3rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .grid-card { padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
+    .grid-img { height: 120px; border-radius: 4px; overflow: hidden; }
+    .grid-card h4 { font-size: 1rem; margin: 0; line-height: 1.4; }
+
+    /* --- SIDEBAR --- */
     .sidebar-column { display: none; }
-    @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; } }
-    .widget { padding: 1.5rem; }
-    .widget-title { font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
-    .social-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    .social-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .social-text { line-height: 1.1; font-family: var(--font-head); }
-    .social-text .count { font-weight: 800; font-size: 0.9rem; display: block; }
-    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    @media (min-width: 1024px) { 
+      .sidebar-column { display: block; } 
+      .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+    }
+    
+    .widget { padding: 1.5rem; margin-bottom: 1rem; } 
+    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; color: var(--text); }
 
-    .cta-widget { background: var(--text); color: var(--bg); text-align: center; }
-    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
-    .cta-form input { padding: 0.8rem; border-radius: 4px; border: none; }
-    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+    .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .social-row { 
+      display: flex; align-items: center; gap: 1rem; 
+      background: var(--bg); padding: 0.8rem; border-radius: 6px; 
+      border: 1px solid var(--border); transition: transform 0.2s;
+    }
+    .social-row:hover { transform: translateX(5px); border-color: var(--muted); }
+    .social-icon { width: 32px; height: 32px; color: white; background: var(--text); border-radius: 50%; padding: 6px; }
+    .social-text { flex: 1; display: flex; flex-direction: column; line-height: 1.1; font-family: var(--font-head); }
+    .social-text .count { font-weight: 800; font-size: 0.9rem; }
+    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .social-arrow { font-size: 1.2rem; color: var(--border); }
+
+    .ad-widget { text-align: center; }
+    .ad-label { font-family: var(--font-head); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+    .ad-box { background: var(--bg); min-height: 250px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+
+    .cta-widget { background: var(--text); color: white; text-align: center; border-radius: var(--radius); padding: 2rem; }
+    .cta-widget h3 { margin: 0 0 0.5rem 0; color: white; }
+    .cta-widget p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .cta-form input { padding: 0.8rem; border: none; border-radius: 4px; font-family: var(--font-head); }
+    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; font-family: var(--font-head); }
   </style>
 </Layout>
