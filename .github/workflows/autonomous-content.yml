@@ -46,10 +46,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests google-genai
 
-      - name: Generate article with NewsAPI & Gemini
+      - name: Generate article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
           MEMORY_FILE: ${{ env.MEMORY_FILE }}
@@ -60,74 +60,71 @@ jobs:
           from google import genai
           from google.genai import types
 
-          # --- 1. TOPIC & SPECIALIZED SOURCE MAPPING ---
-          # We map topics to the best specialized domains for that field
+          # --- 1. TOPIC & DOMAIN MAPPING ---
           source_map = {
-              'politics': 'reuters.com,apnews.com,nytimes.com',
-              'sports': 'espn.com,bleacherreport.com,skysports.com',
-              'business': 'bloomberg.com,wsj.com,ft.com',
-              'technology': 'theverge.com,techcrunch.com,wired.com',
+              'politics': 'reuters.com,apnews.com,nytimes.com,cnn.com',
+              'sports': 'espn.com,bleacherreport.com,skysports.com,nba.com',
+              'business': 'bloomberg.com,wsj.com,ft.com,forbes.com',
+              'technology': 'theverge.com,techcrunch.com,wired.com,engadget.com',
               'entertainment': 'variety.com,hollywoodreporter.com,rollingstone.com'
           }
 
           cron = os.environ.get('CRON_SCHEDULE', '')
-          current_hour = datetime.datetime.utcnow().hour
           manual = os.environ.get('MANUAL_TOPIC', '').strip().lower()
-          
-          cron_topic_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
-          topic = manual if manual else cron_topic_map.get(cron, 'politics')
-          target_domains = source_map.get(topic, 'reuters.com')
+          cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
+          topic = manual if manual else cron_map.get(cron, 'politics')
+          domains = source_map.get(topic, 'reuters.com')
 
-          # --- 2. IMAGE FALLBACK ---
+          # --- 2. IMAGE RETRIEVAL ---
           def get_image(kw, tp):
               key = os.environ.get("UNSPLASH_ACCESS_KEY")
               fallback = "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
               if not key: return fallback
-              for q in [kw, tp, "journalism"]:
+              for q in [kw, tp, "world journalism"]:
                   try:
                       r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={key}", timeout=10)
                       if r.status_code == 200: return r.json()['urls']['regular']
                   except: continue
               return fallback
 
-          # --- 3. FETCH DATA FROM NEWS API ---
-          news_key = os.environ.get("NEWS_API_KEY")
+          # --- 3. FETCH NEWS (WITH FALLBACK) ---
+          news_key = os.environ.get("NEWSAPI_KEY")
+          if not news_key:
+              print("❌ Error: NEWSAPI_KEY is missing from Secrets!"); exit(1)
+
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # Fetching from specialized domains for the current topic
-          url = f"https://newsapi.org/v2/everything?domains={target_domains}&q={topic}&language=en&sortBy=publishedAt&apiKey={news_key}"
-          response = requests.get(url).json()
-          
-          articles = response.get('articles', [])
+          def fetch_articles(query_domains, query_topic):
+              url = f"https://newsapi.org/v2/everything?domains={query_domains}&q={query_topic}&language=en&sortBy=publishedAt&apiKey={news_key}"
+              try:
+                  res = requests.get(url).json()
+                  return res.get('articles', [])
+              except: return []
+
+          articles = fetch_articles(domains, topic)
+          if not articles:
+              print(f"⚠️ No niche articles for {topic}, trying general sources...")
+              articles = fetch_articles("reuters.com,apnews.com,bbc.co.uk", topic)
+
           target_article = None
           final_hash = None
-          
           for art in articles:
-              link = art.get('url', '')
-              u_hash = hashlib.md5(link.encode()).hexdigest()
-              if u_hash not in memory and len(art.get('content', '')) > 100:
+              u_hash = hashlib.md5(art.get('url', '').encode()).hexdigest()
+              if u_hash not in memory and len(art.get('content', '')) > 60:
                   target_article = art
                   final_hash = u_hash
                   break
 
           if not target_article:
-              print(f"No new specialized articles found for {topic}."); exit(0)
+              print(f"❌ No new articles found for {topic}."); exit(0)
 
-          # --- 4. REWRITE WITH GEMINI ---
+          # --- 4. GEMINI REWRITE ---
           prompt = f"""STRICT REPORTING MODE for jonathanmwaniki.co.ke. 
-          UK English. No em-dashes (use commas). 
-          Length: 1400 to 1800 words.
-          
-          SOURCE DATA:
-          Title: {target_article['title']}
-          Source Domain: {target_article['source']['name']}
-          Description: {target_article['description']}
-          Snippet: {target_article['content']}
-
-          TASK: Write a comprehensive, primary-source style news report. 
-          Use the snippet as a foundation and expand with deep factual analysis.
-          OUTPUT FORMAT:
+          UK English. No em-dashes. Min 1400 words.
+          SOURCE: {target_article['title']} - {target_article['description']} - {target_article['content']}
+          TASK: Research and write a full report.
+          FORMAT:
           TITLE: [headline]
           DESCRIPTION: [summary]
           CATEGORY: [{topic.title()}]
@@ -136,21 +133,20 @@ jobs:
           BODY: [Full article with ## headers: Background, Detailed Analysis, Global Impact, Reactions, Outlook]"""
 
           client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
-          # Using 2.0-flash for high-speed, long-context reasoning
           resp = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
           
           # --- 5. PARSE & CLEAN ---
-          res = resp.text.strip()
-          parsed = {"TITLE": "", "DESC": "", "IMG": topic, "BODY": ""}
+          res_text = resp.text.strip()
+          parsed = {"TITLE": "Global Report", "DESC": "", "IMG": topic, "BODY": ""}
           section = None
-          for line in res.splitlines():
+          for line in res_text.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESC"] = line.replace("DESCRIPTION:", "").strip()
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMG"] = line.replace("IMAGE_KEYWORD:", "").strip()
               elif line.startswith("BODY:"): section = "BODY"
               elif section == "BODY": parsed["BODY"] += line + "\n"
 
-          # Strip dashes and normalize commas
+          # Dash scrubbing for style compliance
           for k in ["TITLE", "DESC", "BODY"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r',\s*,', ',', parsed[k])
@@ -171,11 +167,6 @@ jobs:
           # {parsed['TITLE']}
 
           {parsed['BODY']}
-
-          <div class="article-meta">
-            <p><strong>Published:</strong> {datetime.datetime.utcnow().date().strftime('%Y-%m-%d')}</p>
-            <p><strong>Category:</strong> {topic.title()}</p>
-          </div>
           """
           
           # --- 6. SAVE ---
@@ -187,12 +178,12 @@ jobs:
           
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f"Success: Published {slug}")
+          print(f"✅ Published: {slug}")
           EOF
 
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: specialized publish"
+          commit_message: "content: publish specialized news via NewsAPI"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
