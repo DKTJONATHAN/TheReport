@@ -2,12 +2,12 @@ name: Auto Newser
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 3AM EAT (Sports)
-    - cron: '0 6 * * *'   # 9AM EAT (Tech)
-    - cron: '0 11 * * *'  # 2PM EAT (Finance)
-    - cron: '0 14 * * *'  # 5PM EAT (Sports)
-    - cron: '0 18 * * *'  # 9PM EAT (Finance)
-    - cron: '0 22 * * *'  # 1AM EAT (Tech)
+    - cron: '0 0 * * *'   # 3AM EAT (Sports) -> KEY
+    - cron: '0 6 * * *'   # 9AM EAT (Tech)   -> KEY1
+    - cron: '0 11 * * *'  # 2PM EAT (Finance)-> KEY2
+    - cron: '0 14 * * *'  # 5PM EAT (Sports) -> KEY
+    - cron: '0 18 * * *'  # 9PM EAT (Finance)-> KEY1
+    - cron: '0 22 * * *'  # 1AM EAT (Tech)   -> WRITE_KEY
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -21,6 +21,7 @@ permissions:
 env:
   DEFAULT_BRANCH: main
   POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
 
 jobs:
   generate-and-publish:
@@ -41,102 +42,181 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Installing the new SDK for Gemini 3 support
-          pip install requests google-genai
+          pip install requests google-genai apify-client beautifulsoup4
 
       - name: Generate article with Gemini
         env:
+          # --- GEMINI KEYS ---
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
+          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
           GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
-          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          
+          # --- APIFY TOKEN POOL ---
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
+          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
+          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
+          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
+          APIFY_API_TOKEN5: ${{ secrets.APIFY_API_TOKEN5 }}
+
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
+          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+          CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time
-          # New SDK Import
+          import os, json, datetime, requests, re, random, time, hashlib
           from google import genai
           from google.genai import types
+          from apify_client import ApifyClient
+          from bs4 import BeautifulSoup
 
-          # --- 1. CONFIGURATION & TOPIC ---
+          # --- 1. KEY ROTATION (GEMINI) ---
+          cron = os.environ.get('CRON_SCHEDULE', '')
+          key_map = {
+              '0 0 * * *': 'GEMINI_API_KEY',
+              '0 6 * * *': 'GEMINI_API_KEY1', 
+              '0 11 * * *': 'GEMINI_API_KEY2',
+              '0 14 * * *': 'GEMINI_API_KEY',
+              '0 18 * * *': 'GEMINI_API_KEY1',
+              '0 22 * * *': 'GEMINI_WRITE_KEY'
+          }
+          target_key_name = key_map.get(cron, 'GEMINI_WRITE_KEY')
+          gemini_key = os.environ.get(target_key_name) or os.environ.get('GEMINI_WRITE_KEY')
+          
+          print(f"🔑 Gemini Key: {target_key_name}")
+
+          # --- 2. KEY ROTATION (APIFY) ---
+          # Collect all non-empty tokens into a pool
+          apify_pool = []
+          for var in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5']:
+              token = os.environ.get(var)
+              if token: apify_pool.append(token)
+          
+          if not apify_pool:
+              print("❌ No Apify tokens found!")
+              exit(1)
+              
+          # Select one random token for this run to spread load
+          selected_apify_token = random.choice(apify_pool)
+          masked_token = selected_apify_token[:5] + "..." + selected_apify_token[-5:]
+          print(f"🕷️ Apify Token: Selected from pool of {len(apify_pool)} (Using: {masked_token})")
+
+          # --- 3. TOPIC SELECTION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
           current_hour_utc = datetime.datetime.utcnow().hour
           
           manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
-          if manual_input in ['sports', 'technology', 'business']:
+          if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
               topic = manual_input
-              newsapi_category = {'sports': 'sports', 'technology': 'technology', 'business': 'business'}[topic]
           else:
-              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'; newsapi_category = 'sports'
-              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'; newsapi_category = 'technology'
-              else: topic = 'business'; newsapi_category = 'business'
+              if current_hour_utc == 0 or current_hour_utc == 14: topic = 'sports'
+              elif current_hour_utc == 6 or current_hour_utc == 22: topic = 'technology'
+              elif current_hour_utc == 11 or current_hour_utc == 18: topic = 'business'
+              else: topic = 'politics'
           
-          print(f"🎯 Topic: {topic} | Category: {newsapi_category}")
+          print(f"🎯 Topic: {topic}")
 
-          # --- 2. FETCH REAL-TIME NEWS (International) ---
-          params = {
-              'category': newsapi_category,
-              'language': 'en',
-              'pageSize': 5,
-              'apiKey': os.environ['NEWSAPI_KEY']
-          }
+          # --- 4. FETCH CANDIDATES ---
+          memory_path = os.environ.get('MEMORY_FILE')
+          memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+          
+          km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
+          
           try:
-              news_resp = requests.get('https://newsapi.org/v2/top-headlines', params=params, timeout=10)
-              news_data = news_resp.json()
+              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+              soup = BeautifulSoup(res.text, 'html.parser')
+              news_items = soup.select('li.news-item')
           except Exception as e:
-              print(f"Error fetching news: {e}")
+              print(f"Error fetching source feed: {e}")
               exit(0)
-          
-          if news_data.get('totalResults', 0) == 0:
-              print("No news available, skipping")
-              exit(0)
-          
-          # Pick FRESHEST top story
-          top_story = min(news_data['articles'], key=lambda x: x['publishedAt'] if x['publishedAt'] else '9999')
-          title = top_story['title']
-          snippet = (top_story.get('description') or top_story.get('content', ''))[:300]
-          source = top_story['source']['name']
-          pub_date = top_story['publishedAt']
-          
-          print(f"📺 Top story: {title[:80]}... ({source})")
 
-          # --- 3. IMAGE HELPER ---
+          candidates = []
+          for item in news_items:
+              link_tag = item.select_one('.news-title a')
+              if link_tag and 'href' in link_tag.attrs:
+                  url = link_tag['href']
+                  # Standardize URL filter
+                  if "kenyamoja.com" not in url and url.startswith("http"):
+                      url_hash = hashlib.md5(url.encode()).hexdigest()
+                      if url_hash not in memory:
+                          candidates.append((url, url_hash))
+
+          if not candidates:
+              print("No new links found in memory.")
+              exit(0)
+
+          # --- 5. SCRAPE LOOP ---
+          apify_client = ApifyClient(selected_apify_token)
+          full_raw_content = None
+          final_url = None
+          final_hash = None
+
+          for url, url_hash in candidates:
+              print(f"Attempting to scrape: {url}")
+              try:
+                  run = apify_client.actor("apify/website-content-crawler").call(run_input={
+                      "startUrls": [{"url": url}],
+                      "maxCrawlPages": 1,
+                      "maxCrawlDepth": 0,
+                      "crawlerType": "playwright:firefox",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header",
+                      "proxyConfiguration": {"useApifyProxy": True}
+                  })
+                  
+                  dataset_items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+                  if dataset_items:
+                      data = dataset_items[0]
+                      text = data.get('markdown', data.get('text', ''))
+                      if text and len(text) > 800:
+                          full_raw_content = text
+                          final_url = url
+                          final_hash = url_hash
+                          print("Scrape successful!")
+                          break
+                  print("Scrape empty or too short, trying next...")
+              except Exception as e:
+                  print(f"Scrape failed: {e}")
+                  continue
+          
+          if not full_raw_content:
+              print("All candidates failed.")
+              exit(0)
+
+          # --- 6. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-              fallback = "https://image.pollinations.ai/prompt/minimalist-abstract-3d-render-of-{}-no-humans?width=1200&height=630&nologo=true".format(query.replace(" ", "-"))
-              if not access_key:
-                  return fallback.format(query)
+              if not access_key: return "" 
+              
               url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
               try:
                   resp = requests.get(url, timeout=10)
                   if resp.status_code == 200:
                       return resp.json()['urls']['regular']
               except: pass
-              return fallback.format(query)
+              return ""
 
-          # --- 4. REPORTING-TONE PROMPT ---
+          # --- 7. PROMPT ---
           hooks = [
              "Straight reporting: What happened, when, where, who, why.",
              "Key facts first: Timeline of events.",
-             "Source-led: What experts/officials said.",
-             "Data-driven: Numbers and impacts."
+             "Detailed analysis: Numbers and impacts."
           ]
           selected_hook = random.choice(hooks)
 
-          cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business' }
+          cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics':'Politics', 'entertainment':'Entertainment' }
           display_category = cat_map.get(topic, 'General')
 
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
 
-          NEWS ITEM:
-          Title: "{title}"
-          Snippet: "{snippet}"
-          Source: {source}
-          Published: {pub_date}
+          SOURCE CONTENT:
+          {full_raw_content[:15000]}
 
-          TASK: Write FACTUAL news article. NO OPINIONS. NO HYPOTHESIS. NO HALLUCINATIONS.
-          - Stick to verifiable facts from snippet + your knowledge of this exact story.
+          TASK: Write FACTUAL news article. NO OPINIONS. NO HYPOTHESIS.
+          - Write as the primary and only reporter.
+          - NO mentions of "Original story by" or "Source:". 
           - Report in neutral, professional journalist tone.
-          - Verify/expand only from reputable sources matching this headline.
           - Opening: {selected_hook}
 
           OUTPUT FORMAT (exact):
@@ -146,7 +226,7 @@ jobs:
           TAGS: [3-5 relevant tags]
           IMAGE_KEYWORD: [2-3 words for image]
           BODY:
-          [Full article: 1200-1600 words. ## Headers for sections. Cite sources inline.]
+          [Full article: 1350-1800 words. ## Headers for sections. No em-dashes.]
 
           RULES:
           - Facts only. If unknown, say "details unclear".
@@ -154,31 +234,28 @@ jobs:
           - UK English, commas not em-dashes.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 5. GEMINI 3 CALL (New SDK) ---
-          client = genai.Client(api_key=os.environ.get("GEMINI_WRITE_KEY"))
+          # --- 8. GEMINI CALL ---
+          client = genai.Client(api_key=gemini_key)
           
-          # Strictly using Gemini 3 Flash Preview
-          model_id = "gemini-3-flash-preview"
-          
-          print(f"🤖 Generating with {model_id}...")
+          print(f"🤖 Generating with gemini-3-flash-preview...")
           
           try:
+              # Stateless call: No history is retained
               response = client.models.generate_content(
-                  model=model_id,
+                  model="gemini-3-flash-preview",
                   contents=prompt,
                   config=types.GenerateContentConfig(
-                      temperature=0.1
+                      temperature=0.1,
+                      max_output_tokens=8192
                   )
               )
               full_text = response.text.strip()
           except Exception as e:
-              print(f"❌ Gemini 3 Error: {e}")
-              # Important: If the specific preview name is wrong in the API, 
-              # it will print the error here so we can debug.
+              print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 6. PARSE ---
-          parsed = { "TITLE": title[:60], "DESCRIPTION": snippet[:160], "CATEGORY": "Technology", "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          # --- 9. PARSE ---
+          parsed = { "TITLE": "", "DESCRIPTION": "", "CATEGORY": display_category, "TAGS": f"{topic},kenya,news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
           
           for line in full_text.splitlines():
@@ -198,7 +275,13 @@ jobs:
               text = re.sub(r',\s*,', ',', text)
               parsed[key] = text.strip()
 
-          # --- 7. FINAL FILE ---
+          # --- 10. WORD COUNT VALIDATION ---
+          word_count = len(parsed['BODY'].split())
+          if word_count < 1300:
+              print(f"❌ REJECTED: Article too short ({word_count} words). Minimum is 1300.")
+              exit(0)
+
+          # --- 11. SAVE ---
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
@@ -208,7 +291,7 @@ jobs:
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESCRIPTION'].replace('"', "'")}"
           date: "{date_str}"
-          author: "Jonathan Mwaniki"
+          author: "Belinda Achieng'"
           image: "{image_url}"
           imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
           imageAlt: "{parsed['IMAGE_KEYWORD']}"
@@ -225,9 +308,8 @@ jobs:
 
           <div class="article-meta">
             <p><strong>Published:</strong> {date_str}</p>
-            <p><strong>Author:</strong> Jonathan Mwaniki</p>
+            <p><strong>Author:</strong> Belinda Achieng'</p>
             <p><strong>Tags:</strong> {parsed['TAGS']}</p>
-            <div class="source-credit">Source story: {source} ({pub_date})</div>
           </div>
           """
 
@@ -235,9 +317,19 @@ jobs:
           final_file = textwrap.dedent(final_file).strip()
           out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
           os.makedirs(out_dir, exist_ok=True)
-          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
-              f.write(final_file)
-          print(f"✅ Published: {slug}.md | {len(parsed['BODY'].split())} words")
+          
+          if len(parsed["TITLE"]) > 5:
+              with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+                  f.write(final_file)
+              
+              # Update Memory
+              memory.append(final_hash)
+              with open(memory_path, 'w') as f:
+                  json.dump(memory[-200:], f)
+                  
+              print(f"✅ Published: {slug}.md | {len(parsed['BODY'].split())} words")
+          else:
+              print("❌ Generation failed (empty title)")
           EOF
 
       - name: Commit and push article
