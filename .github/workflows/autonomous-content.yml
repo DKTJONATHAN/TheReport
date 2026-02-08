@@ -100,6 +100,8 @@ jobs:
           selected_apify_token = random.choice(apify_pool)
           masked_token = selected_apify_token[:5] + "..." + selected_apify_token[-5:]
           print(f"🕷️ Apify Token: Selected from pool of {len(apify_pool)} (Using: {masked_token})")
+          
+          apify_client = ApifyClient(selected_apify_token)
 
           # --- 3. TOPIC SELECTION ---
           date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
@@ -119,114 +121,96 @@ jobs:
           
           print(f"🎯 Topic: {topic}")
 
-          # --- 4. FETCH CANDIDATES (ROBUST GOOGLE NEWS HTML) ---
+          # --- 4. FETCH CANDIDATES (APIFY GOOGLE NEWS) ---
+          # We use Apify to bypass the Google Login Wall that blocked 'requests'
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
-          
-          base_url = "https://news.google.com/search"
-          params = {
-              'q': f"{topic} when:1d", # Last 24h
-              'hl': 'en-US',
-              'gl': 'US',
-              'ceid': 'US:en'
-          }
-          
-          # Headers are critical to look like a real browser
-          headers = {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Accept-Language': 'en-US,en;q=0.9',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-          }
 
-          print(f"📡 Fetching Google News HTML for: {topic}...")
-
+          print(f"📡 Fetching List via Apify (apify/google-news-scraper)...")
+          
           try:
-              res = requests.get(base_url, params=params, headers=headers, timeout=15)
-              soup = BeautifulSoup(res.text, 'html.parser')
+              # This actor mimics a real user on news.google.com
+              list_run = apify_client.actor("apify/google-news-scraper").call(run_input={
+                  "query": topic,
+                  "maxItems": 10,
+                  "language": "en-US",
+                  "gl": "US",
+                  "proxyConfiguration": { "useApifyProxy": True }
+              })
+              
+              dataset_items = list(apify_client.dataset(list_run["defaultDatasetId"]).iterate_items())
           except Exception as e:
-              print(f"Error fetching source feed: {e}")
-              exit(0)
+              print(f"❌ List Fetch Error: {e}")
+              exit(1)
 
           candidates = []
-          raw_links = soup.find_all('a', href=True)
-          print(f"🔎 Scanning {len(raw_links)} raw links...")
+          print(f"🔎 Found {len(dataset_items)} raw items. Filtering...")
 
-          # Debug: Print the first 3 links so we know what they look like if this fails
-          for i, link in enumerate(raw_links[:3]):
-              print(f"   [DEBUG] Sample Link {i}: {link['href']}")
-
-          for a_tag in raw_links:
-              href = a_tag['href']
+          for item in dataset_items:
+              title = item.get("title", "")
+              link = item.get("link", "")
               
-              # FIX: Use 'in' instead of 'startswith' to be safer.
-              # Google links always contain 'articles/' or are redirects.
-              if "articles/" in href:
-                  # Clean the URL to be absolute
-                  if href.startswith("./"):
-                      full_google_url = href.replace(".", "https://news.google.com", 1)
-                  elif href.startswith("/"):
-                      full_google_url = f"https://news.google.com{href}"
-                  elif href.startswith("http"):
-                      full_google_url = href
-                  else:
-                      full_google_url = f"https://news.google.com/{href}"
-
-                  title = a_tag.get_text(separator=" ").strip()
+              if link and len(title) > 15:
+                  unique_key = f"{title}-{topic}"
+                  url_hash = hashlib.md5(unique_key.encode()).hexdigest()
                   
-                  # Filter out tiny titles (icons/buttons)
-                  if len(title) > 15:
-                      unique_key = f"{title}-{topic}"
-                      url_hash = hashlib.md5(unique_key.encode()).hexdigest()
-                      
-                      if url_hash not in memory:
-                          if not any(c['hash'] == url_hash for c in candidates):
-                              candidates.append({
-                                  "url": full_google_url,
-                                  "hash": url_hash,
-                                  "title": title
-                              })
+                  if url_hash not in memory:
+                      if not any(c['hash'] == url_hash for c in candidates):
+                          candidates.append({
+                              "url": link,
+                              "hash": url_hash,
+                              "title": title
+                          })
 
-          print(f"✅ Found {len(candidates)} potential candidates.")
+          print(f"✅ Found {len(candidates)} valid candidates.")
           if not candidates:
-              print("❌ No new candidates found. Please check the DEBUG links above.")
+              print("❌ No new candidates found (all duplicates or empty).")
               exit(0)
 
           # --- 5. LINK UNMASKING HELPER ---
+          # Even Apify might return the google redirect link (news.google.com/articles/...)
+          # We must unmask it to scrape the real site.
           def unmask_google_link(google_url):
-              """Follows the Google redirect to get the REAL publisher URL"""
+              if "news.google.com" not in google_url and "google.com" not in google_url:
+                  return google_url # Already real
+
               print(f"  > 🕵️ Unmasking: {google_url}")
               try:
-                  session = requests.Session()
-                  session.headers.update(headers)
-                  # Timeout must be shortish but enough for a redirect chain
-                  resp = session.get(google_url, allow_redirects=True, timeout=10)
+                  # Use simple requests with headers to follow redirect
+                  headers = {
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                  }
+                  resp = requests.head(google_url, allow_redirects=True, headers=headers, timeout=10)
                   
-                  # Verify we actually left Google
-                  if "google.com" not in resp.url:
-                      return resp.url
+                  # Fallback to GET if HEAD fails
+                  if resp.status_code >= 400:
+                      resp = requests.get(google_url, allow_redirects=True, headers=headers, timeout=10)
+
+                  final_url = resp.url
+                  if "google.com" not in final_url:
+                      return final_url
                   return None
               except Exception as e:
                   print(f"  > ⚠️ Unmask failed: {e}")
                   return None
 
           # --- 6. SCRAPE LOOP ---
-          apify_client = ApifyClient(selected_apify_token)
           full_raw_content = None
           final_url = None
           final_hash = None
 
-          # Process top 5 candidates to be safe
-          for cand in candidates[:5]:
+          # Process top 3 candidates
+          for cand in candidates[:3]:
               print(f"\nProcessing: {cand['title'][:40]}...")
               
-              # STEP 1: UNMASK (This is the critical fix)
+              # STEP 1: RESOLVE URL
               real_url = unmask_google_link(cand['url'])
               
               if not real_url:
-                  print("  > ❌ Could not unmask link (stayed on Google). Skipping.")
+                  print("  > ❌ Could not resolve link. Skipping.")
                   continue
                   
-              print(f"  > 🟢 Resolved to: {real_url}")
+              print(f"  > 🟢 Target: {real_url}")
               
               # STEP 2: SCRAPE REAL URL
               try:
@@ -239,9 +223,9 @@ jobs:
                       "proxyConfiguration": {"useApifyProxy": True}
                   })
                   
-                  dataset_items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
-                  if dataset_items:
-                      data = dataset_items[0]
+                  items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+                  if items:
+                      data = items[0]
                       text = data.get('markdown', data.get('text', ''))
                       
                       if text and len(text) > 800:
