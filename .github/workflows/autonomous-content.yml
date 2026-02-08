@@ -1,442 +1,398 @@
-Redesign this code to have infinite scroll down such that posts will not be arranged by category but by time. Also users will have a toggle to help them decide how they see posts but by default it is by time latest first and as you scroll down there will be a more button that unrolls more stories, toggle options will be "latest first, by category, etc
+name: International News
 
----
-import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+on:
+  push:                   # <--- ADDED: Runs immediately on push
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'   # 5:00 AM EAT (Politics)
+    - cron: '0 5 * * *'   # 8:00 AM EAT (Sports)
+    - cron: '0 8 * * *'   # 11:00 AM EAT (Business)
+    - cron: '0 11 * * *'  # 2:00 PM EAT (Tech)
+    - cron: '0 14 * * *'  # 5:00 PM EAT (Sports)
+    - cron: '0 18 * * *'  # 9:00 PM EAT (Entertainment)
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (sports, technology, business)'
+        required: false
+        default: ''
 
-// 1. DATA LOGIC
-const allPosts = (await getCollection('posts'))
-  .filter(p => !p.data.draft) // OPTIMIZATION: Hide drafts
-  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+permissions:
+  contents: write
 
-// Safety Check: Stop build crash if 0 posts exist
-if (allPosts.length === 0) {
-  throw new Error("No posts found! Add at least one post to build the homepage.");
-}
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
 
-const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Opinion'];
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
-// 2. STORY CIRCLES
-const categoryCircles = majorCategories.map(cat => {
-  const latest = allPosts.find(p => p.data.category === cat);
-  return { 
-    type: 'category', 
-    label: cat, 
-    image: latest?.data.image, 
-    link: `/category/${cat.toLowerCase()}` 
-  };
-});
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-const latestStoryCircles = allPosts.slice(0, 7).map(post => ({
-  type: 'story', 
-  label: post.data.category || 'News', 
-  image: post.data.image, 
-  link: `/posts/${post.slug}`
-}));
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai apify-client beautifulsoup4
 
-const combinedCircles = [...categoryCircles, ...latestStoryCircles];
+      - name: Generate article with Gemini
+        env:
+          # --- GEMINI KEYS ---
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY1: ${{ secrets.GEMINI_API_KEY1 }}
+          GEMINI_API_KEY2: ${{ secrets.GEMINI_API_KEY2 }}
+          GEMINI_WRITE_KEY: ${{ secrets.GEMINI_WRITE_KEY }}
+          
+          # --- APIFY TOKEN POOL ---
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          APIFY_API_TOKEN1: ${{ secrets.APIFY_API_TOKEN1 }}
+          APIFY_API_TOKEN2: ${{ secrets.APIFY_API_TOKEN2 }}
+          APIFY_API_TOKEN3: ${{ secrets.APIFY_API_TOKEN3 }}
+          APIFY_API_TOKEN4: ${{ secrets.APIFY_API_TOKEN4 }}
+          APIFY_API_TOKEN5: ${{ secrets.APIFY_API_TOKEN5 }}
 
-// 3. SECTIONS
-const mainStory = allPosts[0];
-const subStories = allPosts.slice(1, 3);
-const trendingPosts = allPosts.slice(3, 9); 
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+          CRON_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, time, hashlib
+          from google import genai
+          from google.genai import types
+          from apify_client import ApifyClient
+          from bs4 import BeautifulSoup
 
-// Smart Opinion Logic: Fallback to general news if no Opinions exist yet
-const opinionPosts = allPosts.filter(p => p.data.category === 'Opinion').slice(0, 3);
-const displayOpinion = opinionPosts.length > 0 ? opinionPosts : allPosts.slice(9, 12);
+          # --- 1. KEY ROTATION (GEMINI) ---
+          cron = os.environ.get('CRON_SCHEDULE', '')
+          key_map = {
+              '0 2 * * *': 'GEMINI_API_KEY',
+              '0 5 * * *': 'GEMINI_API_KEY1', 
+              '0 8 * * *': 'GEMINI_API_KEY2',
+              '0 11 * * *': 'GEMINI_API_KEY',
+              '0 14 * * *': 'GEMINI_API_KEY1',
+              '0 18 * * *': 'GEMINI_WRITE_KEY'
+          }
+          target_key_name = key_map.get(cron, 'GEMINI_WRITE_KEY')
+          gemini_key = os.environ.get(target_key_name) or os.environ.get('GEMINI_WRITE_KEY')
+          
+          print(f"🔑 Gemini Key: {target_key_name}")
 
-// Social Stats (Data)
-const socialStats = [
-  { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
-  { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
-  { name: 'Subs', count: '8k', icon: 'M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z', bg: '#c4302b' },
-];
----
-
-<Layout title="Breaking News Kenya | Jonathan Mwaniki" description="Latest breaking news, politics, and analysis from Kenya.">
-
-  <div class="page-wrapper">
-
-    {/* --- 1. STORIES BAR (Card Style) --- */}
-    <section class="stories-section">
-      <div class="main-container">
-        <div class="stories-scroll">
-          {combinedCircles.map(item => (
-            <a href={item.link} class="story-item">
-              <div class="story-img-ring">
-                <img src={item.image || '/default-image.jpg'} alt={item.label} loading="eager" width="70" height="70" />
-              </div>
-              <span class="story-label">{item.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <main class="main-container">
-
-      {/* --- 2. HERO SECTION --- */}
-      {mainStory && (
-        <section class="hero-wrapper">
-          <div class="hero-main card-box">
-            <a href={`/posts/${mainStory.slug}`} class="hero-link">
-              <div class="hero-img-box">
-                <img src={mainStory.data.image} alt={mainStory.data.title} loading="eager" />
-                <span class="hero-badge">Top Story</span>
-              </div>
-              <div class="hero-text-box">
-                <div class="meta-row">
-                    <span class="cat-tag">{mainStory.data.category}</span>
-                    <span class="bullet">•</span>
-                    <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
-                </div>
-                <h1>{mainStory.data.title}</h1>
-                <p class="hero-excerpt">{mainStory.data.description}</p>
-              </div>
-            </a>
-          </div>
-
-          <div class="hero-side">
-            {subStories.map(post => (
-              <a href={`/posts/${post.slug}`} class="sub-card card-box">
-                <div class="sub-img">
-                  <img src={post.data.image} alt={post.data.title} loading="eager" />
-                </div>
-                <div class="sub-text">
-                  <span class="sub-cat">{post.data.category}</span>
-                  <h3>{post.data.title}</h3>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* --- 3. MAIN CONTENT LAYOUT --- */}
-      <div class="layout-grid">
-
-        {/* LEFT COLUMN: THE FEED */}
-        <div class="feed-column">
-
-          {/* SECTION A: LATEST NEWS RIVER */}
-          <div class="section-header">
-            <h2>The Latest</h2>
-            <div class="header-line"></div>
-          </div>
-
-          <div class="news-river">
-            {trendingPosts.map(post => (
-              <article class="river-item card-box">
-                <a href={`/posts/${post.slug}`} class="river-link">
-                  <div class="river-content">
-                    <div class="river-meta">
-                      <span class="river-cat">{post.data.category}</span>
-                      <span class="river-time">{new Date(post.data.date).toLocaleDateString()}</span>
-                    </div>
-                    <h3>{post.data.title}</h3>
-                    <p>{post.data.description}</p>
-                  </div>
-                  <div class="river-img">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                  </div>
-                </a>
-              </article>
-            ))}
-          </div>
-
-          {/* SECTION B: OPINION BLOCK (Dark Slate Theme) */}
-          <section class="opinion-block">
-            <div class="opinion-header">
-              <h3>Opinion & Analysis</h3>
-              <a href="/category/opinion">View All &rarr;</a>
-            </div>
-            <div class="opinion-grid">
-              {displayOpinion.map((post) => (
-                <a href={`/posts/${post.slug}`} class="opinion-card">
-                  <span class="opinion-tag">Opinion</span>
-                  <h4>{post.data.title}</h4>
-                  <div class="author-row">
-                    <div class="author-dot"></div>
-                    {/* OPTIMIZATION: Use dynamic author if available */}
-                    <span>{post.data.author || 'Jonathan Mwaniki'}</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          {/* SECTION C: CATEGORY GRIDS */}
-          {majorCategories.slice(0, 3).map(category => {
-              // OPTIMIZATION: Ensure we don't show the main story again in categories
-              const catPosts = allPosts
-                .filter(p => p.data.category === category && p.slug !== mainStory?.slug)
-                .slice(0, 4);
+          # --- 2. KEY ROTATION (APIFY) ---
+          apify_pool = []
+          for var in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5']:
+              token = os.environ.get(var)
+              if token: apify_pool.append(token)
+          
+          if not apify_pool:
+              print("❌ No Apify tokens found!")
+              exit(1)
               
-              if (catPosts.length === 0) return null;
+          selected_apify_token = random.choice(apify_pool)
+          apify_client = ApifyClient(selected_apify_token)
+          masked_token = selected_apify_token[:5] + "..." + selected_apify_token[-5:]
+          print(f"🕷️ Apify Token: Selected from pool of {len(apify_pool)} (Using: {masked_token})")
+
+          # --- 3. TOPIC SELECTION ---
+          date_str = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+          current_hour_utc = datetime.datetime.utcnow().hour
+          
+          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
+          if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
+              topic = manual_input
+          else:
+              if current_hour_utc == 2: topic = 'politics'         # 5 AM EAT
+              elif current_hour_utc == 5: topic = 'sports'         # 8 AM EAT
+              elif current_hour_utc == 8: topic = 'business'       # 11 AM EAT
+              elif current_hour_utc == 11: topic = 'technology'    # 2 PM EAT
+              elif current_hour_utc == 14: topic = 'sports'        # 5 PM EAT
+              elif current_hour_utc == 18: topic = 'entertainment' # 9 PM EAT
+              else: topic = 'politics'
+          
+          print(f"🎯 Topic: {topic}")
+
+          # --- 4. FETCH CANDIDATES (APIFY NEWS LIST) ---
+          memory_path = os.environ.get('MEMORY_FILE')
+          memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+
+          print(f"📡 Fetching List via Apify (lhotanova/google-news-scraper)...")
+          
+          try:
+              # Updated input schema for lhotanova/google-news-scraper
+              list_run = apify_client.actor("lhotanova/google-news-scraper").call(run_input={
+                  "query": topic,
+                  "maxItems": 10,
+                  "language": "en-US", # Standard code
+                  "gl": "US",          # Geolocation
+                  "proxyConfiguration": { "useApifyProxy": True }
+              })
               
-              return (
-                <section class="category-section" key={category}>
-                  <div class="section-header small">
-                    <h2>{category}</h2>
-                    <a href={`/category/${category.toLowerCase()}`}>More {category} &rarr;</a>
-                  </div>
-                  <div class="grid-4">
-                    {catPosts.map(post => (
-                      <a href={`/posts/${post.slug}`} class="grid-card card-box">
-                        <div class="grid-img">
-                            <img src={post.data.image} alt={post.data.title} loading="lazy"/>
-                        </div>
-                        <h4>{post.data.title}</h4>
-                      </a>
-                    ))}
-                  </div>
-                </section>
+              dataset_items = list(apify_client.dataset(list_run["defaultDatasetId"]).iterate_items())
+          except Exception as e:
+              print(f"❌ List Fetch Error: {e}")
+              exit(1)
+
+          candidates = []
+          print(f"🔎 Found {len(dataset_items)} raw items. Filtering...")
+
+          for item in dataset_items:
+              title = item.get("title", "")
+              link = item.get("link", "")
+              
+              if link and len(title) > 15:
+                  unique_key = f"{title}-{topic}"
+                  url_hash = hashlib.md5(unique_key.encode()).hexdigest()
+                  
+                  if url_hash not in memory:
+                      if not any(c['hash'] == url_hash for c in candidates):
+                          candidates.append({
+                              "url": link,
+                              "hash": url_hash,
+                              "title": title
+                          })
+
+          print(f"✅ Found {len(candidates)} valid candidates.")
+          if not candidates:
+              print("❌ No new candidates found.")
+              exit(0)
+
+          # --- 5. LINK UNMASKING HELPER ---
+          def unmask_google_link(google_url):
+              # Only unmask if it looks like a google redirect
+              if "news.google.com" not in google_url and "google.com" not in google_url:
+                  return google_url 
+
+              print(f"  > 🕵️ Unmasking: {google_url}")
+              try:
+                  headers = {
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                  }
+                  # Use GET with stream=True to grab headers without downloading body
+                  resp = requests.get(google_url, allow_redirects=True, headers=headers, timeout=10, stream=True)
+                  final_url = resp.url
+                  resp.close()
+                  
+                  if "google.com" not in final_url:
+                      return final_url
+                  return None
+              except Exception as e:
+                  print(f"  > ⚠️ Unmask failed: {e}")
+                  return None
+
+          # --- 6. SCRAPE LOOP ---
+          full_raw_content = None
+          final_url = None
+          final_hash = None
+
+          # Try top 3 candidates
+          for cand in candidates[:3]:
+              print(f"\nProcessing: {cand['title'][:40]}...")
+              
+              # Resolve URL
+              real_url = unmask_google_link(cand['url'])
+              
+              if not real_url:
+                  print("  > ❌ Could not resolve link. Skipping.")
+                  continue
+                  
+              print(f"  > 🟢 Target: {real_url}")
+              
+              # Scrape
+              try:
+                  run = apify_client.actor("apify/website-content-crawler").call(run_input={
+                      "startUrls": [{"url": real_url}],
+                      "maxCrawlPages": 1,
+                      "maxCrawlDepth": 0,
+                      "crawlerType": "playwright:firefox",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .cookie-banner, .popup",
+                      "proxyConfiguration": {"useApifyProxy": True}
+                  })
+                  
+                  items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+                  if items:
+                      data = items[0]
+                      text = data.get('markdown', data.get('text', ''))
+                      
+                      if text and len(text) > 800:
+                          full_raw_content = text
+                          final_url = real_url
+                          final_hash = cand['hash']
+                          print("  > ✅ Scrape successful!")
+                          break
+                  print("  > ⚠️ Scrape content too short or empty.")
+              except Exception as e:
+                  print(f"  > ❌ Scrape error: {e}")
+                  continue
+          
+          if not full_raw_content:
+              print("❌ All candidates failed to scrape.")
+              exit(0)
+
+          # --- 7. IMAGE HELPER ---
+          def get_real_image(query):
+              access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+              if not access_key: return "" 
+              
+              url = f"https://api.unsplash.com/photos/random?query={query}&orientation=landscape&client_id={access_key}"
+              try:
+                  resp = requests.get(url, timeout=10)
+                  if resp.status_code == 200:
+                      return resp.json()['urls']['regular']
+              except: pass
+              return ""
+
+          # --- 8. PROMPT ---
+          hooks = [
+             "Straight reporting: What happened, when, where, who, why.",
+             "Key facts first: Timeline of events.",
+             "Detailed analysis: Numbers and impacts."
+          ]
+          selected_hook = random.choice(hooks)
+
+          cat_map = { 'sports':'Sports', 'technology':'Technology', 'business':'Business', 'politics':'Politics', 'entertainment':'Entertainment' }
+          display_category = cat_map.get(topic, 'General')
+
+          prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
+
+          SOURCE CONTENT:
+          {full_raw_content[:15000]}
+
+          TASK: Write FACTUAL international news article. NO OPINIONS. NO HYPOTHESIS.
+          - Write as the primary and only reporter.
+          - NO mentions of "Original story by" or "Source:". 
+          - Report in neutral, professional journalist tone.
+          - Opening: {selected_hook}
+
+          OUTPUT FORMAT (exact):
+          TITLE: [News-style headline, 60 chars]
+          DESCRIPTION: [Factual 1-2 sentence summary, 160 chars]
+          CATEGORY: [{display_category}]
+          TAGS: [3-5 relevant tags]
+          IMAGE_KEYWORD: [2-3 words for image]
+          BODY:
+          [Full article: 1350-1800 words. ## Headers for sections. No em-dashes.]
+
+          RULES:
+          - Facts only. If unknown, say "details unclear".
+          - No changing topic. Cover THIS story only.
+          - UK English, commas not em-dashes.
+          - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
+
+          # --- 9. GEMINI CALL ---
+          client = genai.Client(api_key=gemini_key)
+          
+          print(f"🤖 Generating with gemini-3-flash-preview...")
+          
+          try:
+              response = client.models.generate_content(
+                  model="gemini-3-flash-preview",
+                  contents=prompt,
+                  config=types.GenerateContentConfig(
+                      temperature=0.1,
+                      max_output_tokens=8192
+                  )
               )
-          })}
-        </div>
+              full_text = response.text.strip()
+          except Exception as e:
+              print(f"❌ Gemini Error: {e}")
+              exit(1)
 
-        {/* RIGHT COLUMN: STICKY SIDEBAR */}
-        <aside class="sidebar-column">
-          <div class="sticky-wrapper">
+          # --- 10. PARSE ---
+          parsed = { "TITLE": "", "DESCRIPTION": "", "CATEGORY": display_category, "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
+          current_section = None
+          
+          for line in full_text.splitlines():
+              clean_line = line.strip().replace("**", "")
+              if clean_line.startswith("TITLE:"): parsed["TITLE"] = clean_line.replace("TITLE:", "").strip()
+              elif clean_line.startswith("DESCRIPTION:"): parsed["DESCRIPTION"] = clean_line.replace("DESCRIPTION:", "").strip()
+              elif clean_line.startswith("CATEGORY:"): parsed["CATEGORY"] = clean_line.replace("CATEGORY:", "").strip()
+              elif clean_line.startswith("TAGS:"): parsed["TAGS"] = clean_line.replace("TAGS:", "").strip()
+              elif clean_line.startswith("IMAGE_KEYWORD:"): parsed["IMAGE_KEYWORD"] = clean_line.replace("IMAGE_KEYWORD:", "").strip()
+              elif clean_line.startswith("BODY:"): current_section = "BODY"
+              elif current_section == "BODY": parsed["BODY"] += line + "\n"
 
-            {/* Widget: Socials */}
-            <div class="widget social-widget card-box">
-              <h3 class="widget-title">Connect</h3>
-              <div class="social-list">
-                {socialStats.map(s => (
-                  <a href="#" class="social-row" style={`--bg:${s.bg}`}>
-                    <div class="social-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
-                    </div>
-                    <div class="social-text">
-                      <span class="count">{s.count}</span>
-                      <span class="label">{s.name}</span>
-                    </div>
-                    <div class="social-arrow">&rarr;</div>
-                  </a>
-                ))}
-              </div>
-            </div>
+          for key in ["TITLE", "DESCRIPTION", "BODY"]:
+              text = parsed[key]
+              text = text.replace("—", ", ").replace("–", ", ").replace("--", ", ")
+              text = re.sub(r',\s*,', ',', text)
+              parsed[key] = text.strip()
 
-            {/* Widget: Advertisement */}
-            <div class="widget ad-widget card-box">
-               <span class="ad-label">Advertisement</span>
-               <div class="ad-box">
-                 <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
-                 <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-               </div>
-            </div>
+          # --- 11. WORD COUNT VALIDATION ---
+          word_count = len(parsed['BODY'].split())
+          if word_count < 1300:
+              print(f"❌ REJECTED: Article too short ({word_count} words). Minimum is 1300.")
+              exit(0)
 
-            {/* Widget: Newsletter / CTA */}
-            <div class="widget cta-widget">
-              <h3>The Mwaniki Report</h3>
-              <p>Independent journalism. Straight to your inbox.</p>
-              <form class="cta-form" onsubmit="event.preventDefault(); alert('Subscribed!');">
-                <input type="email" placeholder="Email address" required />
-                <button type="submit">Subscribe</button>
-              </form>
-            </div>
+          # --- 12. SAVE ---
+          image_url = get_real_image(parsed['IMAGE_KEYWORD'])
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
+          slug = re.sub(r'-+', '-', slug).strip('-')
+          tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
+          
+          author_name = "Jonathan Mwaniki"
 
+          final_file = f"""---
+          title: "{parsed['TITLE'].replace('"', "'")}"
+          description: "{parsed['DESCRIPTION'].replace('"', "'")}"
+          date: "{date_str}"
+          author: "{author_name}"
+          image: "{image_url}"
+          imageCaption: "Image for {parsed['IMAGE_KEYWORD']}"
+          imageAlt: "{parsed['IMAGE_KEYWORD']}"
+          category: "{parsed['CATEGORY']}"
+          tags: {json.dumps(tag_list)}
+          featured: true
+          draft: false
+          slug: "{slug}"
+          ---
+
+          # {parsed['TITLE']}
+
+          {parsed['BODY']}
+
+          <div class="article-meta">
+            <p><strong>Published:</strong> {date_str}</p>
+            <p><strong>Author:</strong> {author_name}</p>
+            <p><strong>Tags:</strong> {parsed['TAGS']}</p>
           </div>
-        </aside>
+          """
 
-      </div>
-    </main>
-  </div>
+          import textwrap
+          final_file = textwrap.dedent(final_file).strip()
+          out_dir = os.path.join(os.getcwd(), os.environ.get("POSTS_DIR", "src/content/posts"))
+          os.makedirs(out_dir, exist_ok=True)
+          
+          if len(parsed["TITLE"]) > 5:
+              with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f:
+                  f.write(final_file)
+              
+              memory.append(final_hash)
+              with open(memory_path, 'w') as f:
+                  json.dump(memory[-200:], f)
+                  
+              print(f"✅ Published: {slug}.md | {len(parsed['BODY'].split())} words")
+          else:
+              print("❌ Generation failed (empty title)")
+          EOF
 
-  <style>
-    /* --- 1. GLOBAL VARIABLES --- */
-    :root {
-      --bg: #f8fafc;  
-      --card: #ffffff;
-      --text: #1e293b; 
-      --muted: #64748b; 
-      --accent: #dc2626; 
-      --border: #e2e8f0; 
-
-      --font-body: 'Merriweather', Georgia, serif;
-      --font-head: 'Inter', system-ui, sans-serif;
-
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-      --radius: 8px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a; 
-        --card: #1e293b; 
-        --text: #f1f5f9; 
-        --muted: #94a3b8; 
-        --border: #334155;
-      }
-    }
-
-    * { box-sizing: border-box; }
-    body { 
-      background: var(--bg); color: var(--text); 
-      font-family: var(--font-body); margin: 0; 
-      overflow-x: hidden; 
-    }
-    img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    a { text-decoration: none; color: inherit; transition: all 0.2s ease; }
-    
-    /* Typography Resets */
-    h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
-    p { color: var(--muted); line-height: 1.6; }
-
-    .main-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
-    @media (min-width: 768px) { .main-container { padding: 0 1.5rem; } }
-
-    /* HELPER: Card Box Style */
-    .card-box {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .card-box:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-        border-color: var(--accent);
-    }
-
-    /* --- STORIES SECTION --- */
-    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; }
-    .stories-scroll { 
-      display: flex; gap: 1rem; overflow-x: auto; 
-      padding-bottom: 5px; scrollbar-width: none; 
-    }
-    .stories-scroll::-webkit-scrollbar { display: none; }
-
-    .story-item { flex: 0 0 auto; width: 70px; text-align: center; }
-    .story-img-ring { 
-      width: 70px; height: 70px; border-radius: 50%; padding: 3px; 
-      border: 2px solid var(--accent); margin-bottom: 0.5rem; 
-    }
-    .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
-    .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text); }
-
-    /* --- HERO SECTION --- */
-    .hero-wrapper { display: grid; gap: 2rem; margin-bottom: 3rem; }
-    @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
-
-    /* Main Hero */
-    .hero-main { display: flex; flex-direction: column; height: 100%; border: none; background: transparent; }
-    .hero-main.card-box { padding: 0; background: var(--card); border: 1px solid var(--border); }
-    
-    .hero-link { display: block; height: 100%; }
-    .hero-img-box { position: relative; width: 100%; aspect-ratio: 16/9; border-bottom: 1px solid var(--border); }
-    .hero-badge { 
-      position: absolute; top: 1rem; left: 1rem; 
-      background: var(--accent); color: white; 
-      padding: 0.3rem 0.8rem; font-weight: 700; font-family: var(--font-head);
-      font-size: 0.7rem; text-transform: uppercase; border-radius: 4px;
-    }
-    .hero-text-box { padding: 1.5rem; }
-    .hero-main h1 { font-size: 1.8rem; margin: 0.5rem 0; line-height: 1.2; }
-    .hero-excerpt { font-size: 1.05rem; margin: 0; }
-    .meta-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; font-family: var(--font-head); }
-    .cat-tag { color: var(--accent); }
-
-    @media (min-width: 768px) { .hero-main h1 { font-size: 2.5rem; } }
-
-    /* Side Heros */
-    .hero-side { display: flex; flex-direction: column; gap: 1rem; }
-    
-    .sub-card { display: flex; gap: 1rem; align-items: center; padding: 1rem; }
-    .sub-img { width: 100px; height: 70px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-    .sub-text h3 { margin: 0; font-size: 1rem; line-height: 1.4; transition: color 0.2s; }
-    .sub-cat { font-family: var(--font-head); font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-bottom: 0.2rem; display: block; }
-
-    /* --- MAIN LAYOUT --- */
-    .layout-grid { display: grid; gap: 3rem; }
-    @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
-
-    /* HEADERS */
-    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
-    .section-header h2 { font-size: 1.5rem; margin: 0; white-space: nowrap; }
-    .header-line { flex: 1; height: 1px; background: var(--border); }
-    .section-header.small { justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-    .section-header.small a { font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--accent); }
-
-    /* NEWS RIVER */
-    .news-river { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem; }
-    .river-item { padding: 1.5rem; } 
-    
-    .river-link { display: flex; flex-direction: column-reverse; gap: 1rem; }
-    .river-content h3 { font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; }
-    .river-content p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.95rem; }
-    .river-meta { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .river-cat { color: var(--accent); }
-    
-    .river-img { width: 100%; height: 200px; border-radius: 6px; overflow: hidden; }
-
-    @media (min-width: 768px) {
-      .river-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
-      .river-content { flex: 1; }
-      .river-img { width: 220px; height: 150px; flex-shrink: 0; }
-    }
-
-    /* OPINION BLOCK */
-    .opinion-block { 
-        background: #1e293b; 
-        color: white; padding: 2rem; border-radius: var(--radius); margin-bottom: 3rem; 
-        box-shadow: var(--shadow-md);
-    }
-    .opinion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
-    .opinion-header h3 { margin: 0; font-size: 1.5rem; color: white; }
-    .opinion-header a { color: var(--accent); font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
-
-    .opinion-grid { display: grid; gap: 1.5rem; }
-    @media (min-width: 600px) { .opinion-grid { grid-template-columns: 1fr 1fr 1fr; } }
-
-    .opinion-card { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
-    .opinion-tag { color: var(--accent); font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
-    .opinion-card h4 { font-size: 1.1rem; margin: 0 0 1rem 0; line-height: 1.4; color: #f1f5f9; }
-    .author-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; font-family: var(--font-head); }
-    .author-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
-
-    /* CATEGORY GRIDS */
-    .category-section { margin-bottom: 3rem; }
-    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-    .grid-card { padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
-    .grid-img { height: 120px; border-radius: 4px; overflow: hidden; }
-    .grid-card h4 { font-size: 1rem; margin: 0; line-height: 1.4; }
-
-    /* --- SIDEBAR --- */
-    .sidebar-column { display: none; }
-    @media (min-width: 1024px) { 
-      .sidebar-column { display: block; } 
-      .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
-    }
-    
-    .widget { padding: 1.5rem; margin-bottom: 1rem; } 
-    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; color: var(--text); }
-
-    .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
-    .social-row { 
-      display: flex; align-items: center; gap: 1rem; 
-      background: var(--bg); padding: 0.8rem; border-radius: 6px; 
-      border: 1px solid var(--border); transition: transform 0.2s;
-    }
-    .social-row:hover { transform: translateX(5px); border-color: var(--muted); }
-    .social-icon { width: 32px; height: 32px; color: white; background: var(--text); border-radius: 50%; padding: 6px; }
-    .social-text { flex: 1; display: flex; flex-direction: column; line-height: 1.1; font-family: var(--font-head); }
-    .social-text .count { font-weight: 800; font-size: 0.9rem; }
-    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
-    .social-arrow { font-size: 1.2rem; color: var(--border); }
-
-    .ad-widget { text-align: center; }
-    .ad-label { font-family: var(--font-head); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
-    .ad-box { background: var(--bg); min-height: 250px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-
-    .cta-widget { background: var(--text); color: white; text-align: center; border-radius: var(--radius); padding: 2rem; }
-    .cta-widget h3 { margin: 0 0 0.5rem 0; color: white; }
-    .cta-widget p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
-    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; }
-    .cta-form input { padding: 0.8rem; border: none; border-radius: 4px; font-family: var(--font-head); }
-    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; font-family: var(--font-head); }
-  </style>
-</Layout>
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: publish ${{ github.run_id }}"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: ${{ env.POSTS_DIR }}/*.md
+          commit_user_name: "Content Bot"
+          commit_user_email: "actions@github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
