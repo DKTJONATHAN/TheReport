@@ -7,6 +7,7 @@ const allPosts = (await getCollection('posts'))
   .filter(p => !p.data.draft)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
 
+// Preparation for client-side consumption
 const serializedPosts = allPosts.map(post => ({
   title: post.data.title,
   description: post.data.description,
@@ -17,8 +18,6 @@ const serializedPosts = allPosts.map(post => ({
   author: post.data.author || 'Jonathan Mwaniki'
 }));
 
-const categories = ['Politics', 'Business', 'Tech', 'Life', 'Opinion'];
-
 const socialStats = [
   { name: 'Fans', count: '12k', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z', bg: '#1877f2' },
   { name: 'Followers', count: '45k', icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', bg: '#000000' },
@@ -26,97 +25,73 @@ const socialStats = [
 ];
 ---
 
-<Layout title="The Mwaniki Report | News Feed" description="Latest breaking news and analysis.">
-
-  {/* --- STICKY NAVIGATION --- */}
-  <nav class="sticky-nav">
-    <div class="nav-container">
-      <div class="nav-left">
-        <a href="/" class="nav-logo">JM</a>
-        <div class="nav-divider"></div>
-        <div class="nav-links">
-          {categories.map(cat => (
-            <a href={`/category/${cat.toLowerCase()}`} class="nav-item">{cat}</a>
-          ))}
-        </div>
-      </div>
-      <div class="nav-right">
-        <button class="search-trigger" aria-label="Search">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </button>
-      </div>
-    </div>
-  </nav>
+<Layout title="The Mwaniki Report" description="Latest breaking news, politics, and analysis.">
 
   <div class="page-wrapper">
     <main class="main-container">
 
-      {/* --- HEADER --- */}
-      <header class="feed-header">
-        <div class="header-content">
-          <div class="brand-meta">
-            <span class="live-indicator">LIVE Newsroom</span>
-            <h1>The Mwaniki Report</h1>
-            <p>Independent journalism for the digital age</p>
-          </div>
-          
-          <div class="filter-controls">
-            <span class="filter-label">Sort Feed</span>
-            <div class="toggle-pill" id="feed-toggle">
-              <button class="pill-btn active" data-mode="time">Recent</button>
-              <button class="pill-btn" data-mode="category">Sections</button>
-            </div>
-          </div>
+      {/* --- FEED CONTROLS --- */}
+      <section class="feed-controls">
+        <div class="toggle-container" id="feed-toggle">
+          <button class="toggle-btn active" data-mode="time">Latest First</button>
+          <button class="toggle-btn" data-mode="category">By Category</button>
         </div>
-        <div class="header-border"></div>
-      </header>
+      </section>
 
       <div class="layout-grid">
 
-        {/* --- DYNAMIC FEED --- */}
+        {/* --- DYNAMIC FEED COLUMN --- */}
         <div class="feed-column">
           <div id="posts-container" class="news-river">
-            {/* Posts injected via JS */}
+            {/* Posts are injected here via script using your original card design */}
           </div>
 
-          <div class="feed-footer">
-            <button id="load-more-btn" class="unroll-btn">
-              <span>View More Stories</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+          <div class="pagination-area">
+            <button id="load-more-btn" class="more-btn">
+              <span>More Stories</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
             </button>
-            <p id="end-message" class="end-text hidden">End of feed updates</p>
+            <p id="end-message" class="end-text hidden">You have reached the end of the feed.</p>
           </div>
         </div>
 
         {/* --- SIDEBAR --- */}
         <aside class="sidebar-column">
-          <div class="sidebar-sticky">
+          <div class="sticky-wrapper">
             
-            <section class="sidebar-widget newsletter">
-              <h4>The Briefing</h4>
-              <p>Top insights delivered daily.</p>
-              <form class="newsletter-form">
-                <input type="email" placeholder="Your email" required />
-                <button type="submit">Join</button>
-              </form>
-            </section>
-
-            <section class="sidebar-widget social">
-              <h5>Coverage Networks</h5>
-              <div class="social-row">
+            <div class="widget social-widget card-box">
+              <h3 class="widget-title">Connect</h3>
+              <div class="social-list">
                 {socialStats.map(s => (
-                  <a href="#" class="social-icon" style={`--accent:${s.bg}`} title={s.name}>
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                  <a href="#" class="social-row" style={`--bg:${s.bg}`}>
+                    <div class="social-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                    </div>
+                    <div class="social-text">
+                      <span class="count">{s.count}</span>
+                      <span class="label">{s.name}</span>
+                    </div>
+                    <div class="social-arrow">&rarr;</div>
                   </a>
                 ))}
               </div>
-            </section>
+            </div>
 
-            <section class="sidebar-widget advertisement">
-              <span class="ad-label">Advertisement</span>
-              <div class="ad-box"></div>
-            </section>
+            <div class="widget ad-widget card-box">
+               <span class="ad-label">Advertisement</span>
+               <div class="ad-box">
+                 <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9291176772735390" data-ad-slot="1358657931" data-ad-format="auto" data-full-width-responsive="true"></ins>
+               </div>
+            </div>
 
+            <div class="widget cta-widget">
+              <h3>The Mwaniki Report</h3>
+              <p>Independent journalism. Straight to your inbox.</p>
+              <form class="cta-form">
+                <input type="email" placeholder="Email address" required />
+                <button type="submit">Subscribe</button>
+              </form>
+            </div>
           </div>
         </aside>
 
@@ -124,195 +99,213 @@ const socialStats = [
     </main>
   </div>
 
+  {/* --- INTERACTION SCRIPT --- */}
   <script is:inline define:vars={{ serializedPosts }}>
     let currentMode = 'time';
-    let visibleCount = 30; // Initial load of 30 posts
-    const step = 15;
+    let visibleCount = 30; // Shows 30 posts by default
+    const step = 15; // Loads 15 more on each click
     
     const container = document.getElementById('posts-container');
-    const loadBtn = document.getElementById('load-more-btn');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     const endMsg = document.getElementById('end-message');
-    const pills = document.querySelectorAll('.pill-btn');
+    const toggleBtns = document.querySelectorAll('.toggle-btn');
 
     function getSortedPosts() {
-      if (currentMode === 'time') return [...serializedPosts];
-      return [...serializedPosts].sort((a, b) => a.category.localeCompare(b.category));
+      if (currentMode === 'time') {
+        return [...serializedPosts]; 
+      } else {
+        return [...serializedPosts].sort((a, b) => a.category.localeCompare(b.category));
+      }
     }
 
-    function renderPosts(append = false) {
-      const posts = getSortedPosts();
-      const currentSlice = posts.slice(append ? visibleCount - step : 0, visibleCount);
+    function renderPosts(isAppend = false) {
+      const allSorted = getSortedPosts();
+      const slice = allSorted.slice(isAppend ? visibleCount - step : 0, visibleCount);
 
-      if (!append) container.innerHTML = '';
+      if (!isAppend) container.innerHTML = '';
 
-      currentSlice.forEach(post => {
-        const dateStr = new Date(post.date).toLocaleDateString('en-KE', { 
-          month: 'short', day: 'numeric'
-        });
+      slice.forEach(post => {
+        const dateStr = new Date(post.date).toLocaleDateString();
         
-        const card = `
-          <article class="news-card slide-in">
-            <a href="/posts/${post.slug}" class="card-link">
-              <div class="card-visual">
-                <img src="${post.image}" alt="${post.title}" loading="lazy" />
-                <span class="tag">${post.category}</span>
-              </div>
-              <div class="card-body">
-                <div class="meta">
-                  <span class="author">${post.author}</span>
-                  <span class="dot"></span>
-                  <span class="date">${dateStr}</span>
+        // Using your original river-item HTML structure
+        const html = `
+          <article class="river-item card-box entry-fade">
+            <a href="/posts/${post.slug}" class="river-link">
+              <div class="river-content">
+                <div class="river-meta">
+                  <span class="river-cat">${post.category}</span>
+                  <span class="river-time">${dateStr}</span>
                 </div>
                 <h3>${post.title}</h3>
                 <p>${post.description}</p>
               </div>
+              <div class="river-img">
+                <img src="${post.image}" alt="${post.title}" loading="lazy" />
+              </div>
             </a>
           </article>
         `;
-        container.insertAdjacentHTML('beforeend', card);
+        container.insertAdjacentHTML('beforeend', html);
       });
 
-      if (visibleCount >= posts.length) {
-        loadBtn.classList.add('hidden');
+      if (visibleCount >= allSorted.length) {
+        loadMoreBtn.classList.add('hidden');
         endMsg.classList.remove('hidden');
       } else {
-        loadBtn.classList.remove('hidden');
+        loadMoreBtn.classList.remove('hidden');
         endMsg.classList.add('hidden');
       }
     }
 
-    pills.forEach(p => p.addEventListener('click', () => {
-      pills.forEach(b => b.classList.remove('active'));
-      p.classList.add('active');
-      currentMode = p.dataset.mode;
-      visibleCount = 30;
-      renderPosts();
-    }));
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        visibleCount = 30; 
+        renderPosts();
+      });
+    });
 
-    loadBtn.addEventListener('click', () => {
+    loadMoreBtn.addEventListener('click', () => {
       visibleCount += step;
       renderPosts(true);
     });
 
+    // Initial render
     renderPosts();
   </script>
 
   <style>
-    /* --- CORE SYSTEM --- */
+    /* --- RESTORED ORIGINAL THEME COLORS --- */
     :root {
-      --ink: #000000;
-      --paper: #ffffff;
-      --smoke: #f9f9f9;
-      --muted: #717171;
-      --accent: #d0021b;
-      --line: #efefef;
-      --sans: 'Inter', system-ui, sans-serif;
-      --serif: 'Charter', 'Georgia', serif;
-      --nav-height: 64px;
+      --bg: #f8fafc;  
+      --card: #ffffff;
+      --text: #1e293b; 
+      --muted: #64748b; 
+      --accent: #dc2626; 
+      --border: #e2e8f0; 
+
+      --font-body: 'Merriweather', Georgia, serif;
+      --font-head: 'Inter', system-ui, sans-serif;
+
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --radius: 8px;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --ink: #f1f1f1;
-        --paper: #0a0a0a;
-        --smoke: #141414;
-        --muted: #a0a0a0;
-        --line: #222222;
+        --bg: #0f172a; 
+        --card: #1e293b; 
+        --text: #f1f5f9; 
+        --muted: #94a3b8; 
+        --border: #334155;
       }
     }
 
-    body { background: var(--paper); color: var(--ink); font-family: var(--sans); margin: 0; }
+    /* --- CORE STYLES --- */
+    * { box-sizing: border-box; }
+    body { 
+      background: var(--bg); color: var(--text); 
+      font-family: var(--font-body); margin: 0; 
+    }
+    .main-container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
     .hidden { display: none !important; }
 
-    /* --- STICKY NAV --- */
-    .sticky-nav {
-      position: sticky; top: 0; z-index: 100;
-      height: var(--nav-height);
-      background: rgba(var(--paper), 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
+    .card-box {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
-    .nav-container {
-      max-width: 1300px; margin: 0 auto; padding: 0 1.5rem;
-      display: flex; justify-content: space-between; align-items: center; height: 100%;
+    .card-box:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent);
     }
-    .nav-left { display: flex; align-items: center; gap: 1.5rem; }
-    .nav-logo { font-weight: 900; font-size: 1.4rem; color: var(--accent); text-decoration: none; }
-    .nav-divider { width: 1px; height: 24px; background: var(--line); }
-    .nav-links { display: none; gap: 1.5rem; }
-    @media (min-width: 768px) { .nav-links { display: flex; } }
-    .nav-item { text-decoration: none; color: var(--muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; transition: color 0.2s; }
-    .nav-item:hover { color: var(--ink); }
-    .search-trigger { background: none; border: none; color: var(--muted); cursor: pointer; }
 
-    /* --- HEADER --- */
-    .main-container { max-width: 1300px; margin: 0 auto; padding: 3rem 1.5rem; }
-    .feed-header { margin-bottom: 4rem; }
-    .header-content { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem; }
-    .brand-meta h1 { font-family: var(--serif); font-size: 3.5rem; margin: 0; font-weight: 950; letter-spacing: -2px; }
-    .brand-meta p { color: var(--muted); font-size: 1.1rem; margin: 0.5rem 0 0; }
-    .live-indicator { font-size: 0.7rem; font-weight: 800; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
-    .live-indicator::before { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
-    .header-border { height: 6px; background: var(--ink); margin-top: 1.5rem; }
+    /* --- FEED CONTROLS --- */
+    .feed-controls { margin-bottom: 2rem; display: flex; justify-content: flex-start; }
+    .toggle-container { 
+      display: flex; 
+      background: var(--card); 
+      padding: 4px; 
+      border-radius: 50px; 
+      border: 1px solid var(--border); 
+    }
+    .toggle-btn {
+      border: none; background: transparent; padding: 0.5rem 1.2rem;
+      border-radius: 50px; font-family: var(--font-head); font-weight: 700;
+      font-size: 0.85rem; cursor: pointer; color: var(--muted); transition: 0.2s;
+    }
+    .toggle-btn.active { background: var(--accent); color: white; }
 
-    /* --- FILTER PILL --- */
-    .filter-controls { display: flex; flex-direction: column; gap: 0.8rem; }
-    .filter-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-    .toggle-pill { background: var(--smoke); padding: 4px; border-radius: 50px; display: flex; border: 1px solid var(--line); }
-    .pill-btn { border: none; background: none; padding: 0.6rem 1.4rem; border-radius: 50px; font-size: 0.8rem; font-weight: 800; cursor: pointer; color: var(--muted); }
-    .pill-btn.active { background: var(--paper); color: var(--ink); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-    /* --- GRID & CARDS --- */
-    .layout-grid { display: grid; gap: 4rem; }
-    @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 300px; } }
-    .news-river { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 3rem 2rem; }
+    /* --- RESTORED RIVER ITEM DESIGN --- */
+    .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
+    .river-item { padding: 1.5rem; } 
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1rem; text-decoration: none; color: inherit; }
     
-    .news-card { border-bottom: 1px solid var(--line); padding-bottom: 2rem; }
-    .card-link { text-decoration: none; color: inherit; display: block; }
-    .card-visual { position: relative; aspect-ratio: 16/10; margin-bottom: 1.5rem; overflow: hidden; }
-    .card-visual img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-    .news-card:hover .card-visual img { transform: scale(1.08); }
-    .tag { position: absolute; top: 0; left: 0; background: var(--accent); color: white; padding: 6px 10px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
+    .river-content h3 { font-family: var(--font-head); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; color: var(--text); }
+    .river-content p { color: var(--muted); line-height: 1.6; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .river-meta { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .river-cat { color: var(--accent); }
+    
+    .river-img { width: 100%; height: 200px; border-radius: 6px; overflow: hidden; }
+    .river-img img { width: 100%; height: 100%; object-fit: cover; }
 
-    .meta { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.8rem; }
-    .dot { width: 4px; height: 4px; background: var(--line); border-radius: 50%; }
-    .card-body h3 { font-family: var(--serif); font-size: 1.6rem; line-height: 1.2; margin: 0 0 1rem; font-weight: 800; }
-    .card-body p { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    @media (min-width: 768px) {
+      .river-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+      .river-content { flex: 1; }
+      .river-img { width: 220px; height: 150px; flex-shrink: 0; }
+    }
+
+    /* --- LAYOUT GRID --- */
+    .layout-grid { display: grid; gap: 3rem; }
+    @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
+
+    /* --- PAGINATION --- */
+    .pagination-area { margin-top: 3rem; text-align: center; }
+    .more-btn {
+      background: var(--text); color: var(--bg); border: none; padding: 1rem 2.5rem;
+      border-radius: var(--radius); font-family: var(--font-head); font-weight: 800;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 0.8rem;
+    }
+    .end-text { font-family: var(--font-head); color: var(--muted); font-weight: 600; }
 
     /* --- SIDEBAR --- */
-    .sidebar-sticky { position: sticky; top: calc(var(--nav-height) + 2rem); display: flex; flex-direction: column; gap: 3rem; }
-    .sidebar-widget h4, .sidebar-widget h5 { font-family: var(--serif); font-size: 1.2rem; margin: 0 0 1rem; }
-    .newsletter { background: var(--smoke); padding: 2rem; border-top: 4px solid var(--accent); }
-    .newsletter-form { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
-    .newsletter-form input { padding: 0.8rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
-    .newsletter-form button { background: var(--ink); color: var(--paper); border: none; padding: 0.8rem; font-weight: 800; cursor: pointer; text-transform: uppercase; }
-    .social-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-    .social-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--smoke); color: var(--ink); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .social-icon:hover { background: var(--accent); color: white; }
-    .social-icon svg { width: 16px; }
-    .ad-box { height: 500px; background: var(--smoke); border: 1px dashed var(--line); }
-    .ad-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
-
-    /* --- FOOTER --- */
-    .feed-footer { margin-top: 5rem; text-align: center; border-top: 1px solid var(--line); padding-top: 4rem; }
-    .unroll-btn { 
-      background: var(--ink); color: var(--paper); border: none; padding: 1.4rem 3.5rem; 
-      border-radius: 4px; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; 
-      cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; transition: transform 0.2s;
+    .sidebar-column { display: none; }
+    @media (min-width: 1024px) { 
+      .sidebar-column { display: block; } 
+      .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
     }
-    .unroll-btn:hover { transform: scale(1.02); }
-    .end-text { color: var(--muted); font-weight: 700; }
+    
+    .widget { padding: 1.5rem; } 
+    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; color: var(--text); }
 
-    /* --- ANIMS --- */
-    .slide-in { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-    @media (max-width: 768px) {
-      .brand-meta h1 { font-size: 2.5rem; }
-      .header-content { flex-direction: column; align-items: flex-start; }
-      .news-river { grid-template-columns: 1fr; }
+    .social-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .social-row { 
+      display: flex; align-items: center; gap: 1rem; background: var(--bg); 
+      padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border); text-decoration: none; color: inherit;
     }
+    .social-icon { width: 32px; height: 32px; color: white; background: var(--text); border-radius: 50%; padding: 6px; }
+    .social-text { flex: 1; display: flex; flex-direction: column; line-height: 1.1; font-family: var(--font-head); }
+    .social-text .count { font-weight: 800; font-size: 0.9rem; color: var(--text); }
+    .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+
+    .ad-label { font-family: var(--font-head); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; display: block; text-align: center; }
+    .ad-box { background: var(--bg); min-height: 250px; border-radius: 4px; }
+
+    .cta-widget { background: var(--text); color: white; text-align: center; border-radius: var(--radius); padding: 2rem; }
+    .cta-widget h3 { margin: 0 0 0.5rem 0; color: white; font-family: var(--font-head); }
+    .cta-widget p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .cta-form input { padding: 0.8rem; border: none; border-radius: 4px; }
+    .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 700; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+
+    /* --- ANIMATION --- */
+    .entry-fade { animation: fadeIn 0.5s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </Layout>
