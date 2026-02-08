@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-genai apify-client beautifulsoup4 lxml
+          pip install requests google-genai apify-client beautifulsoup4
 
       - name: Generate article with Gemini
         env:
@@ -66,7 +66,7 @@ jobs:
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time, hashlib, base64
+          import os, json, datetime, requests, re, random, time, hashlib
           from google import genai
           from google.genai import types
           from apify_client import ApifyClient
@@ -109,105 +109,124 @@ jobs:
           if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment']:
               topic = manual_input
           else:
-              # Automatic topic selection based on time (UTC)
               if current_hour_utc == 2: topic = 'politics'         # 5 AM EAT
               elif current_hour_utc == 5: topic = 'sports'         # 8 AM EAT
               elif current_hour_utc == 8: topic = 'business'       # 11 AM EAT
               elif current_hour_utc == 11: topic = 'technology'    # 2 PM EAT
               elif current_hour_utc == 14: topic = 'sports'        # 5 PM EAT
               elif current_hour_utc == 18: topic = 'entertainment' # 9 PM EAT
-              else: topic = 'politics' # Fallback
+              else: topic = 'politics'
           
           print(f"🎯 Topic: {topic}")
 
-          # --- 4. FETCH CANDIDATES (GOOGLE NEWS RSS) ---
+          # --- 4. FETCH CANDIDATES (HTML) ---
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # Use Google News RSS Search to get latest international news
-          # 'when:1d' ensures we only get news from the last 24 hours
-          base_rss = "https://news.google.com/rss/search"
+          # Google News Search (HTML version)
+          base_url = "https://news.google.com/search"
           params = {
-              'q': f"{topic} when:1d",
+              'q': f"{topic} when:1d", # Last 24h
               'hl': 'en-US',
               'gl': 'US',
               'ceid': 'US:en'
           }
           
-          print(f"📡 Fetching RSS Feed for: {topic}...")
+          print(f"📡 Fetching Google News HTML for: {topic}...")
           
+          # Headers are critical to look like a real browser
+          headers = {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          }
+
           try:
-              res = requests.get(base_rss, params=params, timeout=15)
-              # Use lxml-xml for parsing RSS
-              soup = BeautifulSoup(res.content, 'xml')
-              items = soup.find_all('item')
+              res = requests.get(base_url, params=params, headers=headers, timeout=15)
+              soup = BeautifulSoup(res.text, 'html.parser')
           except Exception as e:
               print(f"Error fetching source feed: {e}")
               exit(0)
 
-          candidates = []
-          
-          # Helper to resolve Google Redirect URLs to real URLs
-          def resolve_google_url(google_url):
+          # --- 5. LINK FOLLOWING HELPER ---
+          def follow_google_redirect(google_url):
+              """Follows the Google redirect to get the REAL publisher URL"""
               try:
-                  # Google News RSS links are redirects. We must resolve them.
-                  # Often a simple HEAD request follows the redirect.
-                  r = requests.head(google_url, allow_redirects=True, timeout=5)
-                  return r.url
-              except:
-                  return google_url
-
-          print(f"🔎 Found {len(items)} items in RSS. Filtering...")
-
-          for item in items:
-              title = item.title.text if item.title else "No Title"
-              link = item.link.text if item.link else ""
-              pub_date = item.pubDate.text if item.pubDate else ""
-              
-              if link and "news.google.com" in link:
-                  # Generate hash based on title + date to avoid reprocessing same story even if URL rotates
-                  # (Google URLs sometimes change, titles usually stable)
-                  unique_str = f"{title}-{topic}"
-                  url_hash = hashlib.md5(unique_str.encode()).hexdigest()
+                  # We use a session with headers to follow the redirect chain
+                  session = requests.Session()
+                  session.headers.update(headers)
                   
-                  if url_hash not in memory:
-                      # We delay resolving the URL until we are sure we want to use it
-                      candidates.append({
-                          "google_url": link,
-                          "hash": url_hash,
-                          "title": title
-                      })
+                  # Allow redirects. Timeout ensures we don't hang if site is slow.
+                  resp = session.get(google_url, allow_redirects=True, timeout=10)
+                  
+                  # If we landed on a consent page or stuck at google, it failed
+                  if "google.com" in resp.url or "consent" in resp.url:
+                      return None
+                  
+                  return resp.url
+              except Exception as e:
+                  print(f"Link follow error: {e}")
+                  return None
 
+          candidates = []
+          # Find all links that look like articles
+          raw_links = soup.find_all('a', href=True)
+          
+          print(f"🔎 Scanning {len(raw_links)} raw links from Google...")
+
+          for a_tag in raw_links:
+              href = a_tag['href']
+              # Google News articles start with ./articles/
+              if href.startswith("./articles/"):
+                  full_google_url = href.replace(".", "https://news.google.com", 1)
+                  title = a_tag.get_text(separator=" ").strip()
+                  
+                  if len(title) > 15:
+                      unique_key = f"{title}-{topic}"
+                      url_hash = hashlib.md5(unique_key.encode()).hexdigest()
+                      
+                      if url_hash not in memory:
+                          # Avoid duplicate titles in this run
+                          if not any(c['hash'] == url_hash for c in candidates):
+                              candidates.append({
+                                  "url": full_google_url,
+                                  "hash": url_hash,
+                                  "title": title
+                              })
+
+          print(f"✅ Found {len(candidates)} potential candidates.")
           if not candidates:
-              print("No new links found in memory.")
+              print("❌ No new candidates found. Exiting.")
               exit(0)
 
-          # --- 5. SCRAPE LOOP ---
+          # --- 6. SCRAPE LOOP ---
           apify_client = ApifyClient(selected_apify_token)
           full_raw_content = None
           final_url = None
           final_hash = None
 
-          # Try top 3 freshest candidates
-          for candidate in candidates[:3]:
-              print(f"Processing candidate: {candidate['title']}")
+          # Process top candidates
+          for cand in candidates[:4]:
+              print(f"\nProcessing: {cand['title'][:40]}...")
+              print(f"  > Original Link: {cand['url']}")
               
-              # Resolve real URL now
-              real_url = resolve_google_url(candidate['google_url'])
-              print(f"Resolved URL: {real_url}")
-
-              # Skip if resolution failed or it's a blocked domain
-              if "google.com" in real_url: 
-                  print("Skipping: Could not resolve to external site.")
+              # STEP 1: FOLLOW LINK
+              real_url = follow_google_redirect(cand['url'])
+              
+              if not real_url:
+                  print("  > ❌ Failed to resolve link (blocked by Google or Consent). Skipping.")
                   continue
                   
+              print(f"  > 🟢 Redirected to: {real_url}")
+              
+              # STEP 2: SCRAPE REAL URL
               try:
                   run = apify_client.actor("apify/website-content-crawler").call(run_input={
                       "startUrls": [{"url": real_url}],
                       "maxCrawlPages": 1,
                       "maxCrawlDepth": 0,
                       "crawlerType": "playwright:firefox",
-                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .cookie-banner",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header, .cookie-banner, .popup",
                       "proxyConfiguration": {"useApifyProxy": True}
                   })
                   
@@ -216,23 +235,22 @@ jobs:
                       data = dataset_items[0]
                       text = data.get('markdown', data.get('text', ''))
                       
-                      # Check quality
                       if text and len(text) > 800:
                           full_raw_content = text
                           final_url = real_url
-                          final_hash = candidate['hash']
-                          print("Scrape successful!")
+                          final_hash = cand['hash']
+                          print("  > ✅ Scrape successful!")
                           break
-                  print("Scrape empty or too short, trying next...")
+                  print("  > ⚠️ Scrape content too short or empty.")
               except Exception as e:
-                  print(f"Scrape failed: {e}")
+                  print(f"  > ❌ Scrape error: {e}")
                   continue
           
           if not full_raw_content:
-              print("All candidates failed.")
+              print("❌ All candidates failed to scrape.")
               exit(0)
 
-          # --- 6. IMAGE HELPER ---
+          # --- 7. IMAGE HELPER ---
           def get_real_image(query):
               access_key = os.environ.get("UNSPLASH_ACCESS_KEY")
               if not access_key: return "" 
@@ -245,7 +263,7 @@ jobs:
               except: pass
               return ""
 
-          # --- 7. PROMPT ---
+          # --- 8. PROMPT ---
           hooks = [
              "Straight reporting: What happened, when, where, who, why.",
              "Key facts first: Timeline of events.",
@@ -282,7 +300,7 @@ jobs:
           - UK English, commas not em-dashes.
           - 5-7 sections: Background, Key Developments, Impacts, Reactions, Next Steps.'''
 
-          # --- 8. GEMINI CALL ---
+          # --- 9. GEMINI CALL ---
           client = genai.Client(api_key=gemini_key)
           
           print(f"🤖 Generating with gemini-3-flash-preview...")
@@ -301,7 +319,7 @@ jobs:
               print(f"❌ Gemini Error: {e}")
               exit(1)
 
-          # --- 9. PARSE ---
+          # --- 10. PARSE ---
           parsed = { "TITLE": "", "DESCRIPTION": "", "CATEGORY": display_category, "TAGS": f"{topic},international,news", "IMAGE_KEYWORD": topic, "BODY": "" }
           current_section = None
           
@@ -321,19 +339,18 @@ jobs:
               text = re.sub(r',\s*,', ',', text)
               parsed[key] = text.strip()
 
-          # --- 10. WORD COUNT VALIDATION ---
+          # --- 11. WORD COUNT VALIDATION ---
           word_count = len(parsed['BODY'].split())
           if word_count < 1300:
               print(f"❌ REJECTED: Article too short ({word_count} words). Minimum is 1300.")
               exit(0)
 
-          # --- 11. SAVE ---
+          # --- 12. SAVE ---
           image_url = get_real_image(parsed['IMAGE_KEYWORD'])
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower())
           slug = re.sub(r'-+', '-', slug).strip('-')
           tag_list = [t.strip() for t in parsed["TAGS"].split(',')]
           
-          # Author updated
           author_name = "Jonathan Mwaniki"
 
           final_file = f"""---
