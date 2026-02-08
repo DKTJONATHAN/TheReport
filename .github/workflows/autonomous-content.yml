@@ -99,11 +99,13 @@ jobs:
           )
           km_url = f"https://www.kenyamoja.com/{'news' if topic == 'politics' else topic}"
 
-          # --- 2. FIND LINK ---
+          # --- 2. FIND CANDIDATES ---
+          print(f"Checking URL: {km_url}")
           res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'})
           soup = BeautifulSoup(res.text, 'html.parser')
           news_items = soup.select('li.news-item')
-          final_target_link = None
+          
+          candidates = []
           for item in news_items:
               link_tag = item.select_one('.news-title a')
               if link_tag and 'href' in link_tag.attrs:
@@ -111,23 +113,46 @@ jobs:
                   if "kenyamoja.com" not in url and url.startswith("http"):
                       url_hash = hashlib.md5(url.encode()).hexdigest()
                       if url_hash not in memory:
-                          final_target_link = url
-                          memory.append(url_hash)
-                          break
-          if not final_target_link: exit(0)
+                          candidates.append((url, url_hash))
+          
+          if not candidates:
+              print("No new links found in memory.")
+              exit(0)
 
-          # --- 3. SCRAPE ---
-          try:
-              run = apify_client.actor("apify/website-content-crawler").call(run_input={
-                  "startUrls": [{"url": final_target_link}],
-                  "maxCrawlPages": 1,
-                  "maxCrawlDepth": 0,
-                  "crawlerType": "playwright:firefox",
-                  "removeElementsCssSelector": "nav, footer, script, style, .ads, header"
-              })
-              data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())[0]
-              full_raw_content = data.get('markdown', data.get('text', ''))
-          except: exit(0)
+          # --- 3. ROBUST SCRAPE LOOP ---
+          full_raw_content = None
+          final_url = None
+          
+          for url, url_hash in candidates:
+              print(f"Attempting to scrape: {url}")
+              try:
+                  run = apify_client.actor("apify/website-content-crawler").call(run_input={
+                      "startUrls": [{"url": url}],
+                      "maxCrawlPages": 1,
+                      "maxCrawlDepth": 0,
+                      "crawlerType": "playwright:firefox",
+                      "removeElementsCssSelector": "nav, footer, script, style, .ads, header",
+                      "proxyConfiguration": {"useApifyProxy": True}
+                  })
+                  
+                  dataset_items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+                  if dataset_items:
+                      data = dataset_items[0]
+                      text = data.get('markdown', data.get('text', ''))
+                      if text and len(text) > 800: # Ensure we actually got a decent article
+                          full_raw_content = text
+                          final_url = url
+                          memory.append(url_hash) # Only mark as read if successful
+                          print("Scrape successful!")
+                          break
+                  print("Scrape empty or too short, trying next candidate...")
+              except Exception as e:
+                  print(f"Scrape failed for {url}: {str(e)}")
+                  continue
+          
+          if not full_raw_content:
+              print("All candidates failed to scrape.")
+              exit(0)
 
           # --- 4. IMAGE LOGIC ---
           def get_unsplash_image(query, fallback_topic):
@@ -146,7 +171,6 @@ jobs:
               return "https://images.unsplash.com/photo-1501504905252-473c47e087f8"
 
           # --- 5. PROMPT ---
-          # FIXED: Increased request to 1350+ to ensure we pass the validator
           prompt = f'''STRICT REPORTING MODE for jonathanmwaniki.co.ke.
           SOURCE CONTENT: {full_raw_content}
 
@@ -192,9 +216,9 @@ jobs:
 
           # --- 8. WORD COUNT VALIDATOR ---
           word_count = len(body_clean.split())
-          if word_count < 1000:
-              print(f"REJECTED: Content length ({word_count} words) is below the 1000 word limit.")
-              exit(0) # Exiting here means no file is saved, so nothing is published.
+          if word_count < 1300:
+              print(f"REJECTED: Content length ({word_count} words) is below the 1300 word limit.")
+              exit(0)
 
           # --- 9. SAVE ---
           image_url = get_unsplash_image(parsed['IMAGE_KEYWORD'], topic)
@@ -212,5 +236,5 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: automated publish with length check"
+          commit_message: "content: automated publish with retry logic"
           branch: ${{ env.DEFAULT_BRANCH }}
