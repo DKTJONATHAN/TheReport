@@ -37,7 +37,7 @@ const combinedCircles = [...categoryCircles, ...latestStoryCircles];
 const mainStory = allPosts[0];
 const subStories = allPosts.slice(1, 3);
 
-// DYNAMIC FEED DATA (Starting from post 4)
+// DYNAMIC FEED DATA (Starts from post 4)
 const feedData = allPosts.slice(3).map(post => ({
   title: post.data.title,
   description: post.data.description,
@@ -56,7 +56,7 @@ const socialStats = [
 ];
 ---
 
-<Layout title="The Mwaniki Report" description="Latest breaking news and analysis.">
+<Layout title="The Mwaniki Report" description="Latest breaking news and analysis from Kenya.">
 
   <div class="page-wrapper">
 
@@ -92,7 +92,7 @@ const socialStats = [
                   <span class="bullet">•</span>
                   <span class="date">{new Date(mainStory.data.date).toLocaleDateString()}</span>
               </div>
-              <h1>{mainStory.data.title}</h1>
+              <h1 class="hero-title">{mainStory.data.title}</h1>
               <p class="hero-excerpt">{mainStory.data.description}</p>
             </div>
           </a>
@@ -106,17 +106,17 @@ const socialStats = [
               </div>
               <div class="sub-text">
                 <span class="sub-cat">{post.data.category}</span>
-                <h3>{post.data.title}</h3>
+                <h3 class="sub-title">{post.data.title}</h3>
               </div>
             </a>
           ))}
         </div>
       </section>
 
-      {/* --- 3. FEED HEADER & TOGGLE --- */}
+      {/* --- 3. FEED HEADER --- */}
       <div class="feed-header-bar">
-        <div class="section-header">
-            <h2>The Latest News</h2>
+        <div class="section-title-box">
+            <h2 class="section-title">The Latest News</h2>
             <div class="header-line"></div>
         </div>
         <div class="toggle-container" id="feed-toggle">
@@ -125,14 +125,14 @@ const socialStats = [
         </div>
       </div>
 
-      {/* --- 4. THE FEED LAYOUT --- */}
+      {/* --- 4. DYNAMIC FEED LAYOUT --- */}
       <div class="layout-grid">
         <div class="feed-column">
           <div id="posts-container" class="news-river">
-            {/* 30 posts injected here via script */}
+            {/* 30 Cards will be injected here */}
           </div>
 
-          <div class="pagination-trigger">
+          <div class="pagination-footer">
             <button id="load-more-btn" class="more-btn">
               <span>Unroll More Stories</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
@@ -146,22 +146,22 @@ const socialStats = [
               <h3 class="widget-title">Connect</h3>
               <div class="social-list">
                 {socialStats.map(s => (
-                  <a href="#" class="social-row" style={`--bg:${s.bg}`}>
-                    <div class="social-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}/></svg>
+                  <div class="social-row">
+                    <div class="social-icon" style={`background:${s.bg}`}>
+                      <svg viewBox="0 0 24 24" fill="white"><path d={s.icon}/></svg>
                     </div>
                     <div class="social-text">
                       <span class="count">{s.count}</span>
                       <span class="label">{s.name}</span>
                     </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
 
             <div class="widget cta-widget card-box">
-              <h3>The Mwaniki Report</h3>
-              <p>Independent journalism. Straight to your inbox.</p>
+              <h3 class="cta-title">The Mwaniki Report</h3>
+              <p>Independent journalism straight to your inbox.</p>
               <form class="cta-form">
                 <input type="email" placeholder="Email address" required />
                 <button type="submit">Subscribe</button>
@@ -176,28 +176,28 @@ const socialStats = [
 
   <script is:inline define:vars={{ feedData }}>
     let currentMode = 'time';
-    let visibleCount = 30; 
+    let visibleCount = 30;
     const step = 15;
     
     const container = document.getElementById('posts-container');
     const loadBtn = document.getElementById('load-more-btn');
-    const btns = document.querySelectorAll('.toggle-btn');
+    const toggleBtns = document.querySelectorAll('.toggle-btn');
 
-    function renderFeed(append = false) {
+    function renderFeed(isAppend = false) {
       let posts = [...feedData];
       
       if (currentMode === 'category') {
         posts.sort((a, b) => a.category.localeCompare(b.category));
       }
 
-      const slice = posts.slice(append ? visibleCount - step : 0, visibleCount);
-      if (!append) container.innerHTML = '';
+      const slice = posts.slice(isAppend ? visibleCount - step : 0, visibleCount);
+      if (!isAppend) container.innerHTML = '';
 
       slice.forEach(post => {
+        // Create the card container manually to ensure CSS classes apply
         const article = document.createElement('article');
         article.className = 'river-item card-box fade-in';
         
-        // Ensure strictly styled HTML to avoid default browser link colors
         article.innerHTML = `
           <a href="/posts/${post.slug}" class="river-link">
             <div class="river-content">
@@ -220,13 +220,15 @@ const socialStats = [
       else loadBtn.style.display = 'flex';
     }
 
-    btns.forEach(b => b.addEventListener('click', () => {
-      btns.forEach(btn => btn.classList.remove('active'));
-      b.classList.add('active');
-      currentMode = b.dataset.mode;
-      visibleCount = 30;
-      renderFeed();
-    }));
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        visibleCount = 30;
+        renderFeed();
+      });
+    });
 
     loadBtn.addEventListener('click', () => {
       visibleCount += step;
@@ -237,7 +239,7 @@ const socialStats = [
   </script>
 
   <style>
-    /* --- THEME SYSTEM --- */
+    /* --- 1. CORE VARIABLES (Your exact dark theme) --- */
     :root {
       --bg: #0f172a; 
       --card: #1e293b; 
@@ -250,26 +252,31 @@ const socialStats = [
       --radius: 8px;
     }
 
-    /* Force global reset to prevent blue/purple links */
     * { box-sizing: border-box; }
     body { background: var(--bg); color: var(--text); font-family: var(--font-body); margin: 0; }
-    a { text-decoration: none; color: inherit; }
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    
+    /* NUCLEAR LINK RESET: Stops blue/purple text dead */
+    a, a:visited, a:active, a:hover {
+      text-decoration: none !important;
+      color: inherit !important;
+    }
 
     .main-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 
-    /* CARD STYLE */
+    /* CARD BOX - REAL CONTAINERS */
     .card-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.2s;
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius);
+        overflow: hidden;
+        display: block;
+        transition: border-color 0.2s;
     }
-    .card-box:hover { border-color: var(--accent); }
+    .card-box:hover { border-color: var(--accent) !important; }
 
-    /* STORIES SECTION */
-    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 0; }
+    /* --- STORIES BAR --- */
+    .stories-section { margin-bottom: 2rem; background: var(--card); border-bottom: 1px solid var(--border); padding: 1.2rem 0; }
     .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
     .stories-scroll::-webkit-scrollbar { display: none; }
     .story-item { flex: 0 0 auto; width: 75px; text-align: center; display: block; }
@@ -277,72 +284,76 @@ const socialStats = [
     .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
     .story-label { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; color: var(--text); text-transform: uppercase; display: block; }
 
-    /* HERO SECTION */
-    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3rem; }
+    /* --- HERO SECTION --- */
+    .hero-wrapper { display: grid; gap: 1.5rem; margin-bottom: 3.5rem; }
     @media (min-width: 900px) { .hero-wrapper { grid-template-columns: 2fr 1fr; } }
 
+    .hero-main { display: flex; flex-direction: column; }
     .hero-img-box { position: relative; aspect-ratio: 16/9; }
-    .hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--accent); color: white; padding: 4px 10px; font-weight: 800; font-size: 0.7rem; border-radius: 4px; }
+    .hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--accent); color: white; padding: 5px 12px; font-weight: 800; font-size: 0.75rem; border-radius: 4px; text-transform: uppercase; }
     .hero-text-box { padding: 1.5rem; }
-    .hero-text-box h1 { font-family: var(--font-head); font-size: 2.2rem; line-height: 1.1; margin: 0.5rem 0; color: var(--text); }
+    .hero-title { font-family: var(--font-head); font-size: 2.5rem; margin: 0.5rem 0; line-height: 1.1; color: var(--text) !important; }
+    .hero-excerpt { color: var(--muted); font-size: 1.1rem; line-height: 1.5; margin: 0; }
+    
     .meta-row { display: flex; gap: 0.5rem; font-family: var(--font-head); font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .cat-tag { color: var(--accent); }
+    .cat-tag { color: var(--accent) !important; }
 
     .hero-side { display: flex; flex-direction: column; gap: 1rem; }
     .sub-card { display: flex; gap: 1rem; padding: 1rem; align-items: center; }
-    .sub-img { width: 100px; height: 70px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
-    .sub-text h3 { margin: 0; font-family: var(--font-head); font-size: 1rem; line-height: 1.3; color: var(--text); }
-    .sub-cat { font-family: var(--font-head); font-size: 0.7rem; color: var(--accent); font-weight: 800; text-transform: uppercase; }
+    .sub-img { width: 110px; height: 75px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
+    .sub-title { margin: 0; font-family: var(--font-head); font-size: 1.05rem; line-height: 1.3; color: var(--text) !important; }
+    .sub-cat { font-family: var(--font-head); font-size: 0.7rem; color: var(--accent) !important; font-weight: 800; text-transform: uppercase; }
 
-    /* FEED HEADER & TOGGLE */
-    .feed-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-    .section-header { display: flex; align-items: center; gap: 1rem; flex: 1; }
-    .section-header h2 { font-family: var(--font-head); color: var(--text); margin: 0; font-size: 1.5rem; }
+    /* --- FEED HEADER --- */
+    .feed-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1.5rem; }
+    .section-title-box { display: flex; align-items: center; gap: 1rem; flex: 1; }
+    .section-title { font-family: var(--font-head); font-size: 1.8rem; margin: 0; white-space: nowrap; color: var(--text); }
     .header-line { height: 1px; background: var(--border); width: 100%; }
 
     .toggle-container { display: flex; background: var(--card); padding: 4px; border-radius: 50px; border: 1px solid var(--border); }
-    .toggle-btn { border: none; background: transparent; padding: 0.5rem 1.2rem; border-radius: 50px; font-family: var(--font-head); font-weight: 700; font-size: 0.8rem; cursor: pointer; color: var(--muted); }
-    .toggle-btn.active { background: var(--accent); color: white; }
+    .toggle-btn { border: none; background: transparent; padding: 0.6rem 1.4rem; border-radius: 50px; font-family: var(--font-head); font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--muted); transition: 0.2s; }
+    .toggle-btn.active { background: var(--accent) !important; color: white !important; }
 
-    /* THE RIVER LIST */
+    /* --- NEWS RIVER CARDS --- */
     .layout-grid { display: grid; gap: 3rem; }
     @media (min-width: 1024px) { .layout-grid { grid-template-columns: 1fr 320px; } }
 
     .news-river { display: flex; flex-direction: column; gap: 1.5rem; }
     .river-item { padding: 1.5rem; display: block; }
-    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; color: inherit; text-decoration: none; }
+    .river-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
     @media (min-width: 768px) { .river-link { flex-direction: row; } }
 
     .river-content { flex: 1; }
-    .river-title { font-family: var(--font-head); font-size: 1.4rem; margin: 0.5rem 0; line-height: 1.3; color: var(--text) !important; }
+    .river-title { font-family: var(--font-head); font-size: 1.6rem; margin: 0.5rem 0; line-height: 1.2; color: var(--text) !important; }
     .river-desc { color: var(--muted) !important; font-size: 1rem; line-height: 1.6; margin: 0; }
     .river-meta { display: flex; gap: 0.8rem; font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-    .river-cat { color: var(--accent); }
     .river-img { width: 100%; height: 200px; border-radius: 6px; flex-shrink: 0; overflow: hidden; }
-    @media (min-width: 768px) { .river-img { width: 220px; height: 150px; } }
+    @media (min-width: 768px) { .river-img { width: 260px; height: 170px; } }
 
-    /* SIDEBAR */
+    /* --- PAGINATION --- */
+    .pagination-footer { margin-top: 4rem; text-align: center; }
+    .more-btn { background: var(--accent); color: white !important; border: none; padding: 1.2rem 3.5rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; transition: transform 0.2s; }
+    .more-btn:hover { transform: scale(1.03); }
+
+    /* --- SIDEBAR --- */
     .sidebar-column { display: none; }
     @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; } }
     .widget { padding: 1.5rem; }
-    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text); }
-    .social-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    .social-icon { width: 32px; height: 32px; color: white; background: var(--bg); border-radius: 50%; padding: 6px; }
+    .widget-title { font-family: var(--font-head); font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--text); }
+    .social-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+    .social-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 7px; }
     .social-text { line-height: 1.1; font-family: var(--font-head); }
-    .social-text .count { font-weight: 800; font-size: 0.9rem; color: var(--text); }
+    .social-text .count { font-weight: 800; font-size: 0.95rem; color: var(--text); display: block; }
     .social-text .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
 
-    .cta-widget { background: var(--card); text-align: center; border: 2px solid var(--accent); }
-    .cta-widget h3 { color: var(--text); }
-    .cta-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+    .cta-widget { background: var(--card); text-align: center; border: 2px solid var(--accent) !important; }
+    .cta-title { color: var(--text) !important; margin-bottom: 0.5rem; }
+    .cta-form { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
     .cta-form input { padding: 0.8rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
     .cta-form button { background: var(--accent); color: white; border: none; padding: 0.8rem; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
 
-    /* PAGINATION */
-    .pagination-trigger { margin-top: 3rem; text-align: center; }
-    .more-btn { background: var(--accent); color: white; border: none; padding: 1.2rem 3rem; border-radius: 50px; font-family: var(--font-head); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 1rem; }
-
-    .fade-in { animation: fadeIn 0.4s ease forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* ANIMATION */
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </Layout>
