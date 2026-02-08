@@ -70,9 +70,7 @@ jobs:
           from bs4 import BeautifulSoup
           import textwrap
 
-          # --- 1. KEY ROTATION & HELPERS ---
-          def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
-          
+          # --- 1. KEYS & INTERNAL LINKS ---
           def get_gemini_key():
               cron = os.environ.get('CRON_SCHEDULE', '')
               key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 6 * * *': 'GEMINI_API_KEY1', '0 11 * * *': 'GEMINI_API_KEY2', '0 14 * * *': 'GEMINI_API_KEY', '0 18 * * *': 'GEMINI_API_KEY1', '0 22 * * *': 'GEMINI_WRITE_KEY'}
@@ -95,7 +93,7 @@ jobs:
                   except: continue
               return ctx
 
-          # --- 2. DISCOVERY & SCRAPE ---
+          # --- 2. DISCOVERY ---
           current_hour = datetime.datetime.utcnow().hour
           manual = os.environ.get('MANUAL_TOPIC', '').strip().lower()
           topic = manual if manual in ['sports', 'technology', 'business', 'politics'] else ('sports' if current_hour in [0, 14] else 'technology' if current_hour in [6, 22] else 'business' if current_hour in [11, 18] else 'politics')
@@ -127,19 +125,24 @@ jobs:
 
           if not full_raw_text: exit(0)
 
-          # --- 3. THE PROMPT ---
+          # --- 3. THE "ANTI-LAZINESS" PROMPT ---
           internal_linking = get_internal_link_context()
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
-          Write a 1700-word investigative report.
+          Write a 1700-word investigative report. YOU MUST REACH THIS WORD COUNT.
           SOURCE: {full_raw_text[:15000]}
           {internal_linking}
 
+          STRUCTURE DIRECTIVE:
+          - Develop 7 distinct sections with ## headers.
+          - Each section must be at least 250 words.
+          - Section 1: Answer-First GEO Hook.
+          - Section 2-6: Deep factual analysis, contrarian perspectives, and human asides.
+          - Section 7: Provocative Cliffhanger (No Summary).
+
           STYLE:
-          - ANSWER-FIRST: Address core hook in first 2 paragraphs.
-          - HUMAN RHYTHM: Blunt fragments, human asides, no robotic parallel structure.
+          - HUMAN RHYTHM: blunt fragments, cynicism, no robotic parallel structure.
           - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
-          - NO CONCLUSION: Stop abruptly with a provocative cliffhanger.
-          - CONTRARIAN: Frame from the DIRECTLY OPPOSITE angle of mainstream media.
+          - NO CONCLUSION: Never use 'In conclusion'.
           - LINKING: Naturally weave in 1 slug from the provided past articles.
 
           STRICT: NO EM-DASHES. UK English. ## Headers. 
@@ -152,7 +155,7 @@ jobs:
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 words]
           BODY:
-          [Full article content here]"""
+          [Start writing the full 1700-word investigative report here]"""
 
           # --- 4. GENERATION & GREEDY PARSING ---
           client_gemini = genai.Client(api_key=get_gemini_key())
@@ -169,23 +172,28 @@ jobs:
 
           parsed = {
               "TITLE": get_field("TITLE", raw_output) or "Analysis",
-              "DESC": get_field("DESCRIPTION", raw_output) or "Deep dive analysis.",
+              "DESC": get_field("DESCRIPTION", raw_output) or "Detailed report.",
               "CAPTION": get_field("IMAGE_CAPTION", raw_output) or "Progress.",
               "TAGS": get_field("TAGS", raw_output) or topic,
               "IMG": get_field("IMAGE_KEYWORD", raw_output) or topic,
               "BODY": ""
           }
 
-          # GREEDY BODY CAPTURE: Grabs everything from 'BODY:' to the end
+          # GREEDY BODY CAPTURE
           body_match = re.search(r"BODY:\s*(.*)", raw_output, re.S | re.I)
           if body_match:
               parsed["BODY"] = body_match.group(1).strip()
+
+          # --- 5. VALIDATION: STOP INCOMPLETE ARTICLES ---
+          if len(parsed["BODY"]) < 4000:
+              print(f"❌ AI FAILURE: Article only {len(parsed['BODY'])} chars. Rejecting run.")
+              exit(1)
 
           for k in parsed:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|Summary|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 5. SCHEMA & SAVE ---
+          # --- 6. SCHEMA & SAVE ---
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           def get_img(q):
               try:
@@ -244,10 +252,10 @@ jobs:
           git pull origin main --rebase
           git stash pop || echo "Nothing to pop"
 
-      - name: Commit and push article
+      - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: full publish ${{ github.run_id }}"
+          commit_message: "content: full human publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
         env:
