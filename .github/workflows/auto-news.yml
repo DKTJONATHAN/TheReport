@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic (sports, technology, business)'
+        description: 'Force a topic'
         required: false
         default: ''
 
@@ -30,7 +30,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required for internal link scanning
+          fetch-depth: 0 
           ref: ${{ env.DEFAULT_BRANCH }}
           token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: true
@@ -70,7 +70,7 @@ jobs:
           from bs4 import BeautifulSoup
           import textwrap
 
-          # --- 1. HELPERS: INTERNAL LINKING & KEYS ---
+          # --- 1. HELPERS ---
           def get_internal_link_context():
               posts_path = os.environ.get('POSTS_DIR')
               if not os.path.exists(posts_path): return ""
@@ -90,16 +90,15 @@ jobs:
 
           cron = os.environ.get('CRON_SCHEDULE', '')
           key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 6 * * *': 'GEMINI_API_KEY1', '0 11 * * *': 'GEMINI_API_KEY2', '0 14 * * *': 'GEMINI_API_KEY', '0 18 * * *': 'GEMINI_API_KEY1', '0 22 * * *': 'GEMINI_WRITE_KEY'}
-          target_key_name = key_map.get(cron, 'GEMINI_WRITE_KEY')
-          gemini_key = os.environ.get(target_key_name) or os.environ.get('GEMINI_WRITE_KEY')
+          gemini_key = os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY')) or os.environ.get('GEMINI_WRITE_KEY')
 
           apify_pool = [os.environ.get(v) for v in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5'] if os.environ.get(v)]
           selected_apify_token = random.choice(apify_pool) if apify_pool else None
 
-          # --- 3. TOPIC & DISCOVERY ---
+          # --- 2. TOPIC & DISCOVERY ---
           current_hour_utc = datetime.datetime.utcnow().hour
-          manual_input = os.environ.get('MANUAL_TOPIC', '').strip().lower()
-          topic = manual_input if manual_input in ['sports', 'technology', 'business', 'politics', 'entertainment'] else ('sports' if current_hour_utc in [0, 14] else 'technology' if current_hour_utc in [6, 22] else 'business' if current_hour_utc in [11, 18] else 'politics')
+          manual = os.environ.get('MANUAL_TOPIC', '').strip().lower()
+          topic = manual if manual in ['sports', 'technology', 'business', 'politics', 'entertainment'] else ('sports' if current_hour_utc in [0, 14] else 'technology' if current_hour_utc in [6, 22] else 'business' if current_hour_utc in [11, 18] else 'politics')
           
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
@@ -117,7 +116,7 @@ jobs:
                       url = link_tag['href']
                       u_hash = hashlib.md5(url.encode()).hexdigest()
                       if u_hash not in memory and url.startswith("http"):
-                          run = apify_client.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox", "removeElementsCssSelector": "nav, footer, script, style, .ads, header"})
+                          run = apify_client.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
                           data = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
                           if data and len(data[0].get('markdown', '')) > 800:
                               full_raw_content, final_hash = data[0]['markdown'], u_hash
@@ -126,19 +125,19 @@ jobs:
 
           if not full_raw_content: exit(0)
 
-          # --- 7. HUMAN CORE & GEO PROMPT ---
-          internal_linking = get_internal_link_context()
+          # --- 3. PROMPT ---
+          internal_links = get_internal_link_context()
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
           Write a 1700-word investigative report based on this:
           SOURCE CONTENT: {full_raw_content[:15000]}
-          {internal_linking}
+          {internal_links}
 
           STYLE GUIDE:
-          - ANSWER-FIRST (GEO): Directly address the core news hook in the first two paragraphs.
+          - ANSWER-FIRST: Address the core hook in the first two paragraphs.
           - HUMAN RHYTHM: Vary sentence lengths, use blunt fragments, add human asides.
-          - INTERNAL LINKING: Mention one of the PAST ARTICLES naturally and link to its slug.
+          - INTERNAL LINKING: Naturally weave in 1 past article slug from the list provided.
           - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
-          - NO CONCLUSION: Never use 'In conclusion'. Stop abruptly with a provocative cliffhanger.
+          - NO CONCLUSION: Stop abruptly with a provocative cliffhanger.
           - CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of the mainstream news.
 
           STRICT: NO EM-DASHES. UK English. ## Headers only.
@@ -146,38 +145,42 @@ jobs:
           OUTPUT FORMAT:
           TITLE: [headline]
           DESCRIPTION: [blunt sentence]
-          IMAGE_CAPTION: [cynical 1-sentence human-toned caption]
+          IMAGE_CAPTION: [cynical 1-sentence caption]
           CATEGORY: [{topic.title()}]
-          TAGS: [3 tags]
+          TAGS: [3 tags separated by commas]
           IMAGE_KEYWORD: [2 words]
           BODY: [Full article. No summary headers.]"""
 
           client = genai.Client(api_key=gemini_key)
           response = client.models.generate_content(model="gemini-3-flash-preview", contents=prompt, config=types.GenerateContentConfig(temperature=0.85, max_output_tokens=8192))
           
-          # --- 9. PARSE & CLEAN ---
-          output = response.text.strip()
-          parsed = {"TITLE": "", "DESC": "", "IMG": topic, "CAPTION": "", "BODY": ""}
-          cur = None
-          for line in output.splitlines():
+          # --- 4. DEFENSIVE PARSING ---
+          output_text = response.text.strip()
+          # Pre-initialize keys with defaults to avoid KeyError
+          parsed = {"TITLE": "Report", "DESC": "News report.", "TAGS": topic, "IMG": topic, "CAPTION": "News image", "BODY": ""}
+          cur_sect = None
+          
+          for line in output_text.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESC"] = line.replace("DESCRIPTION:", "").strip()
+              elif line.startswith("TAGS:"): parsed["TAGS"] = line.replace("TAGS:", "").strip()
               elif line.startswith("IMAGE_CAPTION:"): parsed["CAPTION"] = line.replace("IMAGE_CAPTION:", "").strip()
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMG"] = line.replace("IMAGE_KEYWORD:", "").strip()
-              elif line.startswith("BODY:"): cur = "BODY"
-              elif cur == "BODY": parsed["BODY"] += line + "\n"
+              elif line.startswith("BODY:"): cur_sect = "BODY"
+              elif cur_sect == "BODY": parsed["BODY"] += line + "\n"
 
-          for k in ["TITLE", "DESC", "BODY", "CAPTION"]:
+          # Scrub dashes and AI slop from all keys safely
+          for k in parsed:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              parsed[k] = re.sub(r'(?i)(In conclusion|Summary|To summarize),?.*', '', parsed[k])
+              parsed[k] = re.sub(r'(?i)(In conclusion|Summary|To summarize),?.*', '', parsed[k]).strip()
 
-          # --- 11. SCHEMA & SAVE ---
+          # --- 5. SCHEMA & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           def get_img(q):
               try:
                   r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                  return r.json()['urls']['regular']
+                  return r.json()['urls']['regular'] if r.status_code == 200 else "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
               except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
           
           img_url = get_img(parsed['IMG'])
@@ -201,7 +204,7 @@ jobs:
           image: "{img_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
-          tags: {json.dumps(parsed['TAGS'].split(','))}
+          tags: {json.dumps([t.strip() for t in parsed["TAGS"].split(",")])}
           slug: "{slug}"
           ---
 
@@ -235,7 +238,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: human-core publish ${{ github.run_id }}"
+          commit_message: "content: quality publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: ${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json
         env:
