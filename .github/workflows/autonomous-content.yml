@@ -1,8 +1,7 @@
 name: International News (Human Core & GEO)
 
 on:
-  # REMOVED 'push' to stop the infinite loop. 
-  # It now only runs at your set times or when you click "Run workflow".
+  # Loop fixed: only runs on schedule or manual trigger.
   schedule:
     - cron: '0 2 * * *'   # 5:00 AM EAT (Politics)
     - cron: '0 5 * * *'   # 8:00 AM EAT (Sports)
@@ -64,8 +63,10 @@ jobs:
           from apify_client import ApifyClient
           import textwrap
 
-          # --- 1. ROTATION LOGIC ---
-          def get_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
+          # --- 1. ROTATION LOGIC (FIXED) ---
+          def get_clean_pool(v): 
+              return [k.strip() for k in v.split(",") if k.strip()]
+          
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           api_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
@@ -120,7 +121,7 @@ jobs:
 
           STYLE GUIDE (CRITICAL):
           1. ANSWER-FIRST: Directly address the core news hook in the first two paragraphs.
-          2. HUMAN RHYTHM: Vary sentence lengths. Use short, blunt fragments. Add asides like "Honestly," or "What's actually wild is...".
+          2. HUMAN RHYTHM: Vary sentence lengths. Use short fragments. Add asides like "Honestly," or "What's actually wild is...".
           3. NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
           4. NO CONCLUSION: Never use 'In conclusion' or 'Summary'. Stop abruptly with a provocative cliffhanger.
           5. CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of the mainstream news. 
@@ -128,7 +129,7 @@ jobs:
           STRICT: NO EM-DASHES. UK English. ## Headers only.
 
           OUTPUT:
-          TITLE: [provocative headline]
+          TITLE: [headline]
           DESCRIPTION: [blunt sentence]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
@@ -150,7 +151,7 @@ jobs:
 
           for k in ["TITLE", "DESC", "BODY"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Summary),?.*', '', parsed[k])
+              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Summary|Conclusion),?.*', '', parsed[k])
 
           # --- 5. SAVE ---
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
