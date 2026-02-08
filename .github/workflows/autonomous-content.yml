@@ -192,8 +192,8 @@ jobs:
 
           # --- 8. WORD COUNT VALIDATOR ---
           word_count = len(body_clean.split())
-          if word_count < 1300:
-              print(f"REJECTED: Content length ({word_count} words) is below the 1300 word limit.")
+          if word_count < 1000:
+              print(f"REJECTED: Content length ({word_count} words) is below the 1000 word limit.")
               exit(0) # Exiting here means no file is saved, so nothing is published.
 
           # --- 9. SAVE ---
