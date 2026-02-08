@@ -1,4 +1,4 @@
-name: International News (News API & Gemini)
+name: International News (Human Core & GEO)
 
 on:
   schedule:
@@ -60,11 +60,28 @@ jobs:
           from google.genai import types
           import textwrap
 
-          # --- 1. ROTATION LOGIC ---
+          # --- 1. ROTATION & INTERNAL LINK HELPERS ---
           def get_clean_pool(v): 
               return [k.strip() for k in v.split(",") if k.strip()]
           
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
+
+          def get_internal_context():
+              posts_dir = os.environ.get("POSTS_DIR")
+              if not os.path.exists(posts_dir): return ""
+              files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
+              if not files: return ""
+              sample = random.sample(files, min(len(files), 3))
+              context = "PAST ARTICLES FOR INTERNAL LINKING:\n"
+              for f in sample:
+                  try:
+                      with open(os.path.join(posts_dir, f), 'r') as content:
+                          txt = content.read()
+                          title_match = re.search(r'title:\s*"(.*?)"', txt)
+                          title = title_match.group(1) if title_match else f
+                          context += f"- Title: {title} | Slug: /posts/{f.replace('.md', '')}\n"
+                  except: continue
+              return context
 
           def run_gemini(p):
               random.shuffle(gem_pool)
@@ -77,10 +94,10 @@ jobs:
                           config=types.GenerateContentConfig(temperature=0.88, max_output_tokens=8192)
                       ).text.strip()
                   except Exception as e:
-                      print(f"⚠️ Gemini Key Failed: {e}"); continue
+                      print(f"Key Failed: {e}"); continue
               return None
 
-          # --- 2. TOPIC & DISCOVERY (News API Only) ---
+          # --- 2. DISCOVERY ---
           cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
           memory_path = os.environ.get('MEMORY_FILE')
@@ -94,34 +111,37 @@ jobs:
           for a in articles:
               u = a.get('url', '')
               h = hashlib.md5(u.encode()).hexdigest()
-              # We need a decent snippet for Gemini to work with
               if h not in memory and len(a.get('description', '')) > 50:
                   target_article = a
                   final_hash = h
                   break
 
           if not target_article:
-              print("❌ Termination: No new content found via News API."); exit(0)
+              print("No new content found."); exit(0)
 
-          # --- 3. THE "HUMAN CORE" GEO PROMPT ---
+          # --- 3. THE PROMPT (Added Caption Requirement) ---
+          internal_linking_context = get_internal_context()
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
-          Write a 1700-word investigative report based on this real-time news snippet:
-          TITLE: {target_article['title']}
-          SUMMARY: {target_article['description']}
-          SNIPPET: {target_article['content']}
+          Write a 1700-word investigative report.
+          SOURCE TITLE: {target_article['title']}
+          SOURCE SNIPPET: {target_article['content']}
 
-          STYLE GUIDE (CRITICAL):
-          1. ANSWER-FIRST: Directly address the core news hook in the first two paragraphs.
-          2. HUMAN RHYTHM: Vary sentence lengths. Mix long sentences with short, blunt fragments. Add asides like "Honestly," or "What's actually wild is...".
-          3. NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
-          4. NO CONCLUSION: Never use 'In conclusion' or 'Summary'. Stop abruptly with a provocative cliffhanger.
-          5. CONTRARIAN TWIST: Identify the mainstream consensus and write from the DIRECTLY OPPOSITE angle.
+          {internal_linking_context}
+
+          STYLE GUIDE:
+          - ANSWER-FIRST: Address the core hook in the first two paragraphs.
+          - HUMAN RHYTHM: Vary sentence lengths, use blunt fragments.
+          - INTERNAL LINKING: Mention one of the PAST ARTICLES naturally and link to its slug.
+          - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
+          - NO CONCLUSION: Stop abruptly with a provocative cliffhanger.
+          - CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of mainstream news.
 
           STRICT: NO EM-DASHES. UK English. ## Headers only.
 
-          OUTPUT:
-          TITLE: [provocative headline]
+          OUTPUT FORMAT:
+          TITLE: [headline]
           DESCRIPTION: [blunt sentence]
+          IMAGE_CAPTION: [A short, cynical, 1-sentence human-toned caption for the header image related to this topic. Max 20 words.]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 words]
@@ -130,35 +150,53 @@ jobs:
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 4. PARSE & CLEAN ---
-          parsed = {"TITLE": "Report", "DESC": "", "IMG": topic, "BODY": ""}
+          # --- 4. PARSE & CLEAN (Added Caption Parsing) ---
+          parsed = {"TITLE": "Report", "DESC": "", "IMG": topic, "CAPTION": "", "BODY": ""}
           cur = None
           for line in output.splitlines():
               if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
               elif line.startswith("DESCRIPTION:"): parsed["DESC"] = line.replace("DESCRIPTION:", "").strip()
+              elif line.startswith("IMAGE_CAPTION:"): parsed["CAPTION"] = line.replace("IMAGE_CAPTION:", "").strip()
               elif line.startswith("IMAGE_KEYWORD:"): parsed["IMG"] = line.replace("IMAGE_KEYWORD:", "").strip()
               elif line.startswith("BODY:"): cur = "BODY"
               elif cur == "BODY": parsed["BODY"] += line + "\n"
 
-          for k in ["TITLE", "DESC", "BODY"]:
+          for k in ["TITLE", "DESC", "BODY", "CAPTION"]:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Summary|Conclusion),?.*', '', parsed[k])
 
-          # --- 5. IMAGE & SAVE ---
+          # --- 5. SCHEMA & SAVE (Added Caption to Frontmatter) ---
+          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+          
           def get_img(q):
               try:
                   r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
                   return r.json()['urls']['regular']
               except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+          
+          img_url = get_img(parsed['IMG'])
 
+          schema_json = {
+              "@context": "https://schema.org",
+              "@type": "AnalysisNewsArticle",
+              "headline": parsed['TITLE'],
+              "description": parsed['DESC'],
+              "datePublished": date_now,
+              "author": [{"@type": "Person", "name": "Jonathan Mwaniki", "url": "https://jonathanmwaniki.co.ke"}],
+              "image": [img_url],
+              "articleBody": parsed['BODY'][:500] + "..." 
+          }
+
+          # Added imageCaption to frontmatter block below
           final_md = textwrap.dedent(f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
-          date: "{datetime.datetime.utcnow().date()}"
+          date: "{date_now}"
           author: "Jonathan Mwaniki"
-          image: "{get_img(parsed['IMG'])}"
+          image: "{img_url}"
+          imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
           slug: "{slug}"
           ---
@@ -166,6 +204,10 @@ jobs:
           # {parsed['TITLE']}
 
           {parsed['BODY'].strip()}
+
+          <script type="application/ld+json">
+          {json.dumps(schema_json, indent=2)}
+          </script>
           """).strip()
 
           out_dir = os.environ.get("POSTS_DIR")
@@ -174,18 +216,21 @@ jobs:
           
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f"✅ Published: {slug}")
           EOF
 
       - name: Git Safety Pull
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git stash -u
+          git fetch origin main
           git pull origin main --rebase
+          git stash pop || echo "Nothing to pop"
 
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: News API humanized publish"
+          commit_message: "content: human-core publish with captions"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
