@@ -1,16 +1,16 @@
-name: FB Gossip Bot (2 Hours)
+name: FB Gossip Bot (Stateless)
 
 on:
   push:
     paths:
-      - '.github/workflows/fb-gossip.yml' # Runs immediately when you save
+      - '.github/workflows/fb-gossip.yml'
   schedule:
-    # Runs at minute 10 of every 2nd hour (6:10 AM, 8:10 AM, etc.)
-    - cron: '10 3,5,7,9,11,13,15,17,19,21 * * *'
+    # Runs every 2 hours (odd hours)
+    - cron: '15 3,5,7,9,11,13,15,17,19,21 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write # CRITICAL for saving memory file
+  contents: read # We only read now, no writing = no errors
 
 jobs:
   post-gossip-text:
@@ -18,8 +18,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,61 +27,61 @@ jobs:
       - name: Install dependencies
         run: pip install requests google-genai apify-client beautifulsoup4
 
-      - name: Run Gossip Engine
+      - name: Scrape & Post (No Memory)
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
-          MEMORY_FILE: .github/fb_gossip_memory.json
         run: |
           python << 'EOF'
-          import os, json, requests, random, hashlib, re, sys
+          import os, requests, random, sys
           from google import genai
           from apify_client import ApifyClient
           from bs4 import BeautifulSoup
 
-          # 1. SETUP MEMORY
-          mem_path = os.environ.get('MEMORY_FILE')
-          if os.path.exists(mem_path):
-              with open(mem_path, 'r') as f: memory = json.load(f)
-          else:
-              memory = []
-
-          # 2. DISCOVERY (KenyaMoja)
+          # 1. DISCOVERY (KenyaMoja Entertainment)
           print("🔍 Checking KenyaMoja Entertainment...")
           try:
               res = requests.get("https://www.kenyamoja.com/entertainment", headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
               items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
           except Exception as e:
-              print(f"❌ Connection failed: {e}")
+              print(f"❌ Network error: {e}")
               sys.exit(1)
 
+          if not items:
+              print("⚠️ No items found.")
+              sys.exit(0)
+
+          # 2. SELECT RANDOM STORY (Stateless Mode)
+          # We pick one from the Top 5 to ensure variety without memory
+          top_stories = items[:5]
+          selected_item = random.choice(top_stories)
+          
+          link = selected_item.select_one('.news-title a')
+          if not link: sys.exit(0)
+          
+          target_url = link['href']
+          print(f"🕷️ Selected Story: {target_url}")
+
           # 3. SCRAPE (Apify)
-          raw_story, final_hash = None, None
+          raw_story = None
           apify_keys = [k.strip() for k in os.environ.get("APIFY_POOL", "").split(",") if k.strip()]
           apify = ApifyClient(random.choice(apify_keys))
 
-          for item in items:
-              link = item.select_one('.news-title a')
-              if link:
-                  url = link['href']
-                  h = hashlib.md5(url.encode()).hexdigest()
-                  if h not in memory:
-                      print(f"🕷️ Scraping: {url}")
-                      try:
-                          run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1})
-                          data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-                          if data and len(data[0].get('markdown', '')) > 300:
-                              raw_story = data[0]['markdown']
-                              final_hash = h
-                              break
-                      except: continue
+          try:
+              run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": target_url}], "maxCrawlPages": 1})
+              data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
+              if data and len(data[0].get('markdown', '')) > 300:
+                  raw_story = data[0]['markdown']
+          except Exception as e:
+              print(f"❌ Scrape failed: {e}")
+              sys.exit(1)
           
           if not raw_story:
-              print("⚠️ No new content found. Exiting.")
+              print("⚠️ Content too short or empty.")
               sys.exit(0)
 
-          # 4. GENERATE (Gemini)
+          # 4. GENERATE (Gemini - Savage Mode)
           print("🤖 Generating Tea...")
           gem_keys = [k.strip() for k in os.environ.get("GEMINI_POOL", "").split(",") if k.strip()]
           gemini = genai.Client(api_key=random.choice(gem_keys))
@@ -91,21 +89,25 @@ jobs:
           prompt = f"""ACT AS A SAVAGE NAIROBI GOSSIP COLUMNIST.
           SOURCE: {raw_story[:8000]}
           TASK: Write a 150-word Facebook post.
+          
           STYLE: 
-          - HOOK: Start with a savage one-liner.
-          - SLANG: Use 'Kanairo', 'Tea', 'Wueh'.
+          - HOOK: Start with a savage, ironic one-liner.
+          - SLANG: Use 'Kanairo', 'Tea', 'Wueh', 'Mambo ni mengi'.
           - TONE: Cynical, gossipy, no filter.
-          - NO AI SLOP: No 'tapestry', 'realm'.
+          - NO AI SLOP: No 'tapestry', 'realm', 'vibrant'.
           - END: A spicy question.
           TAGS: #TMReport #Buzz #Trending"""
           
-          res = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
-          gossip_text = res.text.strip().replace("*", "").replace("#", "") # Clean basic formatting
+          try:
+              res = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+              gossip_text = res.text.strip().replace("*", "").replace("#", "")
+          except Exception as e:
+              print(f"❌ Gemini Error: {e}")
+              sys.exit(1)
           
-          # 5. POST (Facebook Graph API)
+          # 5. POST (Facebook Feed - Text Post)
           print("🚀 Posting to Facebook...")
           fb_token = os.environ.get("FB_TOKEN")
-          # Append hashtags manually to ensure they exist
           final_msg = f"{gossip_text}\n\n#TMReport #Buzz #Trending"
           
           resp = requests.post(
@@ -115,19 +117,7 @@ jobs:
           
           if resp.status_code == 200:
               print("✅ Posted successfully!")
-              memory.append(final_hash)
-              with open(mem_path, 'w') as f: json.dump(memory[-50:], f)
           else:
-              print(f"❌ Facebook Error: {resp.text}")
+              print(f"❌ Facebook API Error: {resp.text}")
               sys.exit(1)
           EOF
-
-      - name: Save Memory
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/fb_gossip_memory.json
-          # Pull latest changes before committing to avoid conflicts
-          git pull origin main --rebase
-          git commit -m "bot: updated gossip memory" || echo "No changes to commit"
-          git push origin main
