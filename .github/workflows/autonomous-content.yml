@@ -1,13 +1,19 @@
-name: International News (Human Core & GEO)
+name: Global Scandal Hunter (Tabloid Edition)
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 5:00 AM EAT (Politics)
-    - cron: '0 5 * * *'   # 8:00 AM EAT (Sports)
-    - cron: '0 8 * * *'   # 11:00 AM EAT (Business)
-    - cron: '0 11 * * *'  # 2:00 PM EAT (Tech)
-    - cron: '0 14 * * *'  # 5:00 PM EAT (Sports)
-    - cron: '0 18 * * *'  # 9:00 PM EAT (Entertainment)
+    # 5:15 AM EAT: Politics (The "Morning Coffee" Scandal)
+    - cron: '15 2 * * *'   
+    # 8:15 AM EAT: Relationship/Lifestyle Drama
+    - cron: '15 5 * * *'   
+    # 11:15 AM EAT: Tech Leaks/Hacks
+    - cron: '15 8 * * *'   
+    # 2:15 PM EAT: Crime & Safety
+    - cron: '15 11 * * *'  
+    # 5:15 PM EAT: Entertainment/Celeb Gossip
+    - cron: '15 14 * * *'  
+    # 9:15 PM EAT: Late Night Confessions
+    - cron: '15 18 * * *'  
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -60,10 +66,8 @@ jobs:
           from google.genai import types
           import textwrap
 
-          # --- 1. ROTATION & INTERNAL LINK HELPERS ---
-          def get_clean_pool(v): 
-              return [k.strip() for k in v.split(",") if k.strip()]
-          
+          # --- 1. SETUP ---
+          def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
 
           def get_internal_context():
@@ -72,14 +76,14 @@ jobs:
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
               sample = random.sample(files, min(len(files), 3))
-              context = "PAST ARTICLES FOR INTERNAL LINKING:\n"
+              context = "PAST SCANDALS:\n"
               for f in sample:
                   try:
                       with open(os.path.join(posts_dir, f), 'r') as content:
                           txt = content.read()
                           title_match = re.search(r'title:\s*"(.*?)"', txt)
                           title = title_match.group(1) if title_match else f
-                          context += f"- Title: {title} | Slug: /posts/{f.replace('.md', '')}\n"
+                          context += f"- {title}: /posts/{f.replace('.md', '')}\n"
                   except: continue
               return context
 
@@ -91,21 +95,42 @@ jobs:
                       return client.models.generate_content(
                           model="gemini-3-flash-preview", 
                           contents=p,
-                          config=types.GenerateContentConfig(temperature=0.88, max_output_tokens=8192)
+                          config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
                       ).text.strip()
                   except Exception as e:
                       print(f"Key Failed: {e}"); continue
               return None
 
-          # --- 2. DISCOVERY ---
-          cron_map = {'0 2 * * *': 'politics', '0 5 * * *': 'sports', '0 8 * * *': 'business', '0 11 * * *': 'technology', '0 14 * * *': 'sports', '0 18 * * *': 'entertainment'}
+          # --- 2. TOPIC SELECTION ---
+          cron_map = {
+              '15 2 * * *': 'politics',
+              '15 5 * * *': 'relationships',
+              '15 8 * * *': 'technology',
+              '15 11 * * *': 'crime',
+              '15 14 * * *': 'entertainment',
+              '15 18 * * *': 'confessions'
+          }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
+          
+          query_map = {
+              'politics': 'scandal OR corruption OR exposed OR secret',
+              'relationships': 'drama OR cheating OR divorce OR scandal',
+              'technology': 'hack OR leak OR dangerous OR lawsuit',
+              'crime': 'heist OR fraud OR scam OR cartel',
+              'entertainment': 'gossip OR feud OR viral OR exposed',
+              'confessions': 'shocking OR weird OR mystery OR secret'
+          }
+          query = query_map.get(topic, topic)
+
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
           news_api = os.environ.get("NEWSAPI_KEY")
-          news_url = f"https://newsapi.org/v2/everything?q={topic}&language=en&sortBy=publishedAt&apiKey={news_api}"
-          articles = requests.get(news_url).json().get('articles', [])
+          news_url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=relevancy&apiKey={news_api}"
+          
+          try:
+              articles = requests.get(news_url).json().get('articles', [])
+          except: exit(0)
 
           target_article, final_hash = None, None
           for a in articles:
@@ -119,53 +144,60 @@ jobs:
           if not target_article:
               print("No new content found."); exit(0)
 
-          # --- 3. THE PROMPT (Added Caption Requirement) ---
+          # --- 3. PROMPT: THE TABLOID SCIENTIST ---
           internal_linking_context = get_internal_context()
-          prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
-          Write a 1700-word investigative report.
+          prompt = f"""OPERATE AS A SAVAGE TABLOID COLUMNIST. 
+          
           SOURCE TITLE: {target_article['title']}
-          SOURCE SNIPPET: {target_article['content']}
-
+          SOURCE SUMMARY: {target_article['description']}
+          
           {internal_linking_context}
 
-          STYLE GUIDE:
-          - ANSWER-FIRST: Address the core hook in the first two paragraphs.
-          - HUMAN RHYTHM: Vary sentence lengths, use blunt fragments.
-          - INTERNAL LINKING: Mention one of the PAST ARTICLES naturally and link to its slug.
-          - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
-          - NO CONCLUSION: Stop abruptly with a provocative cliffhanger.
-          - CONTRARIAN TWIST: Frame this from the DIRECTLY OPPOSITE angle of mainstream news.
+          MANDATE:
+          1. HEADLINE: Must be "Click-Bait" style. Use words like EXPOSED, SECRET, SCAM, SHOCKING.
+          2. ANGLE: Focus on the scandal, the money, or the betrayal.
+          3. ANSWER-FIRST: Tell the secret in para 1.
+          4. SUB-HEADERS: Use punchy, 3-word headers (e.g., "The Dirty Truth").
+          5. END: A dark warning or a savage question.
 
-          STRICT: NO EM-DASHES. UK English. ## Headers only.
+          STRICT: NO EM-DASHES. UK English. ## Headers.
 
           OUTPUT FORMAT:
-          TITLE: [headline]
-          DESCRIPTION: [blunt sentence]
-          IMAGE_CAPTION: [A short, cynical, 1-sentence human-toned caption for the header image related to this topic. Max 20 words.]
+          TITLE: [Shocking Tabloid Headline]
+          DESCRIPTION: [Tease the scandal]
+          IMAGE_CAPTION: [Cynical caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 words]
-          BODY: [Full article. No summary headers.]"""
+          IMAGE_KEYWORD: [2 words for visual metaphor]
+          BODY: [Full Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 4. PARSE & CLEAN (Added Caption Parsing) ---
-          parsed = {"TITLE": "Report", "DESC": "", "IMG": topic, "CAPTION": "", "BODY": ""}
-          cur = None
-          for line in output.splitlines():
-              if line.startswith("TITLE:"): parsed["TITLE"] = line.replace("TITLE:", "").strip()
-              elif line.startswith("DESCRIPTION:"): parsed["DESC"] = line.replace("DESCRIPTION:", "").strip()
-              elif line.startswith("IMAGE_CAPTION:"): parsed["CAPTION"] = line.replace("IMAGE_CAPTION:", "").strip()
-              elif line.startswith("IMAGE_KEYWORD:"): parsed["IMG"] = line.replace("IMAGE_KEYWORD:", "").strip()
-              elif line.startswith("BODY:"): cur = "BODY"
-              elif cur == "BODY": parsed["BODY"] += line + "\n"
+          # --- 4. PARSE & CLEAN ---
+          def extract(key, text):
+              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              return m.group(1).strip() if m else None
 
-          for k in ["TITLE", "DESC", "BODY", "CAPTION"]:
+          parsed = {
+              "TITLE": extract("TITLE", output) or target_article['title'],
+              "DESC": extract("DESCRIPTION", output) or "Full story inside.",
+              "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
+              "IMG": extract("IMAGE_KEYWORD", output) or topic,
+              "BODY": ""
+          }
+
+          body_match = re.search(r"BODY:\s*(.*)", output, re.S | re.I)
+          if body_match:
+              parsed["BODY"] = body_match.group(1).strip()
+          else:
+              parsed["BODY"] = output.split("BODY:")[-1].strip()
+
+          for k in parsed:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Summary|Conclusion),?.*', '', parsed[k])
+              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 5. SCHEMA & SAVE (Added Caption to Frontmatter) ---
+          # --- 5. PUBLISH ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
@@ -184,12 +216,10 @@ jobs:
               "headline": parsed['TITLE'],
               "description": parsed['DESC'],
               "datePublished": date_now,
-              "author": [{"@type": "Person", "name": "Jonathan Mwaniki", "url": "https://jonathanmwaniki.co.ke"}],
-              "image": [img_url],
-              "articleBody": parsed['BODY'][:500] + "..." 
+              "author": {"@type": "Person", "name": "Jonathan Mwaniki"},
+              "image": [img_url]
           }
 
-          # Added imageCaption to frontmatter block below
           final_md = textwrap.dedent(f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
@@ -201,9 +231,7 @@ jobs:
           slug: "{slug}"
           ---
 
-          # {parsed['TITLE']}
-
-          {parsed['BODY'].strip()}
+          {parsed['BODY']}
 
           <script type="application/ld+json">
           {json.dumps(schema_json, indent=2)}
@@ -231,6 +259,6 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: human-core publish with captions"
+          commit_message: "content: tabloid mode publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
