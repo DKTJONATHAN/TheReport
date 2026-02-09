@@ -1,4 +1,4 @@
-name: Global Scandal Hunter (SEO-Safe Edition)
+name: Global Scandal Hunter (SEO-Safe)
 
 on:
   schedule:
@@ -94,7 +94,7 @@ jobs:
                   try:
                       client = genai.Client(api_key=k)
                       return client.models.generate_content(
-                          model="gemini-3-flash-preview", 
+                          model="gemini-2.0-flash", 
                           contents=p,
                           config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
                       ).text.strip()
@@ -117,7 +117,7 @@ jobs:
           query_map = {
               'politics': 'scandal OR corruption OR exposed OR secret',
               'relationships': 'drama OR cheating OR divorce OR scandal',
-              'technology': 'hack OR leak OR lawsuit OR danger', # "Danger" performs better than "Dangerous"
+              'technology': 'hack OR leak OR lawsuit OR danger', 
               'crime': 'heist OR fraud OR scam OR cartel',
               'entertainment': 'feud OR viral OR exposed OR controversy',
               'confessions': 'shocking OR mystery OR secret'
@@ -139,7 +139,11 @@ jobs:
           for a in articles:
               u = a.get('url', '')
               h = hashlib.md5(u.encode()).hexdigest()
-              if h not in memory and len(a.get('description', '')) > 50:
+              
+              # --- FIX IS HERE: Force description to string ---
+              desc = a.get('description') or ""
+              
+              if h not in memory and len(desc) > 50:
                   target_article = a
                   final_hash = h
                   break
@@ -148,13 +152,13 @@ jobs:
               print("No new content found."); exit(0)
 
           # --- 3. PROMPT: THE TRUSTED INSIDER ---
-          internal_linking_context = get_internal_context()
+          internal_linking = get_internal_context()
           prompt = f"""OPERATE AS A SAVAGE BUT CREDIBLE INSIDER COLUMNIST. 
           
           SOURCE TITLE: {target_article['title']}
           SOURCE SUMMARY: {target_article['description']}
           
-          {internal_linking_context}
+          {internal_linking}
 
           MANDATE:
           1. HEADLINE: Use "Curiosity Gap" + "Specific Benefit". AVOID vague clickbait.
