@@ -88,8 +88,7 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              # PRIMARY: gemini-3-flash-preview (As requested)
-              # BACKUP: gemini-2.0-flash (Only if 3 fails)
+              # PRIMARY: gemini-3-flash-preview
               models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
               
               for model_name in models_to_try:
@@ -103,7 +102,6 @@ jobs:
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
-                          # If 429 (Quota), sleep longer
                           if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                               print("⏳ Quota hit. Sleeping 20s...")
                               time.sleep(20)
@@ -112,7 +110,7 @@ jobs:
                           continue
               return None
 
-          # --- 3. TOPIC & SOURCE MAPPING ---
+          # --- 3. TOPIC & SOURCE MAPPING (With Fallback) ---
           cron_map = {
               '15 5 * * *': 'politics',
               '15 8 * * *': 'relationships',
@@ -121,8 +119,12 @@ jobs:
               '15 17 * * *': 'technology',
               '15 20 * * *': 'entertainment'
           }
-          topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
+          initial_topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
           
+          # Priority: Initial -> Politics (High Vol) -> Entertainment (High Vol)
+          topic_queue = [initial_topic, 'politics', 'entertainment']
+          topic_queue = list(dict.fromkeys(topic_queue))
+
           km_url_map = {
               'politics': 'https://www.kenyamoja.com/news/kenyans',
               'relationships': 'https://www.kenyamoja.com/lifestyle',
@@ -130,185 +132,58 @@ jobs:
               'entertainment': 'https://www.kenyamoja.com/entertainment',
               'technology': 'https://www.kenyamoja.com/technology'
           }
-          target_url = km_url_map.get(topic, 'https://www.kenyamoja.com/entertainment')
 
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # --- 4. DISCOVERY ---
-          full_raw_text, final_hash = None, None
-          print(f"🔍 Searching: {target_url} for '{topic}'")
+          # --- 4. DISCOVERY LOOP (Verified Selectors) ---
+          full_raw_text, final_hash, used_topic = None, None, None
 
-          try:
-              res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
-              news_items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
-              
-              for item in news_items:
-                  link_tag = item.select_one('.news-title a')
-                  if link_tag and 'href' in link_tag.attrs:
-                      url = link_tag['href']
-                      u_hash = hashlib.md5(url.encode()).hexdigest()
-                      
-                      if u_hash in memory or not url.startswith("http"): continue
-                      
-                      print(f"🕷️ Found link: {url}")
-                      
-                      random.shuffle(apify_pool)
-                      scrape_success = False
-                      
-                      for api_key in apify_pool:
-                          try:
-                              client_apify = ApifyClient(api_key)
-                              run = client_apify.actor("apify/website-content-crawler").call(
-                                  run_input={
-                                      "startUrls": [{"url": url}], 
-                                      "maxCrawlPages": 1, 
-                                      "crawlerType": "playwright:firefox"
-                                  }
-                              )
-                              dataset = client_apify.dataset(run["defaultDatasetId"])
-                              data = list(dataset.iterate_items())
-                              
-                              if data:
-                                  text = data[0].get('markdown', data[0].get('text', ''))
-                                  if len(text) > 500:
-                                      full_raw_text = text
-                                      final_hash = u_hash
-                                      scrape_success = True
-                                      break 
-                          except Exception as e:
-                              print(f"Apify Error: {e}"); continue
-                      
-                      if scrape_success: break
-          except Exception as e:
-              print(f"Discovery Failed: {e}"); exit(0)
+          for topic in topic_queue:
+              target_url = km_url_map.get(topic, 'https://www.kenyamoja.com/entertainment')
+              print(f"🔍 Attempting Topic: '{topic}' at {target_url}")
 
-          if not full_raw_text:
-              print("❌ No valid content found."); exit(0)
-
-          # --- 5. THE 'BELINDA' PROMPT ---
-          internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A SAVAGE NAIROBI GOSSIP COLUMNIST.
-          
-          SOURCE MATERIAL: {full_raw_text[:12000]}
-          
-          {internal_linking}
-
-          MANDATE:
-          1. HEADLINE: Must be "Click-Worthy". Use words like "EXPOSED", "SECRET", "SCAM".
-          2. ANGLE: Find the dirt. If it's politics, follow the money. If it's celeb, find the betrayal.
-          3. ANSWER-FIRST: Reveal the juice in Paragraph 1.
-          4. LINKING: You MUST naturally weave in 1 link from the 'PAST SCANDALS' list.
-          5. TONE: Use Nairobi slang sparingly ('Kanairo', 'Tea', 'Wueh') but keep it readable.
-          6. NO AI SLOP: Ban 'tapestry', 'delve', 'complex landscape'.
-
-          STRICT: NO EM-DASHES. UK English. ## Headers.
-
-          OUTPUT FORMAT:
-          TITLE: [Shocking Headline]
-          DESCRIPTION: [Tease the scandal]
-          IMAGE_CAPTION: [Cynical caption]
-          CATEGORY: [{topic.title()}]
-          TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words]
-          BODY: [Full Article]"""
-
-          output = run_gemini(prompt)
-          if not output: exit(1)
-
-          # --- 6. PARSE & CLEAN ---
-          def extract(key, text):
-              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
-              return m.group(1).strip() if m else None
-
-          parsed = {
-              "TITLE": extract("TITLE", output) or "Analysis",
-              "DESC": extract("DESCRIPTION", output) or "Full story.",
-              "CAPTION": extract("IMAGE_CAPTION", output) or "Developing.",
-              "IMG": extract("IMAGE_KEYWORD", output) or topic,
-              "BODY": ""
-          }
-
-          body_match = re.search(r"BODY:\s*(.*)", output, re.S | re.I)
-          if body_match:
-              parsed["BODY"] = body_match.group(1).strip()
-          else:
-              parsed["BODY"] = output.split("BODY:")[-1].strip()
-
-          for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
-
-          # --- 7. PUBLISH & SCHEMA ---
-          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-          
-          def get_img(q):
               try:
-                  r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                  return r.json()['urls']['regular']
-              except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
-          
-          img_url = get_img(parsed['IMG'])
+                  res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
+                  
+                  # SELECTOR LOGIC:
+                  # 1. div.views-row -> Standard Drupal container (News, Tech, Ent)
+                  # 2. li.news-item -> Legacy container
+                  # 3. article -> Generic HTML5
+                  news_items = BeautifulSoup(res.text, 'html.parser').select('div.views-row, li.news-item, article')
+                  
+                  # If no containers found, try finding direct links in content areas
+                  if not news_items:
+                      news_items = BeautifulSoup(res.text, 'html.parser').select('.view-content a')
 
-          schema_json = {
-              "@context": "https://schema.org",
-              "@type": "AnalysisNewsArticle",
-              "headline": parsed['TITLE'],
-              "description": parsed['DESC'],
-              "datePublished": date_now,
-              "author": {
-                  "@type": "Person", 
-                  "name": "Belinda Achieng'",
-                  "jobTitle": "Entertainment Editor",
-                  "url": "https://jonathanmwaniki.co.ke"
-              },
-              "image": [img_url]
-          }
+                  item_count = 0
+                  for item in news_items:
+                      # FIND LINK LOGIC:
+                      # 1. Look for specific field classes (Drupal)
+                      link_tag = item.select_one('.views-field-title a, .field-content a, h3 a, h4 a')
+                      
+                      # 2. If item is a link itself
+                      if not link_tag and item.name == 'a':
+                          link_tag = item
+                      
+                      # 3. Fallback: Any link
+                      if not link_tag:
+                          link_tag = item.select_one('a')
 
-          final_md = textwrap.dedent(f"""---
-          title: "{parsed['TITLE'].replace('"', "'")}"
-          description: "{parsed['DESC'].replace('"', "'")}"
-          date: "{date_now}"
-          author: "Belinda Achieng'"
-          image: "{img_url}"
-          imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
-          category: "{topic.title()}"
-          slug: "{slug}"
-          ---
-
-          {parsed['BODY']}
-
-          <script type="application/ld+json">
-          {json.dumps(schema_json, indent=2)}
-          </script>
-          """).strip()
-
-          o_dir = os.environ.get("POSTS_DIR")
-          os.makedirs(o_dir, exist_ok=True)
-          with open(os.path.join(o_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
-          
-          memory.append(final_hash)
-          with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f"✅ Published: {slug}")
-          EOF
-
-      - name: Git Safety Pull
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git stash -u
-          git fetch origin main
-          git pull origin main --rebase
-          git stash pop || echo "Nothing to pop"
-
-      - name: Commit and push article
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "content: belinda-tabloid publish"
-          branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+                      if link_tag and 'href' in link_tag.attrs:
+                          url = link_tag['href']
+                          u_hash = hashlib.md5(url.encode()).hexdigest()
+                          
+                          if u_hash in memory or not url.startswith("http"): continue
+                          if "facebook.com" in url or "twitter.com" in url: continue
+                          
+                          print(f"🕷️ Found fresh link: {url}")
+                          item_count += 1
+                          
+                          random.shuffle(apify_pool)
+                          scrape_success = False
+                          
+                          for api_key in apify_pool:
+                              try:
+                                  client_apify = ApifyClient(api_key)
+                                  run = client_apify.actor("apify/
