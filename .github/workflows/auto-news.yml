@@ -1,18 +1,18 @@
-name: Auto Newser (Kenyan Tabloid Edition)
+name: Auto Newser (Belinda Edition)
 
 on:
   schedule:
-    # Optimized Scandal Schedule (Kenya Time)
-    - cron: '15 5 * * *'   # 8:15 AM EAT: Morning Politics/Tea
-    - cron: '15 8 * * *'   # 11:15 AM EAT: Relationship Drama
-    - cron: '15 11 * * *'  # 2:15 PM EAT: Crime & Safety
-    - cron: '15 14 * * *'  # 5:15 PM EAT: Entertainment Gossip
-    - cron: '15 17 * * *'  # 8:15 PM EAT: Tech Scams/Hacks
-    - cron: '15 20 * * *'  # 11:15 PM EAT: Late Night Confessions
+    # Optimized Kenyan Scandal Schedule (EAT)
+    - cron: '15 5 * * *'   # 8:15 AM: Morning Tea (Politics)
+    - cron: '15 8 * * *'   # 11:15 AM: Relationship Drama
+    - cron: '15 11 * * *'  # 2:15 PM: Crime & Safety
+    - cron: '15 14 * * *'  # 5:15 PM: Celeb Gossip
+    - cron: '15 17 * * *'  # 8:15 PM: Tech Scams
+    - cron: '15 20 * * *'  # 11:15 PM: Late Night Confessions
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force a topic'
+        description: 'Force topic (politics, relationships, crime, entertainment)'
         required: false
         default: ''
 
@@ -46,9 +46,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests google-genai apify-client beautifulsoup4
 
-      - name: Generate Content
+      - name: Run Belinda Engine
         env:
-          # KEY ROTATION POOLS
+          # FULL KEY ROTATION
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -64,11 +64,12 @@ jobs:
           from bs4 import BeautifulSoup
           import textwrap
 
-          # --- 1. KEY ROTATION & HELPERS ---
+          # --- 1. KEY POOLS ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
+          # --- 2. INTERNAL LINKING (SEO) ---
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
@@ -88,19 +89,25 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              for k in gem_pool:
-                  try:
-                      client = genai.Client(api_key=k)
-                      return client.models.generate_content(
-                          model="gemini-3-flash-preview", 
-                          contents=p,
-                          config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
-                      ).text.strip()
-                  except Exception as e:
-                      print(f"Gemini Key Failed: {e}"); continue
+              # Priority: Use Stable 2.0 first, fallback to 1.5 if overloaded
+              models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+              
+              for model_name in models_to_try:
+                  for k in gem_pool:
+                      try:
+                          client = genai.Client(api_key=k)
+                          return client.models.generate_content(
+                              model=model_name, 
+                              contents=p,
+                              config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
+                          ).text.strip()
+                      except Exception as e:
+                          print(f"Gemini Error ({model_name}): {e}")
+                          time.sleep(2) # Cool down before next key/model
+                          continue
               return None
 
-          # --- 2. TOPIC & SOURCE MAPPING (KenyaMoja) ---
+          # --- 3. TOPIC & SOURCE MAPPING (KenyaMoja) ---
           cron_map = {
               '15 5 * * *': 'politics',
               '15 8 * * *': 'relationships',
@@ -111,7 +118,6 @@ jobs:
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
           
-          # KenyaMoja URL Selection
           km_url_map = {
               'politics': 'https://www.kenyamoja.com/news/kenyans',
               'relationships': 'https://www.kenyamoja.com/lifestyle',
@@ -124,27 +130,25 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # --- 3. DISCOVERY & SCRAPING (Apify Rotation) ---
+          # --- 4. DISCOVERY & SCRAPING (Full Apify Rotation) ---
           full_raw_text, final_hash = None, None
-          
-          print(f"🔍 Searching: {target_url}")
+          print(f"🔍 Searching: {target_url} for '{topic}'")
+
           try:
               res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
               news_items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
               
-              # Try scraping items until one works
               for item in news_items:
                   link_tag = item.select_one('.news-title a')
                   if link_tag and 'href' in link_tag.attrs:
                       url = link_tag['href']
                       u_hash = hashlib.md5(url.encode()).hexdigest()
                       
-                      # Skip if already in memory or not a valid link
                       if u_hash in memory or not url.startswith("http"): continue
                       
-                      print(f"🕷️ Attempting scrape: {url}")
+                      print(f"🕷️ Found link: {url}")
                       
-                      # Rotate Apify Keys if one fails
+                      # Rotate Apify Keys
                       random.shuffle(apify_pool)
                       scrape_success = False
                       
@@ -167,19 +171,18 @@ jobs:
                                       full_raw_text = text
                                       final_hash = u_hash
                                       scrape_success = True
-                                      break # Break key loop
+                                      break 
                           except Exception as e:
-                              print(f"Apify Key Failed: {e}"); continue
+                              print(f"Apify Error: {e}"); continue
                       
-                      if scrape_success:
-                          break # Break item loop
+                      if scrape_success: break
           except Exception as e:
               print(f"Discovery Failed: {e}"); exit(0)
 
           if not full_raw_text:
-              print("❌ No content found or all keys failed."); exit(0)
+              print("❌ No valid content found."); exit(0)
 
-          # --- 4. THE SAVAGE PROMPT (Belinda Persona) ---
+          # --- 5. THE 'BELINDA' PROMPT ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS 'BELINDA ACHIENG', A SAVAGE NAIROBI GOSSIP COLUMNIST.
           
@@ -190,7 +193,7 @@ jobs:
           MANDATE:
           1. HEADLINE: Must be "Click-Worthy". Use words like "EXPOSED", "SECRET", "SCAM".
           2. ANGLE: Find the dirt. If it's politics, follow the money. If it's celeb, find the betrayal.
-          3. ANSWER-FIRST: Reveal the juice in Paragraph 1. Don't waste time.
+          3. ANSWER-FIRST: Reveal the juice in Paragraph 1.
           4. LINKING: You MUST naturally weave in 1 link from the 'PAST SCANDALS' list.
           5. TONE: Use Nairobi slang sparingly ('Kanairo', 'Tea', 'Wueh') but keep it readable.
           6. NO AI SLOP: Ban 'tapestry', 'delve', 'complex landscape'.
@@ -203,13 +206,13 @@ jobs:
           IMAGE_CAPTION: [Cynical caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words for Unsplash]
+          IMAGE_KEYWORD: [2 metaphorical words]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 5. PARSE & CLEAN ---
+          # --- 6. PARSE & CLEAN ---
           def extract(key, text):
               m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
@@ -232,7 +235,7 @@ jobs:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 6. PUBLISH & SCHEMA ---
+          # --- 7. PUBLISH & SCHEMA ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
@@ -274,7 +277,7 @@ jobs:
           {parsed['BODY']}
 
           <script type="application/ld+json">
-          {json.dumps(schema_json, indent=2)}
+          {json.dumps(schema, indent=2)}
           </script>
           """).strip()
 
@@ -300,7 +303,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: kenyan-tabloid publish ${{ github.run_id }}"
+          commit_message: "content: belinda-tabloid publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
         env:
