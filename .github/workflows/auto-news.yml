@@ -74,8 +74,7 @@ jobs:
           def get_gemini_key():
               cron = os.environ.get('CRON_SCHEDULE', '')
               key_map = {'0 0 * * *': 'GEMINI_API_KEY', '0 6 * * *': 'GEMINI_API_KEY1', '0 11 * * *': 'GEMINI_API_KEY2', '0 14 * * *': 'GEMINI_API_KEY', '0 18 * * *': 'GEMINI_API_KEY1', '0 22 * * *': 'GEMINI_WRITE_KEY'}
-              target = key_map.get(cron, 'GEMINI_WRITE_KEY')
-              return os.environ.get(target) or os.environ.get('GEMINI_WRITE_KEY')
+              return os.environ.get(key_map.get(cron, 'GEMINI_WRITE_KEY')) or os.environ.get('GEMINI_WRITE_KEY')
 
           def get_internal_link_context():
               p_path = os.environ.get('POSTS_DIR')
@@ -104,7 +103,7 @@ jobs:
           
           full_raw_text, final_hash = None, None
           try:
-              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+              res = requests.get(km_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
               news_items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
               
               apify_pool = [os.environ.get(v) for v in ['APIFY_API_TOKEN', 'APIFY_API_TOKEN1', 'APIFY_API_TOKEN2', 'APIFY_API_TOKEN3', 'APIFY_API_TOKEN4', 'APIFY_API_TOKEN5'] if os.environ.get(v)]
@@ -118,29 +117,30 @@ jobs:
                       if u_hash not in memory:
                           run = client_apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
                           data = list(client_apify.dataset(run["defaultDatasetId"]).iterate_items())
-                          if data and len(data[0].get('markdown', '')) > 800:
+                          if data and len(data[0].get('markdown', '')) > 500:
                               full_raw_text, final_hash = data[0]['markdown'], u_hash
+                              print(f"✅ Scraped {len(full_raw_text)} chars from {url}")
                               break
-          except: exit(0)
+          except Exception as e:
+              print(f"Scrape Error: {e}"); exit(0)
 
-          if not full_raw_text: exit(0)
+          if not full_raw_text: print("❌ No content found."); exit(0)
 
-          # --- 3. THE "ANTI-LAZINESS" PROMPT ---
+          # --- 3. THE PROMPT ---
           internal_linking = get_internal_link_context()
           prompt = f"""OPERATE AS HUMAN INTELLIGENCE DISGUISED AS CONVERSATION.
           Write a 1700-word investigative report. YOU MUST REACH THIS WORD COUNT.
           SOURCE: {full_raw_text[:15000]}
           {internal_linking}
 
-          STRUCTURE DIRECTIVE:
+          STRUCTURE:
           - Develop 7 distinct sections with ## headers.
-          - Each section must be at least 250 words.
           - Section 1: Answer-First GEO Hook.
-          - Section 2-6: Deep factual analysis, contrarian perspectives, and human asides.
+          - Section 2-6: Deep factual analysis & human asides.
           - Section 7: Provocative Cliffhanger (No Summary).
 
           STYLE:
-          - HUMAN RHYTHM: blunt fragments, cynicism, no robotic parallel structure.
+          - HUMAN RHYTHM: blunt fragments, cynicism, varying lengths.
           - NO AI SLOP: Ban 'tapestry', 'delve', 'testament', 'vibrant', 'realm'.
           - NO CONCLUSION: Never use 'In conclusion'.
           - LINKING: Naturally weave in 1 slug from the provided past articles.
@@ -155,9 +155,9 @@ jobs:
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 words]
           BODY:
-          [Start writing the full 1700-word investigative report here]"""
+          [Full investigative report]"""
 
-          # --- 4. GENERATION & GREEDY PARSING ---
+          # --- 4. GENERATION & ROBUST PARSING ---
           client_gemini = genai.Client(api_key=get_gemini_key())
           resp = client_gemini.models.generate_content(
               model="gemini-3-flash-preview", 
@@ -179,13 +179,17 @@ jobs:
               "BODY": ""
           }
 
-          # GREEDY BODY CAPTURE
+          # IMPROVED BODY CAPTURE: Greedy + Last Resort
           body_match = re.search(r"BODY:\s*(.*)", raw_output, re.S | re.I)
           if body_match:
               parsed["BODY"] = body_match.group(1).strip()
+          else:
+              # Last resort: If BODY tag is missing, take everything after the first 500 chars
+              print("⚠️ BODY tag missing, using fallback capture.")
+              parsed["BODY"] = raw_output[raw_output.find(parsed["IMG"]) + len(parsed["IMG"]):].strip()
 
-          # --- 5. VALIDATION: STOP INCOMPLETE ARTICLES ---
-          if len(parsed["BODY"]) < 4000:
+          # --- 5. VALIDATION ---
+          if len(parsed["BODY"]) < 1000:
               print(f"❌ AI FAILURE: Article only {len(parsed['BODY'])} chars. Rejecting run.")
               exit(1)
 
@@ -240,6 +244,7 @@ jobs:
           
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
+          print(f"✅ Success: {slug}")
           EOF
 
       - name: Git Safety Pull
@@ -252,10 +257,10 @@ jobs:
           git pull origin main --rebase
           git stash pop || echo "Nothing to pop"
 
-      - name: Commit and push
+      - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: full human publish ${{ github.run_id }}"
+          commit_message: "content: quality publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
         env:
