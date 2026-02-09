@@ -2,8 +2,8 @@ name: Facebook Content Engine
 
 on:
   schedule:
-    # Hourly Jokes (6 AM - 12 AM EAT)
-    - cron: '0 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * *'
+    # 6 AM to 12 AM EAT using offset minutes to avoid server drop
+    - cron: '13 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,9 +11,10 @@ permissions:
 
 env:
   MEMORY_FILE: .github/fb_gossip_memory.json
+  POSTS_DIR: src/content/posts
 
 jobs:
-  # JOB 1: IMAGE-BASED DIVERSIFIED JOKES (Hourly)
+  # --- JOB 1: DIVERSIFIED JOKES (IMAGE BASED) ---
   post-hourly-joke:
     runs-on: ubuntu-latest
     steps:
@@ -23,40 +24,38 @@ jobs:
       - name: Install Tools
         run: sudo apt-get install -y imagemagick jq
 
-      - name: Fetch Diversified Joke
+      - name: Fetch and Post Joke
+        env:
+          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          # Fetching Any category (Adult/Dark permitted, -ist blocked)
+          # Fetch Any (Dark, Pun, Misc, Programming) - ist-free
           JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=religious,political,racist,sexist&type=single")
           MSG=$(echo $JSON | jq -r '.joke')
           
           if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
-            MSG="I’m not saying I’m the best, but the second-best is a very long way back."
+            MSG="My life is a joke, but at least jokes have a point."
           fi
           
           CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g' | sed 's/—/, /g')
-          echo "MSG=$CLEAN_MSG" >> $GITHUB_ENV
-
-      - name: Generate & Post Image
-        env:
-          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
-        run: |
+          
+          # Generate Image
           COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray" "midnightblue-black")
           RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
           
           convert -size 1080x1080 gradient:$RANDOM_COLOR \
             -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity Center \
             -background none -interline-spacing 20 \
-            caption:"$MSG" -composite status.jpg
+            caption:"$CLEAN_MSG" -composite status.jpg
 
           curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
             -F "source=@status.jpg" \
-            -F "message=The truth hurts. 😂 #Humor #TMReport #Buzz" \
+            -F "message=Joke of the hour. 😂 #Humor #Buzz #Trending" \
             -F "access_token=$FB_TOKEN"
 
-  # JOB 2: GOSSIP SHORT-FORM (Every 2 Hours)
+  # --- JOB 2: GOSSIP STORIES (TEXT BASED) ---
   post-bihourly-gossip:
-    # Logic to run only on odd hours: 3, 5, 7, 9, 11, 13, 15, 17, 19 UTC
-    if: contains(fromJSON('["3", "5", "7", "9", "11", "13", "15", "17", "19"]'), github.event.schedule && format('{0}', github.event.schedule).split(' ')[1] || '3') 
+    # Logic to run every 2 hours (on the odd hours of the cron list)
+    if: contains(fromJSON('["3", "5", "7", "9", "11", "13", "15", "17", "19", "21"]'), github.event.schedule && format('{0}', github.event.schedule).split(' ')[1] || '3')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -90,8 +89,8 @@ jobs:
           
           mem_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(mem_path)) if os.path.exists(mem_path) else []
-          api_keys = [k.strip() for k in os.environ.get("APIFY_POOL").split(",") if k.strip()]
-          apify = ApifyClient(random.choice(api_keys))
+          api_pool = [k.strip() for k in os.environ.get("APIFY_POOL").split(",") if k.strip()]
+          apify = ApifyClient(random.choice(api_pool))
 
           raw_tea, f_hash = None, None
           for item in items:
@@ -108,50 +107,49 @@ jobs:
           
           if not raw_tea: exit(0)
 
-          # 2. Humanized Gossip Generation (GEO & SEO Ready)
-          gem_keys = [k.strip() for k in os.environ.get("GEMINI_POOL").split(",") if k.strip()]
-          gemini = genai.Client(api_key=random.choice(gem_keys))
+          # 2. Humanized Gossip Prompt (SEO/GEO)
+          gem_pool = [k.strip() for k in os.environ.get("GEMINI_POOL").split(",") if k.strip()]
+          gemini = genai.Client(api_key=random.choice(gem_pool))
           
-          prompt = f"""ACT AS A SAVAGE KENYAN GOSSIP COLUMNIST FOR TM REPORT. 
-          STORY DATA: {raw_tea[:8000]}
+          prompt = f"""ACT AS A SAVAGE KENYAN GOSSIP COLUMNIST FOR TM REPORT.
+          Write a high-engagement 150-word Facebook tea post.
+          DATA: {raw_tea[:10000]}
 
-          TASK: Write a 150-word Facebook tea post.
-          
-          GEO & SEO STRATEGY:
-          - ANSWER-FIRST: Start with a blunt, one-liner "tea" summary.
-          - KEYWORD RICH: Use trending names and phrases naturally.
-          
-          STYLE:
-          - HUMAN RHYTHM: Use varying sentence lengths, blunt fragments, and Nairobi slang (e.g., 'mambo ni mengi', 'chai iko hapa').
+          STYLE GUIDE:
+          - ANSWER-FIRST (GEO): Start with the most scandalous point immediately.
+          - HUMAN RHYTHM: Use Kenyan slang (kanairo, chai, wueh) and sharp asides.
+          - CONTRARIAN TWIST: Frame the celebrity from a sarcastic/ironic angle.
           - NO AI SLOP: Ban 'tapestry', 'realm', 'vibrant'. No em-dashes.
-          - CONTRARIAN TWIST: If everyone is praising the celeb, find the flaw. If everyone is hating, find the joke.
-          - END with a spicy question to drive 50+ comments.
+          - END: A spicy question to spark a comment war.
 
-          STRICT: UK English. No em-dashes. Use commas.
           TAGS: #TMReport #Buzz #Trending"""
           
-          gossip = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt).text.strip()
+          res = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
+          gossip = res.text.strip().replace("—", ", ").replace("–", ", ")
           
-          with open("gossip_final.txt", "w", encoding="utf-8") as f:
-              f.write(gossip)
+          with open("gossip.txt", "w", encoding="utf-8") as f: f.write(gossip)
           
           memory.append(f_hash)
           with open(mem_path, 'w') as f: json.dump(memory[-100:], f)
           EOF
 
-      - name: Post Text Tea to Facebook Feed
+      - name: Post Text to Facebook Feed
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          MSG=$(cat gossip_final.txt)
+          MSG=$(cat gossip.txt)
           curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
             --data-urlencode "message=$MSG" \
             -d "access_token=$FB_TOKEN"
 
-      - name: Update Memory
+      - name: Sync Memory
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/fb_gossip_memory.json
-          git commit -m "update: tea memory" || exit 0
+          git stash -u
+          git fetch origin main
+          git pull origin main --rebase
+          git stash pop || echo "No stash"
+          git commit -m "sync: bot memory" || exit 0
           git push origin main
