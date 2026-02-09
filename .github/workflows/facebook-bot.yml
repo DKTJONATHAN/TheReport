@@ -1,61 +1,19 @@
-name: Facebook Content Engine
+name: FB Gossip Bot (2 Hours)
 
 on:
+  push:
+    paths:
+      - '.github/workflows/fb-gossip.yml' # Runs immediately when you save
   schedule:
-    # 6 AM to 12 AM EAT using offset minutes to avoid server drop
-    - cron: '13 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * *'
+    # Runs at minute 10 of every 2nd hour (6:10 AM, 8:10 AM, etc.)
+    - cron: '10 3,5,7,9,11,13,15,17,19,21 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-env:
-  MEMORY_FILE: .github/fb_gossip_memory.json
-  POSTS_DIR: src/content/posts
+  contents: write # CRITICAL for saving memory file
 
 jobs:
-  # --- JOB 1: DIVERSIFIED JOKES (IMAGE BASED) ---
-  post-hourly-joke:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Tools
-        run: sudo apt-get install -y imagemagick jq
-
-      - name: Fetch and Post Joke
-        env:
-          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
-        run: |
-          # Fetch Any (Dark, Pun, Misc, Programming) - ist-free
-          JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=religious,political,racist,sexist&type=single")
-          MSG=$(echo $JSON | jq -r '.joke')
-          
-          if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
-            MSG="My life is a joke, but at least jokes have a point."
-          fi
-          
-          CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g' | sed 's/—/, /g')
-          
-          # Generate Image
-          COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray" "midnightblue-black")
-          RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
-          
-          convert -size 1080x1080 gradient:$RANDOM_COLOR \
-            -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity Center \
-            -background none -interline-spacing 20 \
-            caption:"$CLEAN_MSG" -composite status.jpg
-
-          curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
-            -F "source=@status.jpg" \
-            -F "message=Joke of the hour. 😂 #Humor #Buzz #Trending" \
-            -F "access_token=$FB_TOKEN"
-
-  # --- JOB 2: GOSSIP STORIES (TEXT BASED) ---
-  post-bihourly-gossip:
-    # Logic to run every 2 hours (on the odd hours of the cron list)
-    if: contains(fromJSON('["3", "5", "7", "9", "11", "13", "15", "17", "19", "21"]'), github.event.schedule && format('{0}', github.event.schedule).split(' ')[1] || '3')
+  post-gossip-text:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,85 +29,105 @@ jobs:
       - name: Install dependencies
         run: pip install requests google-genai apify-client beautifulsoup4
 
-      - name: Scrape & Generate TEA
+      - name: Run Gossip Engine
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
-          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          MEMORY_FILE: .github/fb_gossip_memory.json
         run: |
           python << 'EOF'
-          import os, json, requests, random, hashlib, re
+          import os, json, requests, random, hashlib, re, sys
           from google import genai
           from apify_client import ApifyClient
           from bs4 import BeautifulSoup
 
-          # 1. Discovery
-          res = requests.get("https://www.kenyamoja.com/entertainment", headers={'User-Agent': 'Mozilla/5.0'})
-          items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
-          
+          # 1. SETUP MEMORY
           mem_path = os.environ.get('MEMORY_FILE')
-          memory = json.load(open(mem_path)) if os.path.exists(mem_path) else []
-          api_pool = [k.strip() for k in os.environ.get("APIFY_POOL").split(",") if k.strip()]
-          apify = ApifyClient(random.choice(api_pool))
+          if os.path.exists(mem_path):
+              with open(mem_path, 'r') as f: memory = json.load(f)
+          else:
+              memory = []
 
-          raw_tea, f_hash = None, None
+          # 2. DISCOVERY (KenyaMoja)
+          print("🔍 Checking KenyaMoja Entertainment...")
+          try:
+              res = requests.get("https://www.kenyamoja.com/entertainment", headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+              items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
+          except Exception as e:
+              print(f"❌ Connection failed: {e}")
+              sys.exit(1)
+
+          # 3. SCRAPE (Apify)
+          raw_story, final_hash = None, None
+          apify_keys = [k.strip() for k in os.environ.get("APIFY_POOL", "").split(",") if k.strip()]
+          apify = ApifyClient(random.choice(apify_keys))
+
           for item in items:
               link = item.select_one('.news-title a')
               if link:
                   url = link['href']
                   h = hashlib.md5(url.encode()).hexdigest()
                   if h not in memory:
-                      run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1})
-                      data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-                      if data and len(data[0].get('markdown', '')) > 300:
-                          raw_tea, f_hash = data[0]['markdown'], h
-                          break
+                      print(f"🕷️ Scraping: {url}")
+                      try:
+                          run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1})
+                          data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
+                          if data and len(data[0].get('markdown', '')) > 300:
+                              raw_story = data[0]['markdown']
+                              final_hash = h
+                              break
+                      except: continue
           
-          if not raw_tea: exit(0)
+          if not raw_story:
+              print("⚠️ No new content found. Exiting.")
+              sys.exit(0)
 
-          # 2. Humanized Gossip Prompt (SEO/GEO)
-          gem_pool = [k.strip() for k in os.environ.get("GEMINI_POOL").split(",") if k.strip()]
-          gemini = genai.Client(api_key=random.choice(gem_pool))
+          # 4. GENERATE (Gemini)
+          print("🤖 Generating Tea...")
+          gem_keys = [k.strip() for k in os.environ.get("GEMINI_POOL", "").split(",") if k.strip()]
+          gemini = genai.Client(api_key=random.choice(gem_keys))
           
-          prompt = f"""ACT AS A SAVAGE KENYAN GOSSIP COLUMNIST FOR TM REPORT.
-          Write a high-engagement 150-word Facebook tea post.
-          DATA: {raw_tea[:10000]}
-
-          STYLE GUIDE:
-          - ANSWER-FIRST (GEO): Start with the most scandalous point immediately.
-          - HUMAN RHYTHM: Use Kenyan slang (kanairo, chai, wueh) and sharp asides.
-          - CONTRARIAN TWIST: Frame the celebrity from a sarcastic/ironic angle.
-          - NO AI SLOP: Ban 'tapestry', 'realm', 'vibrant'. No em-dashes.
-          - END: A spicy question to spark a comment war.
-
+          prompt = f"""ACT AS A SAVAGE NAIROBI GOSSIP COLUMNIST.
+          SOURCE: {raw_story[:8000]}
+          TASK: Write a 150-word Facebook post.
+          STYLE: 
+          - HOOK: Start with a savage one-liner.
+          - SLANG: Use 'Kanairo', 'Tea', 'Wueh'.
+          - TONE: Cynical, gossipy, no filter.
+          - NO AI SLOP: No 'tapestry', 'realm'.
+          - END: A spicy question.
           TAGS: #TMReport #Buzz #Trending"""
           
           res = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
-          gossip = res.text.strip().replace("—", ", ").replace("–", ", ")
+          gossip_text = res.text.strip().replace("*", "").replace("#", "") # Clean basic formatting
           
-          with open("gossip.txt", "w", encoding="utf-8") as f: f.write(gossip)
+          # 5. POST (Facebook Graph API)
+          print("🚀 Posting to Facebook...")
+          fb_token = os.environ.get("FB_TOKEN")
+          # Append hashtags manually to ensure they exist
+          final_msg = f"{gossip_text}\n\n#TMReport #Buzz #Trending"
           
-          memory.append(f_hash)
-          with open(mem_path, 'w') as f: json.dump(memory[-100:], f)
+          resp = requests.post(
+              "https://graph.facebook.com/v24.0/me/feed",
+              data={"message": final_msg, "access_token": fb_token}
+          )
+          
+          if resp.status_code == 200:
+              print("✅ Posted successfully!")
+              memory.append(final_hash)
+              with open(mem_path, 'w') as f: json.dump(memory[-50:], f)
+          else:
+              print(f"❌ Facebook Error: {resp.text}")
+              sys.exit(1)
           EOF
 
-      - name: Post Text to Facebook Feed
-        env:
-          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
-        run: |
-          MSG=$(cat gossip.txt)
-          curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-            --data-urlencode "message=$MSG" \
-            -d "access_token=$FB_TOKEN"
-
-      - name: Sync Memory
+      - name: Save Memory
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/fb_gossip_memory.json
-          git stash -u
-          git fetch origin main
+          # Pull latest changes before committing to avoid conflicts
           git pull origin main --rebase
-          git stash pop || echo "No stash"
-          git commit -m "sync: bot memory" || exit 0
+          git commit -m "bot: updated gossip memory" || echo "No changes to commit"
           git push origin main
