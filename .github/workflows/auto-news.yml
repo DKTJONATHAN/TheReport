@@ -1,12 +1,12 @@
-name: Kenyan Tabloid Hunter (SEO & Scandal)
+name: Auto Newser (Kenyan Tabloid Edition)
 
 on:
   schedule:
-    # Offset minutes to beat GitHub congestion
-    - cron: '15 5 * * *'   # 8:15 AM EAT: Morning Political Tea
+    # Optimized Scandal Schedule (Kenya Time)
+    - cron: '15 5 * * *'   # 8:15 AM EAT: Morning Politics/Tea
     - cron: '15 8 * * *'   # 11:15 AM EAT: Relationship Drama
     - cron: '15 11 * * *'  # 2:15 PM EAT: Crime & Safety
-    - cron: '15 14 * * *'  # 5:15 PM EAT: Entertainment/Celeb
+    - cron: '15 14 * * *'  # 5:15 PM EAT: Entertainment Gossip
     - cron: '15 17 * * *'  # 8:15 PM EAT: Tech Scams/Hacks
     - cron: '15 20 * * *'  # 11:15 PM EAT: Late Night Confessions
   workflow_dispatch:
@@ -48,6 +48,7 @@ jobs:
 
       - name: Generate Content
         env:
+          # KEY ROTATION POOLS
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -63,7 +64,7 @@ jobs:
           from bs4 import BeautifulSoup
           import textwrap
 
-          # --- 1. SETUP & ROTATION ---
+          # --- 1. KEY ROTATION & HELPERS ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
@@ -73,7 +74,7 @@ jobs:
               if not os.path.exists(posts_dir): return ""
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
-              sample = random.sample(files, min(len(files), 4)) # Sample 4 for better context
+              sample = random.sample(files, min(len(files), 4))
               context = "PAST SCANDALS (LINK 1 OF THESE):\n"
               for f in sample:
                   try:
@@ -93,27 +94,28 @@ jobs:
                       return client.models.generate_content(
                           model="gemini-3-flash-preview", 
                           contents=p,
-                          config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
+                          config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
                       ).text.strip()
-                  except: continue
+                  except Exception as e:
+                      print(f"Gemini Key Failed: {e}"); continue
               return None
 
-          # --- 2. TOPIC MAPPING (The Pivot) ---
+          # --- 2. TOPIC & SOURCE MAPPING (KenyaMoja) ---
           cron_map = {
-              '15 5 * * *': 'politics',         # Corruption/Scandal
-              '15 8 * * *': 'relationships',    # Dating Drama
-              '15 11 * * *': 'crime',           # Safety/Heists
-              '15 14 * * *': 'entertainment',   # Celeb Gossip
-              '15 17 * * *': 'technology',      # Scams/Hacks
-              '15 20 * * *': 'entertainment'    # Late Night Tea
+              '15 5 * * *': 'politics',
+              '15 8 * * *': 'relationships',
+              '15 11 * * *': 'crime',
+              '15 14 * * *': 'entertainment',
+              '15 17 * * *': 'technology',
+              '15 20 * * *': 'entertainment'
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
           
-          # KenyaMoja Source Mapping
+          # KenyaMoja URL Selection
           km_url_map = {
               'politics': 'https://www.kenyamoja.com/news/kenyans',
               'relationships': 'https://www.kenyamoja.com/lifestyle',
-              'crime': 'https://www.kenyamoja.com/news/kenyans', # Often in main news
+              'crime': 'https://www.kenyamoja.com/news/kenyans',
               'entertainment': 'https://www.kenyamoja.com/entertainment',
               'technology': 'https://www.kenyamoja.com/technology'
           }
@@ -122,65 +124,92 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # --- 3. DISCOVERY ---
+          # --- 3. DISCOVERY & SCRAPING (Apify Rotation) ---
           full_raw_text, final_hash = None, None
+          
+          print(f"🔍 Searching: {target_url}")
           try:
               res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
               news_items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
               
-              client_apify = ApifyClient(random.choice(apify_pool))
-
+              # Try scraping items until one works
               for item in news_items:
                   link_tag = item.select_one('.news-title a')
                   if link_tag and 'href' in link_tag.attrs:
                       url = link_tag['href']
                       u_hash = hashlib.md5(url.encode()).hexdigest()
-                      if u_hash not in memory and url.startswith("http"):
-                          print(f"🕷️ Scrape start: {url}")
+                      
+                      # Skip if already in memory or not a valid link
+                      if u_hash in memory or not url.startswith("http"): continue
+                      
+                      print(f"🕷️ Attempting scrape: {url}")
+                      
+                      # Rotate Apify Keys if one fails
+                      random.shuffle(apify_pool)
+                      scrape_success = False
+                      
+                      for api_key in apify_pool:
                           try:
-                              run = client_apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"})
-                              data = list(client_apify.dataset(run["defaultDatasetId"]).iterate_items())
+                              client_apify = ApifyClient(api_key)
+                              run = client_apify.actor("apify/website-content-crawler").call(
+                                  run_input={
+                                      "startUrls": [{"url": url}], 
+                                      "maxCrawlPages": 1, 
+                                      "crawlerType": "playwright:firefox"
+                                  }
+                              )
+                              dataset = client_apify.dataset(run["defaultDatasetId"])
+                              data = list(dataset.iterate_items())
+                              
                               if data:
                                   text = data[0].get('markdown', data[0].get('text', ''))
-                                  if len(text) > 600:
-                                      full_raw_text, final_hash = text, u_hash
-                                      break
-                          except: continue
-          except: exit(0)
+                                  if len(text) > 500:
+                                      full_raw_text = text
+                                      final_hash = u_hash
+                                      scrape_success = True
+                                      break # Break key loop
+                          except Exception as e:
+                              print(f"Apify Key Failed: {e}"); continue
+                      
+                      if scrape_success:
+                          break # Break item loop
+          except Exception as e:
+              print(f"Discovery Failed: {e}"); exit(0)
 
-          if not full_raw_text: exit(0)
+          if not full_raw_text:
+              print("❌ No content found or all keys failed."); exit(0)
 
-          # --- 4. THE PROMPT (Savage & SEO-Safe) ---
+          # --- 4. THE SAVAGE PROMPT (Belinda Persona) ---
           internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS A SAVAGE NAIROBI COLUMNIST.
+          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A SAVAGE NAIROBI GOSSIP COLUMNIST.
           
           SOURCE MATERIAL: {full_raw_text[:12000]}
           
           {internal_linking}
 
           MANDATE:
-          1. HEADLINE: Must be "Click-Worthy" but honest. Use "Why," "Secret," "Exposed."
-          2. ANGLE: Find the drama. If it's politics, find the money. If it's celeb, find the betrayal.
-          3. ANSWER-FIRST: Reveal the juice in Paragraph 1.
+          1. HEADLINE: Must be "Click-Worthy". Use words like "EXPOSED", "SECRET", "SCAM".
+          2. ANGLE: Find the dirt. If it's politics, follow the money. If it's celeb, find the betrayal.
+          3. ANSWER-FIRST: Reveal the juice in Paragraph 1. Don't waste time.
           4. LINKING: You MUST naturally weave in 1 link from the 'PAST SCANDALS' list.
-          5. TONE: Use Nairobi slang sparingly ('Kanairo', 'Tea', 'Wueh') but keep it readable UK English.
+          5. TONE: Use Nairobi slang sparingly ('Kanairo', 'Tea', 'Wueh') but keep it readable.
           6. NO AI SLOP: Ban 'tapestry', 'delve', 'complex landscape'.
 
           STRICT: NO EM-DASHES. UK English. ## Headers.
 
           OUTPUT FORMAT:
-          TITLE: [High-Voltage Headline]
+          TITLE: [Shocking Headline]
           DESCRIPTION: [Tease the scandal]
           IMAGE_CAPTION: [Cynical caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words]
+          IMAGE_KEYWORD: [2 metaphorical words for Unsplash]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 5. PARSE ---
+          # --- 5. PARSE & CLEAN ---
           def extract(key, text):
               m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
@@ -216,7 +245,6 @@ jobs:
           
           img_url = get_img(parsed['IMG'])
 
-          # SEO UPGRADE: Person Schema for "Belinda Achieng'"
           schema_json = {
               "@context": "https://schema.org",
               "@type": "AnalysisNewsArticle",
@@ -226,7 +254,8 @@ jobs:
               "author": {
                   "@type": "Person", 
                   "name": "Belinda Achieng'",
-                  "jobTitle": "Entertainment Editor"
+                  "jobTitle": "Entertainment Editor",
+                  "url": "https://jonathanmwaniki.co.ke"
               },
               "image": [img_url]
           }
@@ -271,6 +300,8 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: kenyan-tabloid publish"
+          commit_message: "content: kenyan-tabloid publish ${{ github.run_id }}"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
+          file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
