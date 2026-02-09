@@ -88,9 +88,9 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              # Priority: Use Flash 2.0 -> Pro 1.5 -> Flash 1.5
-              # Updated model names to standard versions
-              models_to_try = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
+              # PRIMARY: gemini-3-flash-preview (As requested)
+              # BACKUP: gemini-2.0-flash (Only if 3 fails)
+              models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
               
               for model_name in models_to_try:
                   for k in gem_pool:
@@ -103,7 +103,7 @@ jobs:
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
-                          # If 429 (Resource Exhausted), wait 20s as per error message
+                          # If 429 (Quota), sleep longer
                           if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                               print("⏳ Quota hit. Sleeping 20s...")
                               time.sleep(20)
