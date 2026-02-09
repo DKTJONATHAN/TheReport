@@ -1,0 +1,163 @@
+name: Reddit Auto Poster (Profile + Community)
+on:
+  push:
+    paths:
+      - 'src/content/posts/**.md'
+      - 'src/content/posts/**.mdx'
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      specific_slug:
+        description: 'Slug of the post (optional)'
+        required: false
+        type: string
+
+jobs:
+  publish-to-reddit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Wait for Deployment
+        # Wait 60s to ensure the website is live before posting the link
+        run: sleep 60
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run Reddit Poster
+        env:
+          REDDIT_COOKIE: ${{ secrets.REDDIT_COOKIE }}
+          SITE_URL: "https://jonathanmwaniki.co.ke"
+          # TARGETS CONFIGURED HERE:
+          # 1. u_Purple-Reference-290 (Your Profile)
+          # 2. Post_and_Go (Your Community)
+          TARGET_SUBREDDITS: "u_Purple-Reference-290, Post_and_Go"
+          INPUT_SLUG: ${{ inputs.specific_slug }}
+        run: |
+          python3 <<EOF
+          import os
+          import requests
+          import sys
+          import time
+          import subprocess
+          from bs4 import BeautifulSoup
+
+          # --- 1. CONFIGURATION ---
+          cookie = os.environ.get("REDDIT_COOKIE")
+          site_url = os.environ.get("SITE_URL")
+          targets_raw = os.environ.get("TARGET_SUBREDDITS", "")
+          input_slug = os.environ.get("INPUT_SLUG")
+
+          if not cookie:
+              print("Error: REDDIT_COOKIE secret is missing.")
+              sys.exit(1)
+
+          # Parse targets (split by comma)
+          targets = [t.strip() for t in targets_raw.split(",") if t.strip()]
+          print(f"Targets configured: {targets}")
+
+          # --- 2. FIND THE POST ---
+          if input_slug:
+              cmd = f"find src/content/posts -name '{input_slug}.md*' | head -n 1"
+          else:
+              cmd = "git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1"
+          
+          file_path = subprocess.getoutput(cmd).strip()
+
+          if not file_path or "src/content/posts" not in file_path:
+              print("No new post file detected. Exiting.")
+              sys.exit(0)
+
+          # Extract Title
+          title = ""
+          try:
+              with open(file_path, 'r') as f:
+                  for line in f:
+                      if line.startswith("title:"):
+                          title = line.split(":", 1)[1].strip().replace('"', '')
+                          break
+          except Exception as e:
+              print(f"Error reading file: {e}")
+              sys.exit(1)
+          
+          if not title:
+              # Fallback if title isn't found
+              title = "New Update!"
+
+          # Extract Slug for Link
+          filename = os.path.basename(file_path)
+          slug = os.path.splitext(filename)[0]
+          link = f"{site_url}/posts/{slug}/"
+          
+          # Create Post Body
+          post_body = f"Read the full article here: {link}"
+
+          print(f"Found Post: {title}")
+          print(f"Link: {link}")
+
+          # --- 3. POSTING LOOP ---
+          session = requests.Session()
+          
+          for subreddit in targets:
+              print(f"\n--- Posting to: {subreddit} ---")
+              
+              headers = {
+                  "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  "Cookie": cookie,
+                  "Origin": "https://old.reddit.com",
+                  "Referer": f"https://old.reddit.com/r/{subreddit}/submit"
+              }
+
+              try:
+                  # Step A: Get Modhash (Security Token)
+                  url = f"https://old.reddit.com/r/{subreddit}/submit"
+                  resp = session.get(url, headers=headers)
+                  
+                  if "Log in" in resp.text:
+                      print("FATAL: Reddit Cookie is expired/invalid.")
+                      sys.exit(1)
+
+                  soup = BeautifulSoup(resp.text, 'html.parser')
+                  uh_input = soup.find('input', {'name': 'uh'})
+
+                  if not uh_input:
+                      print(f"Skipping {subreddit}: Could not find Modhash (Page load error?).")
+                      continue
+
+                  modhash = uh_input['value']
+
+                  # Step B: Submit
+                  payload = {
+                      "uh": modhash,
+                      "kind": "self", # self = text post
+                      "sr": subreddit,
+                      "title": title,
+                      "text": post_body,
+                      "r": subreddit,
+                      "renderstyle": "html",
+                      "api_type": "json"
+                  }
+
+                  post_resp = session.post("https://old.reddit.com/api/submit", headers=headers, data=payload)
+
+                  if '"errors": []' in post_resp.text:
+                      print(f"✅ SUCCESS: Posted to {subreddit}")
+                  else:
+                      print(f"❌ FAILED: {subreddit}. Response: {post_resp.text}")
+
+              except Exception as e:
+                  print(f"Error posting to {subreddit}: {e}")
+
+              # Wait 15 seconds between posts to look human
+              time.sleep(15)
+          EOF
