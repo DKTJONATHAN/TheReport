@@ -1,4 +1,4 @@
-name: Global Scandal Hunter (Tabloid Edition)
+name: Global Scandal Hunter (SEO-Safe Edition)
 
 on:
   schedule:
@@ -70,13 +70,14 @@ jobs:
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
 
+          # SEO FIX: Robust Internal Linking Context
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
-              sample = random.sample(files, min(len(files), 3))
-              context = "PAST SCANDALS:\n"
+              sample = random.sample(files, min(len(files), 4)) # Increased sample size
+              context = "PAST ARTICLES (FOR CONTEXT & LINKING):\n"
               for f in sample:
                   try:
                       with open(os.path.join(posts_dir, f), 'r') as content:
@@ -95,13 +96,13 @@ jobs:
                       return client.models.generate_content(
                           model="gemini-3-flash-preview", 
                           contents=p,
-                          config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
+                          config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
                       ).text.strip()
                   except Exception as e:
                       print(f"Key Failed: {e}"); continue
               return None
 
-          # --- 2. TOPIC SELECTION ---
+          # --- 2. TOPIC SELECTION (No Biz, No Sports) ---
           cron_map = {
               '15 2 * * *': 'politics',
               '15 5 * * *': 'relationships',
@@ -112,13 +113,14 @@ jobs:
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
           
+          # SEO FIX: Refined Queries to find "High Voltage" but "Credible" drama
           query_map = {
               'politics': 'scandal OR corruption OR exposed OR secret',
               'relationships': 'drama OR cheating OR divorce OR scandal',
-              'technology': 'hack OR leak OR dangerous OR lawsuit',
+              'technology': 'hack OR leak OR lawsuit OR danger', # "Danger" performs better than "Dangerous"
               'crime': 'heist OR fraud OR scam OR cartel',
-              'entertainment': 'gossip OR feud OR viral OR exposed',
-              'confessions': 'shocking OR weird OR mystery OR secret'
+              'entertainment': 'feud OR viral OR exposed OR controversy',
+              'confessions': 'shocking OR mystery OR secret'
           }
           query = query_map.get(topic, topic)
 
@@ -126,6 +128,7 @@ jobs:
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
           news_api = os.environ.get("NEWSAPI_KEY")
+          # Sorting by relevancy to get better matches for specific keywords
           news_url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=relevancy&apiKey={news_api}"
           
           try:
@@ -144,9 +147,9 @@ jobs:
           if not target_article:
               print("No new content found."); exit(0)
 
-          # --- 3. PROMPT: THE TABLOID SCIENTIST ---
+          # --- 3. PROMPT: THE TRUSTED INSIDER ---
           internal_linking_context = get_internal_context()
-          prompt = f"""OPERATE AS A SAVAGE TABLOID COLUMNIST. 
+          prompt = f"""OPERATE AS A SAVAGE BUT CREDIBLE INSIDER COLUMNIST. 
           
           SOURCE TITLE: {target_article['title']}
           SOURCE SUMMARY: {target_article['description']}
@@ -154,21 +157,24 @@ jobs:
           {internal_linking_context}
 
           MANDATE:
-          1. HEADLINE: Must be "Click-Bait" style. Use words like EXPOSED, SECRET, SCAM, SHOCKING.
-          2. ANGLE: Focus on the scandal, the money, or the betrayal.
-          3. ANSWER-FIRST: Tell the secret in para 1.
-          4. SUB-HEADERS: Use punchy, 3-word headers (e.g., "The Dirty Truth").
-          5. END: A dark warning or a savage question.
+          1. HEADLINE: Use "Curiosity Gap" + "Specific Benefit". AVOID vague clickbait.
+             - BAD: "You Won't Believe This!"
+             - GOOD: "The $5B Mistake: Why the New Tax Law Actually Robs You."
+          2. ANGLE: Focus on the "Hidden Cost" or "Secret Motive."
+          3. ANSWER-FIRST: Reveal the core secret in the first paragraph.
+          4. LINKING: You MUST naturally weave in 1 link from the 'PAST ARTICLES' list.
+          5. TONE: Cynical, smart, fast-paced.
+          6. END: A specific prediction about what happens next.
 
           STRICT: NO EM-DASHES. UK English. ## Headers.
 
           OUTPUT FORMAT:
-          TITLE: [Shocking Tabloid Headline]
+          TITLE: [High-Voltage Headline]
           DESCRIPTION: [Tease the scandal]
           IMAGE_CAPTION: [Cynical caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 words for visual metaphor]
+          IMAGE_KEYWORD: [2 metaphorical words, e.g. "Storm", "Fire", "Handshake"]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
@@ -197,7 +203,7 @@ jobs:
               parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 5. PUBLISH ---
+          # --- 5. PUBLISH & SEO SCHEMA ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
@@ -210,13 +216,19 @@ jobs:
           
           img_url = get_img(parsed['IMG'])
 
+          # SEO UPGRADE: Enhanced Person Schema for E-E-A-T
           schema_json = {
               "@context": "https://schema.org",
               "@type": "AnalysisNewsArticle",
               "headline": parsed['TITLE'],
               "description": parsed['DESC'],
               "datePublished": date_now,
-              "author": {"@type": "Person", "name": "Jonathan Mwaniki"},
+              "author": {
+                  "@type": "Person",
+                  "name": "Jonathan Mwaniki",
+                  "jobTitle": "Investigative Columnist",
+                  "url": "https://jonathanmwaniki.co.ke" 
+              },
               "image": [img_url]
           }
 
@@ -259,6 +271,6 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: tabloid mode publish"
+          commit_message: "content: seo-safe scandal publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
