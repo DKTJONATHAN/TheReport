@@ -3,13 +3,11 @@ name: FB Joke Bot (Hourly)
 on:
   push:
     paths:
-      - '.github/workflows/fb-jokes.yml' # Runs immediately when you save this file
+      - '.github/workflows/fb-jokes.yml'
   schedule:
-    - cron: '15 3-21 * * *' # Runs at minute 15 of every hour from 6 AM to 12 AM EAT
-  workflow_dispatch: # Adds a "Run Now" button
-
-permissions:
-  contents: read
+    # Runs at minute 15 of every hour (6 AM - 12 AM EAT)
+    - cron: '15 3-21 * * *'
+  workflow_dispatch:
 
 jobs:
   post-joke-image:
@@ -25,29 +23,30 @@ jobs:
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          # 1. Fetch Joke (Blacklist bad stuff, allow dark humor)
+          # 1. Fetch Joke (Any category, blacklist specific flags only)
           JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=religious,political,racist,sexist&type=single")
           MSG=$(echo $JSON | jq -r '.joke')
           
-          # Fallback if API fails
+          # Fallback
           if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then
-            MSG="My bank account is like a horror movie. I'm afraid to look at it."
+            MSG="I'm not saying I hate you, but I would unplug your life support to charge my phone."
           fi
           
-          # Clean text
-          CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g")
+          # Clean text: remove single quotes and double quotes
+          # FIX: Added the missing single quote after the last sed command
+          CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g')
           
           # 2. Generate Image
-          # Random color gradient
           COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray")
           RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
           
+          # Create 1080x1080 square image with text wrapping
           convert -size 1080x1080 gradient:$RANDOM_COLOR \
             -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity Center \
             -background none -interline-spacing 20 \
             caption:"$CLEAN_MSG" -composite status.jpg
 
-          # 3. Post to Facebook Photos
+          # 3. Post to Facebook
           echo "Posting to Facebook..."
           curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
             -F "source=@status.jpg" \
