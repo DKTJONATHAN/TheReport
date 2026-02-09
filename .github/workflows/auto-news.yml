@@ -3,16 +3,16 @@ name: Auto Newser (Belinda Edition)
 on:
   schedule:
     # Optimized Kenyan Scandal Schedule (EAT)
-    - cron: '15 5 * * *'   # 8:15 AM: Morning Tea (Politics)
-    - cron: '15 8 * * *'   # 11:15 AM: Relationship Drama
-    - cron: '15 11 * * *'  # 2:15 PM: Crime & Safety
-    - cron: '15 14 * * *'  # 5:15 PM: Celeb Gossip
-    - cron: '15 17 * * *'  # 8:15 PM: Tech Scams
-    - cron: '15 20 * * *'  # 11:15 PM: Late Night Confessions
+    - cron: '15 5 * * *'   # 8:15 AM
+    - cron: '15 8 * * *'   # 11:15 AM
+    - cron: '15 11 * * *'  # 2:15 PM
+    - cron: '15 14 * * *'  # 5:15 PM
+    - cron: '15 17 * * *'  # 8:15 PM
+    - cron: '15 20 * * *'  # 11:15 PM
   workflow_dispatch:
     inputs:
       manual_topic:
-        description: 'Force topic (politics, relationships, crime, entertainment)'
+        description: 'Force topic'
         required: false
         default: ''
 
@@ -48,7 +48,6 @@ jobs:
 
       - name: Run Belinda Engine
         env:
-          # FULL KEY ROTATION
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
@@ -69,7 +68,7 @@ jobs:
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
-          # --- 2. INTERNAL LINKING (SEO) ---
+          # --- 2. INTERNAL LINKING ---
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
@@ -89,8 +88,9 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              # Priority: Use Stable 2.0 first, fallback to 1.5 if overloaded
-              models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+              # Priority: Use Flash 2.0 -> Pro 1.5 -> Flash 1.5
+              # Updated model names to standard versions
+              models_to_try = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
               
               for model_name in models_to_try:
                   for k in gem_pool:
@@ -103,11 +103,16 @@ jobs:
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
-                          time.sleep(2) # Cool down before next key/model
+                          # If 429 (Resource Exhausted), wait 20s as per error message
+                          if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                              print("⏳ Quota hit. Sleeping 20s...")
+                              time.sleep(20)
+                          else:
+                              time.sleep(2)
                           continue
               return None
 
-          # --- 3. TOPIC & SOURCE MAPPING (KenyaMoja) ---
+          # --- 3. TOPIC & SOURCE MAPPING ---
           cron_map = {
               '15 5 * * *': 'politics',
               '15 8 * * *': 'relationships',
@@ -130,7 +135,7 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # --- 4. DISCOVERY & SCRAPING (Full Apify Rotation) ---
+          # --- 4. DISCOVERY ---
           full_raw_text, final_hash = None, None
           print(f"🔍 Searching: {target_url} for '{topic}'")
 
@@ -148,7 +153,6 @@ jobs:
                       
                       print(f"🕷️ Found link: {url}")
                       
-                      # Rotate Apify Keys
                       random.shuffle(apify_pool)
                       scrape_success = False
                       
@@ -277,7 +281,7 @@ jobs:
           {parsed['BODY']}
 
           <script type="application/ld+json">
-          {json.dumps(schema, indent=2)}
+          {json.dumps(schema_json, indent=2)}
           </script>
           """).strip()
 
