@@ -1,12 +1,20 @@
-name: Facebook Pun Bot (10x Daily)
+name: Facebook Content Engine
+
 on:
   schedule:
-    # Runs every 2 hours from 6 AM to 12 AM (Kenya Time / EAT)
-    - cron: '0 3,5,7,9,11,13,15,17,19,21 * * *'
+    # Hourly Jokes (6 AM - 12 AM EAT)
+    - cron: '0 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+env:
+  MEMORY_FILE: .github/fb_gossip_memory.json
+
 jobs:
-  post-facebook:
+  # JOB 1: IMAGE-BASED DIVERSIFIED JOKES (Hourly)
+  post-hourly-joke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -15,46 +23,135 @@ jobs:
       - name: Install Tools
         run: sudo apt-get install -y imagemagick jq
 
-      - name: Fetch Pure Pun
+      - name: Fetch Diversified Joke
         run: |
-          # Fetching only puns, allowing adult content (nsfw/explicit removed from blacklist)
-          JSON=$(curl -s "https://v2.jokeapi.dev/joke/Pun?blacklistFlags=religious,political,racist,sexist&type=single")
-          
-          # Extract the pun
+          # Fetching Any category (Adult/Dark permitted, -ist blocked)
+          JSON=$(curl -s "https://v2.jokeapi.dev/joke/Any?blacklistFlags=religious,political,racist,sexist&type=single")
           MSG=$(echo $JSON | jq -r '.joke')
           
-          # Safety check/Fallback
           if [ -z "$MSG" ] || [ "$MSG" == "null" ]; then 
-            MSG="I was wondering why the ball was getting bigger. Then it hit me."
+            MSG="I’m not saying I’m the best, but the second-best is a very long way back."
           fi
           
-          # Clean quotes that might break ImageMagick commands
-          # Also replace em dashes with commas for consistency
           CLEAN_MSG=$(echo "$MSG" | sed "s/'/ /g" | sed 's/"/ /g' | sed 's/—/, /g')
-          
           echo "MSG=$CLEAN_MSG" >> $GITHUB_ENV
 
       - name: Generate & Post Image
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
-          # Selecting dynamic vibrant gradients for the background
           COLORS=("purple-blue" "red-orange" "blue-cyan" "pink-purple" "yellow-green" "black-gray" "midnightblue-black")
           RANDOM_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
           
-          echo "Generating Image for Facebook with pun: $MSG"
-
-          # 1. Create a 1080x1080 gradient background (Instagram/FB Square size)
-          # 2. Overlay the pun text with high contrast
           convert -size 1080x1080 gradient:$RANDOM_COLOR \
-            -fill white -font DejaVu-Sans-Bold -pointsize 65 -gravity Center \
-            -background none \
-            -interline-spacing 10 \
-            caption:"$MSG" \
-            -composite status.jpg
+            -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity Center \
+            -background none -interline-spacing 20 \
+            caption:"$MSG" -composite status.jpg
 
-          # Post to Facebook Page
           curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
             -F "source=@status.jpg" \
-            -F "message=Pun of the hour 🤣" \
+            -F "message=The truth hurts. 😂 #Humor #TMReport #Buzz" \
             -F "access_token=$FB_TOKEN"
+
+  # JOB 2: GOSSIP SHORT-FORM (Every 2 Hours)
+  post-bihourly-gossip:
+    # Logic to run only on odd hours: 3, 5, 7, 9, 11, 13, 15, 17, 19 UTC
+    if: contains(fromJSON('["3", "5", "7", "9", "11", "13", "15", "17", "19"]'), github.event.schedule && format('{0}', github.event.schedule).split(' ')[1] || '3') 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests google-genai apify-client beautifulsoup4
+
+      - name: Scrape & Generate TEA
+        env:
+          GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
+          APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
+          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+        run: |
+          python << 'EOF'
+          import os, json, requests, random, hashlib, re
+          from google import genai
+          from apify_client import ApifyClient
+          from bs4 import BeautifulSoup
+
+          # 1. Discovery
+          res = requests.get("https://www.kenyamoja.com/entertainment", headers={'User-Agent': 'Mozilla/5.0'})
+          items = BeautifulSoup(res.text, 'html.parser').select('li.news-item')
+          
+          mem_path = os.environ.get('MEMORY_FILE')
+          memory = json.load(open(mem_path)) if os.path.exists(mem_path) else []
+          api_keys = [k.strip() for k in os.environ.get("APIFY_POOL").split(",") if k.strip()]
+          apify = ApifyClient(random.choice(api_keys))
+
+          raw_tea, f_hash = None, None
+          for item in items:
+              link = item.select_one('.news-title a')
+              if link:
+                  url = link['href']
+                  h = hashlib.md5(url.encode()).hexdigest()
+                  if h not in memory:
+                      run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1})
+                      data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
+                      if data and len(data[0].get('markdown', '')) > 300:
+                          raw_tea, f_hash = data[0]['markdown'], h
+                          break
+          
+          if not raw_tea: exit(0)
+
+          # 2. Humanized Gossip Generation (GEO & SEO Ready)
+          gem_keys = [k.strip() for k in os.environ.get("GEMINI_POOL").split(",") if k.strip()]
+          gemini = genai.Client(api_key=random.choice(gem_keys))
+          
+          prompt = f"""ACT AS A SAVAGE KENYAN GOSSIP COLUMNIST FOR TM REPORT. 
+          STORY DATA: {raw_tea[:8000]}
+
+          TASK: Write a 150-word Facebook tea post.
+          
+          GEO & SEO STRATEGY:
+          - ANSWER-FIRST: Start with a blunt, one-liner "tea" summary.
+          - KEYWORD RICH: Use trending names and phrases naturally.
+          
+          STYLE:
+          - HUMAN RHYTHM: Use varying sentence lengths, blunt fragments, and Nairobi slang (e.g., 'mambo ni mengi', 'chai iko hapa').
+          - NO AI SLOP: Ban 'tapestry', 'realm', 'vibrant'. No em-dashes.
+          - CONTRARIAN TWIST: If everyone is praising the celeb, find the flaw. If everyone is hating, find the joke.
+          - END with a spicy question to drive 50+ comments.
+
+          STRICT: UK English. No em-dashes. Use commas.
+          TAGS: #TMReport #Buzz #Trending"""
+          
+          gossip = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt).text.strip()
+          
+          with open("gossip_final.txt", "w", encoding="utf-8") as f:
+              f.write(gossip)
+          
+          memory.append(f_hash)
+          with open(mem_path, 'w') as f: json.dump(memory[-100:], f)
+          EOF
+
+      - name: Post Text Tea to Facebook Feed
+        env:
+          FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+        run: |
+          MSG=$(cat gossip_final.txt)
+          curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+            --data-urlencode "message=$MSG" \
+            -d "access_token=$FB_TOKEN"
+
+      - name: Update Memory
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/fb_gossip_memory.json
+          git commit -m "update: tea memory" || exit 0
+          git push origin main
