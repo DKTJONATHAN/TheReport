@@ -1,9 +1,9 @@
-name: Auto Newser (Belinda Edition)
+name: Auto Newser (Belinda - The Cynic)
 
 on:
   schedule:
     # Optimized Kenyan Scandal Schedule (EAT)
-    - cron: '15 5 * * *'   # 8:15 AM: Morning Tea (Politics)
+    - cron: '15 5 * * *'   # 8:15 AM: Morning Politics
     - cron: '15 8 * * *'   # 11:15 AM: Relationship Drama
     - cron: '15 11 * * *'  # 2:15 PM: Crime & Safety
     - cron: '15 14 * * *'  # 5:15 PM: Celeb Gossip
@@ -68,14 +68,14 @@ jobs:
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
-          # --- 2. INTERNAL LINKING (SEO) ---
+          # --- 2. INTERNAL LINKING ---
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
               sample = random.sample(files, min(len(files), 4))
-              context = "PAST SCANDALS (LINK 1 OF THESE):\n"
+              context = "PAST STORIES (LINK 1 OF THESE):\n"
               for f in sample:
                   try:
                       with open(os.path.join(posts_dir, f), 'r') as c:
@@ -88,7 +88,7 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              # PRIORITY: As requested, trying gemini-3-flash-preview first
+              # PRIORITY: gemini-3-flash-preview
               models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
               
               for model_name in models_to_try:
@@ -98,7 +98,7 @@ jobs:
                           return client.models.generate_content(
                               model=model_name, 
                               contents=p,
-                              config=types.GenerateContentConfig(temperature=0.95, max_output_tokens=8192)
+                              config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
@@ -110,7 +110,7 @@ jobs:
                           continue
               return None
 
-          # --- 3. TOPIC MAPPING (With Fallback Queue) ---
+          # --- 3. TOPIC MAPPING ---
           cron_map = {
               '15 5 * * *': 'politics',
               '15 8 * * *': 'relationships',
@@ -136,7 +136,7 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
           
-          # --- 4. DISCOVERY & FOLLOW LOGIC ---
+          # --- 4. DISCOVERY & FOLLOW ---
           full_raw_text, final_hash, used_topic = None, None, None
 
           for topic in topic_queue:
@@ -146,26 +146,17 @@ jobs:
               try:
                   res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
                   
-                  # SMART SELECTOR: Handles Drupal 11 (views-row) and Legacy
+                  # SMART SELECTOR (Drupal 11 + Legacy)
                   news_items = BeautifulSoup(res.text, 'html.parser').select('div.views-row, li.news-item, article')
-                  
-                  # Fallback for pages with different layouts
                   if not news_items:
                       news_items = BeautifulSoup(res.text, 'html.parser').select('.view-content a')
 
                   item_count = 0
                   for item in news_items:
-                      # FIND THE PARENT LINK
-                      # 1. Look for the headline link inside the item
+                      # FIND LINK
                       link_tag = item.select_one('.views-field-title a, .field-content a, h3 a, h4 a, .news-title a')
-                      
-                      # 2. If the item itself is the link
-                      if not link_tag and item.name == 'a':
-                          link_tag = item
-                      
-                      # 3. Last resort
-                      if not link_tag:
-                          link_tag = item.select_one('a')
+                      if not link_tag and item.name == 'a': link_tag = item
+                      if not link_tag: link_tag = item.select_one('a')
 
                       if link_tag and 'href' in link_tag.attrs:
                           url = link_tag['href']
@@ -175,13 +166,13 @@ jobs:
                           if u_hash in memory or not url.startswith("http"): continue
                           if "facebook.com" in url or "twitter.com" in url: continue
                           
-                          print(f"🕷️ Following link to parent source: {url}")
+                          print(f"🕷️ Following link: {url}")
                           item_count += 1
                           
                           random.shuffle(apify_pool)
                           scrape_success = False
                           
-                          # APIFY: CRAWLS THE PARENT SITE (FULL STORY)
+                          # APIFY CRAWL (The Follow Logic)
                           for api_key in apify_pool:
                               try:
                                   client_apify = ApifyClient(api_key)
@@ -208,43 +199,45 @@ jobs:
                   
                   if full_raw_text:
                       used_topic = topic
-                      print(f"✅ Success! Content extracted for '{topic}'")
+                      print(f"✅ Content found for '{topic}'")
                       break 
                   else:
-                      print(f"⚠️ No usable content found for '{topic}'. Trying next...")
+                      print(f"⚠️ No content for '{topic}'. Next...")
 
               except Exception as e:
                   print(f"Error checking '{topic}': {e}")
                   continue
 
           if not full_raw_text:
-              print("❌ FATAL: All topics failed. No content found."); exit(0)
+              print("❌ FATAL: All topics failed."); exit(0)
 
-          # --- 5. THE 'BELINDA' PROMPT ---
+          # --- 5. THE 'CYNICAL REALIST' PROMPT ---
           internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A SAVAGE NAIROBI GOSSIP COLUMNIST.
+          
+          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL, NO-NONSENSE NAIROBI REALIST.
           
           SOURCE MATERIAL: {full_raw_text[:12000]}
           
           {internal_linking}
 
           MANDATE:
-          1. HEADLINE: Must be "Click-Worthy". Use words like "EXPOSED", "SECRET", "SCAM".
-          2. ANGLE: Find the dirt. If it's politics, follow the money. If it's celeb, find the betrayal.
-          3. ANSWER-FIRST: Reveal the juice in Paragraph 1.
-          4. LINKING: You MUST naturally weave in 1 link from the 'PAST SCANDALS' list.
-          5. TONE: Use Nairobi slang sparingly ('Kanairo', 'Tea', 'Wueh') but keep it readable.
-          6. NO AI SLOP: Ban 'tapestry', 'delve', 'complex landscape'.
-
-          STRICT: NO EM-DASHES. UK English. ## Headers.
-
+          1. THE ANGLE: Point out the bad side of everything. Focus on what mainstream media ignores.
+             - If it's "Development", write about the Debt.
+             - If it's "Unity", write about the Betrayal.
+             - If it's "Tech Innovation", write about the Scam or the Job Losses.
+          2. TONE: Disillusioned but sharp. You are the person at the back of the room rolling their eyes.
+          3. HEADLINE: Must be negative or warning-based. E.g., "The Trap in...", "Why You Should Worry...", "The Lie About..."
+          4. NO FORCED SLANG: Write naturally. Do not try to be "cool". Be brutal.
+          5. NO ROBOTIC PHRASES: Ban 'tapestry', 'delve', 'complex landscape'.
+          6. LINKING: Naturally mention 1 past story from the list provided.
+          
           OUTPUT FORMAT:
-          TITLE: [Shocking Headline]
-          DESCRIPTION: [Tease the scandal]
-          IMAGE_CAPTION: [Cynical caption]
+          TITLE: [Cynical/Negative Headline]
+          DESCRIPTION: [One sentence summary of the failure/risk]
+          IMAGE_CAPTION: [Sarcastic caption]
           CATEGORY: [{used_topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words]
+          IMAGE_KEYWORD: [2 metaphorical words for the dark side]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
@@ -341,7 +334,7 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: belinda-tabloid publish"
+          commit_message: "content: belinda-cynic publish"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
         env:
