@@ -2,18 +2,11 @@ name: Global Scandal Hunter (Deep Read Edition)
 
 on:
   schedule:
-    # KEEPER SCHEDULE: Runs at XX:15 (Offsets Belinda by 30 mins)
-    # 5:15 AM EAT: Politics
     - cron: '15 2 * * *'   
-    # 8:15 AM EAT: Relationship/Lifestyle
     - cron: '15 5 * * *'   
-    # 11:15 AM EAT: Tech Leaks
     - cron: '15 8 * * *'   
-    # 2:15 PM EAT: Crime
     - cron: '15 11 * * *'  
-    # 5:15 PM EAT: Entertainment
     - cron: '15 14 * * *'  
-    # 9:15 PM EAT: Confessions
     - cron: '15 18 * * *'  
   workflow_dispatch:
     inputs:
@@ -22,11 +15,9 @@ on:
         required: false
         default: ''
 
-# --- ADDED SAFETY NET ---
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-# ------------------------
 
 permissions:
   contents: write
@@ -60,7 +51,6 @@ jobs:
 
       - name: Generate Content
         env:
-          # KEY ROTATION (Same as Belinda)
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
@@ -101,7 +91,6 @@ jobs:
           def run_gemini(p):
               random.shuffle(gem_pool)
               models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
-              
               for model_name in models_to_try:
                   for k in gem_pool:
                       try:
@@ -113,11 +102,7 @@ jobs:
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
-                          if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                              print("⏳ Quota hit. Sleeping 20s...")
-                              time.sleep(20)
-                          else:
-                              time.sleep(2)
+                          time.sleep(2)
                           continue
               return None
 
@@ -131,7 +116,6 @@ jobs:
               '15 18 * * *': 'confessions'
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'politics')
-          
           query_map = {
               'politics': 'scandal OR corruption OR exposed OR secret',
               'relationships': 'drama OR cheating OR divorce OR scandal',
@@ -141,45 +125,33 @@ jobs:
               'confessions': 'shocking OR mystery OR secret'
           }
           query = query_map.get(topic, topic)
-
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 3. DISCOVERY (NewsAPI) & DEEP READ (Apify) ---
+          # --- 3. DISCOVERY ---
           news_api = os.environ.get("NEWSAPI_KEY")
           news_url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=relevancy&apiKey={news_api}"
-          
-          try:
-              articles = requests.get(news_url).json().get('articles', [])
+          try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
 
           full_raw_text, final_hash, target_title = None, None, None
-
           for a in articles:
               url = a.get('url', '')
               u_hash = hashlib.md5(url.encode()).hexdigest()
-              
               if u_hash in memory or not url.startswith("http"): continue
               
               print(f"🕷️ Found Global Link: {url}")
-              
               random.shuffle(apify_pool)
               scrape_success = False
               
-              # THE "BELINDA" FOLLOW LOGIC
               for api_key in apify_pool:
                   try:
                       client_apify = ApifyClient(api_key)
                       run = client_apify.actor("apify/website-content-crawler").call(
-                          run_input={
-                              "startUrls": [{"url": url}], 
-                              "maxCrawlPages": 1, 
-                              "crawlerType": "playwright:firefox"
-                          }
+                          run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"}
                       )
                       dataset = client_apify.dataset(run["defaultDatasetId"])
                       data = list(dataset.iterate_items())
-                      
                       if data:
                           text = data[0].get('markdown', data[0].get('text', ''))
                           if len(text) > 600:
@@ -189,34 +161,20 @@ jobs:
                               scrape_success = True
                               break 
                   except: continue
-              
               if scrape_success: break
 
-          if not full_raw_text:
-              print("❌ No valid content found."); exit(0)
+          if not full_raw_text: print("❌ No valid content found."); exit(0)
 
-          # --- 4. PROMPT: THE GLOBAL REALIST ---
+          # --- 4. PROMPT ---
           internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS A CYNICAL GLOBAL REALIST (LIKE BELINDA, BUT INTERNATIONAL).
-          
+          prompt = f"""OPERATE AS A CYNICAL GLOBAL REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
-          
           {internal_linking}
-
-          MANDATE:
-          1. THE ANGLE: Point out the bad side. If it's a "win," ask "at what cost?"
-          2. TONE: Skeptical, analytical, and sharp. No forced slang. Just brutal honesty.
-          3. HEADLINE: Negative or Warning-Based. E.g., "The Hidden Cost of...", "Why X is a Trap."
-          4. ANSWER-FIRST: Reveal the dirty truth in paragraph 1.
-          5. LINKING: Naturally weave in 1 link from the 'PAST STORIES' list.
-          6. NO ROBOTIC PHRASES: Ban 'tapestry', 'delve', 'complex landscape'.
-
-          STRICT: NO EM-DASHES. UK English. ## Headers.
-
+          MANDATE: Point out the bad side. Analytical tone. Negative headline. Answer-First.
           OUTPUT FORMAT:
-          TITLE: [Cynical/High-Voltage Headline]
-          DESCRIPTION: [Tease the failure/risk]
-          IMAGE_CAPTION: [Sarcastic caption]
+          TITLE: [Headline]
+          DESCRIPTION: [Summary]
+          IMAGE_CAPTION: [Caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 metaphorical words]
@@ -235,29 +193,39 @@ jobs:
               "DESC": extract("DESCRIPTION", output) or "Full story inside.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
               "IMG": extract("IMAGE_KEYWORD", output) or topic,
-              "BODY": ""
+              "BODY": output.split("BODY:")[-1].strip()
           }
-
-          body_match = re.search(r"BODY:\s*(.*)", output, re.S | re.I)
-          if body_match:
-              parsed["BODY"] = body_match.group(1).strip()
-          else:
-              parsed["BODY"] = output.split("BODY:")[-1].strip()
+          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
+              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
           for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 6. PUBLISH ---
+          # --- 6. ROBUST IMAGE FETCHING ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
+              # Generic robust fallbacks (Abstract, City, News, Tech)
+              fallback_pool = [
+                  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1444653614773-8b83df53fe79?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80"
+              ]
               try:
-                  r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                  return r.json()['urls']['regular']
-              except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}"
+                  r = requests.get(url, timeout=10)
+                  if r.status_code == 200:
+                      return r.json()['urls']['regular']
+                  else:
+                      print(f"⚠️ Unsplash Status: {r.status_code}. Using fallback.")
+                      return random.choice(fallback_pool)
+              except Exception as e: 
+                  print(f"⚠️ Unsplash Error: {e}")
+                  return random.choice(fallback_pool)
           
           img_url = get_img(parsed['IMG'])
 
@@ -267,12 +235,7 @@ jobs:
               "headline": parsed['TITLE'],
               "description": parsed['DESC'],
               "datePublished": date_now,
-              "author": {
-                  "@type": "Person",
-                  "name": "Jonathan Mwaniki",
-                  "jobTitle": "Investigative Columnist",
-                  "url": "https://jonathanmwaniki.co.ke" 
-              },
+              "author": {"@type": "Person", "name": "Jonathan Mwaniki", "url": "https://jonathanmwaniki.co.ke"},
               "image": [img_url]
           }
 
