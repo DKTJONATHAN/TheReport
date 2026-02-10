@@ -2,6 +2,7 @@ name: Global Scandal Hunter (Deep Read Edition)
 
 on:
   schedule:
+    # KEEPER SCHEDULE: Runs at XX:15 (Offsets Belinda by 30 mins)
     # 5:15 AM EAT: Politics
     - cron: '15 2 * * *'   
     # 8:15 AM EAT: Relationship/Lifestyle
@@ -20,6 +21,12 @@ on:
         description: 'Force a topic'
         required: false
         default: ''
+
+# --- ADDED SAFETY NET ---
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+# ------------------------
 
 permissions:
   contents: write
