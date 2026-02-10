@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read # We only read now, no writing = no errors
+  contents: read
 
 jobs:
   post-gossip-text:
@@ -34,8 +34,9 @@ jobs:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
         run: |
           python << 'EOF'
-          import os, requests, random, sys
+          import os, requests, random, sys, re
           from google import genai
+          from google.genai import types
           from apify_client import ApifyClient
           from bs4 import BeautifulSoup
 
@@ -53,8 +54,8 @@ jobs:
               sys.exit(0)
 
           # 2. SELECT RANDOM STORY (Stateless Mode)
-          # We pick one from the Top 5 to ensure variety without memory
-          top_stories = items[:5]
+          # We pick one from the Top 6 to ensure variety
+          top_stories = items[:6]
           selected_item = random.choice(top_stories)
           
           link = selected_item.select_one('.news-title a')
@@ -69,10 +70,19 @@ jobs:
           apify = ApifyClient(random.choice(apify_keys))
 
           try:
-              run = apify.actor("apify/website-content-crawler").call(run_input={"startUrls": [{"url": target_url}], "maxCrawlPages": 1})
-              data = list(apify.dataset(run["defaultDatasetId"]).iterate_items())
-              if data and len(data[0].get('markdown', '')) > 300:
-                  raw_story = data[0]['markdown']
+              run = apify.actor("apify/website-content-crawler").call(
+                  run_input={
+                      "startUrls": [{"url": target_url}], 
+                      "maxCrawlPages": 1,
+                      "crawlerType": "playwright:firefox"
+                  }
+              )
+              dataset = apify.dataset(run["defaultDatasetId"])
+              data = list(dataset.iterate_items())
+              if data:
+                  text = data[0].get('markdown', data[0].get('text', ''))
+                  if len(text) > 300:
+                      raw_story = text
           except Exception as e:
               print(f"❌ Scrape failed: {e}")
               sys.exit(1)
@@ -81,26 +91,43 @@ jobs:
               print("⚠️ Content too short or empty.")
               sys.exit(0)
 
-          # 4. GENERATE (Gemini - Savage Mode)
-          print("🤖 Generating Tea...")
+          # 4. GENERATE (Gemini - The Nairobi Gossip Chair)
+          print("🤖 Brewing the Tea...")
           gem_keys = [k.strip() for k in os.environ.get("GEMINI_POOL", "").split(",") if k.strip()]
           gemini = genai.Client(api_key=random.choice(gem_keys))
           
-          prompt = f"""ACT AS A SAVAGE NAIROBI GOSSIP COLUMNIST.
-          SOURCE: {raw_story[:8000]}
-          TASK: Write a 150-word Facebook post.
+          # DYNAMIC PROMPT FOR VIRALITY
+          prompt = f"""
+          ROLE: You are the most followed, savage gossip journalist in Nairobi. You run a 'Tea Master' page.
           
-          STYLE: 
-          - HOOK: Start with a savage, ironic one-liner.
-          - SLANG: Use 'Kanairo', 'Tea', 'Wueh', 'Mambo ni mengi'.
-          - TONE: Cynical, gossipy, no filter.
-          - NO AI SLOP: No 'tapestry', 'realm', 'vibrant'.
-          - END: A spicy question.
-          TAGS: #TMReport #Buzz #Trending"""
+          SOURCE MATERIAL: 
+          {raw_story[:6000]}
+
+          INSTRUCTIONS:
+          1. TONE: High energy, slightly judgmental, and fully Kenyan. You are spilling secrets to your followers.
+          2. SLANG STRATEGY: Do NOT use generic slang. Use situational Sheng that fits THIS specific story.
+          3. HASHTAGS (CRITICAL): 
+             - If you mention a specific person (e.g., Ruto, Diamond, Amber Ray), you MUST hashtag their name immediately in the sentence (e.g., "Imagine what #Diamond just did...").
+             - Do not hashtag random words. Only Names and Places.
+          4. VIRAL ENDING: Finish with 3-4 specific viral tags relevant to this exact topic (e.g., if it's music, use music tags; if politics, use #KOT).
+          5. LENGTH: Short and punchy for Facebook (approx 100-150 words).
+
+          FORBIDDEN: 
+          - Do not use phrases like "Dive into", "In the realm of", "Tapestry".
+          - Do not use hashtags that are not relevant to Kenya or the story.
+
+          OUTPUT FORMAT:
+          [The Gossip Post with emojis]
+          """
           
           try:
-              res = gemini.models.generate_content(model="gemini-3-flash-preview", contents=prompt)
-              gossip_text = res.text.strip().replace("*", "").replace("#", "")
+              res = gemini.models.generate_content(
+                  model="gemini-2.0-flash", 
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.85) # High temp for creativity
+              )
+              # Clean up markdown bolding but KEEP hashtags
+              gossip_text = res.text.strip().replace("**", "").replace("__", "")
           except Exception as e:
               print(f"❌ Gemini Error: {e}")
               sys.exit(1)
@@ -108,7 +135,9 @@ jobs:
           # 5. POST (Facebook Feed - Text Post)
           print("🚀 Posting to Facebook...")
           fb_token = os.environ.get("FB_TOKEN")
-          final_msg = f"{gossip_text}\n\n#TMReport #Buzz #Trending"
+          
+          # No hardcoded tags here - we rely on the AI's generated tags
+          final_msg = gossip_text
           
           resp = requests.post(
               "https://graph.facebook.com/v24.0/me/feed",
