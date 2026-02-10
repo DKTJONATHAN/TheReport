@@ -3,18 +3,22 @@ name: Auto Newser (Belinda - The Cynic)
 on:
   schedule:
     # Optimized Kenyan Scandal Schedule (EAT)
-    - cron: '15 5 * * *'   # 8:15 AM: Morning Politics
-    - cron: '15 8 * * *'   # 11:15 AM: Relationship Drama
-    - cron: '15 11 * * *'  # 2:15 PM: Crime & Safety
-    - cron: '15 14 * * *'  # 5:15 PM: Celeb Gossip
-    - cron: '15 17 * * *'  # 8:15 PM: Tech Scams
-    - cron: '15 20 * * *'  # 11:15 PM: Late Night Confessions
+    - cron: '45 5 * * *'   # 8:45 AM
+    - cron: '45 8 * * *'   # 11:45 AM
+    - cron: '45 11 * * *'  # 2:45 PM
+    - cron: '45 14 * * *'  # 5:45 PM
+    - cron: '45 17 * * *'  # 8:45 PM
+    - cron: '45 20 * * *'  # 11:45 PM
   workflow_dispatch:
     inputs:
       manual_topic:
         description: 'Force topic'
         required: false
         default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -88,7 +92,6 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              # PRIORITY: gemini-3-flash-preview
               models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
               
               for model_name in models_to_try:
@@ -102,26 +105,20 @@ jobs:
                           ).text.strip()
                       except Exception as e:
                           print(f"Gemini Error ({model_name}): {e}")
-                          if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                              print("⏳ Quota hit. Sleeping 20s...")
-                              time.sleep(20)
-                          else:
-                              time.sleep(2)
+                          time.sleep(2)
                           continue
               return None
 
           # --- 3. TOPIC MAPPING ---
           cron_map = {
-              '15 5 * * *': 'politics',
-              '15 8 * * *': 'relationships',
-              '15 11 * * *': 'crime',
-              '15 14 * * *': 'entertainment',
-              '15 17 * * *': 'technology',
-              '15 20 * * *': 'entertainment'
+              '45 5 * * *': 'politics',
+              '45 8 * * *': 'relationships',
+              '45 11 * * *': 'crime',
+              '45 14 * * *': 'entertainment',
+              '45 17 * * *': 'technology',
+              '45 20 * * *': 'entertainment'
           }
           initial_topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
-          
-          # Priority: Initial -> Politics -> Entertainment -> Technology
           topic_queue = [initial_topic, 'politics', 'entertainment', 'technology']
           topic_queue = list(dict.fromkeys(topic_queue))
 
@@ -145,15 +142,10 @@ jobs:
 
               try:
                   res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
-                  
-                  # SMART SELECTOR (Drupal 11 + Legacy)
                   news_items = BeautifulSoup(res.text, 'html.parser').select('div.views-row, li.news-item, article')
-                  if not news_items:
-                      news_items = BeautifulSoup(res.text, 'html.parser').select('.view-content a')
+                  if not news_items: news_items = BeautifulSoup(res.text, 'html.parser').select('.view-content a')
 
-                  item_count = 0
                   for item in news_items:
-                      # FIND LINK
                       link_tag = item.select_one('.views-field-title a, .field-content a, h3 a, h4 a, .news-title a')
                       if not link_tag and item.name == 'a': link_tag = item
                       if not link_tag: link_tag = item.select_one('a')
@@ -161,31 +153,21 @@ jobs:
                       if link_tag and 'href' in link_tag.attrs:
                           url = link_tag['href']
                           u_hash = hashlib.md5(url.encode()).hexdigest()
-                          
-                          # Basic filters
                           if u_hash in memory or not url.startswith("http"): continue
                           if "facebook.com" in url or "twitter.com" in url: continue
                           
                           print(f"🕷️ Following link: {url}")
-                          item_count += 1
-                          
                           random.shuffle(apify_pool)
                           scrape_success = False
                           
-                          # APIFY CRAWL (The Follow Logic)
                           for api_key in apify_pool:
                               try:
                                   client_apify = ApifyClient(api_key)
                                   run = client_apify.actor("apify/website-content-crawler").call(
-                                      run_input={
-                                          "startUrls": [{"url": url}], 
-                                          "maxCrawlPages": 1, 
-                                          "crawlerType": "playwright:firefox"
-                                      }
+                                      run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"}
                                   )
                                   dataset = client_apify.dataset(run["defaultDatasetId"])
                                   data = list(dataset.iterate_items())
-                                  
                                   if data:
                                       text = data[0].get('markdown', data[0].get('text', ''))
                                       if len(text) > 600:
@@ -194,50 +176,32 @@ jobs:
                                           scrape_success = True
                                           break 
                               except: continue
-                          
                           if scrape_success: break
                   
                   if full_raw_text:
                       used_topic = topic
                       print(f"✅ Content found for '{topic}'")
                       break 
-                  else:
-                      print(f"⚠️ No content for '{topic}'. Next...")
 
               except Exception as e:
                   print(f"Error checking '{topic}': {e}")
                   continue
 
-          if not full_raw_text:
-              print("❌ FATAL: All topics failed."); exit(0)
+          if not full_raw_text: print("❌ FATAL: All topics failed."); exit(0)
 
           # --- 5. THE 'CYNICAL REALIST' PROMPT ---
           internal_linking = get_internal_context()
-          
           prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL, NO-NONSENSE NAIROBI REALIST.
-          
           SOURCE MATERIAL: {full_raw_text[:12000]}
-          
           {internal_linking}
-
-          MANDATE:
-          1. THE ANGLE: Point out the bad side of everything. Focus on what mainstream media ignores.
-             - If it's "Development", write about the Debt.
-             - If it's "Unity", write about the Betrayal.
-             - If it's "Tech Innovation", write about the Scam or the Job Losses.
-          2. TONE: Disillusioned but sharp. You are the person at the back of the room rolling their eyes.
-          3. HEADLINE: Must be negative or warning-based. E.g., "The Trap in...", "Why You Should Worry...", "The Lie About..."
-          4. NO FORCED SLANG: Write naturally. Do not try to be "cool". Be brutal.
-          5. NO ROBOTIC PHRASES: Ban 'tapestry', 'delve', 'complex landscape'.
-          6. LINKING: Naturally mention 1 past story from the list provided.
-          
+          MANDATE: Point out the bad side. Disillusioned tone. Negative headline. No robotic phrases.
           OUTPUT FORMAT:
-          TITLE: [Cynical/Negative Headline]
-          DESCRIPTION: [One sentence summary of the failure/risk]
-          IMAGE_CAPTION: [Sarcastic caption]
+          TITLE: [Headline]
+          DESCRIPTION: [Summary]
+          IMAGE_CAPTION: [Caption]
           CATEGORY: [{used_topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words for the dark side]
+          IMAGE_KEYWORD: [2 metaphorical words]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
@@ -253,29 +217,40 @@ jobs:
               "DESC": extract("DESCRIPTION", output) or "Full story.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing.",
               "IMG": extract("IMAGE_KEYWORD", output) or used_topic,
-              "BODY": ""
+              "BODY": output.split("BODY:")[-1].strip()
           }
-
-          body_match = re.search(r"BODY:\s*(.*)", output, re.S | re.I)
-          if body_match:
-              parsed["BODY"] = body_match.group(1).strip()
-          else:
-              parsed["BODY"] = output.split("BODY:")[-1].strip()
+          
+          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
+              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
           for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ").replace("--", ", ")
+              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ")
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
-          # --- 7. PUBLISH & SCHEMA ---
+          # --- 7. ROBUST IMAGE FETCHING ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
+              # Generic robust fallbacks (Abstract, City, News, Tech)
+              fallback_pool = [
+                  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1444653614773-8b83df53fe79?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80",
+                  "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80"
+              ]
               try:
-                  r = requests.get(f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}", timeout=10)
-                  return r.json()['urls']['regular']
-              except: return "https://images.unsplash.com/photo-1504711432869-efd597cdd042"
+                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}"
+                  r = requests.get(url, timeout=10)
+                  if r.status_code == 200:
+                      return r.json()['urls']['regular'] # This returns the long, valid URL
+                  else:
+                      print(f"⚠️ Unsplash Status: {r.status_code}. Using fallback.")
+                      return random.choice(fallback_pool)
+              except Exception as e: 
+                  print(f"⚠️ Unsplash Error: {e}")
+                  return random.choice(fallback_pool)
           
           img_url = get_img(parsed['IMG'])
 
@@ -285,12 +260,7 @@ jobs:
               "headline": parsed['TITLE'],
               "description": parsed['DESC'],
               "datePublished": date_now,
-              "author": {
-                  "@type": "Person", 
-                  "name": "Belinda Achieng'",
-                  "jobTitle": "Entertainment Editor",
-                  "url": "https://jonathanmwaniki.co.ke"
-              },
+              "author": {"@type": "Person", "name": "Belinda Achieng'", "url": "https://jonathanmwaniki.co.ke"},
               "image": [img_url]
           }
 
