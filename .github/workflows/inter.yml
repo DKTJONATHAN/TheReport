@@ -1,4 +1,4 @@
-name: Global News Cycle (Cynical & Free)
+name: Global News Cycle (Smart Images)
 
 on:
   schedule:
@@ -129,29 +129,26 @@ jobs:
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'business')
           
-          # --- 3. KEYWORD EXTRACTION ---
-          # We separate the exact keywords so we can feed them to the AI later
+          # DRAMA HUNTER KEYWORDS
           base_keywords = {
               'business': 'market crash, corruption, fraud, scandal, bankruptcy, crisis',
               'sports': 'scandal, feud, fired, cheating, crisis, loss, injury',
               'technology': 'data breach, hack, lawsuit, danger, scam, layoffs, failure'
           }
           keywords_str = base_keywords.get(topic, "scandal, crisis, failure")
-          
-          # Construct Query
           query_str = keywords_str.replace(", ", " OR ") + " -local -school"
           
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 4. DISCOVERY (NewsAPI) ---
+          # --- 3. DISCOVERY (NewsAPI) ---
           news_api = os.environ.get("NEWSAPI_KEY")
           news_url = f"https://newsapi.org/v2/everything?q={query_str}&language=en&sortBy=relevancy&apiKey={news_api}"
           
           try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
 
-          # --- 5. FREE SCRAPER ---
+          # --- 4. FREE SCRAPER ---
           def scrape_article_free(url):
               print(f"🕷️ Stealth-Loading: {url}")
               with sync_playwright() as p:
@@ -178,16 +175,14 @@ jobs:
                           if len(chunk) > 600:
                               article_text = chunk
                               break
-                      
                       if not article_text:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-
                       return article_text
                   except: return None
                   finally: browser.close()
 
-          # --- 6. PROCESS ARTICLES ---
+          # --- 5. PROCESS ARTICLES ---
           full_raw_text, final_hash, target_title = None, None, None
           
           for a in articles:
@@ -205,20 +200,22 @@ jobs:
 
           if not full_raw_text: print("❌ No valid content found."); exit(0)
 
-          # --- 7. THE "HATER" PROMPT (With Mandatory Keywords) ---
+          # --- 6. THE SMART IMAGE PROMPT ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS A CYNICAL GLOBAL REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
           {internal_linking}
           
           MANDATE: 
-          - IGNORE the "official narrative". Find the flaw, the greed, the failure, or the lie.
           - Tone: Critical, Analytical, Slightly Dark. 
           
-          *** HEADLINE RULES (STRICT) ***
-          1. Do NOT copy the source title.
-          2. Your headline MUST contain at least one of these exact keywords: {keywords_str}
-          3. Make it punchy and negative (e.g. "The Great Tech Scam" instead of "Tech Company Fails").
+          *** IMAGE RULE (CRITICAL) ***
+          - Pick a PHYSICAL, CONCRETE NOUN for Unsplash.
+          - DO NOT use abstract concepts like "Crisis" or "Scandal" (Unsplash returns bad art).
+          - USE tangible objects.
+            - Bad: "Financial Ruin" -> Good: "Empty Wallet" or "Wall Street Sign"
+            - Bad: "Hack" -> Good: "Hooded Hacker" or "Binary Code"
+            - Bad: "Court Case" -> Good: "Gavel" or "Courthouse"
           
           OUTPUT FORMAT:
           TITLE: [Critical Keyword-Rich Headline]
@@ -226,13 +223,13 @@ jobs:
           IMAGE_CAPTION: [Critical Caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [Abstract noun representing failure/risk e.g. 'Crash', 'Storm', 'Chains']
+          IMAGE_KEYWORD: [Single Concrete Noun]
           BODY: [Full Critical Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 8. PARSE & CLEAN ---
+          # --- 7. PARSE & CLEAN ---
           def extract(key, text):
               m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
@@ -250,31 +247,45 @@ jobs:
           for k in parsed:
               parsed[k] = clean_dashes(parsed[k])
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
-          
           parsed["BODY"] = clean_dashes(parsed["BODY"])
 
-          # --- 9. STRICT IMAGE FETCHING ---
+          # --- 8. SMART IMAGE SEARCH ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
-              fallback = "https://images.unsplash.com/photo-1555685812-4b943f3db990?w=1200" # Abstract storm/grit
+              # Fallback Pool for each topic
+              defaults = {
+                  'business': "https://images.unsplash.com/photo-1611974765270-ca1258634369?w=1200", # Stock chart
+                  'sports': "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200",   # Stadium
+                  'technology': "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200" # Matrix code
+              }
+              fallback = defaults.get(topic, defaults['business'])
+              
               if not u_key: return fallback
               
-              # Try: Specific -> "Crisis" -> Topic
-              search_terms = [q, "Crisis", topic] 
+              # 3-Step Search: 
+              # 1. The AI's smart keyword (e.g., "Gavel")
+              # 2. A backup concrete noun based on topic (e.g. "Money", "Stadium")
+              # 3. The Topic Name itself
+              
+              backups = {'business': 'Money', 'sports': 'Stadium', 'technology': 'Computer'}
+              search_terms = [q, backups.get(topic, 'News'), topic]
               
               for term in search_terms:
                   try:
-                      print(f"📷 Trying Image: {term}")
-                      url = f"https://api.unsplash.com/photos/random?query={term}&orientation=landscape&client_id={u_key}"
+                      # Remove non-alpha chars to keep search clean
+                      clean_term = re.sub(r'[^a-zA-Z ]', '', term)
+                      print(f"📷 Unsplash Search: {clean_term}")
+                      
+                      url = f"https://api.unsplash.com/photos/random?query={clean_term}&orientation=landscape&client_id={u_key}"
                       r = requests.get(url, timeout=5)
                       if r.status_code == 200:
                           return r.json()['urls']['regular']
                   except: continue
               
-              return fallback 
+              return fallback
           
           img_url = get_img(parsed['IMG'])
 
@@ -328,6 +339,6 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: global cynic update ⚡"
+          commit_message: "content: global cynic (smart img) ⚡"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
