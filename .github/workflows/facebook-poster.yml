@@ -1,4 +1,5 @@
-name: Social Blast
+name: Social Blast (With Hashtags)
+
 on:
   push:
     paths:
@@ -39,6 +40,7 @@ jobs:
             SLUG="$INPUT_SLUG"
             FILE=$(find src/content/posts -name "${SLUG}.md*" | head -n 1)
           else
+            # Find the most recently changed file in content/posts
             FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
             
             if [ -z "$FILE" ]; then
@@ -50,19 +52,40 @@ jobs:
             SLUG="${FILENAME%.*}"
           fi
 
-          # 2. Extract Title
+          echo "Processing File: $FILE"
+
+          # 2. Extract Title & Link
           if [ -f "$FILE" ]; then
+            # Extract title and remove quotes
             TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+            
+            # 3. Extract Tags and Convert to Hashtags
+            # Finds 'tags: [A, B]' -> Removes 'tags:', '[', ']', '"', "'" -> Replaces ',' with space
+            RAW_TAGS=$(grep -m 1 "^tags:" "$FILE" | sed -e 's/tags://' -e 's/\[//' -e 's/\]//' -e 's/"//g' -e "s/'//g")
+            
+            # Loop through comma-separated tags to add '#'
+            HASHTAGS=""
+            if [ -n "$RAW_TAGS" ]; then
+              # Use awk to trim spaces and prepend # to each tag
+              HASHTAGS=$(echo "$RAW_TAGS" | awk -F, '{for(i=1;i<=NF;i++) {gsub(/^ +| +$/,"",$i); if($i!="") printf "#%s ", $i}}')
+            fi
+            
           else
             TITLE="$SLUG"
+            HASHTAGS="#News"
           fi
 
           LINK="$SITE_URL/posts/$SLUG/"
+          
+          # Combine Title + Hashtags
+          FINAL_MESSAGE="$TITLE
 
-          echo "Posting: $TITLE"
+          $HASHTAGS"
 
-          # 3. Send to Facebook (Clean Version)
+          echo "Posting: $FINAL_MESSAGE"
+
+          # 4. Send to Facebook
           curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-            -d "message=$TITLE" \
+            -d "message=$FINAL_MESSAGE" \
             -d "link=$LINK" \
             -d "access_token=$FB_TOKEN"
