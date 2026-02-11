@@ -1,4 +1,4 @@
-name: Global News Cycle (Smart Images)
+name: Global News Cycle (Universal Scope)
 
 on:
   schedule:
@@ -129,26 +129,29 @@ jobs:
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'business')
           
-          # DRAMA HUNTER KEYWORDS
+          # --- 3. UNIVERSAL SEARCH QUERIES (UPDATED) ---
+          # We use broad category terms to catch ANY major story.
           base_keywords = {
-              'business': 'market crash, corruption, fraud, scandal, bankruptcy, crisis',
-              'sports': 'scandal, feud, fired, cheating, crisis, loss, injury',
-              'technology': 'data breach, hack, lawsuit, danger, scam, layoffs, failure'
+              'business': 'global markets, stock exchange crash, international trade scandal, central bank crisis, billionaire fraud, oil price shock',
+              'sports': 'world championship scandal, olympic controversy, major league crisis, fifa corruption, doping scandal, athlete lawsuit',
+              'technology': 'big tech lawsuit, artificial intelligence risk, global cyberattack, new tech product fail, crypto market crash, tech giant layoff'
           }
-          keywords_str = base_keywords.get(topic, "scandal, crisis, failure")
-          query_str = keywords_str.replace(", ", " OR ") + " -local -school"
+          keywords_str = base_keywords.get(topic, "global crisis")
+          
+          # The Query: Broad keywords + Exclude Local Terms
+          query_str = f"({keywords_str.replace(', ', ' OR ')}) -Kenya -Nairobi -local -regional"
           
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 3. DISCOVERY (NewsAPI) ---
+          # --- 4. DISCOVERY (NewsAPI) ---
           news_api = os.environ.get("NEWSAPI_KEY")
           news_url = f"https://newsapi.org/v2/everything?q={query_str}&language=en&sortBy=relevancy&apiKey={news_api}"
           
           try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
 
-          # --- 4. FREE SCRAPER ---
+          # --- 5. FREE SCRAPER ---
           def scrape_article_free(url):
               print(f"🕷️ Stealth-Loading: {url}")
               with sync_playwright() as p:
@@ -182,7 +185,7 @@ jobs:
                   except: return None
                   finally: browser.close()
 
-          # --- 5. PROCESS ARTICLES ---
+          # --- 6. PROCESS ARTICLES ---
           full_raw_text, final_hash, target_title = None, None, None
           
           for a in articles:
@@ -200,27 +203,30 @@ jobs:
 
           if not full_raw_text: print("❌ No valid content found."); exit(0)
 
-          # --- 6. THE SMART IMAGE PROMPT ---
+          # --- 7. THE PROMPT (Auto-Keyword Injection) ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS A CYNICAL GLOBAL REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
           {internal_linking}
           
           MANDATE: 
+          - Analyze the INTERNATIONAL impact.
           - Tone: Critical, Analytical, Slightly Dark. 
           
-          *** IMAGE RULE (CRITICAL) ***
-          - Pick a PHYSICAL, CONCRETE NOUN for Unsplash.
-          - DO NOT use abstract concepts like "Crisis" or "Scandal" (Unsplash returns bad art).
-          - USE tangible objects.
-            - Bad: "Financial Ruin" -> Good: "Empty Wallet" or "Wall Street Sign"
-            - Bad: "Hack" -> Good: "Hooded Hacker" or "Binary Code"
-            - Bad: "Court Case" -> Good: "Gavel" or "Courthouse"
+          *** HEADLINE RULES ***
+          1. Do NOT copy the source title.
+          2. Use clear, impactful English.
+          3. Make it punchy and negative.
+          
+          *** IMAGE RULE ***
+          - Return a SINGLE concrete noun for the image search.
+          - Example: If story is about 'Google AI Fail', return 'Robot' or 'Server'.
+          - Example: If story is about 'Market Crash', return 'Stock Chart' or 'Money'.
           
           OUTPUT FORMAT:
-          TITLE: [Critical Keyword-Rich Headline]
-          DESCRIPTION: [Warning Summary]
-          IMAGE_CAPTION: [Critical Caption]
+          TITLE: [Headline]
+          DESCRIPTION: [Summary]
+          IMAGE_CAPTION: [Caption]
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [Single Concrete Noun]
@@ -229,7 +235,7 @@ jobs:
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 7. PARSE & CLEAN ---
+          # --- 8. PARSE & CLEAN ---
           def extract(key, text):
               m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
@@ -249,42 +255,34 @@ jobs:
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
           parsed["BODY"] = clean_dashes(parsed["BODY"])
 
-          # --- 8. SMART IMAGE SEARCH ---
+          # --- 9. SMART IMAGE SEARCH ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
-              # Fallback Pool for each topic
+              # International Fallbacks
               defaults = {
-                  'business': "https://images.unsplash.com/photo-1611974765270-ca1258634369?w=1200", # Stock chart
-                  'sports': "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200",   # Stadium
-                  'technology': "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200" # Matrix code
+                  'business': "https://images.unsplash.com/photo-1611974765270-ca1258634369?w=1200", 
+                  'sports': "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200",   
+                  'technology': "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200" 
               }
               fallback = defaults.get(topic, defaults['business'])
-              
               if not u_key: return fallback
               
-              # 3-Step Search: 
-              # 1. The AI's smart keyword (e.g., "Gavel")
-              # 2. A backup concrete noun based on topic (e.g. "Money", "Stadium")
-              # 3. The Topic Name itself
-              
-              backups = {'business': 'Money', 'sports': 'Stadium', 'technology': 'Computer'}
+              # AI Keyword -> Category Fallback -> Topic Name
+              backups = {'business': 'Wall Street', 'sports': 'Stadium', 'technology': 'Data Center'}
               search_terms = [q, backups.get(topic, 'News'), topic]
               
               for term in search_terms:
                   try:
-                      # Remove non-alpha chars to keep search clean
                       clean_term = re.sub(r'[^a-zA-Z ]', '', term)
                       print(f"📷 Unsplash Search: {clean_term}")
-                      
                       url = f"https://api.unsplash.com/photos/random?query={clean_term}&orientation=landscape&client_id={u_key}"
                       r = requests.get(url, timeout=5)
                       if r.status_code == 200:
                           return r.json()['urls']['regular']
                   except: continue
-              
               return fallback
           
           img_url = get_img(parsed['IMG'])
@@ -339,6 +337,6 @@ jobs:
       - name: Commit and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: global cynic (smart img) ⚡"
+          commit_message: "content: universal global scoop 🌍"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
