@@ -12,7 +12,6 @@ if (allPosts.length === 0) throw new Error("No posts found!");
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Technology'];
 const isLive = (date) => (new Date() - new Date(date)) < 4 * 60 * 60 * 1000;
 
-// Story Circles
 const storyCircles = allPosts.slice(0, 10).map(post => ({
   label: post.data.category || 'News',
   image: post.data.image,
@@ -20,7 +19,6 @@ const storyCircles = allPosts.slice(0, 10).map(post => ({
   live: isLive(post.data.date)
 }));
 
-// Sections
 const [heroMain, ...heroGrid] = allPosts.slice(0, 5);
 const initialFeed = allPosts.slice(5, 13);
 const hiddenFeed = allPosts.slice(13, 100); 
@@ -48,13 +46,13 @@ const hiddenFeed = allPosts.slice(13, 100);
 
     <main class="jm-container">
 
-      {/* --- 2. HERO SECTION (Vertical Card) --- */}
-      <section class="hero-section no-ad-injection">
+      {/* --- 2. HERO SECTION --- */}
+      <section class="bento-grid no-ad-injection">
         
-        {/* Main Hero Card */}
-        <article class="hero-main glass-panel">
-          <a href={`/posts/${heroMain.slug}`} class="vertical-link">
-            <div class="hero-img-container">
+        {/* Main Hero: VERTICAL (Image Top, Text Bottom) */}
+        <article class="bento-feature glass-panel vertical-card">
+          <a href={`/posts/${heroMain.slug}`} class="card-link">
+            <div class="hero-img-wrap">
               <img src={heroMain.data.image} alt={heroMain.data.title} loading="eager" />
             </div>
             <div class="hero-content">
@@ -65,23 +63,23 @@ const hiddenFeed = allPosts.slice(13, 100);
           </a>
         </article>
 
-        {/* Side Stack (Vertical Cards) */}
-        <div class="hero-side">
+        {/* Small Cards: HORIZONTAL (Image Left, Text Right) */}
+        <div class="bento-stack">
           {heroGrid.map(post => (
-            <a href={`/posts/${post.slug}`} class="side-card glass-panel">
-               <div class="side-img">
-                 <img src={post.data.image} alt={post.data.title} loading="lazy" />
-               </div>
-               <div class="side-content">
-                 <span class="tiny-cat">{post.data.category}</span>
-                 <h3>{post.data.title}</h3>
-               </div>
+            <a href={`/posts/${post.slug}`} class="mini-card glass-panel horizontal-card">
+              <div class="mini-img">
+                <img src={post.data.image} alt={post.data.title} loading="lazy" />
+              </div>
+              <div class="mini-text">
+                <span class="tiny-cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
+              </div>
             </a>
           ))}
         </div>
       </section>
 
-      {/* --- 3. NEWS FEED (Vertical Cards) --- */}
+      {/* --- 3. NEWS FEED --- */}
       <div class="content-split">
         
         <div class="feed-col">
@@ -92,8 +90,8 @@ const hiddenFeed = allPosts.slice(13, 100);
 
           <div id="feed-container" class="feed-grid">
             {initialFeed.map(post => (
-              <article class="feed-card glass-panel">
-                <a href={`/posts/${post.slug}`} class="vertical-link">
+              <article class="feed-card glass-panel vertical-card">
+                <a href={`/posts/${post.slug}`} class="card-link">
                   <div class="feed-img">
                     <img src={post.data.image} alt={post.data.title} loading="lazy" />
                   </div>
@@ -113,7 +111,7 @@ const hiddenFeed = allPosts.slice(13, 100);
           {hiddenFeed.length > 0 && (
             <div class="load-more-wrap">
               <button id="btn-load-more" class="btn-load-more">
-                <span>Load More Stories</span>
+                <span>Unroll More Stories</span>
               </button>
             </div>
           )}
@@ -152,8 +150,8 @@ const hiddenFeed = allPosts.slice(13, 100);
       nextBatch.forEach(post => {
         const dateStr = new Date(post.data.date).toLocaleDateString();
         const html = `
-          <article class="feed-card glass-panel fade-in">
-            <a href="/posts/${post.slug}" class="vertical-link">
+          <article class="feed-card glass-panel vertical-card fade-in">
+            <a href="/posts/${post.slug}" class="card-link">
               <div class="feed-img">
                 <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" />
               </div>
@@ -191,17 +189,15 @@ const hiddenFeed = allPosts.slice(13, 100);
     --jm-font-body: 'Merriweather', serif;
   }
   
-  /* Reset */
   *, *::before, *::after { box-sizing: border-box; }
   
-  /* Layout */
   .jm-home-wrapper { background-color: var(--jm-bg); color: var(--jm-text-main); font-family: var(--jm-font-body); width: 100%; padding-bottom: 4rem; }
   .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
   
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
   a { text-decoration: none; color: inherit; transition: 0.2s ease; }
 
-  /* Glass Card */
+  /* Glass Card Base */
   .glass-panel {
     background: var(--jm-card);
     backdrop-filter: blur(12px);
@@ -209,62 +205,69 @@ const hiddenFeed = allPosts.slice(13, 100);
     border-radius: 12px;
     overflow: hidden;
     transition: transform 0.2s ease, border-color 0.2s ease;
-    display: flex;
-    flex-direction: column; /* Force vertical stacking */
   }
   .glass-panel:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-3px); }
 
-  /* --- HERO SECTION --- */
-  .hero-section { display: grid; gap: 2rem; margin-bottom: 4rem; }
+  /* --- CARD VARIANTS --- */
   
-  /* Desktop: 2 Columns */
-  @media (min-width: 1024px) {
-    .hero-section { grid-template-columns: 2fr 1fr; }
+  /* Vertical Card (Hero & Feed) */
+  .vertical-card { display: flex; flex-direction: column; height: 100%; }
+  .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
+  
+  /* Horizontal Card (Small Cards) */
+  .horizontal-card { 
+    display: flex; 
+    flex-direction: row; /* Image Left, Text Right */
+    align-items: center; 
+    padding: 0.8rem; 
+    gap: 1rem; 
   }
 
-  /* Hero Main */
-  .hero-main { height: 100%; }
-  .vertical-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
+  /* --- HERO SECTION --- */
+  .bento-grid { display: grid; gap: 2rem; margin-bottom: 4rem; }
   
-  .hero-img-container { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+  @media (min-width: 1024px) {
+    .bento-grid { grid-template-columns: 2fr 1fr; }
+  }
+
+  /* Hero Main Content */
+  .hero-img-wrap { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
   .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
-  
   .cat-tag { background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 0.8rem; align-self: flex-start; }
   .hero-content h1 { font-family: var(--jm-font-head); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 1rem 0; color: white; }
   .excerpt { color: var(--jm-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
 
-  /* Hero Side Stack */
-  .hero-side { display: grid; gap: 1rem; }
-  @media (min-width: 640px) { .hero-side { grid-template-columns: 1fr 1fr; } }
-  @media (min-width: 1024px) { .hero-side { grid-template-columns: 1fr; } }
+  /* Bento Stack (Small Cards) */
+  .bento-stack { display: grid; gap: 1rem; align-content: start; }
   
-  .side-card { padding: 1rem; display: flex; gap: 1rem; align-items: center; }
-  .side-img { width: 90px; height: 70px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-  .side-content h3 { font-family: var(--jm-font-head); font-size: 0.9rem; font-weight: 600; margin: 0; line-height: 1.3; color: var(--jm-text-main); }
+  .mini-img { 
+    width: 90px; 
+    height: 80px; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    flex-shrink: 0; 
+  }
+  .mini-text { 
+    flex: 1; 
+    min-width: 0; /* Prevents text overflow */
+  }
+  .mini-text h3 { font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600; margin: 0; line-height: 1.35; color: var(--jm-text-main); }
   .tiny-cat { font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
 
-  /* --- FEED SECTION (GRID) --- */
+  /* --- FEED SECTION --- */
   @media (min-width: 1024px) { .content-split { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; } }
-  
   .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
   .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; }
   .line { flex: 1; height: 1px; background: var(--jm-border); }
 
-  /* Feed Grid */
   .feed-grid { display: grid; gap: 2rem; }
   
-  /* Feed Card Specifics */
-  .feed-card { 
-    /* No padding on card itself, let img fill width */
-    padding: 0; 
-  }
-  
+  /* Feed Card Content */
   .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
   .feed-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
   
   .meta { font-family: var(--jm-font-head); font-size: 0.7rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; display: flex; gap: 0.8rem; align-items: center; }
   .meta-cat { color: var(--jm-accent); }
-  
   .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.3rem; font-weight: 700; margin: 0; line-height: 1.3; color: white; }
   .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -284,6 +287,7 @@ const hiddenFeed = allPosts.slice(13, 100);
   /* Pulse Bar */
   .pulse-bar { padding: 1.5rem 0; border-bottom: 1px solid var(--jm-border); margin-bottom: 2.5rem; }
   .pulse-track { display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+  .pulse-track::-webkit-scrollbar { display: none; }
   .pulse-node { display: flex; flex-direction: column; align-items: center; width: 80px; flex-shrink: 0; }
   .ring-wrap { width: 80px; height: 80px; border-radius: 50%; padding: 3px; border: 2px solid transparent; position: relative; margin-bottom: 0.5rem; }
   .ring-wrap img { border-radius: 50%; border: 2px solid var(--jm-bg); }
