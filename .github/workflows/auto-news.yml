@@ -2,9 +2,7 @@ name: Auto Newser (Belinda - The Cynic)
 
 on:
   schedule:
-    # Runs at minute 15 of every hour from 6 AM to 10 PM EAT (UTC+3)
-    # 03:15 UTC = 06:15 EAT
-    # 19:15 UTC = 22:15 EAT
+    # Runs at minute 15 of every hour from 6 AM to 10 PM EAT
     - cron: '15 3-19 * * *'
   workflow_dispatch:
     inputs:
@@ -45,7 +43,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Added playwright and lxml, removed apify-client
           pip install requests google-genai beautifulsoup4 lxml playwright
           playwright install chromium
 
@@ -71,8 +68,10 @@ jobs:
 
           def clean_dashes(text):
               if not text: return ""
+              # Replace specific dashes
               text = text.replace('—', ' - ').replace('–', '-')
-              text = re.sub(r'\s+', ' ', text)
+              # Only collapse multiple spaces, NOT multiple newlines
+              text = re.sub(r'[ \t]+', ' ', text)
               return text.strip()
 
           def get_internal_context():
@@ -110,15 +109,11 @@ jobs:
               return None
 
           # --- 2. TOPIC & DISCOVERY ---
-          # We rotate topics based on the hour to ensure variety
-          hour = datetime.datetime.utcnow().hour
+          hour = (datetime.datetime.utcnow().hour + 3) % 24  # Convert to EAT
           topics_pool = ['politics', 'politics', 'crime', 'entertainment', 'gossip', 'lifestyle']
-          # Simple rotation: use hour modulo len(pool)
           auto_topic = topics_pool[hour % len(topics_pool)]
-          
           used_topic = os.environ.get('MANUAL_TOPIC', '').lower() or auto_topic
 
-          # Google News RSS Queries for Kenya
           query_map = {
               'politics': 'Kenya politics OR Ruto OR Raila OR Parliament',
               'crime': 'Kenya crime OR DCI OR police OR scandal',
@@ -132,7 +127,7 @@ jobs:
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          print(f"🔍 Searching Topic: {used_topic.upper()}")
+          print(f"🔍 Topic: {used_topic.upper()}")
           
           try:
               res = requests.get(rss_url, timeout=15)
@@ -140,14 +135,12 @@ jobs:
               items = soup.find_all("item")
           except: items = []
 
-          # --- 3. FREE PLAYWRIGHT SCRAPER ---
+          # --- 3. FREE SCRAPER ---
           def scrape_article_free(url):
               print(f"🕷️ Stealth-Loading: {url}")
               with sync_playwright() as p:
                   browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
-                  context = browser.new_context(
-                      user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                  )
+                  context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                   page = context.new_page()
                   page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
@@ -155,12 +148,9 @@ jobs:
                       page.goto(url, timeout=60000)
                       try: page.wait_for_load_state("networkidle", timeout=10000)
                       except: pass
-
-                      content = page.content()
-                      soup = BeautifulSoup(content, "html.parser")
                       
+                      soup = BeautifulSoup(page.content(), "html.parser")
                       article_text = ""
-                      # Try typical Kenyan news sites containers
                       containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post|story)'))
                       for c in containers:
                           paras = c.find_all("p")
@@ -168,62 +158,47 @@ jobs:
                           if len(chunk) > 500:
                               article_text = chunk
                               break
-                      
-                      # Fallback
                       if not article_text:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-
                       return article_text
                   except: return None
                   finally: browser.close()
 
           # --- 4. FIND & SCRAPE ---
           full_raw_text, final_hash = None, None
-          
           for item in items:
               url = item.link.text
               u_hash = hashlib.md5(url.encode()).hexdigest()
-              
               if u_hash in memory: continue
               
-              # Scrape
               text = scrape_article_free(url)
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = u_hash
                   break
           
-          if not full_raw_text: 
-              print("❌ No new content found."); exit(0)
+          if not full_raw_text: print("❌ No new content."); exit(0)
 
-          # --- 5. BELINDA'S PROMPT ---
+          # --- 5. THE PROMPT (Paragraph Fix) ---
           internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL, NO-NONSENSE NAIROBI REALIST.
+          prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL NAIROBI REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
           {internal_linking}
           
           MANDATE: 
-          - Point out the bad side. Disillusioned tone. 
-          - Use a negative, punchy headline. 
-          - No robotic phrases. Keep it raw and Kenyan (but English).
+          - Point out the bad side. Disillusioned, punchy tone.
+          - STRICT FORMATTING: Use Markdown. Break the story into 4-6 paragraphs. Use a double newline between paragraphs.
           
-          *** HEADLINE RULE ***
-          - Do NOT copy the source title.
-          - Make it cynical (e.g. "Another Scandal," "We Told You So").
-          
-          *** IMAGE RULE ***
-          - Return a SINGLE concrete noun for the image search.
-          - Example: 'Handcuffs', 'Matatu', 'Parliament', 'Shilling', 'Rain'.
-          
-          OUTPUT FORMAT:
-          TITLE: [Headline]
-          DESCRIPTION: [Summary]
+          OUTPUT:
+          TITLE: [Cynical Headline]
+          DESCRIPTION: [Warning Summary]
           IMAGE_CAPTION: [Caption]
           CATEGORY: [{used_topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [Single Concrete Noun]
-          BODY: [Full Article]"""
+          BODY:
+          [Article text here with paragraphs]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
@@ -240,14 +215,11 @@ jobs:
               "IMG": extract("IMAGE_KEYWORD", output) or used_topic,
               "BODY": output.split("BODY:")[-1].strip()
           }
-          
-          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
-              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
-          for k in parsed:
-              parsed[k] = clean_dashes(parsed[k])
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
-          parsed["BODY"] = clean_dashes(parsed["BODY"])
+          # Scrub only metadata, keep line breaks in BODY
+          parsed["TITLE"] = clean_dashes(parsed["TITLE"])
+          parsed["DESC"] = clean_dashes(parsed["DESC"])
+          parsed["BODY"] = parsed["BODY"].replace('—', ' - ').replace('–', '-')
 
           # --- 7. IMAGE & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
@@ -255,37 +227,17 @@ jobs:
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
-              # Kenyan Defaults
-              defaults = ["Nairobi", "Kenya", "Africa"]
-              fallback = "https://images.unsplash.com/photo-1499364615650-ec387c1470c5?w=1200" # Nairobi Skyline
-              
+              fallback = "https://images.unsplash.com/photo-1499364615650-ec387c1470c5?w=1200"
               if not u_key: return fallback
-              
-              # Search: Keyword -> Nairobi -> Kenya
-              search_terms = [q, "Nairobi", "Kenya"]
-              
-              for term in search_terms:
+              for term in [q, "Nairobi", "Kenya"]:
                   try:
-                      clean = re.sub(r'[^a-zA-Z ]', '', term)
-                      print(f"📷 Unsplash Search: {clean}")
-                      url = f"https://api.unsplash.com/photos/random?query={clean}&orientation=landscape&client_id={u_key}"
+                      url = f"https://api.unsplash.com/photos/random?query={term}&orientation=landscape&client_id={u_key}"
                       r = requests.get(url, timeout=5)
-                      if r.status_code == 200:
-                          return r.json()['urls']['regular']
+                      if r.status_code == 200: return r.json()['urls']['regular']
                   except: continue
               return fallback
           
           img_url = get_img(parsed['IMG'])
-
-          schema_json = {
-              "@context": "https://schema.org",
-              "@type": "AnalysisNewsArticle",
-              "headline": parsed['TITLE'],
-              "description": parsed['DESC'],
-              "datePublished": date_now,
-              "author": {"@type": "Person", "name": "Belinda Achieng'", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [img_url]
-          }
 
           final_md = textwrap.dedent(f"""---
           title: "{parsed['TITLE'].replace('"', "'")}"
@@ -301,7 +253,13 @@ jobs:
           {parsed['BODY']}
 
           <script type="application/ld+json">
-          {json.dumps(schema_json, indent=2)}
+          {{
+            "@context": "https://schema.org",
+            "@type": "AnalysisNewsArticle",
+            "headline": "{parsed['TITLE']}",
+            "datePublished": "{date_now}",
+            "author": {{"@type": "Person", "name": "Belinda Achieng'"}}
+          }}
           </script>
           """).strip()
 
@@ -329,4 +287,4 @@ jobs:
         with:
           commit_message: "content: belinda-cynic publish 🇰🇪"
           branch: ${{ env.DEFAULT_BRANCH }}
-          file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
+          file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
