@@ -2,47 +2,46 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. DATA LOGIC
+// --- 1. DATA LOGIC ---
 const allPosts = (await getCollection('posts'))
   .filter(p => !p.data.draft)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
 
 if (allPosts.length === 0) {
-  throw new Error("No posts found! Add at least one post to build the homepage.");
+  throw new Error("No posts found!");
 }
 
 const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Technology'];
 
-// Logic for "Live" ring (Less than 6 hours old)
-const isLive = (date) => (new Date() - new Date(date)) < 6 * 60 * 60 * 1000;
+// "Live" Logic: Posts newer than 4 hours get a glowing ring
+const isLive = (date) => (new Date() - new Date(date)) < 4 * 60 * 60 * 1000;
 
-// 2. STORY CIRCLES (Dynamic Pulse)
-const combinedCircles = allPosts.slice(0, 10).map(post => ({
+// Story Circles (Top 10)
+const storyCircles = allPosts.slice(0, 10).map(post => ({
   label: post.data.category || 'News',
   image: post.data.image,
   link: `/posts/${post.slug}`,
   live: isLive(post.data.date)
 }));
 
-// 3. SECTIONS (Bento Logic)
-const [heroMain, ...heroGrid] = allPosts.slice(0, 5);
-const trendingPosts = allPosts.slice(5, 11);
-const opinionPosts = allPosts.filter(p => p.data.category === 'Opinion').slice(0, 3);
+// Sections
+const [heroMain, ...heroGrid] = allPosts.slice(0, 5); // 1 Main + 4 Sub
+const trendingPosts = allPosts.slice(5, 13); // Next 8 posts for the feed
+
 ---
 
-<Layout title="Jonathan Mwaniki | Kenya News Hub" description="Breaking news, hard-hitting analysis, and global insights.">
+<Layout>
+  <div class="jm-home-wrapper">
 
-  <div class="page-wrapper">
-    
-    {/* --- 1. THE PULSE BAR (Recency Focus) --- */}
-    <section class="pulse-section">
-      <div class="main-container">
-        <div class="pulse-scroll">
-          {combinedCircles.map(item => (
-            <a href={item.link} class="pulse-item">
-              <div class={`pulse-ring ${item.live ? 'is-live' : ''}`}>
-                <img src={item.image} alt={item.label} loading="eager" />
-                {item.live && <span class="live-dot">LIVE</span>}
+    {/* --- 1. LIVE PULSE BAR --- */}
+    <section class="pulse-bar">
+      <div class="jm-container">
+        <div class="pulse-track">
+          {storyCircles.map(item => (
+            <a href={item.link} class="pulse-node">
+              <div class={`ring-wrap ${item.live ? 'live' : ''}`}>
+                <img src={item.image} alt={item.label} width="80" height="80" loading="eager" />
+                {item.live && <span class="live-badge">LIVE</span>}
               </div>
               <span class="pulse-label">{item.label}</span>
             </a>
@@ -51,199 +50,382 @@ const opinionPosts = allPosts.filter(p => p.data.category === 'Opinion').slice(0
       </div>
     </section>
 
-    <main class="main-container">
-      
-      {/* --- 2. BENTO HERO (Authority Logic) --- */}
-      <section class="bento-hero">
-        {/* Massive Featured Post */}
-        <article class="bento-main glass-card">
-          <a href={`/posts/${heroMain.slug}`}>
-            <div class="bento-img-box">
-              <img src={heroMain.data.image} alt={heroMain.data.title} loading="eager" />
-              <div class="img-overlay"></div>
-              <div class="bento-content">
-                <span class="cat-pill">{heroMain.data.category}</span>
-                <h1>{heroMain.data.title}</h1>
-                <p>{heroMain.data.description}</p>
-              </div>
+    <main class="jm-container">
+
+      {/* --- 2. BENTO GRID HERO --- */}
+      <section class="bento-grid">
+        {/* Main Feature */}
+        <article class="bento-feature glass-panel">
+          <a href={`/posts/${heroMain.slug}`} class="bento-link">
+            <img src={heroMain.data.image} alt={heroMain.data.title} class="bg-img" loading="eager" />
+            <div class="gradient-overlay"></div>
+            <div class="bento-content">
+              <span class="cat-tag">{heroMain.data.category}</span>
+              <h1>{heroMain.data.title}</h1>
+              <p class="excerpt">{heroMain.data.description}</p>
+              <span class="read-more">Read Story &rarr;</span>
             </div>
           </a>
         </article>
 
-        {/* Small Grid Side */}
-        <div class="bento-side">
+        {/* 4 Sub-Features */}
+        <div class="bento-stack">
           {heroGrid.map(post => (
-            <a href={`/posts/${post.slug}`} class="bento-sub glass-card">
-              <div class="sub-img">
+            <a href={`/posts/${post.slug}`} class="mini-card glass-panel">
+              <div class="mini-img">
                 <img src={post.data.image} alt={post.data.title} loading="lazy" />
               </div>
-              <div class="sub-info">
-                 <span class="sub-cat">{post.data.category}</span>
-                 <h3>{post.data.title}</h3>
+              <div class="mini-text">
+                <span class="tiny-cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
               </div>
             </a>
           ))}
         </div>
       </section>
 
-      {/* --- 3. THE FEED GRID --- */}
-      <div class="layout-grid">
+      {/* --- 3. NEWS FEED LAYOUT --- */}
+      <div class="content-split">
         
-        {/* Main Feed */}
-        <div class="feed-column">
-          <div class="section-heading">
-            <h2>The Latest Updates</h2>
-            <div class="glow-line"></div>
+        {/* Left Column: Feed */}
+        <div class="feed-col">
+          <div class="feed-header">
+            <h2>Latest Updates</h2>
+            <div class="line"></div>
           </div>
 
-          <div class="news-stack">
+          <div class="feed-list">
             {trendingPosts.map(post => (
-              <article class="news-card glass-card">
-                <a href={`/posts/${post.slug}`}>
-                  <div class="card-layout">
-                    <div class="card-text">
-                      <div class="card-meta">
-                        <span class="meta-cat">{post.data.category}</span>
-                        <span class="meta-date">{new Date(post.data.date).toLocaleDateString()}</span>
-                      </div>
-                      <h3>{post.data.title}</h3>
-                      <p>{post.data.description}</p>
+              <article class="feed-card glass-panel">
+                <a href={`/posts/${post.slug}`} class="feed-link">
+                  <div class="feed-info">
+                    <div class="meta">
+                      <span class="meta-cat">{post.data.category}</span>
+                      <span class="meta-dot">•</span>
+                      <time>{new Date(post.data.date).toLocaleDateString()}</time>
                     </div>
-                    <div class="card-img">
-                      <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                    </div>
+                    <h3>{post.data.title}</h3>
+                    <p>{post.data.description}</p>
+                  </div>
+                  <div class="feed-img">
+                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
                   </div>
                 </a>
               </article>
             ))}
           </div>
+
+          {/* MORE STORIES BUTTON */}
+          <div class="load-more-wrap">
+            <a href="/archive" class="btn-load-more">
+              <span>View More Stories</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            </a>
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <aside class="sidebar-column">
-          <div class="sticky-rail">
+        {/* Right Column: Sticky Sidebar */}
+        <aside class="sidebar-col">
+          <div class="sticky-box">
             
-            {/* Newsletter: Conversion Driven */}
-            <div class="widget newsletter-widget glass-card">
-              <h3>Get the Scoop</h3>
-              <p>Sign up for Belinda's daily cynicism report.</p>
-              <form class="news-form">
-                <input type="email" placeholder="email@address.com" required />
-                <button type="submit">Join the List</button>
-              </form>
+            {/* Trending Topics */}
+            <div class="widget glass-panel">
+              <h4 class="widget-title">Trending Topics</h4>
+              <div class="tag-cloud">
+                {majorCategories.map(cat => (
+                  <a href={`/category/${cat.toLowerCase()}`} class="tag-pill">{cat}</a>
+                ))}
+                <a href="/category/opinion" class="tag-pill opinion">Opinion</a>
+              </div>
             </div>
 
-            {/* Trending Topics List */}
-            <div class="widget topics-widget glass-card">
-              <h4 class="widget-head">Trending Topics</h4>
-              <div class="topic-pills">
-                {majorCategories.map(cat => (
-                  <a href={`/category/${cat.toLowerCase()}`} class="pill">{cat}</a>
-                ))}
-              </div>
+            {/* Ad Space Placeholder */}
+            <div class="widget ad-space glass-panel">
+              <span class="ad-label">Advertisement</span>
+              <div class="ad-rect"></div>
             </div>
 
           </div>
         </aside>
 
       </div>
+
     </main>
   </div>
-
-  <style>
-    /* --- THEMW VARIABLES --- */
-    :root {
-      --bg-dark: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --accent: #ef4444; /* Brighter Red for focus */
-      --text-pri: #f8fafc;
-      --text-sec: #94a3b8;
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --font-display: 'Inter', system-ui, sans-serif;
-      --font-body: 'Merriweather', Georgia, serif;
-    }
-
-    body { background: var(--bg-dark); color: var(--text-pri); font-family: var(--font-body); margin: 0; }
-    img { width: 100%; height: 100%; object-fit: cover; }
-    .main-container { max-width: 1240px; margin: 0 auto; padding: 0 1.5rem; }
-
-    /* --- GLASS UI --- */
-    .glass-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .glass-card:hover { border-color: var(--accent); transform: translateY(-4px); }
-
-    /* --- PULSE (Stories) --- */
-    .pulse-section { padding: 1.5rem 0; border-bottom: 1px solid var(--glass-border); margin-bottom: 2rem; }
-    .pulse-scroll { display: flex; gap: 1.5rem; overflow-x: auto; scrollbar-width: none; }
-    .pulse-item { flex: 0 0 auto; width: 75px; text-align: center; cursor: pointer; }
-    .pulse-ring { 
-      width: 75px; height: 75px; border-radius: 50%; padding: 3px; border: 2px solid transparent; 
-      position: relative; margin-bottom: 0.5rem; transition: transform 0.3s;
-    }
-    .pulse-ring img { border-radius: 50%; width: 100%; height: 100%; border: 2px solid var(--bg-dark); }
-    .pulse-ring.is-live { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .live-dot { 
-      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-      background: var(--accent); color: white; font-size: 0.6rem; font-weight: 900;
-      padding: 1px 4px; border-radius: 4px; border: 1px solid var(--bg-dark);
-    }
-    .pulse-label { font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; color: var(--text-sec); }
-
-    /* --- BENTO HERO --- */
-    .bento-hero { display: grid; gap: 1rem; margin-bottom: 3rem; }
-    @media (min-width: 1024px) { .bento-hero { grid-template-columns: 2fr 1fr; height: 500px; } }
-
-    .bento-main { position: relative; }
-    .bento-img-box { position: relative; height: 100%; }
-    .img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,23,42,0.9), transparent); }
-    .bento-content { position: absolute; bottom: 0; padding: 2rem; }
-    .cat-pill { background: var(--accent); padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 1rem; display: inline-block; }
-    .bento-content h1 { font-family: var(--font-display); font-size: clamp(1.5rem, 5vw, 2.8rem); line-height: 1.1; margin: 0.5rem 0; }
-    
-    .bento-side { display: grid; grid-template-rows: repeat(4, 1fr); gap: 0.8rem; }
-    .bento-sub { display: flex; gap: 1rem; padding: 0.5rem; }
-    .sub-img { width: 80px; height: 60px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
-    .sub-info h3 { font-family: var(--font-display); font-size: 0.95rem; margin: 0; line-height: 1.3; color: var(--text-pri); }
-    .sub-cat { font-size: 0.65rem; color: var(--accent); font-weight: 800; text-transform: uppercase; }
-
-    /* --- GRID LAYOUT --- */
-    @media (min-width: 1024px) {
-      .layout-grid { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; }
-    }
-
-    .section-heading { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-    .section-heading h2 { font-family: var(--font-display); font-size: 1.4rem; white-space: nowrap; }
-    .glow-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); }
-
-    .news-stack { display: flex; flex-direction: column; gap: 1.5rem; }
-    .news-card { padding: 1.5rem; }
-    .card-layout { display: flex; flex-direction: column-reverse; gap: 1rem; }
-    @media (min-width: 640px) { .card-layout { flex-direction: row; align-items: flex-start; } }
-
-    .card-text { flex: 1; }
-    .card-meta { font-family: var(--font-display); font-size: 0.75rem; font-weight: 700; color: var(--text-sec); margin-bottom: 0.5rem; }
-    .meta-cat { color: var(--accent); margin-right: 1rem; }
-    .card-text h3 { font-family: var(--font-display); font-size: 1.5rem; margin: 0.5rem 0; line-height: 1.2; }
-    .card-text p { font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-img { width: 100%; height: 200px; border-radius: 8px; overflow: hidden; }
-    @media (min-width: 640px) { .card-img { width: 220px; height: 140px; } }
-
-    /* --- SIDEBAR --- */
-    .sticky-rail { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
-    .widget { padding: 1.5rem; }
-    .widget h3 { font-family: var(--font-display); margin-top: 0; }
-    .news-form { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
-    .news-form input { background: var(--bg-dark); border: 1px solid var(--glass-border); padding: 12px; border-radius: 6px; color: white; font-family: var(--font-display); }
-    .news-form button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
-
-    .topic-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .pill { background: var(--bg-dark); border: 1px solid var(--glass-border); padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-family: var(--font-display); font-weight: 600; }
-    .pill:hover { background: var(--accent); border-color: var(--accent); }
-  </style>
 </Layout>
+
+<style>
+  /* --- CUSTOM CSS VARIABLES (Scoped) --- */
+  :root {
+    --jm-bg: #0f172a;           /* Deep Slate Blue */
+    --jm-card: rgba(30, 41, 59, 0.6); /* Glassy Slate */
+    --jm-border: rgba(255, 255, 255, 0.08);
+    --jm-text-main: #f8fafc;
+    --jm-text-muted: #94a3b8;
+    --jm-accent: #ef4444;       /* Vivid Red */
+    --jm-font-head: 'Inter', sans-serif;
+    --jm-font-body: 'Merriweather', serif;
+  }
+
+  /* --- LAYOUT UTILS --- */
+  .jm-home-wrapper {
+    background-color: var(--jm-bg);
+    color: var(--jm-text-main);
+    font-family: var(--jm-font-body);
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  .jm-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  a { text-decoration: none; color: inherit; transition: 0.2s ease; }
+  
+  /* Glass Panel Effect */
+  .glass-panel {
+    background: var(--jm-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--jm-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+
+  /* --- 1. PULSE BAR --- */
+  .pulse-bar {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--jm-border);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+  .pulse-track {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 10px; /* Hide scrollbar */
+    scrollbar-width: none;
+  }
+  .pulse-track::-webkit-scrollbar { display: none; }
+
+  .pulse-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .ring-wrap {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    padding: 3px;
+    border: 2px solid transparent;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+  .ring-wrap img { border-radius: 50%; border: 2px solid var(--jm-bg); }
+  
+  /* Live Animation */
+  .ring-wrap.live { border-color: var(--jm-accent); }
+  .live-badge {
+    position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
+    background: var(--jm-accent); color: white;
+    font-family: var(--jm-font-head); font-size: 0.6rem; font-weight: 800;
+    padding: 2px 6px; border-radius: 4px; border: 2px solid var(--jm-bg);
+  }
+  .pulse-label {
+    font-family: var(--jm-font-head);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--jm-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* --- 2. BENTO GRID --- */
+  .bento-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+  @media (min-width: 1024px) {
+    .bento-grid {
+      grid-template-columns: 2fr 1fr;
+      height: 520px;
+    }
+  }
+
+  /* Main Feature */
+  .bento-feature {
+    position: relative;
+    height: 100%;
+    min-height: 400px;
+  }
+  .bento-link { display: block; height: 100%; width: 100%; }
+  .bg-img { width: 100%; height: 100%; transition: transform 0.5s ease; }
+  .bento-feature:hover .bg-img { transform: scale(1.03); }
+  
+  .gradient-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(15,23,42, 1) 0%, transparent 60%);
+  }
+  .bento-content {
+    position: absolute; bottom: 0; left: 0;
+    padding: 2.5rem;
+    z-index: 2;
+  }
+  .cat-tag {
+    background: var(--jm-accent); color: white;
+    font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase;
+    font-size: 0.75rem; padding: 4px 10px; border-radius: 4px;
+    display: inline-block; margin-bottom: 1rem;
+  }
+  .bento-content h1 {
+    font-family: var(--jm-font-head);
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800; line-height: 1.1;
+    margin: 0 0 1rem 0;
+    color: white;
+  }
+  .excerpt {
+    color: rgba(255,255,255,0.8);
+    font-size: 1.1rem; line-height: 1.5;
+    margin-bottom: 1.5rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .read-more {
+    font-family: var(--jm-font-head); font-weight: 700; color: var(--jm-accent);
+    text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;
+  }
+
+  /* Sub Grid */
+  .bento-stack {
+    display: grid;
+    grid-template-rows: repeat(4, 1fr); /* 4 equal rows */
+    gap: 1rem;
+    height: 100%;
+  }
+  .mini-card {
+    display: flex; gap: 1rem; padding: 0.75rem;
+    align-items: center;
+  }
+  .mini-img {
+    width: 90px; height: 100%;
+    border-radius: 8px; overflow: hidden; flex-shrink: 0;
+  }
+  .mini-text h3 {
+    font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600;
+    margin: 0; line-height: 1.35; color: var(--jm-text-main);
+  }
+  .tiny-cat {
+    font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent);
+    font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px;
+  }
+
+  /* --- 3. FEED & SIDEBAR --- */
+  @media (min-width: 1024px) {
+    .content-split { display: grid; grid-template-columns: 1fr 320px; gap: 3rem; }
+  }
+
+  /* Feed Header */
+  .feed-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; white-space: nowrap; }
+  .line { flex: 1; height: 1px; background: var(--jm-border); }
+
+  /* Feed List */
+  .feed-list { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem; }
+  .feed-card { padding: 1.5rem; }
+  .feed-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
+  @media (min-width: 640px) {
+    .feed-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+    .feed-info { flex: 1; }
+    .feed-img { width: 240px; height: 160px; flex-shrink: 0; }
+  }
+
+  .feed-img { width: 100%; height: 200px; border-radius: 8px; overflow: hidden; }
+  .meta {
+    font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted);
+    font-weight: 700; text-transform: uppercase; margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .meta-cat { color: var(--jm-accent); }
+  .feed-info h3 {
+    font-family: var(--jm-font-head); font-size: 1.4rem; font-weight: 700;
+    margin: 0 0 0.8rem 0; line-height: 1.25; color: white;
+  }
+  .feed-info p {
+    font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin: 0;
+  }
+
+  /* --- MORE STORIES BUTTON --- */
+  .load-more-wrap { text-align: center; margin-top: 2rem; }
+  .btn-load-more {
+    display: inline-flex; align-items: center; gap: 0.8rem;
+    background: transparent;
+    border: 1px solid var(--jm-border);
+    color: var(--jm-text-main);
+    padding: 1rem 3rem;
+    border-radius: 50px;
+    font-family: var(--jm-font-head); font-weight: 700; text-transform: uppercase; font-size: 0.85rem;
+    letter-spacing: 1px;
+    transition: 0.3s ease;
+  }
+  .btn-load-more:hover {
+    background: var(--jm-accent);
+    border-color: var(--jm-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+  }
+
+  /* --- SIDEBAR --- */
+  .sticky-box { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+  
+  .widget { padding: 1.5rem; }
+  .widget-title {
+    font-family: var(--jm-font-head); font-size: 0.85rem; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--jm-text-muted); margin: 0 0 1.5rem 0;
+    border-bottom: 1px solid var(--jm-border); padding-bottom: 0.5rem;
+  }
+  
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag-pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--jm-border);
+    padding: 8px 16px; border-radius: 30px;
+    font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600;
+    color: var(--jm-text-main);
+  }
+  .tag-pill:hover, .tag-pill.opinion {
+    background: var(--jm-accent); border-color: var(--jm-accent);
+  }
+
+  .ad-space { text-align: center; }
+  .ad-label { display: block; font-size: 0.6rem; color: var(--jm-text-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .ad-rect {
+    width: 100%; height: 250px;
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--jm-text-muted); font-size: 0.8rem;
+  }
+
+  /* --- MOBILE RESPONSIVENESS --- */
+  @media (max-width: 768px) {
+    .bento-grid { display: flex; flex-direction: column; height: auto; }
+    .bento-feature { min-height: 350px; }
+    .bento-stack { display: none; /* Hide sub-grid on mobile to save space, or use flex-col to show */ }
+    .feed-info h3 { font-size: 1.2rem; }
+    .btn-load-more { width: 100%; justify-content: center; }
+  }
+</style>
