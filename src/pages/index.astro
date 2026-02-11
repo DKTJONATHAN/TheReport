@@ -1,431 +1,185 @@
----
-import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gossip Feed</title>
+    <style>
+        /* --- LAYOUT FIXES --- */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            overflow-x: hidden; /* Prevents horizontal scroll */
+        }
 
-// --- 1. DATA LOGIC ---
-const allPosts = (await getCollection('posts'))
-  .filter(p => !p.data.draft)
-  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+        /* Matches standard header/footer width */
+        .main-container {
+            max-width: 1200px; 
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-if (allPosts.length === 0) {
-  throw new Error("No posts found!");
-}
+        /* Grid for Posts */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
 
-const majorCategories = ['Politics', 'Business', 'Sports', 'Lifestyle', 'Technology'];
+        /* Post Card Styling */
+        .news-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
 
-// "Live" Logic: Posts newer than 4 hours get a glowing ring
-const isLive = (date) => (new Date() - new Date(date)) < 4 * 60 * 60 * 1000;
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
 
-// Story Circles (Top 10)
-const storyCircles = allPosts.slice(0, 10).map(post => ({
-  label: post.data.category || 'News',
-  image: post.data.image,
-  link: `/posts/${post.slug}`,
-  live: isLive(post.data.date)
-}));
+        .news-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
 
-// Sections
-const [heroMain, ...heroGrid] = allPosts.slice(0, 5); // 1 Main + 4 Sub
-const trendingPosts = allPosts.slice(5, 13); // Next 8 posts for the feed
+        .card-content {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
----
+        .category-tag {
+            background-color: #ff0050;
+            color: white;
+            padding: 4px 8px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            align-self: flex-start;
+            margin-bottom: 10px;
+        }
 
-<Layout>
-  <div class="jm-home-wrapper">
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            line-height: 1.4;
+            color: #333;
+        }
 
-    {/* --- 1. LIVE PULSE BAR --- */}
-    <section class="pulse-bar">
-      <div class="jm-container">
-        <div class="pulse-track">
-          {storyCircles.map(item => (
-            <a href={item.link} class="pulse-node">
-              <div class={`ring-wrap ${item.live ? 'live' : ''}`}>
-                <img src={item.image} alt={item.label} width="80" height="80" loading="eager" />
-                {item.live && <span class="live-badge">LIVE</span>}
-              </div>
-              <span class="pulse-label">{item.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
+        p {
+            font-size: 0.9rem;
+            color: #666;
+            flex-grow: 1;
+        }
 
-    <main class="jm-container">
+        /* --- LOAD MORE BUTTON --- */
+        .load-more-container {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
 
-      {/* --- 2. BENTO GRID HERO --- */}
-      <section class="bento-grid">
-        {/* Main Feature */}
-        <article class="bento-feature glass-panel">
-          <a href={`/posts/${heroMain.slug}`} class="bento-link">
-            <img src={heroMain.data.image} alt={heroMain.data.title} class="bg-img" loading="eager" />
-            <div class="gradient-overlay"></div>
-            <div class="bento-content">
-              <span class="cat-tag">{heroMain.data.category}</span>
-              <h1>{heroMain.data.title}</h1>
-              <p class="excerpt">{heroMain.data.description}</p>
-              <span class="read-more">Read Story &rarr;</span>
-            </div>
-          </a>
-        </article>
+        .load-more-btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
 
-        {/* 4 Sub-Features */}
-        <div class="bento-stack">
-          {heroGrid.map(post => (
-            <a href={`/posts/${post.slug}`} class="mini-card glass-panel">
-              <div class="mini-img">
-                <img src={post.data.image} alt={post.data.title} loading="lazy" />
-              </div>
-              <div class="mini-text">
-                <span class="tiny-cat">{post.data.category}</span>
-                <h3>{post.data.title}</h3>
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
+        .load-more-btn:hover {
+            background-color: #333;
+        }
 
-      {/* --- 3. NEWS FEED LAYOUT --- */}
-      <div class="content-split">
+        /* Hiding extra items initially */
+        .hidden-item {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
         
-        {/* Left Column: Feed */}
-        <div class="feed-col">
-          <div class="feed-header">
-            <h2>Latest Updates</h2>
-            <div class="line"></div>
-          </div>
+        <div class="news-grid" id="newsGrid">
+            <article class="news-card">
+                <img src="https://images.unsplash.com/photo-1499364615650-ec387c1470c5" alt="News">
+                <div class="card-content">
+                    <span class="category-tag">Gossip</span>
+                    <h3>Savage: Vera Sidika Claps Back at Haters</h3>
+                    <p>You won't believe what she said on IG live today...</p>
+                </div>
+            </article>
+            <article class="news-card hidden-item">
+                <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c" alt="News">
+                <div class="card-content">
+                    <span class="category-tag">Politics</span>
+                    <h3>Ruto's New move shocks Gen Z</h3>
+                    <p>The streets are talking and it's not looking good...</p>
+                </div>
+            </article>
+            
+            <article class="news-card hidden-item">
+                <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2" alt="News">
+                <div class="card-content">
+                    <span class="category-tag">Tech</span>
+                    <h3>Safaricom bundles heist? The truth exposed.</h3>
+                    <p>Are we losing data or is it just 'Kanairo' vibes?</p>
+                </div>
+            </article>
 
-          <div class="feed-list">
-            {trendingPosts.map(post => (
-              <article class="feed-card glass-panel">
-                <a href={`/posts/${post.slug}`} class="feed-link">
-                  <div class="feed-info">
-                    <div class="meta">
-                      <span class="meta-cat">{post.data.category}</span>
-                      <span class="meta-dot">•</span>
-                      <time>{new Date(post.data.date).toLocaleDateString()}</time>
-                    </div>
-                    <h3>{post.data.title}</h3>
-                    <p>{post.data.description}</p>
-                  </div>
-                  <div class="feed-img">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                  </div>
-                </a>
-              </article>
-            ))}
-          </div>
-
-          {/* MORE STORIES BUTTON */}
-          <div class="load-more-wrap">
-            <a href="/archive" class="btn-load-more">
-              <span>View More Stories</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </a>
-          </div>
         </div>
 
-        {/* Right Column: Sticky Sidebar */}
-        <aside class="sidebar-col">
-          <div class="sticky-box">
+        <div class="load-more-container">
+            <button class="load-more-btn" id="loadMoreBtn" onclick="loadMorePosts()">
+                Read More Stories
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        function loadMorePosts() {
+            // Select all hidden items
+            const hiddenItems = document.querySelectorAll('.hidden-item');
+            const btn = document.getElementById('loadMoreBtn');
             
-            {/* Trending Topics */}
-            <div class="widget glass-panel">
-              <h4 class="widget-title">Trending Topics</h4>
-              <div class="tag-cloud">
-                {majorCategories.map(cat => (
-                  <a href={`/category/${cat.toLowerCase()}`} class="tag-pill">{cat}</a>
-                ))}
-                <a href="/category/opinion" class="tag-pill opinion">Opinion</a>
-              </div>
-            </div>
+            // If no items left, hide button
+            if (hiddenItems.length === 0) {
+                btn.style.display = 'none';
+                return;
+            }
 
-            {/* Ad Space Placeholder */}
-            <div class="widget ad-space glass-panel">
-              <span class="ad-label">Advertisement</span>
-              <div class="ad-rect"></div>
-            </div>
+            // Reveal the next 3 items (or however many you want)
+            let itemsToReveal = 3;
+            for (let i = 0; i < itemsToReveal && i < hiddenItems.length; i++) {
+                hiddenItems[i].classList.remove('hidden-item');
+            }
 
-          </div>
-        </aside>
+            // Check again if we need to hide the button
+            if (document.querySelectorAll('.hidden-item').length === 0) {
+                btn.innerText = "No More Stories";
+                btn.disabled = true;
+                btn.style.backgroundColor = "#ccc";
+                setTimeout(() => { btn.style.display = 'none'; }, 2000);
+            }
+        }
+    </script>
 
-      </div>
-
-    </main>
-  </div>
-</Layout>
-
-<style>
-  /* --- CUSTOM CSS VARIABLES (Scoped) --- */
-  :root {
-    --jm-bg: #0f172a;           /* Deep Slate Blue */
-    --jm-card: rgba(30, 41, 59, 0.6); /* Glassy Slate */
-    --jm-border: rgba(255, 255, 255, 0.08);
-    --jm-text-main: #f8fafc;
-    --jm-text-muted: #94a3b8;
-    --jm-accent: #ef4444;       /* Vivid Red */
-    --jm-font-head: 'Inter', sans-serif;
-    --jm-font-body: 'Merriweather', serif;
-  }
-
-  /* --- LAYOUT UTILS --- */
-  .jm-home-wrapper {
-    background-color: var(--jm-bg);
-    color: var(--jm-text-main);
-    font-family: var(--jm-font-body);
-    min-height: 100vh;
-    padding-bottom: 4rem;
-  }
-
-  .jm-container {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
-  img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  a { text-decoration: none; color: inherit; transition: 0.2s ease; }
-  
-  /* Glass Panel Effect */
-  .glass-panel {
-    background: var(--jm-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--jm-border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .glass-panel:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-  }
-
-  /* --- 1. PULSE BAR --- */
-  .pulse-bar {
-    padding: 1.5rem 0;
-    border-bottom: 1px solid var(--jm-border);
-    margin-bottom: 2.5rem;
-    overflow: hidden;
-  }
-  .pulse-track {
-    display: flex;
-    gap: 1.5rem;
-    overflow-x: auto;
-    padding-bottom: 10px; /* Hide scrollbar */
-    scrollbar-width: none;
-  }
-  .pulse-track::-webkit-scrollbar { display: none; }
-
-  .pulse-node {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 80px;
-    flex-shrink: 0;
-  }
-  .ring-wrap {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    padding: 3px;
-    border: 2px solid transparent;
-    position: relative;
-    margin-bottom: 0.5rem;
-  }
-  .ring-wrap img { border-radius: 50%; border: 2px solid var(--jm-bg); }
-  
-  /* Live Animation */
-  .ring-wrap.live { border-color: var(--jm-accent); }
-  .live-badge {
-    position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
-    background: var(--jm-accent); color: white;
-    font-family: var(--jm-font-head); font-size: 0.6rem; font-weight: 800;
-    padding: 2px 6px; border-radius: 4px; border: 2px solid var(--jm-bg);
-  }
-  .pulse-label {
-    font-family: var(--jm-font-head);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--jm-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  /* --- 2. BENTO GRID --- */
-  .bento-grid {
-    display: grid;
-    gap: 1.5rem;
-    margin-bottom: 4rem;
-  }
-  @media (min-width: 1024px) {
-    .bento-grid {
-      grid-template-columns: 2fr 1fr;
-      height: 520px;
-    }
-  }
-
-  /* Main Feature */
-  .bento-feature {
-    position: relative;
-    height: 100%;
-    min-height: 400px;
-  }
-  .bento-link { display: block; height: 100%; width: 100%; }
-  .bg-img { width: 100%; height: 100%; transition: transform 0.5s ease; }
-  .bento-feature:hover .bg-img { transform: scale(1.03); }
-  
-  .gradient-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(15,23,42, 1) 0%, transparent 60%);
-  }
-  .bento-content {
-    position: absolute; bottom: 0; left: 0;
-    padding: 2.5rem;
-    z-index: 2;
-  }
-  .cat-tag {
-    background: var(--jm-accent); color: white;
-    font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase;
-    font-size: 0.75rem; padding: 4px 10px; border-radius: 4px;
-    display: inline-block; margin-bottom: 1rem;
-  }
-  .bento-content h1 {
-    font-family: var(--jm-font-head);
-    font-size: clamp(1.8rem, 4vw, 3rem);
-    font-weight: 800; line-height: 1.1;
-    margin: 0 0 1rem 0;
-    color: white;
-  }
-  .excerpt {
-    color: rgba(255,255,255,0.8);
-    font-size: 1.1rem; line-height: 1.5;
-    margin-bottom: 1.5rem;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .read-more {
-    font-family: var(--jm-font-head); font-weight: 700; color: var(--jm-accent);
-    text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;
-  }
-
-  /* Sub Grid */
-  .bento-stack {
-    display: grid;
-    grid-template-rows: repeat(4, 1fr); /* 4 equal rows */
-    gap: 1rem;
-    height: 100%;
-  }
-  .mini-card {
-    display: flex; gap: 1rem; padding: 0.75rem;
-    align-items: center;
-  }
-  .mini-img {
-    width: 90px; height: 100%;
-    border-radius: 8px; overflow: hidden; flex-shrink: 0;
-  }
-  .mini-text h3 {
-    font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600;
-    margin: 0; line-height: 1.35; color: var(--jm-text-main);
-  }
-  .tiny-cat {
-    font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent);
-    font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px;
-  }
-
-  /* --- 3. FEED & SIDEBAR --- */
-  @media (min-width: 1024px) {
-    .content-split { display: grid; grid-template-columns: 1fr 320px; gap: 3rem; }
-  }
-
-  /* Feed Header */
-  .feed-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
-  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; white-space: nowrap; }
-  .line { flex: 1; height: 1px; background: var(--jm-border); }
-
-  /* Feed List */
-  .feed-list { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem; }
-  .feed-card { padding: 1.5rem; }
-  .feed-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; }
-  @media (min-width: 640px) {
-    .feed-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
-    .feed-info { flex: 1; }
-    .feed-img { width: 240px; height: 160px; flex-shrink: 0; }
-  }
-
-  .feed-img { width: 100%; height: 200px; border-radius: 8px; overflow: hidden; }
-  .meta {
-    font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted);
-    font-weight: 700; text-transform: uppercase; margin-bottom: 0.8rem;
-    display: flex; align-items: center; gap: 0.5rem;
-  }
-  .meta-cat { color: var(--jm-accent); }
-  .feed-info h3 {
-    font-family: var(--jm-font-head); font-size: 1.4rem; font-weight: 700;
-    margin: 0 0 0.8rem 0; line-height: 1.25; color: white;
-  }
-  .feed-info p {
-    font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted);
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    margin: 0;
-  }
-
-  /* --- MORE STORIES BUTTON --- */
-  .load-more-wrap { text-align: center; margin-top: 2rem; }
-  .btn-load-more {
-    display: inline-flex; align-items: center; gap: 0.8rem;
-    background: transparent;
-    border: 1px solid var(--jm-border);
-    color: var(--jm-text-main);
-    padding: 1rem 3rem;
-    border-radius: 50px;
-    font-family: var(--jm-font-head); font-weight: 700; text-transform: uppercase; font-size: 0.85rem;
-    letter-spacing: 1px;
-    transition: 0.3s ease;
-  }
-  .btn-load-more:hover {
-    background: var(--jm-accent);
-    border-color: var(--jm-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-  }
-
-  /* --- SIDEBAR --- */
-  .sticky-box { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
-  
-  .widget { padding: 1.5rem; }
-  .widget-title {
-    font-family: var(--jm-font-head); font-size: 0.85rem; text-transform: uppercase;
-    letter-spacing: 1px; color: var(--jm-text-muted); margin: 0 0 1.5rem 0;
-    border-bottom: 1px solid var(--jm-border); padding-bottom: 0.5rem;
-  }
-  
-  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .tag-pill {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--jm-border);
-    padding: 8px 16px; border-radius: 30px;
-    font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600;
-    color: var(--jm-text-main);
-  }
-  .tag-pill:hover, .tag-pill.opinion {
-    background: var(--jm-accent); border-color: var(--jm-accent);
-  }
-
-  .ad-space { text-align: center; }
-  .ad-label { display: block; font-size: 0.6rem; color: var(--jm-text-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
-  .ad-rect {
-    width: 100%; height: 250px;
-    background: rgba(0,0,0,0.3); border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--jm-text-muted); font-size: 0.8rem;
-  }
-
-  /* --- MOBILE RESPONSIVENESS --- */
-  @media (max-width: 768px) {
-    .bento-grid { display: flex; flex-direction: column; height: auto; }
-    .bento-feature { min-height: 350px; }
-    .bento-stack { display: none; /* Hide sub-grid on mobile to save space, or use flex-col to show */ }
-    .feed-info h3 { font-size: 1.2rem; }
-    .btn-load-more { width: 100%; justify-content: center; }
-  }
-</style>
+</body>
+</html>
