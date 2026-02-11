@@ -29,7 +29,7 @@ const hiddenFeed = allPosts.slice(13, 100);
 <Layout>
   <div class="jm-home-wrapper">
 
-    {/* --- 1. LIVE PULSE BAR --- */}
+    {/* --- 1. PULSE BAR --- */}
     <section class="pulse-bar">
       <div class="jm-container">
         <div class="pulse-track">
@@ -48,39 +48,40 @@ const hiddenFeed = allPosts.slice(13, 100);
 
     <main class="jm-container">
 
-      {/* --- 2. BENTO HERO --- */}
-      <section class="bento-grid no-ad-injection">
-        <article class="bento-feature glass-panel">
-          <a href={`/posts/${heroMain.slug}`} class="bento-link">
-            <div class="bento-img-wrap">
-              <img src={heroMain.data.image} alt={heroMain.data.title} class="bg-img" loading="eager" />
-              <div class="gradient-overlay"></div>
+      {/* --- 2. HERO SECTION (Vertical Card) --- */}
+      <section class="hero-section no-ad-injection">
+        
+        {/* Main Hero Card */}
+        <article class="hero-main glass-panel">
+          <a href={`/posts/${heroMain.slug}`} class="vertical-link">
+            <div class="hero-img-container">
+              <img src={heroMain.data.image} alt={heroMain.data.title} loading="eager" />
             </div>
-            <div class="bento-content">
+            <div class="hero-content">
               <span class="cat-tag">{heroMain.data.category}</span>
               <h1>{heroMain.data.title}</h1>
               <p class="excerpt">{heroMain.data.description}</p>
-              <span class="read-more">Read Story &rarr;</span>
             </div>
           </a>
         </article>
 
-        <div class="bento-stack">
+        {/* Side Stack (Vertical Cards) */}
+        <div class="hero-side">
           {heroGrid.map(post => (
-            <a href={`/posts/${post.slug}`} class="mini-card glass-panel">
-              <div class="mini-img">
-                <img src={post.data.image} alt={post.data.title} loading="lazy" />
-              </div>
-              <div class="mini-text">
-                <span class="tiny-cat">{post.data.category}</span>
-                <h3>{post.data.title}</h3>
-              </div>
+            <a href={`/posts/${post.slug}`} class="side-card glass-panel">
+               <div class="side-img">
+                 <img src={post.data.image} alt={post.data.title} loading="lazy" />
+               </div>
+               <div class="side-content">
+                 <span class="tiny-cat">{post.data.category}</span>
+                 <h3>{post.data.title}</h3>
+               </div>
             </a>
           ))}
         </div>
       </section>
 
-      {/* --- 3. NEWS FEED --- */}
+      {/* --- 3. NEWS FEED (Vertical Cards) --- */}
       <div class="content-split">
         
         <div class="feed-col">
@@ -89,21 +90,20 @@ const hiddenFeed = allPosts.slice(13, 100);
             <div class="line"></div>
           </div>
 
-          <div id="feed-container" class="feed-list">
+          <div id="feed-container" class="feed-grid">
             {initialFeed.map(post => (
               <article class="feed-card glass-panel">
-                <a href={`/posts/${post.slug}`} class="feed-link">
+                <a href={`/posts/${post.slug}`} class="vertical-link">
+                  <div class="feed-img">
+                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                  </div>
                   <div class="feed-info">
                     <div class="meta">
                       <span class="meta-cat">{post.data.category}</span>
-                      <span class="meta-dot">•</span>
                       <time>{new Date(post.data.date).toLocaleDateString()}</time>
                     </div>
                     <h3>{post.data.title}</h3>
                     <p>{post.data.description}</p>
-                  </div>
-                  <div class="feed-img">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
                   </div>
                 </a>
               </article>
@@ -113,7 +113,7 @@ const hiddenFeed = allPosts.slice(13, 100);
           {hiddenFeed.length > 0 && (
             <div class="load-more-wrap">
               <button id="btn-load-more" class="btn-load-more">
-                <span>Unroll More Stories</span>
+                <span>Load More Stories</span>
               </button>
             </div>
           )}
@@ -153,18 +153,17 @@ const hiddenFeed = allPosts.slice(13, 100);
         const dateStr = new Date(post.data.date).toLocaleDateString();
         const html = `
           <article class="feed-card glass-panel fade-in">
-            <a href="/posts/${post.slug}" class="feed-link">
+            <a href="/posts/${post.slug}" class="vertical-link">
+              <div class="feed-img">
+                <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" />
+              </div>
               <div class="feed-info">
                 <div class="meta">
                   <span class="meta-cat">${post.data.category || 'News'}</span>
-                  <span class="meta-dot">•</span>
                   <time>${dateStr}</time>
                 </div>
                 <h3>${post.data.title}</h3>
                 <p>${post.data.description}</p>
-              </div>
-              <div class="feed-img">
-                <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" />
               </div>
             </a>
           </article>
@@ -183,7 +182,7 @@ const hiddenFeed = allPosts.slice(13, 100);
 <style is:global>
   :root {
     --jm-bg: #0f172a;
-    --jm-card: rgba(30, 41, 59, 0.7); /* Slightly more opaque for better overlay */
+    --jm-card: rgba(30, 41, 59, 0.7);
     --jm-border: rgba(255, 255, 255, 0.08);
     --jm-text-main: #f8fafc;
     --jm-text-muted: #94a3b8;
@@ -191,48 +190,100 @@ const hiddenFeed = allPosts.slice(13, 100);
     --jm-font-head: 'Inter', sans-serif;
     --jm-font-body: 'Merriweather', serif;
   }
-
-  /* --- GLOBAL RESET & CONTAINERS --- */
+  
+  /* Reset */
   *, *::before, *::after { box-sizing: border-box; }
   
-  .jm-home-wrapper { 
-    background-color: var(--jm-bg); 
-    color: var(--jm-text-main); 
-    font-family: var(--jm-font-body); 
-    width: 100%; 
-    padding-bottom: 4rem; 
-  }
+  /* Layout */
+  .jm-home-wrapper { background-color: var(--jm-bg); color: var(--jm-text-main); font-family: var(--jm-font-body); width: 100%; padding-bottom: 4rem; }
+  .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
   
-  .jm-container {
-    width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
   a { text-decoration: none; color: inherit; transition: 0.2s ease; }
 
-  /* --- GLASS CARD --- */
+  /* Glass Card */
   .glass-panel {
     background: var(--jm-card);
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--jm-border);
     border-radius: 12px;
     overflow: hidden;
     transition: transform 0.2s ease, border-color 0.2s ease;
-    isolation: isolate;
+    display: flex;
+    flex-direction: column; /* Force vertical stacking */
   }
-  .glass-panel:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+  .glass-panel:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-3px); }
+
+  /* --- HERO SECTION --- */
+  .hero-section { display: grid; gap: 2rem; margin-bottom: 4rem; }
+  
+  /* Desktop: 2 Columns */
+  @media (min-width: 1024px) {
+    .hero-section { grid-template-columns: 2fr 1fr; }
   }
 
-  /* --- PULSE BAR --- */
+  /* Hero Main */
+  .hero-main { height: 100%; }
+  .vertical-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
+  
+  .hero-img-container { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+  .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+  
+  .cat-tag { background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 0.8rem; align-self: flex-start; }
+  .hero-content h1 { font-family: var(--jm-font-head); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 1rem 0; color: white; }
+  .excerpt { color: var(--jm-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
+
+  /* Hero Side Stack */
+  .hero-side { display: grid; gap: 1rem; }
+  @media (min-width: 640px) { .hero-side { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .hero-side { grid-template-columns: 1fr; } }
+  
+  .side-card { padding: 1rem; display: flex; gap: 1rem; align-items: center; }
+  .side-img { width: 90px; height: 70px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .side-content h3 { font-family: var(--jm-font-head); font-size: 0.9rem; font-weight: 600; margin: 0; line-height: 1.3; color: var(--jm-text-main); }
+  .tiny-cat { font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+
+  /* --- FEED SECTION (GRID) --- */
+  @media (min-width: 1024px) { .content-split { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; } }
+  
+  .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; }
+  .line { flex: 1; height: 1px; background: var(--jm-border); }
+
+  /* Feed Grid */
+  .feed-grid { display: grid; gap: 2rem; }
+  
+  /* Feed Card Specifics */
+  .feed-card { 
+    /* No padding on card itself, let img fill width */
+    padding: 0; 
+  }
+  
+  .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
+  .feed-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  
+  .meta { font-family: var(--jm-font-head); font-size: 0.7rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; display: flex; gap: 0.8rem; align-items: center; }
+  .meta-cat { color: var(--jm-accent); }
+  
+  .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.3rem; font-weight: 700; margin: 0; line-height: 1.3; color: white; }
+  .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Load More */
+  .load-more-wrap { text-align: center; margin-top: 2rem; }
+  .btn-load-more { background: transparent; border: 1px solid var(--jm-border); color: var(--jm-text-main); padding: 1rem 3rem; border-radius: 50px; font-family: var(--jm-font-head); font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; transition: 0.3s ease; }
+  .btn-load-more:hover { background: var(--jm-accent); border-color: var(--jm-accent); }
+
+  /* Sidebar */
+  .sticky-box { position: sticky; top: 2rem; }
+  .widget { padding: 1.5rem; }
+  .widget-title { font-family: var(--jm-font-head); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--jm-text-muted); margin: 0 0 1.5rem 0; border-bottom: 1px solid var(--jm-border); padding-bottom: 0.5rem; }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag-pill { background: rgba(255,255,255,0.05); border: 1px solid var(--jm-border); padding: 8px 16px; border-radius: 30px; font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600; color: var(--jm-text-main); }
+  .tag-pill:hover { background: var(--jm-accent); border-color: var(--jm-accent); }
+
+  /* Pulse Bar */
   .pulse-bar { padding: 1.5rem 0; border-bottom: 1px solid var(--jm-border); margin-bottom: 2.5rem; }
   .pulse-track { display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-  .pulse-track::-webkit-scrollbar { display: none; }
   .pulse-node { display: flex; flex-direction: column; align-items: center; width: 80px; flex-shrink: 0; }
   .ring-wrap { width: 80px; height: 80px; border-radius: 50%; padding: 3px; border: 2px solid transparent; position: relative; margin-bottom: 0.5rem; }
   .ring-wrap img { border-radius: 50%; border: 2px solid var(--jm-bg); }
@@ -240,129 +291,6 @@ const hiddenFeed = allPosts.slice(13, 100);
   .live-badge { position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 2px solid var(--jm-bg); }
   .pulse-label { font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600; color: var(--jm-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
-  /* --- BENTO GRID SYSTEM --- */
-  .bento-grid { 
-    display: grid; 
-    gap: 1.5rem; 
-    margin-bottom: 4rem; 
-  }
-
-  /* Desktop (1024px +) */
-  @media (min-width: 1024px) {
-    .bento-grid {
-      grid-template-columns: 2fr 1fr;
-      min-height: 520px; /* Use min-height to prevent overlap */
-    }
-    .bento-stack {
-      display: grid;
-      grid-template-rows: repeat(4, 1fr);
-      gap: 1rem;
-      height: 100%;
-    }
-  }
-
-  /* Tablet (768px - 1023px) */
-  @media (max-width: 1023px) and (min-width: 768px) {
-    .bento-grid {
-      grid-template-columns: 1fr;
-      gap: 2rem;
-    }
-    .bento-stack {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    /* Ensure main feature doesn't get too tall or short */
-    .bento-feature { min-height: 400px; }
-  }
-
-  /* Mobile (< 768px) */
-  @media (max-width: 767px) {
-    .bento-grid { grid-template-columns: 1fr; }
-    .bento-stack { 
-      display: grid;
-      grid-template-columns: 1fr; /* Full width stack for mobile readability */
-      gap: 1rem; 
-    }
-    .bento-feature { min-height: 350px; }
-  }
-
-  /* Main Feature Card */
-  .bento-feature { position: relative; display: flex; flex-direction: column; height: 100%; }
-  .bento-link { display: block; flex-grow: 1; position: relative; height: 100%; width: 100%; }
-  
-  .bento-img-wrap {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 1;
-  }
-  .bg-img { width: 100%; height: 100%; transition: transform 0.5s ease; }
-  .bento-feature:hover .bg-img { transform: scale(1.03); }
-  .gradient-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,23,42, 1) 0%, transparent 60%); }
-  
-  .bento-content { 
-    position: relative; 
-    z-index: 2; 
-    padding: 2.5rem; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-end; 
-    height: 100%;
-  }
-  
-  .cat-tag { background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 1rem; align-self: flex-start; }
-  .bento-content h1 { font-family: var(--jm-font-head); font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; line-height: 1.1; margin: 0 0 1rem 0; color: white; }
-  .excerpt { color: rgba(255,255,255,0.85); font-size: 1.1rem; line-height: 1.5; margin-bottom: 1.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .read-more { font-family: var(--jm-font-head); font-weight: 700; color: var(--jm-accent); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem; }
-
-  /* Sub Cards (Stack) */
-  .mini-card { display: flex; gap: 1rem; padding: 0.75rem; align-items: center; }
-  .mini-img { width: 90px; height: 80px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-  .mini-text { flex: 1; min-width: 0; /* Prevents text overflow */ }
-  .mini-text h3 { font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600; margin: 0; line-height: 1.35; color: var(--jm-text-main); }
-  .tiny-cat { font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent); font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px; }
-
-  /* --- FEED LAYOUT --- */
-  @media (min-width: 1024px) { 
-    .content-split { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; } 
-  }
-
-  .feed-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
-  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; white-space: nowrap; }
-  .line { flex: 1; height: 1px; background: var(--jm-border); }
-  
-  /* Feed Card (Global Class for JS) */
-  .feed-card { padding: 1.5rem; margin-bottom: 1.5rem; }
-  .feed-link { display: flex; flex-direction: column-reverse; gap: 1.5rem; text-decoration: none; color: inherit; }
-  
-  @media (min-width: 640px) {
-    .feed-link { flex-direction: row; justify-content: space-between; align-items: flex-start; }
-    .feed-info { flex: 1; min-width: 0; /* Crucial for overlap prevention */ }
-    .feed-img { width: 240px; height: 160px; flex-shrink: 0; }
-  }
-
-  .feed-img { width: 100%; height: 200px; border-radius: 8px; overflow: hidden; }
-  
-  .meta { font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
-  .meta-cat { color: var(--jm-accent); }
-  
-  .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.4rem; font-weight: 700; margin: 0 0 0.8rem 0; line-height: 1.25; color: white; }
-  .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
-
-  /* Load More */
-  .load-more-wrap { text-align: center; margin-top: 1rem; }
-  .btn-load-more { display: inline-flex; align-items: center; gap: 0.8rem; background: transparent; border: 1px solid var(--jm-border); color: var(--jm-text-main); padding: 1rem 3rem; border-radius: 50px; font-family: var(--jm-font-head); font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; transition: 0.3s ease; }
-  .btn-load-more:hover { background: var(--jm-accent); border-color: var(--jm-accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
-
-  /* Sidebar */
-  .sticky-box { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
-  .widget { padding: 1.5rem; }
-  .widget-title { font-family: var(--jm-font-head); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--jm-text-muted); margin: 0 0 1.5rem 0; border-bottom: 1px solid var(--jm-border); padding-bottom: 0.5rem; }
-  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .tag-pill { background: rgba(255,255,255,0.05); border: 1px solid var(--jm-border); padding: 8px 16px; border-radius: 30px; font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600; color: var(--jm-text-main); }
-  .tag-pill:hover { background: var(--jm-accent); border-color: var(--jm-accent); }
-  
-  /* Animation */
   .fade-in { animation: fadeIn 0.4s ease-out forwards; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
