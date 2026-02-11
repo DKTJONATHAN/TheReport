@@ -2,13 +2,10 @@ name: Auto Newser (Belinda - The Cynic)
 
 on:
   schedule:
-    # Optimized Kenyan Scandal Schedule (EAT)
-    - cron: '45 5 * * *'   # 8:45 AM
-    - cron: '45 8 * * *'   # 11:45 AM
-    - cron: '45 11 * * *'  # 2:45 PM
-    - cron: '45 14 * * *'  # 5:45 PM
-    - cron: '45 17 * * *'  # 8:45 PM
-    - cron: '45 20 * * *'  # 11:45 PM
+    # Runs at minute 15 of every hour from 6 AM to 10 PM EAT (UTC+3)
+    # 03:15 UTC = 06:15 EAT
+    # 19:15 UTC = 22:15 EAT
+    - cron: '15 3-19 * * *'
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -48,12 +45,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests google-genai apify-client beautifulsoup4
+          # Added playwright and lxml, removed apify-client
+          pip install requests google-genai beautifulsoup4 lxml playwright
+          playwright install chromium
 
       - name: Run Belinda Engine
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
-          APIFY_POOL: "${{ secrets.APIFY_API_TOKEN }},${{ secrets.APIFY_API_TOKEN1 }},${{ secrets.APIFY_API_TOKEN2 }},${{ secrets.APIFY_API_TOKEN3 }},${{ secrets.APIFY_API_TOKEN4 }},${{ secrets.APIFY_API_TOKEN5 }}"
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
           MEMORY_FILE: ${{ env.MEMORY_FILE }}
@@ -63,16 +61,20 @@ jobs:
           import os, json, datetime, requests, re, random, time, hashlib
           from google import genai
           from google.genai import types
-          from apify_client import ApifyClient
           from bs4 import BeautifulSoup
+          from playwright.sync_api import sync_playwright
           import textwrap
 
-          # --- 1. KEY POOLS ---
+          # --- 1. CONFIGURATION ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
-          apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
-          # --- 2. INTERNAL LINKING ---
+          def clean_dashes(text):
+              if not text: return ""
+              text = text.replace('—', ' - ').replace('–', '-')
+              text = re.sub(r'\s+', ' ', text)
+              return text.strip()
+
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
@@ -92,8 +94,7 @@ jobs:
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
-              
+              models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash", "gemini-1.5-flash"]
               for model_name in models_to_try:
                   for k in gem_pool:
                       try:
@@ -104,104 +105,124 @@ jobs:
                               config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
                           ).text.strip()
                       except Exception as e:
-                          print(f"Gemini Error ({model_name}): {e}")
-                          time.sleep(2)
+                          time.sleep(1)
                           continue
               return None
 
-          # --- 3. TOPIC MAPPING ---
-          cron_map = {
-              '45 5 * * *': 'politics',
-              '45 8 * * *': 'relationships',
-              '45 11 * * *': 'crime',
-              '45 14 * * *': 'entertainment',
-              '45 17 * * *': 'technology',
-              '45 20 * * *': 'entertainment'
-          }
-          initial_topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'entertainment')
-          topic_queue = [initial_topic, 'politics', 'entertainment', 'technology']
-          topic_queue = list(dict.fromkeys(topic_queue))
+          # --- 2. TOPIC & DISCOVERY ---
+          # We rotate topics based on the hour to ensure variety
+          hour = datetime.datetime.utcnow().hour
+          topics_pool = ['politics', 'politics', 'crime', 'entertainment', 'gossip', 'lifestyle']
+          # Simple rotation: use hour modulo len(pool)
+          auto_topic = topics_pool[hour % len(topics_pool)]
+          
+          used_topic = os.environ.get('MANUAL_TOPIC', '').lower() or auto_topic
 
-          km_url_map = {
-              'politics': 'https://www.kenyamoja.com/news/kenyans',
-              'relationships': 'https://www.kenyamoja.com/lifestyle',
-              'crime': 'https://www.kenyamoja.com/news/kenyans',
-              'entertainment': 'https://www.kenyamoja.com/entertainment',
-              'technology': 'https://www.kenyamoja.com/technology'
+          # Google News RSS Queries for Kenya
+          query_map = {
+              'politics': 'Kenya politics OR Ruto OR Raila OR Parliament',
+              'crime': 'Kenya crime OR DCI OR police OR scandal',
+              'entertainment': 'Kenya entertainment OR Eric Omondi OR Kenyan musician OR celebrity',
+              'gossip': 'Kenya gossip OR scandal OR exposed',
+              'lifestyle': 'Kenya lifestyle OR Nairobi nightlife OR economy'
           }
+          query = query_map.get(used_topic, 'Kenya News')
+          rss_url = f"https://news.google.com/rss/search?q={query}+when:6h&hl=en-KE&gl=KE&ceid=KE:en"
 
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+
+          print(f"🔍 Searching Topic: {used_topic.upper()}")
           
-          # --- 4. DISCOVERY & FOLLOW ---
-          full_raw_text, final_hash, used_topic = None, None, None
+          try:
+              res = requests.get(rss_url, timeout=15)
+              soup = BeautifulSoup(res.content, "xml")
+              items = soup.find_all("item")
+          except: items = []
 
-          for topic in topic_queue:
-              target_url = km_url_map.get(topic, 'https://www.kenyamoja.com/entertainment')
-              print(f"🔍 Attempting Topic: '{topic}' at {target_url}")
+          # --- 3. FREE PLAYWRIGHT SCRAPER ---
+          def scrape_article_free(url):
+              print(f"🕷️ Stealth-Loading: {url}")
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
+                  context = browser.new_context(
+                      user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                  )
+                  page = context.new_page()
+                  page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-              try:
-                  res = requests.get(target_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
-                  news_items = BeautifulSoup(res.text, 'html.parser').select('div.views-row, li.news-item, article')
-                  if not news_items: news_items = BeautifulSoup(res.text, 'html.parser').select('.view-content a')
+                  try:
+                      page.goto(url, timeout=60000)
+                      try: page.wait_for_load_state("networkidle", timeout=10000)
+                      except: pass
 
-                  for item in news_items:
-                      link_tag = item.select_one('.views-field-title a, .field-content a, h3 a, h4 a, .news-title a')
-                      if not link_tag and item.name == 'a': link_tag = item
-                      if not link_tag: link_tag = item.select_one('a')
+                      content = page.content()
+                      soup = BeautifulSoup(content, "html.parser")
+                      
+                      article_text = ""
+                      # Try typical Kenyan news sites containers
+                      containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post|story)'))
+                      for c in containers:
+                          paras = c.find_all("p")
+                          chunk = "\n\n".join([p.text.strip() for p in paras if len(p.text) > 50])
+                          if len(chunk) > 500:
+                              article_text = chunk
+                              break
+                      
+                      # Fallback
+                      if not article_text:
+                          all_paras = soup.find_all("p")
+                          article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
 
-                      if link_tag and 'href' in link_tag.attrs:
-                          url = link_tag['href']
-                          u_hash = hashlib.md5(url.encode()).hexdigest()
-                          if u_hash in memory or not url.startswith("http"): continue
-                          if "facebook.com" in url or "twitter.com" in url: continue
-                          
-                          print(f"🕷️ Following link: {url}")
-                          random.shuffle(apify_pool)
-                          scrape_success = False
-                          
-                          for api_key in apify_pool:
-                              try:
-                                  client_apify = ApifyClient(api_key)
-                                  run = client_apify.actor("apify/website-content-crawler").call(
-                                      run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"}
-                                  )
-                                  dataset = client_apify.dataset(run["defaultDatasetId"])
-                                  data = list(dataset.iterate_items())
-                                  if data:
-                                      text = data[0].get('markdown', data[0].get('text', ''))
-                                      if len(text) > 600:
-                                          full_raw_text = text
-                                          final_hash = u_hash
-                                          scrape_success = True
-                                          break 
-                              except: continue
-                          if scrape_success: break
-                  
-                  if full_raw_text:
-                      used_topic = topic
-                      print(f"✅ Content found for '{topic}'")
-                      break 
+                      return article_text
+                  except: return None
+                  finally: browser.close()
 
-              except Exception as e:
-                  print(f"Error checking '{topic}': {e}")
-                  continue
+          # --- 4. FIND & SCRAPE ---
+          full_raw_text, final_hash = None, None
+          
+          for item in items:
+              url = item.link.text
+              u_hash = hashlib.md5(url.encode()).hexdigest()
+              
+              if u_hash in memory: continue
+              
+              # Scrape
+              text = scrape_article_free(url)
+              if text and len(text) > 600:
+                  full_raw_text = text
+                  final_hash = u_hash
+                  break
+          
+          if not full_raw_text: 
+              print("❌ No new content found."); exit(0)
 
-          if not full_raw_text: print("❌ FATAL: All topics failed."); exit(0)
-
-          # --- 5. THE 'CYNICAL REALIST' PROMPT ---
+          # --- 5. BELINDA'S PROMPT ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL, NO-NONSENSE NAIROBI REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
           {internal_linking}
-          MANDATE: Point out the bad side. Disillusioned tone. Negative headline. No robotic phrases.
+          
+          MANDATE: 
+          - Point out the bad side. Disillusioned tone. 
+          - Use a negative, punchy headline. 
+          - No robotic phrases. Keep it raw and Kenyan (but English).
+          
+          *** HEADLINE RULE ***
+          - Do NOT copy the source title.
+          - Make it cynical (e.g. "Another Scandal," "We Told You So").
+          
+          *** IMAGE RULE ***
+          - Return a SINGLE concrete noun for the image search.
+          - Example: 'Handcuffs', 'Matatu', 'Parliament', 'Shilling', 'Rain'.
+          
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [Summary]
           IMAGE_CAPTION: [Caption]
           CATEGORY: [{used_topic.title()}]
           TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words]
+          IMAGE_KEYWORD: [Single Concrete Noun]
           BODY: [Full Article]"""
 
           output = run_gemini(prompt)
@@ -213,7 +234,7 @@ jobs:
               return m.group(1).strip() if m else None
 
           parsed = {
-              "TITLE": extract("TITLE", output) or "Analysis",
+              "TITLE": extract("TITLE", output) or "Nairobi Updates",
               "DESC": extract("DESCRIPTION", output) or "Full story.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing.",
               "IMG": extract("IMAGE_KEYWORD", output) or used_topic,
@@ -224,33 +245,35 @@ jobs:
               parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
           for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ")
+              parsed[k] = clean_dashes(parsed[k])
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
+          parsed["BODY"] = clean_dashes(parsed["BODY"])
 
-          # --- 7. ROBUST IMAGE FETCHING ---
+          # --- 7. IMAGE & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
-              # Generic robust fallbacks (Abstract, City, News, Tech)
-              fallback_pool = [
-                  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1444653614773-8b83df53fe79?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80"
-              ]
-              try:
-                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}"
-                  r = requests.get(url, timeout=10)
-                  if r.status_code == 200:
-                      return r.json()['urls']['regular'] # This returns the long, valid URL
-                  else:
-                      print(f"⚠️ Unsplash Status: {r.status_code}. Using fallback.")
-                      return random.choice(fallback_pool)
-              except Exception as e: 
-                  print(f"⚠️ Unsplash Error: {e}")
-                  return random.choice(fallback_pool)
+              # Kenyan Defaults
+              defaults = ["Nairobi", "Kenya", "Africa"]
+              fallback = "https://images.unsplash.com/photo-1499364615650-ec387c1470c5?w=1200" # Nairobi Skyline
+              
+              if not u_key: return fallback
+              
+              # Search: Keyword -> Nairobi -> Kenya
+              search_terms = [q, "Nairobi", "Kenya"]
+              
+              for term in search_terms:
+                  try:
+                      clean = re.sub(r'[^a-zA-Z ]', '', term)
+                      print(f"📷 Unsplash Search: {clean}")
+                      url = f"https://api.unsplash.com/photos/random?query={clean}&orientation=landscape&client_id={u_key}"
+                      r = requests.get(url, timeout=5)
+                      if r.status_code == 200:
+                          return r.json()['urls']['regular']
+                  except: continue
+              return fallback
           
           img_url = get_img(parsed['IMG'])
 
@@ -304,8 +327,6 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: belinda-cynic publish"
+          commit_message: "content: belinda-cynic publish 🇰🇪"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: '${{ env.POSTS_DIR }}/*.md .github/scrape_memory.json'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
