@@ -1,0 +1,339 @@
+name: Global News Cycle (US, UK, CA Focus)
+
+on:
+  schedule:
+    # 6 Alternate Intervals for Tech and Finance
+    - cron: '0 2 * * *'   # Finance
+    - cron: '0 6 * * *'   # Tech
+    - cron: '0 10 * * *'  # Finance
+    - cron: '0 14 * * *'  # Tech
+    - cron: '0 18 * * *'  # Finance
+    - cron: '0 22 * * *'  # Tech
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic (finance or tech)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai beautifulsoup4 lxml playwright
+          playwright install chromium
+
+      - name: Generate Content
+        env:
+          GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
+          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+          CRON_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, hashlib, time
+          from google import genai
+          from google.genai import types
+          from bs4 import BeautifulSoup
+          from playwright.sync_api import sync_playwright
+          import textwrap
+
+          # --- 1. CONFIGURATION ---
+          def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
+          gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
+
+          def clean_dashes(text):
+              if not text: return ""
+              # Strictly replacing em and en dashes with standard hyphens
+              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
+              text = re.sub(r'\s+', ' ', text)
+              return text.strip()
+
+          def get_internal_context():
+              posts_dir = os.environ.get("POSTS_DIR")
+              if not os.path.exists(posts_dir): return ""
+              files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
+              if not files: return ""
+              sample = random.sample(files, min(len(files), 4))
+              context = "PAST STORIES (LINK 1 OF THESE):\n"
+              for f in sample:
+                  try:
+                      with open(os.path.join(posts_dir, f), 'r') as c:
+                          txt = c.read()
+                          t_match = re.search(r'title:\s*"(.*?)"', txt)
+                          t = t_match.group(1) if t_match else f
+                          context += f"- {t}: /posts/{f.replace('.md', '')}\n"
+                  except: continue
+              return context
+
+          def run_gemini(p):
+              random.shuffle(gem_pool)
+              models_to_try = ["gemini-2.0-flash", "gemini-2.5-flash"]
+              for model_name in models_to_try:
+                  for k in gem_pool:
+                      try:
+                          client = genai.Client(api_key=k)
+                          return client.models.generate_content(
+                              model=model_name, 
+                              contents=p,
+                              config=types.GenerateContentConfig(temperature=0.7, max_output_tokens=8192)
+                          ).text.strip()
+                      except Exception as e:
+                          time.sleep(1)
+                          continue
+              return None
+
+          # --- 2. TOPIC ROTATION ---
+          cron_map = {
+              '0 2 * * *': 'finance',
+              '0 6 * * *': 'tech',
+              '0 10 * * *': 'finance',
+              '0 14 * * *': 'tech',
+              '0 18 * * *': 'finance',
+              '0 22 * * *': 'tech'
+          }
+          topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'finance')
+          
+          # --- 3. UNIVERSAL SEARCH QUERIES ---
+          base_keywords = {
+              'finance': 'markets OR economy OR investing OR inflation OR interest rates OR wall street',
+              'tech': 'artificial intelligence OR big tech OR cybersecurity OR silicon valley OR software OR startups'
+          }
+          keywords_str = base_keywords.get(topic, "global news")
+          
+          # Focusing on US, UK, and Canada relevance by excluding purely local unassociated terms
+          query_str = f"({keywords_str}) AND (US OR USA OR UK OR Canada)"
+          
+          memory_path = os.environ.get('MEMORY_FILE')
+          memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+
+          # --- 4. DISCOVERY (NewsAPI) ---
+          news_api = os.environ.get("NEWSAPI_KEY")
+          # Sorting by publishedAt ensures we grab the absolute latest breaking news
+          news_url = f"https://newsapi.org/v2/everything?q={query_str}&language=en&sortBy=publishedAt&apiKey={news_api}"
+          
+          try: articles = requests.get(news_url).json().get('articles', [])
+          except: exit(0)
+
+          # --- 5. FREE SCRAPER ---
+          def scrape_article_free(url):
+              print(f"🕷️ Stealth-Loading: {url}")
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
+                  context = browser.new_context(
+                      user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                  )
+                  page = context.new_page()
+                  page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+                  try:
+                      page.goto(url, timeout=50000)
+                      try: page.wait_for_load_state("networkidle", timeout=10000)
+                      except: pass
+
+                      content = page.content()
+                      soup = BeautifulSoup(content, "html.parser")
+                      
+                      article_text = ""
+                      containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post)'))
+                      for c in containers:
+                          paras = c.find_all("p")
+                          chunk = "\n\n".join([p.text.strip() for p in paras if len(p.text) > 50])
+                          if len(chunk) > 600:
+                              article_text = chunk
+                              break
+                      if not article_text:
+                          all_paras = soup.find_all("p")
+                          article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
+                      return article_text
+                  except: return None
+                  finally: browser.close()
+
+          # --- 6. PROCESS ARTICLES ---
+          full_raw_text, final_hash, target_title = None, None, None
+          
+          for a in articles:
+              url = a.get('url', '')
+              u_hash = hashlib.md5(url.encode()).hexdigest()
+              
+              if u_hash in memory or not url.startswith("http"): continue
+              
+              text = scrape_article_free(url)
+              if text and len(text) > 600:
+                  full_raw_text = text
+                  final_hash = u_hash
+                  target_title = a.get('title')
+                  break 
+
+          if not full_raw_text: print("❌ No valid content found."); exit(0)
+
+          # --- 7. THE PROMPT ---
+          internal_linking = get_internal_context()
+          
+          # Adding the explicit instruction for Finance topics
+          finance_instruction = ""
+          if topic == 'finance':
+              finance_instruction = "CRITICAL REQUIREMENT: You MUST include a distinct section at the end titled 'What This Means For You' answering exactly what this news means to the reader as an everyday consumer or investor in the US, UK, or Canada."
+
+          prompt = f"""OPERATE AS A PROFESSIONAL JOURNALIST AND REPORTER.
+          SOURCE MATERIAL: {full_raw_text[:12000]}
+          TARGET AUDIENCE: Readers in the USA, Canada, and the UK. Ensure currency, context, and impacts are tailored to these regions.
+          {internal_linking}
+          
+          MANDATE: 
+          - Analyze the latest impact of this story with a professional reporting tone.
+          - Tone: Objective, analytical, and authoritative.
+          {finance_instruction}
+          
+          *** HEADLINE RULES ***
+          1. Keep the headline as close as possible to the original scraped title: "{target_title}". Do not invent a completely new title, just polish it for clarity if needed.
+          
+          *** IMAGE RULE ***
+          - Return a specific 2-to-3 word descriptive phrase representing the visual scene for the image search. Do NOT use a single broad keyword. 
+          - Example: 'trading floor screens', 'server room cables', 'empty office building'.
+          
+          OUTPUT FORMAT:
+          TITLE: [Headline]
+          DESCRIPTION: [Summary]
+          IMAGE_CAPTION: [Caption]
+          CATEGORY: [{topic.title()}]
+          TAGS: [3 tags]
+          IMAGE_KEYWORD: [2-3 word specific phrase]
+          BODY: [Full Article]"""
+
+          output = run_gemini(prompt)
+          if not output: exit(1)
+
+          # --- 8. PARSE & CLEAN ---
+          def extract(key, text):
+              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              return m.group(1).strip() if m else None
+
+          parsed = {
+              "TITLE": extract("TITLE", output) or target_title,
+              "DESC": extract("DESCRIPTION", output) or "Full story inside.",
+              "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
+              "IMG": extract("IMAGE_KEYWORD", output) or f"{topic} news concept",
+              "BODY": output.split("BODY:")[-1].strip()
+          }
+          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
+              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
+
+          for k in parsed:
+              parsed[k] = clean_dashes(parsed[k])
+              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
+          parsed["BODY"] = clean_dashes(parsed["BODY"])
+
+          # --- 9. SMART IMAGE SEARCH ---
+          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
+          u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
+          
+          def get_img(q):
+              # International Fallbacks
+              defaults = {
+                  'finance': "https://images.unsplash.com/photo-1611974765270-ca1258634369?w=1200", 
+                  'tech': "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200" 
+              }
+              fallback = defaults.get(topic, defaults['finance'])
+              if not u_key: return fallback
+              
+              # Using the 2-to-3 word phrase provided by the AI
+              search_terms = [q, f"{topic} concept", topic]
+              
+              for term in search_terms:
+                  try:
+                      clean_term = re.sub(r'[^a-zA-Z0-9 ]', '', term).strip()
+                      print(f"📷 Unsplash Search: {clean_term}")
+                      url = f"https://api.unsplash.com/photos/random?query={clean_term}&orientation=landscape&client_id={u_key}"
+                      r = requests.get(url, timeout=5)
+                      if r.status_code == 200:
+                          return r.json()['urls']['regular']
+                  except: continue
+              return fallback
+          
+          img_url = get_img(parsed['IMG'])
+
+          schema_json = {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": parsed['TITLE'],
+              "description": parsed['DESC'],
+              "datePublished": date_now,
+              "author": {"@type": "Person", "name": "Global Desk", "url": "https://jonathanmwaniki.co.ke"},
+              "image": [img_url]
+          }
+
+          final_md = textwrap.dedent(f"""---
+          title: "{parsed['TITLE'].replace('"', "'")}"
+          description: "{parsed['DESC'].replace('"', "'")}"
+          date: "{date_now}"
+          author: "Global Desk"
+          image: "{img_url}"
+          imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
+          category: "{topic.title()}"
+          slug: "{slug}"
+          ---
+
+          {parsed['BODY']}
+
+          <script type="application/ld+json">
+          {json.dumps(schema_json, indent=2)}
+          </script>
+          """).strip()
+
+          out_dir = os.environ.get("POSTS_DIR")
+          os.makedirs(out_dir, exist_ok=True)
+          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
+          
+          memory.append(final_hash)
+          with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
+          print(f"✅ Published: {slug}")
+          EOF
+
+      - name: Git Safety Pull
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git stash -u
+          git fetch origin main
+          git pull origin main --rebase
+          git stash pop || echo "Nothing to pop"
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: latest global dispatch"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
