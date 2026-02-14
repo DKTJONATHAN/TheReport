@@ -145,7 +145,6 @@ jobs:
           for item in items:
               link = item.link.text.strip()
               pub_str = item.pubDate.text.strip()
-              # Clean publisher name from the end of the title (e.g. " - Reuters")
               title = re.sub(r'\s+-\s+[^-]+$', '', item.title.text).strip()
               
               try:
@@ -160,39 +159,57 @@ jobs:
               print("❌ No valid news published within the last 2 hours.")
               exit(0)
 
-          # --- 4. FREE SCRAPER (WITH NATIVE GOOGLE REDIRECT HANDLING) ---
+          # --- 4. TRIPLE-LAYER URL DECODER ---
+          def resolve_google_news_url(url):
+              print(f"🔗 Decoding Google News URL...")
+              try:
+                  headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0"}
+                  
+                  # Layer 1: Check HTML for redirect tags
+                  res = requests.get(url, headers=headers, timeout=10)
+                  match = re.search(r'data-n-v="(https?://[^"]+)"', res.text)
+                  if match: return match.group(1)
+                  match = re.search(r'<a[^>]*href="(https?://[^"]+)"', res.text)
+                  if match and "google.com" not in match.group(1): return match.group(1)
+
+                  # Layer 2: Batchexecute API Decode
+                  from urllib.parse import urlparse
+                  token = urlparse(url).path.split('/')[-1]
+                  param = f'["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,null,null,null,null,null,null,0,5],"en-US","US",true,[2,4,8],1,true,"661099999",0,0,null,0],"{token}"]'
+                  data = {'f.req': json.dumps([[["Fbv4je", param, "null", "generic"]]])}
+                  rpc_res = requests.post("https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je", data=data, headers=headers, timeout=10)
+                  urls = re.findall(r'https?://[^"\\]+', rpc_res.text)
+                  for u in urls:
+                      if "google.com" not in u and "gstatic.com" not in u:
+                          return u
+                          
+                  return res.url
+              except Exception as e:
+                  print(f"⚠️ Decoder warning: {e}")
+                  return url
+
+          # --- 5. FREE SCRAPER ---
           def scrape_article_free(url):
               print(f"🕷️ Stealth-Loading: {url}")
               with sync_playwright() as p:
-                  browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
+                  browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox", "--ignore-certificate-errors"])
                   context = browser.new_context(
                       user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                      locale="en-US"
+                      locale="en-US",
+                      ignore_https_errors=True
                   )
                   page = context.new_page()
                   page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
                   try:
-                      page.goto(url, timeout=60000)
+                      page.goto(url, timeout=45000, wait_until="domcontentloaded")
                       
-                      # --- ESCAPE GOOGLE REDIRECT WALL ---
-                      if "google.com" in page.url:
-                          print("⏳ Navigating Google redirect...")
-                          try: 
-                              page.locator('button:has-text("Accept all"), button:has-text("Reject all"), button:has-text("I agree")').first.click(timeout=3000)
-                          except: pass
-                          
-                          try:
-                              page.wait_for_function('!window.location.hostname.includes("google.com")', timeout=15000)
-                          except:
-                              try:
-                                  page.locator('a[href^="http"]').first.click(timeout=5000)
-                                  page.wait_for_function('!window.location.hostname.includes("google.com")', timeout=10000)
-                              except: pass
+                      # Safely catch Chromium crash
+                      if "chrome-error" in page.url:
+                          print("⚠️ Blocked by chrome-error (headless detection).")
+                          return None
 
-                      print(f"✅ Landed on target: {page.url}")
-
-                      try: page.wait_for_load_state("domcontentloaded", timeout=10000)
+                      try: page.wait_for_load_state("networkidle", timeout=10000)
                       except: pass
 
                       content = page.content()
@@ -215,19 +232,34 @@ jobs:
                       return None
                   finally: browser.close()
 
-          # --- 5. PROCESS ARTICLES ---
+          # --- 6. PROCESS ARTICLES ---
           full_raw_text, final_hash, target_title = None, None, None
           
           for a in valid_candidates:
               raw_url = a['url']
               target_title = a['title']
               
-              # Hash the title to verify memory (Avoids needing to decrypt URL first)
               t_hash = hashlib.md5(target_title.encode()).hexdigest()
-              
               if t_hash in memory: continue
               
-              text = scrape_article_free(raw_url)
+              # Resolve the URL FIRST to avoid Playwright crashes
+              resolved_url = resolve_google_news_url(raw_url)
+              
+              # Attempt to Scrape with Playwright
+              text = scrape_article_free(resolved_url)
+              
+              # Extreme Fallback: If Playwright fails, use basic requests
+              if not text or len(text) < 600:
+                  print("⚠️ Playwright blocked, falling back to Requests...")
+                  try:
+                      res = requests.get(resolved_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0"}, timeout=15)
+                      soup = BeautifulSoup(res.text, "html.parser")
+                      paras = soup.find_all("p")
+                      fallback_text = "\n\n".join([p.text.strip() for p in paras if len(p.text.strip()) > 50])
+                      if len(fallback_text) > 600:
+                          text = fallback_text
+                  except: pass
+
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = t_hash
@@ -235,7 +267,7 @@ jobs:
 
           if not full_raw_text: print("❌ All recent URLs failed to scrape or were already posted."); exit(0)
 
-          # --- 6. THE PROMPT ---
+          # --- 7. THE PROMPT ---
           internal_linking = get_internal_context()
           
           finance_instruction = ""
@@ -274,7 +306,7 @@ jobs:
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 7. PARSE & CLEAN ---
+          # --- 8. PARSE & CLEAN ---
           def extract(key, text):
               m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
@@ -294,7 +326,7 @@ jobs:
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
           parsed["BODY"] = clean_dashes(parsed["BODY"])
 
-          # --- 8. SMART IMAGE SEARCH ---
+          # --- 9. SMART IMAGE SEARCH ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
           slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
