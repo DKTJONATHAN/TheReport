@@ -73,10 +73,14 @@ jobs:
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
 
-          def clean_dashes(text):
+          def clean_text_formatting(text):
               if not text: return ""
+              # Strictly replace em dashes and en dashes with standard hyphens
               text = text.replace('\u2014', ' - ').replace('\u2013', '-')
-              text = re.sub(r'\s+', ' ', text)
+              # Clean horizontal spaces/tabs, but PRESERVE newlines for paragraphs
+              text = re.sub(r'[ \t]+', ' ', text)
+              # Normalize excessive newlines to clean double-spacing for markdown
+              text = re.sub(r'\n{3,}', '\n\n', text)
               return text.strip()
 
           def get_internal_context():
@@ -85,14 +89,14 @@ jobs:
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
               sample = random.sample(files, min(len(files), 4))
-              context = "PAST STORIES (LINK 1 OF THESE):\n"
+              context = "PAST STORIES (For internal linking):\n"
               for f in sample:
                   try:
                       with open(os.path.join(posts_dir, f), 'r') as c:
                           txt = c.read()
                           t_match = re.search(r'title:\s*"(.*?)"', txt)
                           t = t_match.group(1) if t_match else f
-                          context += f"- {t}: /posts/{f.replace('.md', '')}\n"
+                          context += f"- Title: {t} | URL: /posts/{f.replace('.md', '')}\n"
                   except: continue
               return context
 
@@ -155,15 +159,12 @@ jobs:
 
           now_utc = datetime.now(timezone.utc)
           
-          # Tier 1: Preferred 2 Hour Window
           valid_candidates = [a for a in all_items if now_utc - a['pdate'] <= timedelta(hours=2)]
           
-          # Tier 2: Gap Coverage (8 Hours)
           if not valid_candidates:
               print("⚠️ No news in the last 2 hours. Expanding search to 8 hours to cover the cron gap...")
               valid_candidates = [a for a in all_items if now_utc - a['pdate'] <= timedelta(hours=8)]
               
-          # Tier 3: Weekend Mode (24 Hours)
           if not valid_candidates:
               print("⚠️ Still no news. Expanding search to 24 hours (Weekend fallback)...")
               valid_candidates = [a for a in all_items if now_utc - a['pdate'] <= timedelta(hours=24)]
@@ -283,6 +284,7 @@ jobs:
           prompt = f"""OPERATE AS A PROFESSIONAL JOURNALIST AND REPORTER.
           SOURCE MATERIAL: {full_raw_text[:12000]}
           TARGET AUDIENCE: Readers in the USA, Canada, and the UK. Ensure currency, context, and impacts are tailored to these regions.
+          
           {internal_linking}
           
           MANDATE: 
@@ -290,8 +292,20 @@ jobs:
           - Tone: Objective, analytical, and authoritative.
           {finance_instruction}
           
+          *** INTERNAL LINKING RULE (STRICT) ***
+          - You MUST naturally embed at least one link from the 'PAST STORIES' provided above directly into the paragraphs of your article. 
+          - Format the link perfectly in Markdown, for example: [Relevant Anchor Text](/posts/the-slug-url)
+          - Do NOT create a "Read More" list at the bottom. Weave the link seamlessly into the text.
+          
           *** ANONYMITY RULE (STRICT) ***
           - Do NOT mention the original news source, publication name, wire service, or rival journalists anywhere in the text. Present the facts as your own independent dispatch.
+          
+          *** FORMATTING RULES (STRICT) ***
+          - Output the BODY strictly in clean, professional Markdown.
+          - Break the article into distinct, digestible paragraphs separated by blank lines. Never output a single wall of text.
+          - Use standard Markdown subheadings (##) to structure the report clearly.
+          - Do NOT use emojis, strange unicode symbols, or HTML tags.
+          - Only use standard hyphens (-), never use em-dashes or en-dashes.
           
           *** HEADLINE RULES ***
           1. Keep the headline as close as possible to the original title: "{target_title}". Do not invent a completely new title, just polish it for clarity and remove any brand names of other news outlets.
@@ -307,7 +321,8 @@ jobs:
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2-3 word specific phrase]
-          BODY: [Full Article]"""
+          BODY: 
+          [Full Article in Markdown]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
@@ -327,10 +342,16 @@ jobs:
           if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
               parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
+          # Apply formatting cleaner to fields
           for k in parsed:
-              parsed[k] = clean_dashes(parsed[k])
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
-          parsed["BODY"] = clean_dashes(parsed["BODY"])
+              parsed[k] = clean_text_formatting(parsed[k])
+              if k != "BODY":
+                  parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
+                  # Strip out line breaks on metadata fields just in case
+                  parsed[k] = parsed[k].replace('\n', ' ')
+
+          # Clean the body separately to preserve the good Markdown structure
+          parsed["BODY"] = clean_text_formatting(parsed["BODY"])
 
           # --- 9. SMART IMAGE SEARCH ---
           date_now = datetime.now(timezone.utc).strftime('%Y-%m-%d')
