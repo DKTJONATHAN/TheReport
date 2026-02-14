@@ -279,17 +279,20 @@ jobs:
           
           finance_instruction = ""
           if topic == 'finance':
-              finance_instruction = "CRITICAL REQUIREMENT: You MUST include a distinct section at the end titled 'What This Means For You' answering exactly what this news means to the reader as an everyday consumer or investor in the US, UK, or Canada."
+              finance_instruction = """
+          - FINANCE REQUIREMENT: You MUST include a concluding section analyzing the practical impact on everyday consumers/investors. 
+          - WARNING: Do NOT use generic subtitles like "What This Means For You" or "Impact on Consumers". Invent a creative, story-specific subheading for this section."""
 
           prompt = f"""OPERATE AS A PROFESSIONAL JOURNALIST AND REPORTER.
           SOURCE MATERIAL: {full_raw_text[:12000]}
-          TARGET AUDIENCE: Readers in the USA, Canada, and the UK. Ensure currency, context, and impacts are tailored to these regions.
           
           {internal_linking}
           
           MANDATE: 
           - Analyze the latest impact of this story with a professional reporting tone.
           - Tone: Objective, analytical, and authoritative.
+          - Target Audience: Implicitly tailor the context (currencies, market impacts) for North American and British readers. 
+          - STRICT RULE: NEVER explicitly mention "US", "USA", "UK", "Britain", or "Canada" in subheadings or text just to pander. Make the relevance feel organic.
           {finance_instruction}
           
           *** INTERNAL LINKING RULE (STRICT) ***
@@ -310,9 +313,12 @@ jobs:
           *** HEADLINE RULES ***
           1. Keep the headline as close as possible to the original title: "{target_title}". Do not invent a completely new title, just polish it for clarity and remove any brand names of other news outlets.
           
-          *** IMAGE RULE ***
-          - Return a specific 2-to-3 word descriptive phrase representing the visual scene for the image search. Do NOT use a single broad keyword. 
-          - Example: 'trading floor screens', 'server room cables', 'empty office building'.
+          *** IMAGE RULE (CRITICAL FOR ACCURACY) ***
+          - Return a STRICTLY LITERAL, VISUAL, and SAFE 2-3 word phrase for a stock photo search.
+          - WARNING: Avoid ambiguous, metaphorical, or dual-meaning words. The search engine does not understand metaphors.
+          - Example: For "facial recognition tech", use "biometric security scan" (NOT "facial").
+          - Example: For "real estate porn", use "luxury modern mansion" (NOT "porn").
+          - Example: For "bull market", use "stock trading chart" (NOT "bull").
           
           OUTPUT FORMAT:
           TITLE: [Headline]
