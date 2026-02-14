@@ -54,7 +54,6 @@ jobs:
       - name: Generate Content
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
-          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ github.event.inputs.manual_topic }}
           MEMORY_FILE: ${{ env.MEMORY_FILE }}
@@ -66,6 +65,7 @@ jobs:
           from google.genai import types
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
+          from email.utils import parsedate_to_datetime
           import textwrap
 
           # --- 1. CONFIGURATION ---
@@ -74,7 +74,6 @@ jobs:
 
           def clean_dashes(text):
               if not text: return ""
-              # Strictly replacing em and en dashes with standard hyphens
               text = text.replace('\u2014', ' - ').replace('\u2013', '-')
               text = re.sub(r'\s+', ' ', text)
               return text.strip()
@@ -124,31 +123,75 @@ jobs:
           }
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'finance')
           
-          # --- 3. UNIVERSAL SEARCH QUERIES ---
-          base_keywords = {
-              'finance': 'markets OR economy OR investing OR inflation OR interest rates OR wall street',
-              'tech': 'artificial intelligence OR big tech OR cybersecurity OR silicon valley OR software OR startups'
-          }
-          keywords_str = base_keywords.get(topic, "global news")
-          
-          # Focusing on US, UK, and Canada relevance by excluding purely local unassociated terms
-          query_str = f"({keywords_str}) AND (US OR USA OR UK OR Canada)"
-          
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 4. DISCOVERY (NewsAPI) ---
-          news_api = os.environ.get("NEWSAPI_KEY")
+          # --- 3. GOOGLE NEWS RSS DIRECT ---
+          rss_topic_map = {'finance': 'BUSINESS', 'tech': 'TECHNOLOGY'}
+          rss_category = rss_topic_map.get(topic, 'BUSINESS')
           
-          # Calculate the exact timestamp for 2 hours ago
-          two_hours_ago_dt = datetime.datetime.utcnow() - datetime.timedelta(hours=2)
-          two_hours_ago_str = two_hours_ago_dt.strftime('%Y-%m-%dT%H:%M:%S')
+          # Using US-targeted Google News feed
+          rss_url = f"https://news.google.com/rss/headlines/section/topic/{rss_category}?hl=en-US&gl=US&ceid=US:en"
 
-          # Fetching articles explicitly published within the last 2 hours
-          news_url = f"https://newsapi.org/v2/everything?q={query_str}&from={two_hours_ago_str}&language=en&sortBy=publishedAt&apiKey={news_api}"
-          
-          try: articles = requests.get(news_url).json().get('articles', [])
-          except: exit(0)
+          # --- TRIPLE-LAYER URL DECODER ---
+          def resolve_google_news_url(url):
+              print(f"🔗 Decoding Google News URL: {url}")
+              try:
+                  from urllib.parse import urlparse
+                  import base64
+                  token = urlparse(url).path.split('/')[-1]
+                  
+                  # Layer 1: Offline Base64
+                  try:
+                      padded_token = token + ("=" * (4 - (len(token) % 4)))
+                      decoded_bytes = base64.urlsafe_b64decode(padded_token)
+                      urls = re.findall(r'https?://[a-zA-Z0-9./\-_?=]+', decoded_bytes.decode('latin1', errors='ignore'))
+                      if urls: return urls[0]
+                  except: pass
+
+                  # Layer 2: batchexecute RPC
+                  param = f'["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,null,null,null,null,null,null,0,5],"en-US","US",true,[2,4,8],1,true,"661099999",0,0,null,0],"{token}"]'
+                  data = {'f.req': json.dumps([[["Fbv4je", param, "null", "generic"]]])}
+                  headers = {
+                      'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/127.0.0.0',
+                      'referer': 'https://news.google.com/'
+                  }
+                  res = requests.post("https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je", data=data, headers=headers, timeout=10)
+                  urls = re.findall(r'https?://[^"\\]+', res.text)
+                  if urls: return urls[0]
+              except Exception as e:
+                  print(f"⚠️ URL Decode Error: {e}")
+              return url
+
+          # --- 4. FETCH AND FILTER ARTICLES ---
+          print(f"📡 Fetching latest {topic} news from Google RSS...")
+          try:
+              resp = requests.get(rss_url, timeout=10)
+              soup = BeautifulSoup(resp.content, "xml")
+              items = soup.find_all("item")
+          except Exception as e:
+              print(f"❌ RSS Error: {e}")
+              exit(0)
+
+          valid_candidates = []
+          for item in items:
+              link = item.link.text.strip()
+              pub_str = item.pubDate.text.strip()
+              title = item.title.text.strip()
+              
+              # Strict 2-Hour Time Filter
+              try:
+                  pdate = parsedate_to_datetime(pub_str)
+                  if datetime.datetime.now(pdate.tzinfo) - pdate > datetime.timedelta(hours=2):
+                      continue
+              except: continue
+              
+              valid_candidates.append({"url": link, "title": title})
+
+          if not valid_candidates:
+              print("❌ No valid news published within the last 2 hours.")
+              exit(0)
 
           # --- 5. FREE SCRAPER ---
           def scrape_article_free(url):
@@ -162,7 +205,7 @@ jobs:
                   page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
                   try:
-                      page.goto(url, timeout=50000)
+                      page.goto(url, timeout=60000)
                       try: page.wait_for_load_state("networkidle", timeout=10000)
                       except: pass
 
@@ -187,31 +230,22 @@ jobs:
           # --- 6. PROCESS ARTICLES ---
           full_raw_text, final_hash, target_title = None, None, None
           
-          for a in articles:
-              url = a.get('url', '')
-              pub_date = a.get('publishedAt', '')
+          for a in valid_candidates:
+              raw_url = a['url']
+              target_title = a['title']
               
-              # Secondary strict time verification in Python
-              try:
-                  pub_dt = datetime.datetime.strptime(pub_date, '%Y-%m-%dT%H:%M:%SZ')
-                  if pub_dt < two_hours_ago_dt:
-                      print(f"⏭️ Skipping {url} (Older than 2 hours)")
-                      continue
-              except Exception as e:
-                  pass # If the date format is unexpected, we allow it to proceed to the hash check
-
-              u_hash = hashlib.md5(url.encode()).hexdigest()
+              resolved_url = resolve_google_news_url(raw_url)
+              u_hash = hashlib.md5(resolved_url.encode()).hexdigest()
               
-              if u_hash in memory or not url.startswith("http"): continue
+              if u_hash in memory or not resolved_url.startswith("http"): continue
               
-              text = scrape_article_free(url)
+              text = scrape_article_free(resolved_url)
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = u_hash
-                  target_title = a.get('title')
                   break 
 
-          if not full_raw_text: print("❌ No valid recent content found in the last 2 hours."); exit(0)
+          if not full_raw_text: print("❌ All recent URLs failed to scrape or were already posted."); exit(0)
 
           # --- 7. THE PROMPT ---
           internal_linking = get_internal_context()
@@ -230,8 +264,11 @@ jobs:
           - Tone: Objective, analytical, and authoritative.
           {finance_instruction}
           
+          *** ANONYMITY RULE (STRICT) ***
+          - Do NOT mention the original news source, publication name, wire service, or rival journalists anywhere in the text (e.g., do NOT say "according to Reuters", "Bloomberg reports", "The New York Times stated"). Present the facts as your own independent dispatch.
+          
           *** HEADLINE RULES ***
-          1. Keep the headline as close as possible to the original scraped title: "{target_title}". Do not invent a completely new title, just polish it for clarity if needed.
+          1. Keep the headline as close as possible to the original title: "{target_title}". Do not invent a completely new title, just polish it for clarity and remove any brand names of other news outlets.
           
           *** IMAGE RULE ***
           - Return a specific 2-to-3 word descriptive phrase representing the visual scene for the image search. Do NOT use a single broad keyword. 
@@ -275,7 +312,6 @@ jobs:
           u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
           
           def get_img(q):
-              # International Fallbacks
               defaults = {
                   'finance': "https://images.unsplash.com/photo-1611974765270-ca1258634369?w=1200", 
                   'tech': "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200" 
@@ -283,7 +319,6 @@ jobs:
               fallback = defaults.get(topic, defaults['finance'])
               if not u_key: return fallback
               
-              # Using the 2-to-3 word phrase provided by the AI
               search_terms = [q, f"{topic} concept", topic]
               
               for term in search_terms:
