@@ -139,8 +139,13 @@ jobs:
 
           # --- 4. DISCOVERY (NewsAPI) ---
           news_api = os.environ.get("NEWSAPI_KEY")
-          # Sorting by publishedAt ensures we grab the absolute latest breaking news
-          news_url = f"https://newsapi.org/v2/everything?q={query_str}&language=en&sortBy=publishedAt&apiKey={news_api}"
+          
+          # Calculate the exact timestamp for 2 hours ago
+          two_hours_ago_dt = datetime.datetime.utcnow() - datetime.timedelta(hours=2)
+          two_hours_ago_str = two_hours_ago_dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+          # Fetching articles explicitly published within the last 2 hours
+          news_url = f"https://newsapi.org/v2/everything?q={query_str}&from={two_hours_ago_str}&language=en&sortBy=publishedAt&apiKey={news_api}"
           
           try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
@@ -184,6 +189,17 @@ jobs:
           
           for a in articles:
               url = a.get('url', '')
+              pub_date = a.get('publishedAt', '')
+              
+              # Secondary strict time verification in Python
+              try:
+                  pub_dt = datetime.datetime.strptime(pub_date, '%Y-%m-%dT%H:%M:%SZ')
+                  if pub_dt < two_hours_ago_dt:
+                      print(f"⏭️ Skipping {url} (Older than 2 hours)")
+                      continue
+              except Exception as e:
+                  pass # If the date format is unexpected, we allow it to proceed to the hash check
+
               u_hash = hashlib.md5(url.encode()).hexdigest()
               
               if u_hash in memory or not url.startswith("http"): continue
@@ -195,12 +211,11 @@ jobs:
                   target_title = a.get('title')
                   break 
 
-          if not full_raw_text: print("❌ No valid content found."); exit(0)
+          if not full_raw_text: print("❌ No valid recent content found in the last 2 hours."); exit(0)
 
           # --- 7. THE PROMPT ---
           internal_linking = get_internal_context()
           
-          # Adding the explicit instruction for Finance topics
           finance_instruction = ""
           if topic == 'finance':
               finance_instruction = "CRITICAL REQUIREMENT: You MUST include a distinct section at the end titled 'What This Means For You' answering exactly what this news means to the reader as an everyday consumer or investor in the US, UK, or Canada."
