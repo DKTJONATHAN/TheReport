@@ -77,8 +77,10 @@ jobs:
 
           def clean_dashes(text):
               if not text: return ""
-              text = text.replace('—', ' - ').replace('–', '-')
-              text = re.sub(r'\s+', ' ', text)
+              # Clean dashes strictly as requested
+              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
+              # IMPORTANT FIX: Only match spaces and tabs, NOT newlines (\n)
+              text = re.sub(r'[ \t]+', ' ', text)
               return text.strip()
 
           def get_internal_context():
@@ -130,7 +132,6 @@ jobs:
           topic = os.environ.get('MANUAL_TOPIC', '').lower() or cron_map.get(os.environ.get('CRON_SCHEDULE', ''), 'business')
           
           # --- 3. UNIVERSAL SEARCH QUERIES (UPDATED) ---
-          # We use broad category terms to catch ANY major story.
           base_keywords = {
               'business': 'global markets, stock exchange crash, international trade scandal, central bank crisis, billionaire fraud, oil price shock',
               'sports': 'world championship scandal, olympic controversy, major league crisis, fifa corruption, doping scandal, athlete lawsuit',
@@ -138,7 +139,6 @@ jobs:
           }
           keywords_str = base_keywords.get(topic, "global crisis")
           
-          # The Query: Broad keywords + Exclude Local Terms
           query_str = f"({keywords_str.replace(', ', ' OR ')}) -Kenya -Nairobi -local -regional"
           
           memory_path = os.environ.get('MEMORY_FILE')
@@ -212,6 +212,9 @@ jobs:
           MANDATE: 
           - Analyze the INTERNATIONAL impact.
           - Tone: Critical, Analytical, Slightly Dark. 
+          - STRICT FORMATTING: Use Markdown. Break the story into paragraphs. Use a double newline between paragraphs.
+          - IMPORTANT: Output each metadata field on a NEW LINE.
+          - DO NOT start the body text with bolding.
           
           *** HEADLINE RULES ***
           1. Do NOT copy the source title.
@@ -230,14 +233,15 @@ jobs:
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [Single Concrete Noun]
-          BODY: [Full Critical Article]"""
+          BODY:
+          [Full Critical Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
-          # --- 8. PARSE & CLEAN ---
+          # --- 8. PARSE & CLEAN (ROBUST METHOD APPLIED) ---
           def extract(key, text):
-              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              m = re.search(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
 
           parsed = {
@@ -245,15 +249,32 @@ jobs:
               "DESC": extract("DESCRIPTION", output) or "Full story inside.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
               "IMG": extract("IMAGE_KEYWORD", output) or topic,
-              "BODY": output.split("BODY:")[-1].strip()
           }
-          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
-              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
+          
+          # ROBUST BODY EXTRACTION
+          body_text = output
+          metadata_keys = ["TITLE", "DESCRIPTION", "IMAGE_CAPTION", "CATEGORY", "TAGS", "IMAGE_KEYWORD", "BODY"]
+          for key in metadata_keys:
+              body_text = re.sub(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$", "", body_text, flags=re.M | re.I)
+          
+          # Clean up any residual asterisks/spaces at the very beginning
+          body_text = body_text.strip()
+          body_text = re.sub(r'^\*\*\s*', '', body_text)
+          
+          # DROP CAP SAVER
+          if body_text and body_text[0].isalpha() and body_text[0].islower():
+              body_text = body_text[0].upper() + body_text[1:]
+          elif body_text and not body_text[0].isalpha():
+              body_text = re.sub(r'^[^a-zA-Z]+', '', body_text)
+              if body_text: body_text = body_text[0].upper() + body_text[1:]
 
+          parsed["BODY"] = body_text
+
+          # Apply formatting fixes across the board
           for k in parsed:
+              if not parsed[k]: continue
               parsed[k] = clean_dashes(parsed[k])
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
-          parsed["BODY"] = clean_dashes(parsed["BODY"])
+              parsed[k] = re.sub(r'(?i)^(In conclusion|To summarize|Conclusion)[,\s:]*', '', parsed[k], flags=re.M).strip()
 
           # --- 9. SMART IMAGE SEARCH ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
