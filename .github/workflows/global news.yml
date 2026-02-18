@@ -213,6 +213,9 @@ jobs:
           - Tone: Objective, Sophisticated (Bloomberg/Reuters style).
           - NO local slang. NO 'sheng'. 
           - Focus on the impact on the {topic} sector.
+          - STRICT FORMATTING: Use Markdown. Break the story into paragraphs.
+          - DO NOT start the body text with bolding.
+          - IMPORTANT: Output each metadata field on a NEW LINE.
           
           OUTPUT FORMAT:
           TITLE: [Engaging Headline]
@@ -221,14 +224,15 @@ jobs:
           CATEGORY: [{topic.title()}]
           TAGS: [3 tags]
           IMAGE_KEYWORD: [2 metaphorical words]
-          BODY: [Full Article]"""
+          BODY:
+          [Full Article]"""
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
           # --- 7. PARSE & CLEAN ---
           def extract(key, text):
-              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              m = re.search(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
 
           parsed = {
@@ -236,14 +240,36 @@ jobs:
               "DESC": extract("DESCRIPTION", output) or "Full story inside.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
               "IMG": extract("IMAGE_KEYWORD", output) or topic,
-              "BODY": output.split("BODY:")[-1].strip()
           }
-          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
-              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
+          
+          # ROBUST BODY EXTRACTION
+          body_text = output
+          metadata_keys = ["TITLE", "DESCRIPTION", "IMAGE_CAPTION", "CATEGORY", "TAGS", "IMAGE_KEYWORD", "BODY"]
+          for key in metadata_keys:
+              body_text = re.sub(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$", "", body_text, flags=re.M | re.I)
+          
+          # Clean up any residual asterisks/spaces at the very beginning
+          body_text = body_text.strip()
+          body_text = re.sub(r'^\*\*\s*', '', body_text)
+          
+          # DROP CAP SAVER: Ensure first character is always a capitalized alphabet letter
+          if body_text and body_text[0].isalpha() and body_text[0].islower():
+              body_text = body_text[0].upper() + body_text[1:]
+          elif body_text and not body_text[0].isalpha():
+              # If it still starts with a non-alpha char (quotes, brackets, etc.), strip them away
+              body_text = re.sub(r'^[^a-zA-Z]+', '', body_text)
+              if body_text: body_text = body_text[0].upper() + body_text[1:]
+
+          parsed["BODY"] = body_text
 
           for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ")
-              parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
+              if not parsed[k]: continue
+              
+              # Enforce dash removal rule
+              parsed[k] = parsed[k].replace('\u2014', ' - ').replace('\u2013', '-')
+              
+              # Fix dangerous regex that was deleting entire paragraphs
+              parsed[k] = re.sub(r'(?i)^(In conclusion|To summarize|Conclusion)[,\s:]*', '', parsed[k], flags=re.M).strip()
 
           # --- 8. IMAGE & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
