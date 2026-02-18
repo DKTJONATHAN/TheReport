@@ -68,8 +68,8 @@ jobs:
 
           def clean_dashes(text):
               if not text: return ""
-              # Replace specific dashes
-              text = text.replace('—', ' - ').replace('–', '-')
+              # Replace specific dashes using unicode to avoid syntax linting issues
+              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
               # Only collapse multiple spaces, NOT multiple newlines
               text = re.sub(r'[ \t]+', ' ', text)
               return text.strip()
@@ -189,6 +189,7 @@ jobs:
           MANDATE: 
           - Point out the bad side. Disillusioned, punchy tone.
           - STRICT FORMATTING: Use Markdown. Break the story into 4-6 paragraphs. Use a double newline between paragraphs.
+          - IMPORTANT: Output each metadata field on a NEW LINE.
           
           OUTPUT:
           TITLE: [Cynical Headline]
@@ -205,7 +206,8 @@ jobs:
 
           # --- 6. PARSE & CLEAN ---
           def extract(key, text):
-              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              # Allow optional markdown bolding around the key
+              m = re.search(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)", text, re.M | re.I)
               return m.group(1).strip() if m else None
 
           parsed = {
@@ -213,13 +215,22 @@ jobs:
               "DESC": extract("DESCRIPTION", output) or "Full story.",
               "CAPTION": extract("IMAGE_CAPTION", output) or "Developing.",
               "IMG": extract("IMAGE_KEYWORD", output) or used_topic,
-              "BODY": output.split("BODY:")[-1].strip()
           }
+
+          # ROBUST BODY EXTRACTION
+          # This sweeps through the text and surgically removes the metadata lines 
+          # so they never bleed into the actual article body.
+          body_text = output
+          metadata_keys = ["TITLE", "DESCRIPTION", "IMAGE_CAPTION", "CATEGORY", "TAGS", "IMAGE_KEYWORD", "BODY"]
+          for key in metadata_keys:
+              body_text = re.sub(rf"^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$", "", body_text, flags=re.M | re.I)
+          
+          parsed["BODY"] = body_text.strip()
 
           # Scrub only metadata, keep line breaks in BODY
           parsed["TITLE"] = clean_dashes(parsed["TITLE"])
           parsed["DESC"] = clean_dashes(parsed["DESC"])
-          parsed["BODY"] = parsed["BODY"].replace('—', ' - ').replace('–', '-')
+          parsed["BODY"] = parsed["BODY"].replace('\u2014', ' - ').replace('\u2013', '-')
 
           # --- 7. IMAGE & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
