@@ -103,7 +103,7 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
     </main>
   </div>
 
-  <style>
+  <style is:global>
     /* --- SHARED LIGHT THEME VARIABLES --- */
     :root {
       --jm-bg: #f8fafc; 
@@ -116,12 +116,21 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
       --jm-font-body: 'Merriweather', serif;
     }
 
+    /* CRITICAL FIX: Forces padding to be absorbed into the 100% width */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      overflow-x: hidden; /* Fallback safety */
+    }
+
     .author-page-wrapper {
       background-color: var(--jm-bg);
       color: var(--jm-text-main);
       font-family: var(--jm-font-body);
       min-height: 100vh;
       padding-bottom: 5rem;
+      width: 100%;
+      overflow-x: hidden; /* Clips horizontal overflow */
     }
     .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
     
@@ -134,6 +143,7 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
       border-bottom: 1px solid var(--jm-border);
       padding: 4rem 0;
       margin-bottom: 3rem;
+      width: 100%;
     }
     .author-header-inner {
       display: flex;
@@ -203,6 +213,7 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
       display: grid; 
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
       gap: 2rem; 
+      width: 100%;
     }
 
     .glass-panel {
