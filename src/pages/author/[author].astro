@@ -1,0 +1,246 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+// 1. HELPER: Match the exact slug logic from your post page
+function createSlug(text) {
+  if (!text) return 'editorial-desk';
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')  
+    .replace(/\s+/g, '-')      
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// 2. STATIC PATHS GENERATION
+export async function getStaticPaths() {
+  const allPosts = await getCollection('posts');
+  
+  // Filter out drafts
+  const publicPosts = allPosts.filter(p => !p.data.draft);
+
+  // Extract all unique authors
+  const uniqueAuthors = [...new Set(publicPosts.map(post => post.data.author || 'Jonathan Mwaniki'))];
+
+  // Map each author to a dynamic route
+  return uniqueAuthors.map(author => {
+    const authorSlug = createSlug(author);
+    // Filter posts belonging specifically to this author and sort newest first
+    const authorPosts = publicPosts
+      .filter(post => (post.data.author || 'Jonathan Mwaniki') === author)
+      .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+
+    return {
+      params: { author: authorSlug },
+      props: { authorName: author, posts: authorPosts },
+    };
+  });
+}
+
+// 3. PAGE DATA
+const { authorName, posts } = Astro.props;
+const siteUrl = 'https://jonathanmwaniki.co.ke';
+const currentUrl = new URL(Astro.url.pathname, siteUrl).href;
+
+const title = `Articles by ${authorName} - The Mwaniki Report`;
+const description = `Read all ${posts.length} articles written by ${authorName} on The Mwaniki Report.`;
+---
+
+<Layout title={title} description={description} canonical={currentUrl}>
+  <div class="author-page-wrapper">
+    
+    {/* --- AUTHOR PROFILE HEADER --- */}
+    <header class="author-hero">
+      <div class="jm-container author-header-inner">
+        <div class="author-avatar-wrap">
+          {/* Fallback to your logo for all authors for now */}
+          <img src="/Jonathan-Mwaniki-logo.png" alt={authorName} class="author-avatar" />
+        </div>
+        <div class="author-bio">
+          <span class="author-eyebrow">Journalist / Contributor</span>
+          <h1 class="author-title">{authorName}</h1>
+          <p class="author-desc">
+            Investigative journalist and developer covering the stories that matter in Kenya. 
+            Currently exploring the intersection of technology, politics, and business.
+          </p>
+          <div class="author-stats">
+            <span class="stat-pill"><strong>{posts.length}</strong> Published Articles</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    {/* --- AUTHOR'S ARTICLES GRID --- */}
+    <main class="jm-container articles-container">
+      <div class="feed-header">
+        <h2>Latest from {authorName}</h2>
+        <div class="line"></div>
+      </div>
+
+      <div class="feed-grid">
+        {posts.map(post => (
+          <article class="feed-card glass-panel vertical-card fade-in">
+            <a href={`/posts/${post.slug}`} class="card-link">
+              <div class="feed-img">
+                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
+              </div>
+              <div class="feed-info">
+                <div class="meta">
+                  <span class="meta-cat">{post.data.category || 'News'}</span>
+                  <span class="meta-dot">•</span>
+                  <time>{new Date(post.data.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}</time>
+                </div>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+    </main>
+  </div>
+
+  <style>
+    /* --- SHARED LIGHT THEME VARIABLES --- */
+    :root {
+      --jm-bg: #f8fafc; 
+      --jm-card: rgba(255, 255, 255, 0.9);
+      --jm-border: rgba(0, 0, 0, 0.08);
+      --jm-text-main: #0f172a;
+      --jm-text-muted: #64748b;
+      --jm-accent: #ef4444;
+      --jm-font-head: 'Inter', sans-serif;
+      --jm-font-body: 'Merriweather', serif;
+    }
+
+    .author-page-wrapper {
+      background-color: var(--jm-bg);
+      color: var(--jm-text-main);
+      font-family: var(--jm-font-body);
+      min-height: 100vh;
+      padding-bottom: 5rem;
+    }
+    .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+    
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    a { text-decoration: none; color: inherit; transition: 0.2s ease; }
+
+    /* --- AUTHOR HERO --- */
+    .author-hero {
+      background: #ffffff;
+      border-bottom: 1px solid var(--jm-border);
+      padding: 4rem 0;
+      margin-bottom: 3rem;
+    }
+    .author-header-inner {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+    }
+    .author-avatar-wrap {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      padding: 4px;
+      border: 2px solid var(--jm-border);
+      flex-shrink: 0;
+    }
+    .author-avatar {
+      border-radius: 50%;
+      background: var(--jm-bg);
+    }
+    .author-bio {
+      max-width: 700px;
+    }
+    .author-eyebrow {
+      font-family: var(--jm-font-head);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--jm-accent);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .author-title {
+      font-family: var(--jm-font-head);
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 900;
+      margin: 0 0 1rem 0;
+      color: var(--jm-text-main);
+      letter-spacing: -1px;
+    }
+    .author-desc {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--jm-text-muted);
+      margin: 0 0 1.5rem 0;
+    }
+    .stat-pill {
+      display: inline-block;
+      font-family: var(--jm-font-head);
+      font-size: 0.85rem;
+      background: var(--jm-bg);
+      border: 1px solid var(--jm-border);
+      padding: 0.4rem 1rem;
+      border-radius: 50px;
+      color: var(--jm-text-muted);
+    }
+    .stat-pill strong {
+      color: var(--jm-text-main);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    /* --- FEED STYLES (Matching your Index Light Theme) --- */
+    .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
+    .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; color: var(--jm-text-main); }
+    .line { flex: 1; height: 1px; background: var(--jm-border); }
+
+    .feed-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+      gap: 2rem; 
+    }
+
+    .glass-panel {
+      background: var(--jm-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--jm-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex; flex-direction: column; height: 100%;
+    }
+    .glass-panel:hover { 
+      border-color: rgba(0, 0, 0, 0.15); 
+      transform: translateY(-4px); 
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
+    .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
+    .feed-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    
+    .meta { font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; display: flex; gap: 0.5rem; align-items: center; }
+    .meta-cat { color: var(--jm-accent); }
+    .meta-dot { opacity: 0.5; }
+    
+    .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.3rem; font-weight: 800; margin: 0; line-height: 1.3; color: var(--jm-text-main); }
+    .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 768px) {
+      .author-hero { padding: 2.5rem 0; }
+      .author-header-inner { flex-direction: column; text-align: center; gap: 1.5rem; }
+      .author-title { font-size: 2.2rem; }
+      .author-desc { font-size: 1rem; }
+      .feed-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</Layout>
