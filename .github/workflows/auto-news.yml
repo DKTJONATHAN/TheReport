@@ -79,14 +79,14 @@ jobs:
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
               if not files: return ""
               sample = random.sample(files, min(len(files), 4))
-              context = "PAST STORIES (LINK 1 OF THESE):\n"
+              context = "PAST STORIES (For internal linking):\n"
               for f in sample:
                   try:
-                      with open(os.path.join(posts_dir, f), 'r') as c:
+                      with open(os.path.join(posts_dir, f), 'r', encoding='utf-8') as c:
                           txt = c.read()
                           t_match = re.search(r'title:\s*"(.*?)"', txt)
                           t = t_match.group(1) if t_match else f
-                          context += f"- {t}: /posts/{f.replace('.md', '')}\n"
+                          context += f"- Title: {t} | URL: /posts/{f.replace('.md', '')}\n"
                   except: continue
               return context
 
@@ -196,10 +196,11 @@ jobs:
           
           if not full_raw_text: print("❌ No new content."); exit(0)
 
-          # --- 5. THE PROMPT (Paragraph Fix) ---
+          # --- 5. THE PROMPT (Paragraph Fix & Link Rules) ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS 'BELINDA ACHIENG', A CYNICAL NAIROBI REALIST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
+          
           {internal_linking}
           
           MANDATE: 
@@ -207,6 +208,11 @@ jobs:
           - STRICT FORMATTING: Use Markdown. Break the story into 4-6 paragraphs. Use a double newline between paragraphs.
           - IMPORTANT: Output each metadata field on a NEW LINE.
           - NEVER use em dashes or en dashes. Only use regular hyphens.
+          
+          *** INTERNAL LINKING RULE (STRICT) ***
+          - You MUST naturally embed at least one link from the 'PAST STORIES' provided above directly into the paragraphs of your article. 
+          - Format the link perfectly in Markdown, for example: [Relevant Anchor Text](/posts/the-slug-url)
+          - Do NOT create a "Read More" list at the bottom. Weave the link seamlessly into the text.
           
           OUTPUT:
           TITLE: [Cynical Headline]
