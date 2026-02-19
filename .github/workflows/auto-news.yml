@@ -55,12 +55,11 @@ jobs:
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time, hashlib
+          import os, json, datetime, requests, re, random, time, hashlib, textwrap
           from google import genai
           from google.genai import types
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
-          import textwrap
 
           # --- 1. CONFIGURATION ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
@@ -69,7 +68,7 @@ jobs:
           def clean_dashes(text):
               if not text: return ""
               # Replace specific dashes using unicode to avoid syntax linting issues
-              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
               # Only collapse multiple spaces, NOT multiple newlines
               text = re.sub(r'[ \t]+', ' ', text)
               return text.strip()
@@ -149,7 +148,20 @@ jobs:
                       try: page.wait_for_load_state("networkidle", timeout=10000)
                       except: pass
                       
-                      soup = BeautifulSoup(page.content(), "html.parser")
+                      content = page.content()
+                      soup = BeautifulSoup(content, "html.parser")
+                      
+                      # EXTRACT IMAGE VIA META TAGS
+                      img_url = ""
+                      og_image = soup.find("meta", property="og:image")
+                      if og_image and og_image.get("content"):
+                          img_url = og_image["content"]
+                      
+                      if not img_url:
+                          twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
+                          if twitter_image and twitter_image.get("content"):
+                              img_url = twitter_image["content"]
+
                       article_text = ""
                       containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post|story)'))
                       for c in containers:
@@ -161,21 +173,25 @@ jobs:
                       if not article_text:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-                      return article_text
-                  except: return None
+                      return article_text, img_url
+                  except: return None, None
                   finally: browser.close()
 
           # --- 4. FIND & SCRAPE ---
-          full_raw_text, final_hash = None, None
+          full_raw_text, final_hash, target_image = None, None, None
           for item in items:
               url = item.link.text
               u_hash = hashlib.md5(url.encode()).hexdigest()
               if u_hash in memory: continue
               
-              text = scrape_article_free(url)
+              result = scrape_article_free(url)
+              if not result: continue
+              text, img = result
+
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = u_hash
+                  target_image = img
                   break
           
           if not full_raw_text: print("❌ No new content."); exit(0)
@@ -190,6 +206,7 @@ jobs:
           - Point out the bad side. Disillusioned, punchy tone.
           - STRICT FORMATTING: Use Markdown. Break the story into 4-6 paragraphs. Use a double newline between paragraphs.
           - IMPORTANT: Output each metadata field on a NEW LINE.
+          - NEVER use em dashes or en dashes. Only use regular hyphens.
           
           OUTPUT:
           TITLE: [Cynical Headline]
@@ -230,7 +247,7 @@ jobs:
           # Scrub only metadata, keep line breaks in BODY
           parsed["TITLE"] = clean_dashes(parsed["TITLE"])
           parsed["DESC"] = clean_dashes(parsed["DESC"])
-          parsed["BODY"] = parsed["BODY"].replace('\u2014', ' - ').replace('\u2013', '-')
+          parsed["BODY"] = parsed["BODY"].replace('\u2014', '-').replace('\u2013', '-')
 
           # --- 7. IMAGE & SAVE ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
@@ -248,14 +265,15 @@ jobs:
                   except: continue
               return fallback
           
-          img_url = get_img(parsed['IMG'])
+          final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
-          final_md = textwrap.dedent(f"""---
+          final_md = textwrap.dedent(f"""\
+          ---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
           date: "{date_now}"
           author: "Belinda Achieng'"
-          image: "{img_url}"
+          image: "{final_image_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{used_topic.title()}"
           slug: "{slug}"
@@ -267,7 +285,7 @@ jobs:
           {{
             "@context": "https://schema.org",
             "@type": "AnalysisNewsArticle",
-            "headline": "{parsed['TITLE']}",
+            "headline": "{parsed['TITLE'].replace('"', "'")}",
             "datePublished": "{date_now}",
             "author": {{"@type": "Person", "name": "Belinda Achieng'"}}
           }}
