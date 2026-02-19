@@ -54,15 +54,18 @@ jobs:
 
           echo "Processing File: $FILE"
 
-          # 2. Extract Description, Image, & Link
+          # 2. Extract Title, Paragraphs, Image, & Tags
           if [ -f "$FILE" ]; then
-            # Extract description and remove quotes
-            DESCRIPTION=$(grep -m 1 "^description:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            # Extract title and remove quotes
+            TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
             
             # Extract image URL and remove quotes
             IMAGE_URL=$(grep -m 1 "^image:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
             
-            # 3. Extract Tags and Convert to Hashtags
+            # Extract the first two paragraphs (Skipping the YAML frontmatter)
+            PARAGRAPHS=$(awk 'BEGIN {count=0; body=0} /^---$/ {count++; if(count==2){body=1; next}} body==1 {print}' "$FILE" | awk -v RS='' -v ORS='\n\n' 'NR<=2')
+            
+            # Extract Tags and Convert to Hashtags
             RAW_TAGS=$(grep -m 1 "^tags:" "$FILE" | sed -e 's/tags://' -e 's/\[//' -e 's/\]//' -e 's/"//g' -e "s/'//g")
             
             HASHTAGS=""
@@ -71,47 +74,60 @@ jobs:
             fi
             
           else
-            DESCRIPTION="Read the latest updates on our website."
+            TITLE="New Update"
+            PARAGRAPHS="Check out our latest post."
             IMAGE_URL=""
             HASHTAGS="#News"
           fi
 
           LINK="$SITE_URL/posts/$SLUG/"
           
-          # Combine Description, Hashtags, and Link for the caption
-          FINAL_MESSAGE="$DESCRIPTION
+          # Combine Title, Paragraphs, and Hashtags for the main caption
+          FINAL_MESSAGE="$TITLE
 
-          $HASHTAGS
+          $PARAGRAPHS
+          $HASHTAGS"
 
-          Read the full story here: $LINK"
+          echo "Posting Main Content: $FINAL_MESSAGE"
 
-          echo "Posting: $FINAL_MESSAGE"
-
-          # 4. Download and Send to Facebook
+          # 3. Download and Send Main Post to Facebook
           if [ -n "$IMAGE_URL" ]; then
-            echo "Image found. Disguising as a web browser to download the image locally..."
-            
-            # Download the image using a fake Chrome User-Agent so the news site allows the download
+            echo "Image found. Disguising as a web browser to download..."
             curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o fb_preview_image.jpg "$IMAGE_URL"
             
-            # Check if the file exists and is not empty
             if [ -s "fb_preview_image.jpg" ]; then
-              echo "Image downloaded successfully. Uploading direct file to Facebook photos endpoint..."
-              curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
+              echo "Uploading direct file to Facebook photos endpoint..."
+              FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
                 -F "message=$FINAL_MESSAGE" \
                 -F "source=@fb_preview_image.jpg" \
-                -F "access_token=$FB_TOKEN"
+                -F "access_token=$FB_TOKEN")
             else
-              echo "Download failed (site might have extreme bot protection). Falling back to link scraping..."
-              curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+              echo "Download failed. Falling back to feed endpoint (text only)..."
+              FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
                 -d "message=$FINAL_MESSAGE" \
-                -d "link=$LINK" \
-                -d "access_token=$FB_TOKEN"
+                -d "access_token=$FB_TOKEN")
             fi
           else
-            echo "No image found in markdown. Falling back to feed endpoint..."
-            curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+            echo "No image found. Falling back to feed endpoint (text only)..."
+            FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
               -d "message=$FINAL_MESSAGE" \
-              -d "link=$LINK" \
-              -d "access_token=$FB_TOKEN"
+              -d "access_token=$FB_TOKEN")
+          fi
+
+          echo "Facebook API Response: $FB_RESPONSE"
+
+          # 4. Extract Post ID and Add Comment with Link
+          # The photos endpoint returns 'post_id', the feed endpoint returns 'id'
+          POST_ID=$(echo "$FB_RESPONSE" | jq -r '.post_id // .id')
+
+          if [ "$POST_ID" != "null" ] && [ -n "$POST_ID" ]; then
+            echo "Main post successful. Adding link to the comment section..."
+            COMMENT_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/$POST_ID/comments" \
+              -d "message=Read the full story here: $LINK" \
+              -d "access_token=$FB_TOKEN")
+            echo "Comment API Response: $COMMENT_RESPONSE"
+            echo "✅ Successfully published post and link comment!"
+          else
+            echo "❌ Failed to retrieve Post ID. Could not add comment."
+            exit 1
           fi
