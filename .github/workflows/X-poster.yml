@@ -45,6 +45,9 @@ jobs:
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
           INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
+          # Disable GitHub's strict crash rule so missing tags/files don't break the workflow
+          set +e 
+
           if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
             echo "⚠️ Twitter credentials not set, skipping"
             exit 0
@@ -57,12 +60,12 @@ jobs:
             FILE=$(find src/content/posts -name "${INPUT_SLUG}.md*" | head -n 1)
             CHANGED="$FILE"
           else
-            # Detects only NEW (A) or MODIFIED (M) files
             CHANGED=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep '^src/content/posts/' || true)
             
             # Fallback for manual runs without an input slug
             if [ -z "$CHANGED" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-              CHANGED=$(ls -t src/content/posts/*.md src/content/posts/*.mdx 2>/dev/null | head -n 1)
+              # Safely find the most recent markdown file
+              CHANGED=$(find src/content/posts -type f \( -name "*.md" -o -name "*.mdx" \) -exec stat -c "%Y %n" {} + | sort -nr | head -n 1 | cut -d' ' -f2- || true)
               echo "Manual run detected. Defaulting to most recent file."
             fi
           fi
@@ -73,7 +76,6 @@ jobs:
           fi
 
           # --- 2. PREPARE PYTHON SCRIPT ---
-          # We write the Python code to a file to avoid complex string escaping issues in Bash
           cat << 'EOF' > tweet.py
 import os, sys, tweepy
 
@@ -139,15 +141,15 @@ EOF
             
             echo "🚀 Processing File: $file"
             
-            TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
-            IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
+            IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
             
             if [ -z "$TITLE" ]; then TITLE="New Article"; fi
             
             IMAGE_PATH=""
             if [ -n "$IMAGE_URL" ]; then
               echo "Image found. Downloading locally to bypass blocks..."
-              curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o tw_preview_image.jpg "$IMAGE_URL"
+              curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o tw_preview_image.jpg "$IMAGE_URL" || true
               
               MIME_TYPE=$(file --mime-type -b tw_preview_image.jpg 2>/dev/null || echo "unknown")
               echo "Downloaded file type detected as: $MIME_TYPE"
@@ -164,7 +166,7 @@ EOF
             export TWEET_URL="$URL"
             export TWEET_IMAGE="$IMAGE_PATH"
 
-            # Run the Python script we generated earlier
+            # Run the Python script
             python tweet.py
             
             rm -f tw_preview_image.jpg
