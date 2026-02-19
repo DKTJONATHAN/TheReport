@@ -45,11 +45,11 @@ jobs:
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
           INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
-          # Disable GitHub's strict crash rule so missing tags/files don't break the workflow
+          # Disable GitHub's strict crash rule so missing tags/files do not break the workflow
           set +e 
 
           if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "⚠️ Twitter credentials not set, skipping"
+            echo "Warning: Twitter credentials not set, skipping"
             exit 0
           fi
 
@@ -71,64 +71,64 @@ jobs:
           fi
 
           if [ -z "$CHANGED" ]; then
-            echo "📝 No post changes detected"
+            echo "No post changes detected"
             exit 0
           fi
 
           # --- 2. PREPARE PYTHON SCRIPT ---
           cat << 'EOF' > tweet.py
-import os, sys, tweepy
+          import os, sys, tweepy
 
-api_key = os.environ.get("APP_KEY")
-api_secret = os.environ.get("APP_SECRET")
-access_token = os.environ.get("ACCESS_TOKEN")
-access_secret = os.environ.get("ACCESS_SECRET")
+          api_key = os.environ.get("APP_KEY")
+          api_secret = os.environ.get("APP_SECRET")
+          access_token = os.environ.get("ACCESS_TOKEN")
+          access_secret = os.environ.get("ACCESS_SECRET")
 
-title = os.environ.get("TWEET_TITLE", "").strip()
-url = os.environ.get("TWEET_URL")
-image_path = os.environ.get("TWEET_IMAGE")
+          title = os.environ.get("TWEET_TITLE", "").strip()
+          url = os.environ.get("TWEET_URL")
+          image_path = os.environ.get("TWEET_IMAGE")
 
-call_to_action = "Jonathan Mwaniki, READ FULL STORY IN THE COMMENTS BELOW"
+          call_to_action = "Jonathan Mwaniki, READ FULL STORY IN THE COMMENTS BELOW"
 
-max_title_len = 280 - len(call_to_action) - 4
-if len(title) > max_title_len:
-    title = title[:max_title_len - 3] + "..."
+          max_title_len = 280 - len(call_to_action) - 4
+          if len(title) > max_title_len:
+              title = title[:max_title_len - 3] + "..."
 
-tweet_text = f"{title}\n\n{call_to_action}"
+          tweet_text = f"{title}\n\n{call_to_action}"
 
-try:
-    auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
-    api = tweepy.API(auth)
-    
-    client = tweepy.Client(
-        consumer_key=api_key, consumer_secret=api_secret,
-        access_token=access_token, access_token_secret=access_secret
-    )
+          try:
+              auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
+              api = tweepy.API(auth)
+              
+              client = tweepy.Client(
+                  consumer_key=api_key, consumer_secret=api_secret,
+                  access_token=access_token, access_token_secret=access_secret
+              )
 
-    media_id = None
-    if image_path and os.path.exists(image_path):
-        print("Uploading media to Twitter...")
-        media = api.media_upload(image_path)
-        media_id = media.media_id
+              media_id = None
+              if image_path and os.path.exists(image_path):
+                  print("Uploading media to Twitter...")
+                  media = api.media_upload(image_path)
+                  media_id = media.media_id
 
-    print("Sending main tweet...")
-    if media_id:
-        response = client.create_tweet(text=tweet_text, media_ids=[media_id])
-    else:
-        response = client.create_tweet(text=tweet_text)
-        
-    tweet_id = response.data["id"]
-    print(f"✅ Main tweet posted successfully! Tweet ID: {tweet_id}")
-    
-    print("Adding reply with the article link...")
-    reply_text = f"Read the full story here: {url}"
-    client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
-    print("✅ Link reply posted successfully!")
-    
-except Exception as e:
-    print(f"❌ Twitter API Error: {e}")
-    sys.exit(1)
-EOF
+              print("Sending main tweet...")
+              if media_id:
+                  response = client.create_tweet(text=tweet_text, media_ids=[media_id])
+              else:
+                  response = client.create_tweet(text=tweet_text)
+                  
+              tweet_id = response.data["id"]
+              print(f"Main tweet posted successfully! Tweet ID: {tweet_id}")
+              
+              print("Adding reply with the article link...")
+              reply_text = f"Read the full story here: {url}"
+              client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
+              print("Link reply posted successfully!")
+              
+          except Exception as e:
+              print(f"Twitter API Error: {e}")
+              sys.exit(1)
+          EOF
           # --------------------------------
 
           # 3. Process and post each changed file sequentially
@@ -139,7 +139,7 @@ EOF
             SLUG="${FILENAME%.*}"
             URL="${SITE_URL}/posts/${SLUG}/"
             
-            echo "🚀 Processing File: $file"
+            echo "Processing File: $file"
             
             TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
             IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
