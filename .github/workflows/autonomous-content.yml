@@ -71,6 +71,12 @@ jobs:
           gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
           apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
 
+          def clean_dashes(text):
+              if not text: return ""
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
+              text = text.replace('—', '-').replace('–', '-')
+              return text
+
           def get_internal_context():
               posts_dir = os.environ.get("POSTS_DIR")
               if not os.path.exists(posts_dir): return ""
@@ -134,7 +140,7 @@ jobs:
           try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
 
-          full_raw_text, final_hash, target_title = None, None, None
+          full_raw_text, final_hash, target_title, target_image = None, None, None, None
           for a in articles:
               url = a.get('url', '')
               u_hash = hashlib.md5(url.encode()).hexdigest()
@@ -153,7 +159,14 @@ jobs:
                       dataset = client_apify.dataset(run["defaultDatasetId"])
                       data = list(dataset.iterate_items())
                       if data:
-                          text = data[0].get('markdown', data[0].get('text', ''))
+                          item = data[0]
+                          text = item.get('markdown', item.get('text', ''))
+                          
+                          # Extract image from Apify metadata
+                          metadata = item.get('metadata', {})
+                          if isinstance(metadata, dict):
+                              target_image = metadata.get('ogImage') or metadata.get('image')
+
                           if len(text) > 600:
                               full_raw_text = text
                               final_hash = u_hash
@@ -171,6 +184,7 @@ jobs:
           SOURCE MATERIAL: {full_raw_text[:12000]}
           {internal_linking}
           MANDATE: Point out the bad side. Analytical tone. Negative headline. Answer-First.
+          STRICT LANGUAGE MANDATE: NEVER use em dashes or en dashes. Only use regular hyphens.
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [Summary]
@@ -199,7 +213,7 @@ jobs:
               parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
 
           for k in parsed:
-              parsed[k] = parsed[k].replace("—", ", ").replace("–", ", ")
+              parsed[k] = clean_dashes(parsed[k])
               parsed[k] = re.sub(r'(?i)(In conclusion|To summarize|Conclusion),?.*', '', parsed[k]).strip()
 
           # --- 6. ROBUST IMAGE FETCHING ---
@@ -227,7 +241,7 @@ jobs:
                   print(f"⚠️ Unsplash Error: {e}")
                   return random.choice(fallback_pool)
           
-          img_url = get_img(parsed['IMG'])
+          final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
           schema_json = {
               "@context": "https://schema.org",
@@ -236,15 +250,16 @@ jobs:
               "description": parsed['DESC'],
               "datePublished": date_now,
               "author": {"@type": "Person", "name": "Jonathan Mwaniki", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [img_url]
+              "image": [final_image_url]
           }
 
-          final_md = textwrap.dedent(f"""---
+          final_md = textwrap.dedent(f"""\
+          ---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
           date: "{date_now}"
           author: "Jonathan Mwaniki"
-          image: "{img_url}"
+          image: "{final_image_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
           slug: "{slug}"
