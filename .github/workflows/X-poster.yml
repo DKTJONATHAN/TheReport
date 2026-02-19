@@ -45,7 +45,7 @@ jobs:
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
           INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
-          # Disable GitHub's strict crash rule so missing tags/files do not break the workflow
+          # Disable GitHub's strict crash rule
           set +e 
 
           if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
@@ -64,7 +64,6 @@ jobs:
             
             # Fallback for manual runs without an input slug
             if [ -z "$CHANGED" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-              # Safely find the most recent markdown file
               CHANGED=$(find src/content/posts -type f \( -name "*.md" -o -name "*.mdx" \) -exec stat -c "%Y %n" {} + | sort -nr | head -n 1 | cut -d' ' -f2- || true)
               echo "Manual run detected. Defaulting to most recent file."
             fi
@@ -85,16 +84,23 @@ jobs:
           access_secret = os.environ.get("ACCESS_SECRET")
 
           title = os.environ.get("TWEET_TITLE", "").strip()
+          description = os.environ.get("TWEET_DESCRIPTION", "").strip()
           url = os.environ.get("TWEET_URL")
           image_path = os.environ.get("TWEET_IMAGE")
 
-          call_to_action = "Jonathan Mwaniki, READ FULL STORY IN THE COMMENTS BELOW"
+          # Safely calculate Twitter 280 character limit
+          available_space = 280 - len(title) - 2 # 2 characters for the double newline
 
-          max_title_len = 280 - len(call_to_action) - 4
-          if len(title) > max_title_len:
-              title = title[:max_title_len - 3] + "..."
-
-          tweet_text = f"{title}\n\n{call_to_action}"
+          if available_space > 0:
+              if len(description) > available_space:
+                  # Truncate to available space, break at the last full word, and add ellipsis
+                  description = description[:available_space - 3].rsplit(" ", 1)[0] + "..."
+              tweet_text = f"{title}\n\n{description}"
+          else:
+              if len(title) > 280:
+                  tweet_text = title[:277] + "..."
+              else:
+                  tweet_text = title
 
           try:
               auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
@@ -142,9 +148,11 @@ jobs:
             echo "Processing File: $file"
             
             TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
+            DESCRIPTION=$(grep -m 1 "^description:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
             IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
             
             if [ -z "$TITLE" ]; then TITLE="New Article"; fi
+            if [ -z "$DESCRIPTION" ]; then DESCRIPTION="Read the latest updates on our website."; fi
             
             IMAGE_PATH=""
             if [ -n "$IMAGE_URL" ]; then
@@ -163,6 +171,7 @@ jobs:
             fi
 
             export TWEET_TITLE="$TITLE"
+            export TWEET_DESCRIPTION="$DESCRIPTION"
             export TWEET_URL="$URL"
             export TWEET_IMAGE="$IMAGE_PATH"
 
