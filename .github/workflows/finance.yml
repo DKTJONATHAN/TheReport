@@ -76,7 +76,8 @@ jobs:
           def clean_text_formatting(text):
               if not text: return ""
               # Strictly replace em dashes and en dashes with standard hyphens
-              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
+              text = text.replace('—', '-').replace('–', '-')
               # Clean horizontal spaces/tabs, but PRESERVE newlines for paragraphs
               text = re.sub(r'[ \t]+', ' ', text)
               # Normalize excessive newlines to clean double-spacing for markdown
@@ -218,7 +219,7 @@ jobs:
                       
                       if "chrome-error" in page.url:
                           print("⚠️ Blocked by chrome-error (headless detection).")
-                          return None
+                          return None, None
 
                       try: page.wait_for_load_state("networkidle", timeout=10000)
                       except: pass
@@ -226,6 +227,17 @@ jobs:
                       content = page.content()
                       soup = BeautifulSoup(content, "html.parser")
                       
+                      # EXTRACT IMAGE VIA META TAGS
+                      img_url = ""
+                      og_image = soup.find("meta", property="og:image")
+                      if og_image and og_image.get("content"):
+                          img_url = og_image["content"]
+                      
+                      if not img_url:
+                          twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
+                          if twitter_image and twitter_image.get("content"):
+                              img_url = twitter_image["content"]
+
                       article_text = ""
                       containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post)'))
                       for c in containers:
@@ -237,14 +249,14 @@ jobs:
                       if not article_text:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-                      return article_text
+                      return article_text, img_url
                   except Exception as e: 
                       print(f"⚠️ Playwright Error: {e}")
-                      return None
+                      return None, None
                   finally: browser.close()
 
           # --- 6. PROCESS ARTICLES ---
-          full_raw_text, final_hash, target_title = None, None, None
+          full_raw_text, final_hash, target_title, target_image = None, None, None, None
           
           for a in valid_candidates:
               raw_url = a['url']
@@ -254,13 +266,28 @@ jobs:
               if t_hash in memory: continue
               
               resolved_url = resolve_google_news_url(raw_url)
-              text = scrape_article_free(resolved_url)
+              
+              result = scrape_article_free(resolved_url)
+              if result:
+                  text, img = result
+              else:
+                  text, img = None, None
               
               if not text or len(text) < 600:
                   print("⚠️ Playwright blocked, falling back to Requests...")
                   try:
                       res = requests.get(resolved_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0"}, timeout=15)
                       soup = BeautifulSoup(res.text, "html.parser")
+                      
+                      # Fallback Image Extraction
+                      og_image = soup.find("meta", property="og:image")
+                      if og_image and og_image.get("content"):
+                          img = og_image["content"]
+                      elif not img:
+                          twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
+                          if twitter_image and twitter_image.get("content"):
+                              img = twitter_image["content"]
+
                       paras = soup.find_all("p")
                       fallback_text = "\n\n".join([p.text.strip() for p in paras if len(p.text.strip()) > 50])
                       if len(fallback_text) > 600:
@@ -270,6 +297,7 @@ jobs:
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = t_hash
+                  target_image = img
                   break 
 
           if not full_raw_text: print("❌ All recent URLs failed to scrape or were already posted."); exit(0)
@@ -385,7 +413,7 @@ jobs:
                   except: continue
               return fallback
           
-          img_url = get_img(parsed['IMG'])
+          final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
           schema_json = {
               "@context": "https://schema.org",
@@ -394,15 +422,16 @@ jobs:
               "description": parsed['DESC'],
               "datePublished": date_now,
               "author": {"@type": "Person", "name": "Global Desk", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [img_url]
+              "image": [final_image_url]
           }
 
-          final_md = textwrap.dedent(f"""---
+          final_md = textwrap.dedent(f"""\
+          ---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
           date: "{date_now}"
           author: "Global Desk"
-          image: "{img_url}"
+          image: "{final_image_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
           slug: "{slug}"
