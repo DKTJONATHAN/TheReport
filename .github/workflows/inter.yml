@@ -64,12 +64,11 @@ jobs:
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, hashlib, time
+          import os, json, datetime, requests, re, random, hashlib, time, textwrap
           from google import genai
           from google.genai import types
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
-          import textwrap
 
           # --- 1. CONFIGURATION ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
@@ -77,8 +76,9 @@ jobs:
 
           def clean_dashes(text):
               if not text: return ""
-              # Clean dashes strictly as requested
-              text = text.replace('\u2014', ' - ').replace('\u2013', '-')
+              # Clean dashes strictly as requested (no em or en dashes)
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
+              text = text.replace('—', '-').replace('–', '-')
               # IMPORTANT FIX: Only match spaces and tabs, NOT newlines (\n)
               text = re.sub(r'[ \t]+', ' ', text)
               return text.strip()
@@ -170,6 +170,17 @@ jobs:
                       content = page.content()
                       soup = BeautifulSoup(content, "html.parser")
                       
+                      # EXTRACT IMAGE VIA META TAGS
+                      img_url = ""
+                      og_image = soup.find("meta", property="og:image")
+                      if og_image and og_image.get("content"):
+                          img_url = og_image["content"]
+                      
+                      if not img_url:
+                          twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
+                          if twitter_image and twitter_image.get("content"):
+                              img_url = twitter_image["content"]
+
                       article_text = ""
                       containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post)'))
                       for c in containers:
@@ -181,12 +192,12 @@ jobs:
                       if not article_text:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-                      return article_text
-                  except: return None
+                      return article_text, img_url
+                  except: return None, None
                   finally: browser.close()
 
           # --- 6. PROCESS ARTICLES ---
-          full_raw_text, final_hash, target_title = None, None, None
+          full_raw_text, final_hash, target_title, target_image = None, None, None, None
           
           for a in articles:
               url = a.get('url', '')
@@ -194,11 +205,15 @@ jobs:
               
               if u_hash in memory or not url.startswith("http"): continue
               
-              text = scrape_article_free(url)
+              result = scrape_article_free(url)
+              if not result: continue
+              text, img = result
+
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = u_hash
                   target_title = a.get('title')
+                  target_image = img
                   break 
 
           if not full_raw_text: print("❌ No valid content found."); exit(0)
@@ -213,6 +228,7 @@ jobs:
           - Analyze the INTERNATIONAL impact.
           - Tone: Critical, Analytical, Slightly Dark. 
           - STRICT FORMATTING: Use Markdown. Break the story into paragraphs. Use a double newline between paragraphs.
+          - STRICT LANGUAGE MANDATE: NEVER use em dashes or en dashes. Only use regular hyphens.
           - IMPORTANT: Output each metadata field on a NEW LINE.
           - DO NOT start the body text with bolding.
           
@@ -306,7 +322,7 @@ jobs:
                   except: continue
               return fallback
           
-          img_url = get_img(parsed['IMG'])
+          final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
           schema_json = {
               "@context": "https://schema.org",
@@ -315,15 +331,16 @@ jobs:
               "description": parsed['DESC'],
               "datePublished": date_now,
               "author": {"@type": "Person", "name": "The Cynic", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [img_url]
+              "image": [final_image_url]
           }
 
-          final_md = textwrap.dedent(f"""---
+          final_md = textwrap.dedent(f"""\
+          ---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
           date: "{date_now}"
           author: "The Cynic"
-          image: "{img_url}"
+          image: "{final_image_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
           slug: "{slug}"
