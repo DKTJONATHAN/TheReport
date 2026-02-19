@@ -121,13 +121,17 @@ jobs:
           POST_ID=$(echo "$FB_RESPONSE" | jq -r '.post_id // .id')
 
           if [ "$POST_ID" != "null" ] && [ -n "$POST_ID" ]; then
-            echo "Main post successful. Adding link to the comment section..."
+            echo "Main post successful. Waiting 10 seconds for Facebook servers to sync..."
+            sleep 10
+            
+            echo "Adding link to the comment section..."
             COMMENT_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/$POST_ID/comments" \
               -d "message=Read the full story here: $LINK" \
               -d "access_token=$FB_TOKEN")
+            
             echo "Comment API Response: $COMMENT_RESPONSE"
-            echo "✅ Successfully published post and link comment!"
+            echo "Successfully published post and link comment!"
           else
-            echo "❌ Failed to retrieve Post ID. Could not add comment."
+            echo "Failed to retrieve Post ID. Could not add comment."
             exit 1
           fi
