@@ -65,12 +65,11 @@ jobs:
           CRON_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, hashlib, time
+          import os, json, datetime, requests, re, random, hashlib, time, textwrap
           from google import genai
           from google.genai import types
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
-          import textwrap
 
           # --- 1. CONFIGURATION & POOLS ---
           def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
@@ -162,6 +161,17 @@ jobs:
                       content = page.content()
                       soup = BeautifulSoup(content, "html.parser")
                       
+                      # EXTRACT IMAGE VIA META TAGS
+                      img_url = ""
+                      og_image = soup.find("meta", property="og:image")
+                      if og_image and og_image.get("content"):
+                          img_url = og_image["content"]
+                      
+                      if not img_url:
+                          twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
+                          if twitter_image and twitter_image.get("content"):
+                              img_url = twitter_image["content"]
+
                       # Text Extraction Logic
                       article_text = ""
                       # Priority 1: Semantic Tags
@@ -178,12 +188,12 @@ jobs:
                           all_paras = soup.find_all("p")
                           article_text = "\n\n".join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
 
-                      return article_text
-                  except: return None
+                      return article_text, img_url
+                  except: return None, None
                   finally: browser.close()
 
           # --- 5. PROCESS ARTICLES ---
-          full_raw_text, final_hash, target_title = None, None, None
+          full_raw_text, final_hash, target_title, target_image = None, None, None, None
           
           for a in articles:
               url = a.get('url', '')
@@ -192,12 +202,15 @@ jobs:
               if u_hash in memory or not url.startswith("http"): continue
               
               # Run the FREE scraper
-              text = scrape_article_free(url)
+              result = scrape_article_free(url)
+              if not result: continue
+              text, img = result
               
               if text and len(text) > 600:
                   full_raw_text = text
                   final_hash = u_hash
                   target_title = a.get('title')
+                  target_image = img
                   break # We found a good one, stop looking
 
           if not full_raw_text: print("❌ No valid content found."); exit(0)
@@ -215,6 +228,7 @@ jobs:
           - Focus on the impact on the {topic} sector.
           - STRICT FORMATTING: Use Markdown. Break the story into paragraphs.
           - DO NOT start the body text with bolding.
+          - STRICT LANGUAGE MANDATE: NEVER use em dashes or en dashes. Only use regular hyphens.
           - IMPORTANT: Output each metadata field on a NEW LINE.
           
           OUTPUT FORMAT:
@@ -266,7 +280,8 @@ jobs:
               if not parsed[k]: continue
               
               # Enforce dash removal rule
-              parsed[k] = parsed[k].replace('\u2014', ' - ').replace('\u2013', '-')
+              parsed[k] = parsed[k].replace('\u2014', '-').replace('\u2013', '-')
+              parsed[k] = parsed[k].replace('—', '-').replace('–', '-')
               
               # Fix dangerous regex that was deleting entire paragraphs
               parsed[k] = re.sub(r'(?i)^(In conclusion|To summarize|Conclusion)[,\s:]*', '', parsed[k], flags=re.M).strip()
@@ -290,7 +305,7 @@ jobs:
                   else: return random.choice(fallback_pool)
               except: return random.choice(fallback_pool)
           
-          img_url = get_img(parsed['IMG'])
+          final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
           schema_json = {
               "@context": "https://schema.org",
@@ -299,15 +314,16 @@ jobs:
               "description": parsed['DESC'],
               "datePublished": date_now,
               "author": {"@type": "Person", "name": "Global Desk", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [img_url]
+              "image": [final_image_url]
           }
 
-          final_md = textwrap.dedent(f"""---
+          final_md = textwrap.dedent(f"""\
+          ---
           title: "{parsed['TITLE'].replace('"', "'")}"
           description: "{parsed['DESC'].replace('"', "'")}"
           date: "{date_now}"
           author: "Global Desk"
-          image: "{img_url}"
+          image: "{final_image_url}"
           imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
           category: "{topic.title()}"
           slug: "{slug}"
