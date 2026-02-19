@@ -95,14 +95,18 @@ jobs:
             echo "Image found. Disguising as a web browser to download..."
             curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o fb_preview_image.jpg "$IMAGE_URL"
             
-            if [ -s "fb_preview_image.jpg" ]; then
-              echo "Uploading direct file to Facebook photos endpoint..."
+            # Check the actual MIME type of the downloaded file
+            MIME_TYPE=$(file --mime-type -b fb_preview_image.jpg 2>/dev/null || echo "unknown")
+            echo "Downloaded file type detected as: $MIME_TYPE"
+            
+            if [ -s "fb_preview_image.jpg" ] && [[ "$MIME_TYPE" == image/* ]]; then
+              echo "Valid image confirmed. Uploading direct file to Facebook photos endpoint..."
               FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
                 -F "message=$FINAL_MESSAGE" \
                 -F "source=@fb_preview_image.jpg" \
                 -F "access_token=$FB_TOKEN")
             else
-              echo "Download failed. Falling back to feed endpoint (text only)..."
+              echo "Download returned an invalid file (likely an HTML block page). Falling back to text-only post..."
               FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
                 -d "message=$FINAL_MESSAGE" \
                 -d "access_token=$FB_TOKEN")
@@ -130,8 +134,8 @@ jobs:
               -d "access_token=$FB_TOKEN")
             
             echo "Comment API Response: $COMMENT_RESPONSE"
-            echo "Successfully published post and link comment!"
+            echo "✅ Successfully published post and link comment!"
           else
-            echo "Failed to retrieve Post ID. Could not add comment."
+            echo "❌ Failed to retrieve Post ID. Could not add comment."
             exit 1
           fi
