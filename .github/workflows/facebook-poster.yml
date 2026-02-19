@@ -26,8 +26,8 @@ jobs:
       - name: Wait for Deployment (Auto-Push Only)
         if: github.event_name == 'push'
         run: |
-          echo "Waiting 60 seconds for site to build..."
-          sleep 60
+          echo "Waiting 30 seconds for site to build..."
+          sleep 30
 
       - name: Detect and Post Article
         env:
@@ -54,49 +54,64 @@ jobs:
 
           echo "Processing File: $FILE"
 
-          # 2. Extract Description & Link
+          # 2. Extract Description, Image, & Link
           if [ -f "$FILE" ]; then
             # Extract description and remove quotes
-            DESCRIPTION=$(grep -m 1 "^description:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+            DESCRIPTION=$(grep -m 1 "^description:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            
+            # Extract image URL and remove quotes
+            IMAGE_URL=$(grep -m 1 "^image:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
             
             # 3. Extract Tags and Convert to Hashtags
-            # Finds 'tags: [A, B]' -> Removes 'tags:', '[', ']', '"', "'" -> Replaces ',' with space
             RAW_TAGS=$(grep -m 1 "^tags:" "$FILE" | sed -e 's/tags://' -e 's/\[//' -e 's/\]//' -e 's/"//g' -e "s/'//g")
             
-            # Loop through comma-separated tags to add '#'
             HASHTAGS=""
             if [ -n "$RAW_TAGS" ]; then
-              # Use awk to trim spaces and prepend # to each tag
               HASHTAGS=$(echo "$RAW_TAGS" | awk -F, '{for(i=1;i<=NF;i++) {gsub(/^ +| +$/,"",$i); if($i!="") printf "#%s ", $i}}')
             fi
             
           else
             DESCRIPTION="Read the latest updates on our website."
+            IMAGE_URL=""
             HASHTAGS="#News"
           fi
 
           LINK="$SITE_URL/posts/$SLUG/"
           
-          # Combine Description + Hashtags
+          # Combine Description, Hashtags, and Link for the caption
           FINAL_MESSAGE="$DESCRIPTION
 
-          $HASHTAGS"
+          $HASHTAGS
+
+          Read the full story here: $LINK"
 
           echo "Posting: $FINAL_MESSAGE"
 
-          # 4. Force Facebook to scrape the URL and fetch the preview image
-          echo "Forcing Facebook to scrape the URL for Open Graph data..."
-          curl -s -X POST "https://graph.facebook.com/v24.0/" \
-            -d "id=$LINK" \
-            -d "scrape=true" \
-            -d "access_token=$FB_TOKEN"
+          # 4. Download and Send to Facebook
+          if [ -n "$IMAGE_URL" ]; then
+            echo "Image found. Disguising as a web browser to download the image locally..."
             
-          echo ""
-          echo "Waiting 5 seconds for Facebook cache to update..."
-          sleep 5
-
-          # 5. Send to Facebook
-          curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-            -d "message=$FINAL_MESSAGE" \
-            -d "link=$LINK" \
-            -d "access_token=$FB_TOKEN"
+            # Download the image using a fake Chrome User-Agent so the news site allows the download
+            curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o fb_preview_image.jpg "$IMAGE_URL"
+            
+            # Check if the file exists and is not empty
+            if [ -s "fb_preview_image.jpg" ]; then
+              echo "Image downloaded successfully. Uploading direct file to Facebook photos endpoint..."
+              curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
+                -F "message=$FINAL_MESSAGE" \
+                -F "source=@fb_preview_image.jpg" \
+                -F "access_token=$FB_TOKEN"
+            else
+              echo "Download failed (site might have extreme bot protection). Falling back to link scraping..."
+              curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+                -d "message=$FINAL_MESSAGE" \
+                -d "link=$LINK" \
+                -d "access_token=$FB_TOKEN"
+            fi
+          else
+            echo "No image found in markdown. Falling back to feed endpoint..."
+            curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
+              -d "message=$FINAL_MESSAGE" \
+              -d "link=$LINK" \
+              -d "access_token=$FB_TOKEN"
+          fi
