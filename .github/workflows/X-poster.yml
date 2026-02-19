@@ -5,7 +5,12 @@ on:
     paths:
       - 'src/content/posts/**.md'
       - 'src/content/posts/**.mdx'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      specific_slug:
+        description: 'Slug of the post (e.g., "my-new-article")'
+        required: false
+        type: string
 
 jobs:
   tweet:
@@ -38,6 +43,7 @@ jobs:
           APP_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
           if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
             echo "⚠️ Twitter credentials not set, skipping"
@@ -46,15 +52,28 @@ jobs:
 
           SITE_URL="https://www.jonathanmwaniki.co.ke"
 
-          # Detects only NEW (A) or MODIFIED (M) files in the posts directory
-          CHANGED=$(git diff --name-only --diff-filter=AM HEAD^ HEAD | grep '^src/content/posts/' || true)
+          # 1. Determine which file to process based on manual input or git diff
+          if [ -n "$INPUT_SLUG" ]; then
+            FILE=$(find src/content/posts -name "${INPUT_SLUG}.md*" | head -n 1)
+            CHANGED="$FILE"
+          else
+            # Detects only NEW (A) or MODIFIED (M) files
+            CHANGED=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep '^src/content/posts/' || true)
+            
+            # Fallback for manual runs without an input slug
+            if [ -z "$CHANGED" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              CHANGED=$(ls -t src/content/posts/*.md src/content/posts/*.mdx 2>/dev/null | head -n 1)
+              echo "Manual run detected. Defaulting to most recent file."
+            fi
+          fi
 
           if [ -z "$CHANGED" ]; then
             echo "📝 No post changes detected"
             exit 0
           fi
 
-          # --- PREPARE PYTHON SCRIPT ---
+          # --- 2. PREPARE PYTHON SCRIPT ---
+          # We write the Python code to a file to avoid complex string escaping issues in Bash
           cat << 'EOF' > tweet.py
 import os, sys, tweepy
 
@@ -108,10 +127,12 @@ except Exception as e:
     print(f"❌ Twitter API Error: {e}")
     sys.exit(1)
 EOF
-          # -----------------------------
+          # --------------------------------
 
-          # Process and post each changed file sequentially
+          # 3. Process and post each changed file sequentially
           while IFS= read -r file; do
+            if [ ! -f "$file" ]; then continue; fi
+            
             FILENAME=$(basename "$file")
             SLUG="${FILENAME%.*}"
             URL="${SITE_URL}/posts/${SLUG}/"
