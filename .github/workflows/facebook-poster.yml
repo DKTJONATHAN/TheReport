@@ -54,10 +54,10 @@ jobs:
 
           echo "Processing File: $FILE"
 
-          # 2. Extract Title & Link
+          # 2. Extract Description & Link
           if [ -f "$FILE" ]; then
-            # Extract title and remove quotes
-            TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
+            # Extract description and remove quotes
+            DESCRIPTION=$(grep -m 1 "^description:" "$FILE" | cut -d: -f2- | tr -d '"' | sed 's/^ *//')
             
             # 3. Extract Tags and Convert to Hashtags
             # Finds 'tags: [A, B]' -> Removes 'tags:', '[', ']', '"', "'" -> Replaces ',' with space
@@ -71,20 +71,31 @@ jobs:
             fi
             
           else
-            TITLE="$SLUG"
+            DESCRIPTION="Read the latest updates on our website."
             HASHTAGS="#News"
           fi
 
           LINK="$SITE_URL/posts/$SLUG/"
           
-          # Combine Title + Hashtags
-          FINAL_MESSAGE="$TITLE
+          # Combine Description + Hashtags
+          FINAL_MESSAGE="$DESCRIPTION
 
           $HASHTAGS"
 
           echo "Posting: $FINAL_MESSAGE"
 
-          # 4. Send to Facebook
+          # 4. Force Facebook to scrape the URL and fetch the preview image
+          echo "Forcing Facebook to scrape the URL for Open Graph data..."
+          curl -s -X POST "https://graph.facebook.com/v24.0/" \
+            -d "id=$LINK" \
+            -d "scrape=true" \
+            -d "access_token=$FB_TOKEN"
+            
+          echo ""
+          echo "Waiting 5 seconds for Facebook cache to update..."
+          sleep 5
+
+          # 5. Send to Facebook
           curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
             -d "message=$FINAL_MESSAGE" \
             -d "link=$LINK" \
