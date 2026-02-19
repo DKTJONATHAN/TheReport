@@ -11,93 +11,147 @@ jobs:
   tweet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 2 
+          fetch-depth: 2
 
-      - name: Get Changed Post Files
-        id: changed-files
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
         run: |
-          # Detects only NEW (A) or MODIFIED (M) files in the posts directory
-          FILES=$(git diff --name-only --diff-filter=AM HEAD^ HEAD | grep '^src/content/posts/' || true)
-          echo "files=$FILES" >> $GITHUB_OUTPUT
+          python -m pip install --upgrade pip
+          pip install tweepy requests
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        # We removed axios/jsdom because we now read the local file (safer/faster)
-        run: npm install twitter-api-v2
+      - name: Wait for Deployment
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 30 seconds for site to build..."
+          sleep 30
 
       - name: Detect and Tweet
-        if: steps.changed-files.outputs.files != ''
         env:
           APP_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           APP_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
         run: |
-          node -e "
-          const fs = require('fs');
-          const { TwitterApi } = require('twitter-api-v2');
+          if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "⚠️ Twitter credentials not set, skipping"
+            exit 0
+          fi
 
-          const client = new TwitterApi({
-            appKey: process.env.APP_KEY,
-            appSecret: process.env.APP_SECRET,
-            accessToken: process.env.ACCESS_TOKEN,
-            accessSecret: process.env.ACCESS_SECRET,
-          });
+          SITE_URL="https://www.jonathanmwaniki.co.ke"
 
-          async function run() {
-            const files = \`${{ steps.changed-files.outputs.files }}\`.split('\n').filter(Boolean);
+          # Detects only NEW (A) or MODIFIED (M) files in the posts directory
+          CHANGED=$(git diff --name-only --diff-filter=AM HEAD^ HEAD | grep '^src/content/posts/' || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "📝 No post changes detected"
+            exit 0
+          fi
+
+          # Process and post each changed file sequentially
+          while IFS= read -r file; do
+            # Extract Slug
+            FILENAME=$(basename "$file")
+            SLUG="${FILENAME%.*}"
+            URL="${SITE_URL}/posts/${SLUG}/"
             
-            // 1. Wait for Vercel (Ensure OG Image is ready)
-            if (files.length > 0) {
-              console.log('⏳ Waiting 90s for Vercel deployment to propagate...');
-              await new Promise(r => setTimeout(r, 90000));
-            }
+            echo "🚀 Processing File: $file"
+            
+            # Extract Title and Image ONLY
+            TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            
+            if [ -z "$TITLE" ]; then TITLE="New Article"; fi
+            
+            # Download and Check Image
+            IMAGE_PATH=""
+            if [ -n "$IMAGE_URL" ]; then
+              echo "Image found. Downloading locally to bypass blocks..."
+              curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o tw_preview_image.jpg "$IMAGE_URL"
+              
+              MIME_TYPE=$(file --mime-type -b tw_preview_image.jpg 2>/dev/null || echo "unknown")
+              echo "Downloaded file type detected as: $MIME_TYPE"
+              
+              if [ -s "tw_preview_image.jpg" ] && [[ "$MIME_TYPE" == image/* ]]; then
+                IMAGE_PATH="tw_preview_image.jpg"
+                echo "Valid image confirmed."
+              else
+                echo "Invalid image downloaded. Proceeding with text only."
+              fi
+            fi
 
-            for (const file of files) {
-              try {
-                // 2. Read File Content directly (No scraping needed)
-                const content = fs.readFileSync(file, 'utf8');
-                
-                // 3. Extract Slug
-                const slug = file.split('/').pop().replace(/\.mdx?$/, '');
-                const url = \`https://www.jonathanmwaniki.co.ke/posts/\${slug}\`;
+            # Export variables for the Python script
+            export TWEET_TITLE="$TITLE"
+            export TWEET_URL="$URL"
+            export TWEET_IMAGE="$IMAGE_PATH"
 
-                // 4. Extract Title (Regex)
-                const titleMatch = content.match(/^title:\s*[\"']?(.*?)[\"']?$/m);
-                const title = titleMatch ? titleMatch[1] : 'New Article';
+            # Run Python script to securely upload media and create the threaded tweets
+            python -c '
+import os, sys, tweepy
 
-                // 5. Extract Tags & Convert to Hashtags
-                // Looks for: tags: [News, Tech]
-                const tagsMatch = content.match(/^tags:\s*\[(.*?)\]/m);
-                let hashtags = '';
-                
-                if (tagsMatch && tagsMatch[1]) {
-                   hashtags = tagsMatch[1]
-                    .replace(/['\"]/g, '')       // Remove quotes
-                    .split(',')                  // Split by comma
-                    .map(t => '#' + t.trim().replace(/\s+/g, '')) // Remove spaces inside tags (e.g. #GlobalNews)
-                    .join(' ');
-                }
+api_key = os.environ.get("APP_KEY")
+api_secret = os.environ.get("APP_SECRET")
+access_token = os.environ.get("ACCESS_TOKEN")
+access_secret = os.environ.get("ACCESS_SECRET")
 
-                // 6. Construct Tweet
-                const tweetText = \`\${title}\n\n\${hashtags}\n\n\${url}\`;
-                
-                console.log('🐦 Tweeting:', tweetText);
+title = os.environ.get("TWEET_TITLE", "").strip()
+url = os.environ.get("TWEET_URL")
+image_path = os.environ.get("TWEET_IMAGE")
 
-                // 7. Send
-                await client.v2.tweet(tweetText);
-                console.log('✅ Successfully tweeted!');
+call_to_action = "Jonathan Mwaniki, READ FULL STORY IN THE COMMENTS BELOW"
 
-              } catch (e) {
-                console.error(\`❌ Error processing \${file}:\`, e.message);
-              }
-            }
-          }
-          run();
-          "
+# Safely calculate Twitter 280 character limit just in case the title is massive
+max_title_len = 280 - len(call_to_action) - 4 # 4 characters for \n\n
+if len(title) > max_title_len:
+    title = title[:max_title_len - 3] + "..."
+
+tweet_text = f"{title}\n\n{call_to_action}"
+
+try:
+    # Authenticate V1.1 (Required for Media Uploads)
+    auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
+    api = tweepy.API(auth)
+    
+    # Authenticate V2 (Required for Tweeting)
+    client = tweepy.Client(
+        consumer_key=api_key, consumer_secret=api_secret,
+        access_token=access_token, access_token_secret=access_secret
+    )
+
+    # 1. Upload Image
+    media_id = None
+    if image_path and os.path.exists(image_path):
+        print("Uploading media to Twitter...")
+        media = api.media_upload(image_path)
+        media_id = media.media_id
+
+    # 2. Send Main Tweet
+    print("Sending main tweet...")
+    if media_id:
+        response = client.create_tweet(text=tweet_text, media_ids=[media_id])
+    else:
+        response = client.create_tweet(text=tweet_text)
+        
+    tweet_id = response.data["id"]
+    print(f"✅ Main tweet posted successfully! Tweet ID: {tweet_id}")
+    
+    # 3. Add Link in the Thread Reply
+    print("Adding reply with the article link...")
+    reply_text = f"Read the full story here: {url}"
+    client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
+    print("✅ Link reply posted successfully!")
+    
+except Exception as e:
+    print(f"❌ Twitter API Error: {e}")
+    sys.exit(1)
+            '
+            # Clean up the temp image
+            rm -f tw_preview_image.jpg
+            
+          done <<< "$CHANGED"
