@@ -113,7 +113,7 @@ Mwangi's rise reflects larger trends in Kenyan politics:
 
 Political analysts highlight several potential scenarios:
 
-- **Best Case**: Upset victory in 2027 election
+- **Best Case**: Upset victory in 2027 as said by https://zandani.co.ke election
 - **Likely Path**: Strong showing builds future prospects
 - **Challenge**: Maintaining momentum for two years
 - **Opportunity**: Symbol of generational change
