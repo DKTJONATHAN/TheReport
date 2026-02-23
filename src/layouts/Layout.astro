@@ -22,21 +22,17 @@ const {
 } = Astro.props;
 
 // 1. ROBUST URL CONSTRUCTION
-// Uses Astro.site from astro.config.mjs if available, otherwise falls back
 const siteUrl = Astro.site ? Astro.site.href : "https://jonathanmwaniki.co.ke";
 
-// Ensure canonical URL is absolute and clean
 const canonicalURL = canonical 
   ? new URL(canonical, siteUrl).href 
   : new URL(Astro.url.pathname, siteUrl).href;
 
-// Ensure social image is absolute
 const socialImage = image.startsWith('http') 
   ? image 
   : new URL(image, siteUrl).href;
 
 // 2. JSON-LD SCHEMA GENERATION
-// This helps Google understand if this is a News Article or just the Home Page
 const schema = type === 'article' ? {
   "@context": "https://schema.org",
   "@type": "NewsArticle",
@@ -46,7 +42,7 @@ const schema = type === 'article' ? {
   "author": [{
       "@type": "Person",
       "name": "Jonathan Mwaniki",
-      "url": "https://jonathanmwaniki.co.ke/about" // Adjust if you have an author page
+      "url": "https://jonathanmwaniki.co.ke/about"
     }]
 } : {
   "@context": "https://schema.org",
@@ -65,7 +61,7 @@ const schema = type === 'article' ? {
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#dc2626" />
     <meta name="yandex-verification" content="4ec79656b15aa799" />
-    
+
     {/* --- SITEMAP --- */}
     <link rel="sitemap" href="/sitemap-index.xml" />
 
@@ -94,18 +90,19 @@ const schema = type === 'article' ? {
     {/* --- JSON-LD STRUCTURED DATA --- */}
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
 
+    {/* --- ADCASH LIBRARY (Step 1) --- */}
+    <script is:inline id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+
     {/* --- GOOGLE ADSENSE --- */}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9291176772735390" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js?id=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-W3FVP4FRPT');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-W3FVP4FRPT');
+    </script>
 
     {/* --- FONTS --- */}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -116,8 +113,18 @@ const schema = type === 'article' ? {
   <body>
     <Header />
 
-    {/* WRAPPED IN MAIN FOR STICKY FOOTER & SEMANTICS */}
     <main>
+      {/* --- ADCASH BANNER (Step 2) --- */}
+      <div class="ad-container" style="display: flex; justify-content: center; padding: 10px 0;">
+        <script is:inline type="text/javascript">
+            if (window.aclib) {
+                aclib.runBanner({
+                    zoneId: '11004510',
+                });
+            }
+        </script>
+      </div>
+
       <slot />
     </main>
 
@@ -170,7 +177,6 @@ const schema = type === 'article' ? {
     min-height: 100vh;
   }
 
-  /* Ensures Footer stays at bottom even on short pages */
   main {
     flex: 1;
     width: 100%;
@@ -179,4 +185,9 @@ const schema = type === 'article' ? {
   }
 
   img { max-width: 100%; height: auto; display: block; }
+  
+  .ad-container {
+    width: 100%;
+    overflow: hidden;
+  }
 </style>
