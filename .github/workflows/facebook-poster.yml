@@ -23,6 +23,9 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq curl python3 file
+
       - name: Wait for Deployment (Auto-Push Only)
         if: github.event_name == 'push'
         run: |
@@ -59,8 +62,8 @@ jobs:
             # Extract title and remove quotes
             TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
             
-            # Extract image URL and remove quotes
-            IMAGE_URL=$(grep -m 1 "^image:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
+            # Robustly extract the image URL, removing quotes and spaces
+            IMAGE_URL=$(grep -m 1 "^image:" "$FILE" | sed -E "s/^image: *['\"]?([^'\"]+)['\"]?/\1/")
             
             # Extract the first two paragraphs (Skipping the YAML frontmatter)
             PARAGRAPHS=$(awk 'BEGIN {count=0; body=0} /^---$/ {count++; if(count==2){body=1; next}} body==1 {print}' "$FILE" | awk -v RS='' -v ORS='\n\n' 'NR<=2')
@@ -80,18 +83,27 @@ jobs:
             HASHTAGS="#News"
           fi
 
+          if [ -z "$TITLE" ]; then TITLE="New Update"; fi
+
+          # Convert Title to Unicode Bold for Facebook
+          BOLD_TITLE=$(python3 -c "import sys; print(''.join(chr(ord(c)+120211) if 'A'<=c<='Z' else chr(ord(c)+120205) if 'a'<=c<='z' else chr(ord(c)+120764) if '0'<=c<='9' else c for c in sys.argv[1]))" "$TITLE")
+          
+          # Scrub all HTML, convert entities, and remove Markdown syntax from paragraphs
+          CLEAN_PARAGRAPHS=$(python3 -c "import sys, html, re; text = html.unescape(sys.argv[1]); text = re.sub(r'<[^>]*>', '', text); text = re.sub(r'\[([^]]+)\]\([^)]+\)', r'\1', text); print(re.sub(r'[*_\`#]', '', text).strip())" "$PARAGRAPHS")
+
           LINK="$SITE_URL/posts/$SLUG/"
           
-          # Combine Title, Paragraphs, and Hashtags for the main caption
-          FINAL_MESSAGE="$TITLE
-
-          $PARAGRAPHS
-          $HASHTAGS"
+          # Safely construct the multiline message without breaking YAML formatting
+          if [ -n "$HASHTAGS" ]; then
+            FINAL_MESSAGE=$(printf "%s\n\n%s\n\n%s" "$BOLD_TITLE" "$CLEAN_PARAGRAPHS" "$HASHTAGS")
+          else
+            FINAL_MESSAGE=$(printf "%s\n\n%s" "$BOLD_TITLE" "$CLEAN_PARAGRAPHS")
+          fi
 
           echo "Posting Main Content: $FINAL_MESSAGE"
 
           # 3. Download and Send Main Post to Facebook
-          if [ -n "$IMAGE_URL" ]; then
+          if [ -n "$IMAGE_URL" ] && [ "$IMAGE_URL" != "image:" ]; then
             echo "Image found. Disguising as a web browser to download..."
             curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o fb_preview_image.jpg "$IMAGE_URL"
             
