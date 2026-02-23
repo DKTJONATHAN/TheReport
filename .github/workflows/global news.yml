@@ -1,4 +1,60 @@
-- name: Generate Content
+name: Global News Cycle (Free Scraper)
+
+on:
+  schedule:
+    # 2h 33m Intervals
+    - cron: '33 2 * * *'  # Business
+    - cron: '6 5 * * *'   # Sports
+    - cron: '39 7 * * *'  # Tech
+    - cron: '12 10 * * *' # Business
+    - cron: '45 12 * * *' # Sports
+    - cron: '18 15 * * *' # Tech
+    - cron: '51 17 * * *' # Business
+    - cron: '24 20 * * *' # Sports
+    - cron: '57 22 * * *' # Tech
+  workflow_dispatch:
+    inputs:
+      manual_topic:
+        description: 'Force a topic'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai beautifulsoup4 lxml playwright
+          playwright install chromium
+
+      - name: Generate Content
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
@@ -52,7 +108,7 @@
                           continue
               return None
 
-          # --- 2. TOPIC ROTATION (2h 33m Logic) ---
+          # --- 2. TOPIC ROTATION ---
           cron_map = {
               '33 2 * * *': 'business',
               '6 5 * * *':  'sports',
@@ -75,7 +131,7 @@
           memory_path = os.environ.get('MEMORY_FILE')
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
-          # --- 3. DISCOVERY (NewsAPI) ---
+          # --- 3. DISCOVERY ---
           news_api = os.environ.get("NEWSAPI_KEY")
           news_url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&apiKey={news_api}"
           
@@ -117,7 +173,7 @@
 
           if not full_raw_text: exit(0)
 
-          # --- 6. UPDATED PROMPT (Strict Inverted Pyramid) ---
+          # --- 6. PROMPT (Fixed for Lead Paragraphs) ---
           internal_linking = get_internal_context()
           prompt = f"""OPERATE AS A GLOBAL NEWS ANALYST.
           SOURCE MATERIAL: {full_raw_text[:12000]}
@@ -127,12 +183,9 @@
           - ARTICLE STRUCTURE: Use the Inverted Pyramid style.
           - START with a strong "Lead" paragraph (2-3 sentences) that summarizes the most important news immediately.
           - DO NOT start with a subheading or bold text. The first two paragraphs must be prose context.
-          - Tone: Objective, Sophisticated (Reuters/AP style).
+          - Tone: Objective, Sophisticated (Reuters style).
           - STRICT RULE: NEVER use em dashes or en dashes. Only use standard hyphens.
           
-          *** INTERNAL LINKING ***
-          - Seamlessly weave one link from 'PAST STORIES' into the text: [Anchor Text](/posts/slug)
-
           OUTPUT FORMAT:
           TITLE: [Headline]
           DESCRIPTION: [Summary]
@@ -180,7 +233,7 @@
           
           final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
-          final_md = f"""---\ntitle: "{parsed['TITLE']}"\ndescription: "{parsed['DESC']}"\ndate: "{date_now}"\nimage: "{final_image_url}"\ncategory: "{topic.title()}"\nslug: "{slug}"\n---\n\n{parsed['BODY']}"""
+          final_md = f"---\ntitle: \"{parsed['TITLE']}\"\ndescription: \"{parsed['DESC']}\"\ndate: \"{date_now}\"\nauthor: \"Global Desk\"\nimage: \"{final_image_url}\"\nimageCaption: \"{parsed['CAPTION']}\"\ncategory: \"{topic.title()}\"\nslug: \"{slug}\"\n---\n\n{parsed['BODY']}"
 
           out_dir = os.environ.get("POSTS_DIR")
           os.makedirs(out_dir, exist_ok=True)
@@ -189,3 +242,20 @@
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
           EOF
+
+      - name: Git Safety Pull
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git stash -u
+          git fetch origin main
+          git pull origin main --rebase
+          git stash pop || echo "Nothing to pop"
+
+      - name: Commit and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "content: global cycle news update 🌐"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
