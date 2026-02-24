@@ -9,20 +9,22 @@ export interface Props {
   image?: string;
   canonical?: string;
   type?: 'website' | 'article';
-  publishDate?: Date; // Optional: Useful for article schema
+  publishDate?: Date;
+  keywords?: string;
 }
 
 const { 
   title, 
-  description = "Breaking news, politics, and trending stories from Kenya. The Mwaniki Report is your trusted source for truth.",
+  description = "Breaking news, politics, and trending stories from Kenya. Your trusted source for truth and real-time updates.",
   image = "/default-social-card.jpg",
   canonical,
   type = 'website',
-  publishDate
+  publishDate,
+  keywords = "Kenya breaking news today, latest news in Kenya, Nairobi trending news, jobs in Kenya, celebrity gossip Kenya, William Ruto news, Raila Odinga, Gachagua latest, SHA registration Kenya, KeNHA updates, KRA news, education news Kenya, entertainment news Kenya"
 } = Astro.props;
 
 // 1. ROBUST URL CONSTRUCTION
-const siteUrl = Astro.site ? Astro.site.href : "https://jonathanmwaniki.co.ke";
+const siteUrl = Astro.site ? Astro.site.href : "https://zandani.co.ke";
 
 const canonicalURL = canonical 
   ? new URL(canonical, siteUrl).href 
@@ -32,23 +34,42 @@ const socialImage = image.startsWith('http')
   ? image 
   : new URL(image, siteUrl).href;
 
-// 2. JSON-LD SCHEMA GENERATION
+// 2. ENHANCED JSON-LD SCHEMA FOR AI SEARCH
 const schema = type === 'article' ? {
   "@context": "https://schema.org",
   "@type": "NewsArticle",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalURL
+  },
   "headline": title,
   "image": [socialImage],
   "datePublished": publishDate ? publishDate.toISOString() : new Date().toISOString(),
+  "dateModified": publishDate ? publishDate.toISOString() : new Date().toISOString(),
   "author": [{
       "@type": "Person",
       "name": "Jonathan Mwaniki",
-      "url": "https://jonathanmwaniki.co.ke/about"
-    }]
+      "url": new URL("/about", siteUrl).href
+  }],
+  "publisher": {
+    "@type": "Organization",
+    "name": "Zandani",
+    "logo": {
+      "@type": "ImageObject",
+      "url": new URL("/favicon.svg", siteUrl).href
+    }
+  },
+  "keywords": keywords
 } : {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "Jonathan Mwaniki",
+  "name": "Zandani",
   "url": siteUrl,
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": `${siteUrl}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string"
+  }
 };
 ---
 
@@ -62,40 +83,46 @@ const schema = type === 'article' ? {
     <meta name="theme-color" content="#dc2626" />
     <meta name="yandex-verification" content="4ec79656b15aa799" />
 
-    {/* --- SITEMAP --- */}
+    {/* SITEMAP */}
     <link rel="sitemap" href="/sitemap-index.xml" />
 
-    {/* --- SEO MAIN --- */}
+    {/* SEO MAIN */}
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
     <link rel="canonical" href={canonicalURL} />
     <meta name="author" content="Jonathan Mwaniki" />
 
-    {/* --- OPEN GRAPH (Facebook/WhatsApp) --- */}
+    {/* OPEN GRAPH (Facebook/WhatsApp/LinkedIn) */}
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={socialImage} />
-    <meta property="og:site_name" content="Jonathan Mwaniki" />
+    <meta property="og:image:secure_url" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Zandani" />
 
-    {/* --- TWITTER CARD --- */}
+    {/* TWITTER CARD (X) */}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@maestropuns" />
     <meta name="twitter:creator" content="@maestropuns" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:domain" content="zandani.co.ke" />
 
-    {/* --- JSON-LD STRUCTURED DATA --- */}
+    {/* JSON-LD STRUCTURED DATA */}
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
 
-    {/* --- ADCASH LIBRARY (Step 1) --- */}
-    <script is:inline id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
-
-    {/* --- GOOGLE ADSENSE --- */}
+    {/* GOOGLE ADSENSE */}
     <script async src="https://pagead2.googlesyndication.com/pagead/js?id=ca-pub-9291176772735390" crossorigin="anonymous"></script>
 
+    {/* ADCASH LIBRARY */}
+    <script is:inline id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+
+    {/* GOOGLE ANALYTICS */}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W3FVP4FRPT"></script>
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
@@ -104,7 +131,7 @@ const schema = type === 'article' ? {
       gtag('config', 'G-W3FVP4FRPT');
     </script>
 
-    {/* --- FONTS --- */}
+    {/* FONTS */}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
@@ -114,14 +141,16 @@ const schema = type === 'article' ? {
     <Header />
 
     <main>
-      {/* --- ADCASH BANNER (Step 2) --- */}
-      <div class="ad-container" style="display: flex; justify-content: center; padding: 10px 0;">
+      {/* ADCASH BANNER */}
+      <div class="ad-container" style="display: flex; justify-content: center; min-height: 90px; margin: 10px 0;">
         <script is:inline type="text/javascript">
-            if (window.aclib) {
-                aclib.runBanner({
-                    zoneId: '11004510',
-                });
-            }
+            window.addEventListener('load', function() {
+                if (window.aclib) {
+                    window.aclib.runBanner({
+                        zoneId: '11004510',
+                    });
+                }
+            });
         </script>
       </div>
 
@@ -133,9 +162,9 @@ const schema = type === 'article' ? {
 </html>
 
 <style is:global>
-  /* --- VARIABLES --- */
+  /* VARIABLES */
   :root {
-    --accent: #dc2626;        /* Kenyan Red */
+    --accent: #dc2626;
     --accent-hover: #b91c1c;
     --color-dark: #111827;
     --bg-color: #ffffff;
@@ -160,7 +189,7 @@ const schema = type === 'article' ? {
     }
   }
 
-  /* --- RESETS --- */
+  /* RESETS */
   html {
     font-family: var(--font-head);
     background-color: var(--bg-color);
@@ -185,7 +214,7 @@ const schema = type === 'article' ? {
   }
 
   img { max-width: 100%; height: auto; display: block; }
-  
+
   .ad-container {
     width: 100%;
     overflow: hidden;
