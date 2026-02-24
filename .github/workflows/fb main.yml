@@ -1,0 +1,223 @@
+name: Social Blast (With AI & Hashtags)
+
+on:
+  push:
+    paths:
+      - 'src/content/posts/**.md'
+      - 'src/content/posts/**.mdx'
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      specific_slug:
+        description: 'Slug of the post (e.g., "my-new-article")'
+        required: false
+        type: string
+
+jobs:
+  publish-to-facebook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq curl file
+          python -m pip install --upgrade pip
+          pip install requests google-genai
+
+      - name: Wait for Deployment (Auto-Push Only)
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 30 seconds for site to build..."
+          sleep 30
+
+      - name: Detect and Post Article with AI
+        env:
+          FB_ACCOUNT_ID: ${{ secrets.FACEBOOK_ACCOUNT_ID }}
+          FB_TOKEN: ${{ secrets.FACEBOOK_ACCOUNT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SITE_URL: "https://jonathanmwaniki.co.ke"
+          INPUT_SLUG: ${{ inputs.specific_slug }}
+        run: |
+          # 1. Determine which file/slug to process
+          if [ -n "$INPUT_SLUG" ]; then
+            SLUG="$INPUT_SLUG"
+            FILE=$(find src/content/posts -name "${SLUG}.md*" | head -n 1)
+          else
+            FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
+            
+            if [ -z "$FILE" ]; then
+              echo "No post file detected. Exiting."
+              exit 0
+            fi
+            
+            FILENAME=$(basename "$FILE")
+            SLUG="${FILENAME%.*}"
+          fi
+
+          if [ ! -f "$FILE" ]; then
+             echo "❌ File not found: $FILE"
+             exit 1
+          fi
+
+          echo "🚀 Processing File: $FILE"
+
+          export TARGET_FILE="$FILE"
+          export TARGET_SLUG="$SLUG"
+
+          # 2. Python block to handle AI Generation and Facebook API
+          python3 << 'EOF'
+          import os, re, requests, time
+          from google import genai
+          from google.genai import types
+
+          file_path = os.environ.get('TARGET_FILE')
+          slug = os.environ.get('TARGET_SLUG')
+          fb_account_id = os.environ.get('FB_ACCOUNT_ID')
+          fb_token = os.environ.get('FB_TOKEN')
+          gemini_key = os.environ.get('GEMINI_API_KEY')
+          site_url = os.environ.get('SITE_URL')
+
+          if not fb_account_id or not fb_token:
+              print("⚠️ Facebook credentials not set. Exiting.")
+              exit(1)
+
+          if not gemini_key:
+              print("⚠️ GEMINI_API_KEY not set. Exiting.")
+              exit(1)
+
+          article_url = f"{site_url}/posts/{slug}/"
+
+          with open(file_path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          # Extract metadata
+          title_match = re.search(r'^title:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+          tags_match = re.search(r'^tags:\s*\[?(.*?)\]?$', content, re.MULTILINE)
+          image_match = re.search(r'^image:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+
+          title = title_match.group(1) if title_match else "New Update"
+          raw_tags = tags_match.group(1) if tags_match else ""
+          image_url = image_match.group(1) if image_match else ""
+
+          # Grab a snippet of the body to feed the AI
+          parts = re.split(r'^---$', content, flags=re.MULTILINE)
+          body_text = parts[2][:1000] if len(parts) > 2 else content[:1000]
+          clean_body = re.sub(r'<[^>]+>', '', body_text).strip()
+
+          print(f"📝 Asking Gemini to write caption for: {title}")
+
+          banned_phrases = [
+              "sasa basi", "melting the pot", "spill the tea", "tea is hot", 
+              "grab your popcorn", "listen up", "buckle up", "breaking news",
+              "sherehe", "form ni gani", "udaku", "hello guys", "welcome back",
+              "mambo vipi", "niaje wasee", "karibuni", "tapestry", "dive in",
+              "delve into", "moreover", "furthermore", "in conclusion", 
+              "it's worth noting", "a testament to", "navigating the landscape",
+              "in today's digital age", "shed light on"
+          ]
+
+          prompt = f"""
+          You are the expert Social Media Manager for 'The Mwaniki Report', a premier Kenyan news and insights platform. 
+          Write a highly engaging, authoritative Facebook post caption to drive traffic to this new article.
+
+          Article Title: {title}
+          Article Snippet: {clean_body}
+          Tags to use as Hashtags: {raw_tags}
+
+          Rules:
+          - Make it catchy, professional, and designed to provoke thoughtful comments.
+          - Incorporate the provided tags naturally as hashtags at the bottom.
+          - You MUST explicitly tell the reader to check the comments for the link (e.g., "Link in the comments!").
+          - Do NOT include the actual URL in the text.
+          - Do NOT use any emojis. The text must be entirely plain text.
+          - Keep it under 3 short paragraphs.
+          - BANNED PHRASES: {", ".join(banned_phrases)}.
+          - NEVER use em dashes or en dashes. Only use regular single hyphens (-).
+          """
+
+          try:
+              client = genai.Client(api_key=gemini_key)
+              response = client.models.generate_content(
+                  model='gemini-2.5-flash',
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.8)
+              )
+              ai_caption = response.text.strip()
+          except Exception as e:
+              print(f"⚠️ AI Generation failed: {e}")
+              ai_caption = f"{title}\n\nCatch the full story in the comments below." 
+
+          # Scrub dashes just in case
+          ai_caption = ai_caption.replace('\u2014', '-').replace('\u2013', '-')
+
+          img_path = "fb_preview_image.jpg"
+          has_image = False
+          
+          # Maintain your disguised browser logic for image downloading
+          if image_url and image_url.startswith("http"):
+              print(f"📥 Disguising as a web browser to download image: {image_url}")
+              headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+              try:
+                  res = requests.get(image_url, headers=headers, timeout=15)
+                  content_type = res.headers.get('Content-Type', '')
+                  print(f"Downloaded file type detected as: {content_type}")
+                  
+                  if 'image' in content_type:
+                      with open(img_path, 'wb') as img_file:
+                          img_file.write(res.content)
+                      has_image = True
+                  else:
+                      print("⚠️ Download returned an invalid file (likely an HTML block page).")
+              except Exception as e:
+                  print(f"⚠️ Failed to download image: {e}")
+
+          post_id = None
+          
+          if has_image:
+              print("📸 Valid image confirmed. Uploading AI text and file to Facebook photos endpoint...")
+              url = f"https://graph.facebook.com/v24.0/{fb_account_id}/photos"
+              payload = {'message': ai_caption, 'access_token': fb_token}
+              with open(img_path, 'rb') as img_file:
+                  files = {'source': img_file}
+                  res = requests.post(url, data=payload, files=files).json()
+              post_id = res.get('post_id') or res.get('id')
+          else:
+              print("📝 Falling back to feed endpoint (text only)...")
+              url = f"https://graph.facebook.com/v24.0/{fb_account_id}/feed"
+              payload = {'message': ai_caption, 'access_token': fb_token}
+              res = requests.post(url, data=payload).json()
+              post_id = res.get('id')
+
+          print(f"Facebook API Response: {res}")
+
+          if post_id:
+              print("✅ Main post successful. Waiting 10 seconds for Facebook servers to sync...")
+              time.sleep(10)
+              
+              print("💬 Adding link to the comment section...")
+              comment_url = f"https://graph.facebook.com/v24.0/{post_id}/comments"
+              comment_msg = f"Read the full story here: {article_url}"
+              comment_payload = {'message': comment_msg, 'access_token': fb_token}
+              comment_res = requests.post(comment_url, data=comment_payload).json()
+              
+              if 'error' in comment_res:
+                  print(f"❌ Failed to add comment: {comment_res}")
+              else:
+                  print("✅ Successfully published post and link comment!")
+          else:
+              print("❌ Failed to retrieve Post ID. Could not add comment.")
+              exit(1)
+
+          if os.path.exists(img_path):
+              os.remove(img_path)
+          EOF
