@@ -1,4 +1,4 @@
-name: Social Blast (With Hashtags)
+name: Social Blast (With AI & Hashtags)
 
 on:
   push:
@@ -23,8 +23,16 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq curl python3 file
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq curl file
+          python -m pip install --upgrade pip
+          pip install requests google-genai
 
       - name: Wait for Deployment (Auto-Push Only)
         if: github.event_name == 'push'
@@ -32,18 +40,18 @@ jobs:
           echo "Waiting 30 seconds for site to build..."
           sleep 30
 
-      - name: Detect and Post Article
+      - name: Detect and Post Article with AI
         env:
           FB_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SITE_URL: "https://jonathanmwaniki.co.ke"
           INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
-          # 1. Determine which file/slug to process
+          # 1. Determine which file/slug to process (Keep your excellent bash logic)
           if [ -n "$INPUT_SLUG" ]; then
             SLUG="$INPUT_SLUG"
             FILE=$(find src/content/posts -name "${SLUG}.md*" | head -n 1)
           else
-            # Find the most recently changed file in content/posts
             FILE=$(git diff --name-only HEAD~1 HEAD | grep 'src/content/posts/' | head -n 1)
             
             if [ -z "$FILE" ]; then
@@ -55,99 +63,145 @@ jobs:
             SLUG="${FILENAME%.*}"
           fi
 
-          echo "Processing File: $FILE"
-
-          # 2. Extract Title, Paragraphs, Image, & Tags
-          if [ -f "$FILE" ]; then
-            # Extract title and remove quotes
-            TITLE=$(grep -m 1 "^title:" "$FILE" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//')
-            
-            # Robustly extract the image URL, removing quotes and spaces
-            IMAGE_URL=$(grep -m 1 "^image:" "$FILE" | sed -E "s/^image: *['\"]?([^'\"]+)['\"]?/\1/")
-            
-            # Extract the first two paragraphs (Skipping the YAML frontmatter)
-            PARAGRAPHS=$(awk 'BEGIN {count=0; body=0} /^---$/ {count++; if(count==2){body=1; next}} body==1 {print}' "$FILE" | awk -v RS='' -v ORS='\n\n' 'NR<=2')
-            
-            # Extract Tags and Convert to Hashtags
-            RAW_TAGS=$(grep -m 1 "^tags:" "$FILE" | sed -e 's/tags://' -e 's/\[//' -e 's/\]//' -e 's/"//g' -e "s/'//g")
-            
-            HASHTAGS=""
-            if [ -n "$RAW_TAGS" ]; then
-              HASHTAGS=$(echo "$RAW_TAGS" | awk -F, '{for(i=1;i<=NF;i++) {gsub(/^ +| +$/,"",$i); if($i!="") printf "#%s ", $i}}')
-            fi
-            
-          else
-            TITLE="New Update"
-            PARAGRAPHS="Check out our latest post."
-            IMAGE_URL=""
-            HASHTAGS="#News"
+          if [ ! -f "$FILE" ]; then
+             echo "❌ File not found: $FILE"
+             exit 1
           fi
 
-          if [ -z "$TITLE" ]; then TITLE="New Update"; fi
+          echo "🚀 Processing File: $FILE"
 
-          # Convert Title to Unicode Bold for Facebook
-          BOLD_TITLE=$(python3 -c "import sys; print(''.join(chr(ord(c)+120211) if 'A'<=c<='Z' else chr(ord(c)+120205) if 'a'<=c<='z' else chr(ord(c)+120764) if '0'<=c<='9' else c for c in sys.argv[1]))" "$TITLE")
+          export TARGET_FILE="$FILE"
+          export TARGET_SLUG="$SLUG"
+
+          # 2. Python block to handle AI Generation and Facebook API
+          python3 << 'EOF'
+          import os, re, requests, time
+          from google import genai
+          from google.genai import types
+
+          file_path = os.environ.get('TARGET_FILE')
+          slug = os.environ.get('TARGET_SLUG')
+          fb_token = os.environ.get('FB_TOKEN')
+          gemini_key = os.environ.get('GEMINI_API_KEY')
+          site_url = os.environ.get('SITE_URL')
+
+          if not gemini_key:
+              print("⚠️ GEMINI_API_KEY not set. Exiting.")
+              exit(1)
+
+          article_url = f"{site_url}/posts/{slug}/"
+
+          with open(file_path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          # Extract metadata
+          title_match = re.search(r'^title:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+          tags_match = re.search(r'^tags:\s*\[?(.*?)\]?$', content, re.MULTILINE)
+          image_match = re.search(r'^image:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+
+          title = title_match.group(1) if title_match else "New Update"
+          raw_tags = tags_match.group(1) if tags_match else ""
+          image_url = image_match.group(1) if image_match else ""
+
+          # Grab a snippet of the body to feed the AI
+          parts = re.split(r'^---$', content, flags=re.MULTILINE)
+          body_text = parts[2][:1000] if len(parts) > 2 else content[:1000]
+          clean_body = re.sub(r'<[^>]+>', '', body_text).strip()
+
+          print(f"📝 Asking Gemini to write caption for: {title}")
+
+          prompt = f"""
+          You are the expert Social Media Manager for 'The Mwaniki Report', a premier Kenyan news and insights platform. 
+          Write a highly engaging, conversational Facebook post caption to drive traffic to this new article.
+
+          Article Title: {title}
+          Article Snippet: {clean_body}
+          Tags to use as Hashtags: {raw_tags}
+
+          Rules:
+          - Make it catchy, authoritative, and designed to provoke comments.
+          - Incorporate the provided tags naturally as hashtags at the bottom.
+          - You MUST explicitly tell the reader to check the comments for the link (e.g., "Link in the comments! 👇").
+          - Do NOT include the actual URL in the text.
+          - Use 2 to 3 relevant emojis.
+          - Keep it under 3 short paragraphs.
+          - NEVER use em dashes or en dashes. Only use regular single hyphens (-).
+          """
+
+          try:
+              client = genai.Client(api_key=gemini_key)
+              response = client.models.generate_content(
+                  model='gemini-2.5-flash',
+                  contents=prompt,
+                  config=types.GenerateContentConfig(temperature=0.8)
+              )
+              ai_caption = response.text.strip()
+          except Exception as e:
+              print(f"⚠️ AI Generation failed: {e}")
+              ai_caption = f"📰 {title}\n\n👇 Catch the full story in the comments below!" 
+
+          # Scrub dashes just in case
+          ai_caption = ai_caption.replace('\u2014', '-').replace('\u2013', '-')
+
+          img_path = "fb_preview_image.jpg"
+          has_image = False
           
-          # Scrub all HTML, convert entities, and remove Markdown syntax from paragraphs
-          CLEAN_PARAGRAPHS=$(python3 -c "import sys, html, re; text = html.unescape(sys.argv[1]); text = re.sub(r'<[^>]*>', '', text); text = re.sub(r'\[([^]]+)\]\([^)]+\)', r'\1', text); print(re.sub(r'[*_\`#]', '', text).strip())" "$PARAGRAPHS")
+          # Maintain your disguised browser logic for image downloading
+          if image_url and image_url.startswith("http"):
+              print(f"📥 Disguising as a web browser to download image: {image_url}")
+              headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+              try:
+                  res = requests.get(image_url, headers=headers, timeout=15)
+                  content_type = res.headers.get('Content-Type', '')
+                  print(f"Downloaded file type detected as: {content_type}")
+                  
+                  if 'image' in content_type:
+                      with open(img_path, 'wb') as img_file:
+                          img_file.write(res.content)
+                      has_image = True
+                  else:
+                      print("⚠️ Download returned an invalid file (likely an HTML block page).")
+              except Exception as e:
+                  print(f"⚠️ Failed to download image: {e}")
 
-          LINK="$SITE_URL/posts/$SLUG/"
+          post_id = None
           
-          # Safely construct the multiline message without breaking YAML formatting
-          if [ -n "$HASHTAGS" ]; then
-            FINAL_MESSAGE=$(printf "%s\n\n%s\n\n%s" "$BOLD_TITLE" "$CLEAN_PARAGRAPHS" "$HASHTAGS")
-          else
-            FINAL_MESSAGE=$(printf "%s\n\n%s" "$BOLD_TITLE" "$CLEAN_PARAGRAPHS")
-          fi
+          # Use 'me/photos' or 'me/feed' based on your original working setup
+          if has_image:
+              print("📸 Valid image confirmed. Uploading AI text and file to Facebook photos endpoint...")
+              url = "https://graph.facebook.com/v24.0/me/photos"
+              payload = {'message': ai_caption, 'access_token': fb_token}
+              with open(img_path, 'rb') as img_file:
+                  files = {'source': img_file}
+                  res = requests.post(url, data=payload, files=files).json()
+              post_id = res.get('post_id') or res.get('id')
+          else:
+              print("📝 Falling back to feed endpoint (text only)...")
+              url = "https://graph.facebook.com/v24.0/me/feed"
+              payload = {'message': ai_caption, 'access_token': fb_token}
+              res = requests.post(url, data=payload).json()
+              post_id = res.get('id')
 
-          echo "Posting Main Content: $FINAL_MESSAGE"
+          print(f"Facebook API Response: {res}")
 
-          # 3. Download and Send Main Post to Facebook
-          if [ -n "$IMAGE_URL" ] && [ "$IMAGE_URL" != "image:" ]; then
-            echo "Image found. Disguising as a web browser to download..."
-            curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o fb_preview_image.jpg "$IMAGE_URL"
-            
-            # Check the actual MIME type of the downloaded file
-            MIME_TYPE=$(file --mime-type -b fb_preview_image.jpg 2>/dev/null || echo "unknown")
-            echo "Downloaded file type detected as: $MIME_TYPE"
-            
-            if [ -s "fb_preview_image.jpg" ] && [[ "$MIME_TYPE" == image/* ]]; then
-              echo "Valid image confirmed. Uploading direct file to Facebook photos endpoint..."
-              FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/photos" \
-                -F "message=$FINAL_MESSAGE" \
-                -F "source=@fb_preview_image.jpg" \
-                -F "access_token=$FB_TOKEN")
-            else
-              echo "Download returned an invalid file (likely an HTML block page). Falling back to text-only post..."
-              FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-                -d "message=$FINAL_MESSAGE" \
-                -d "access_token=$FB_TOKEN")
-            fi
-          else
-            echo "No image found. Falling back to feed endpoint (text only)..."
-            FB_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/me/feed" \
-              -d "message=$FINAL_MESSAGE" \
-              -d "access_token=$FB_TOKEN")
-          fi
+          if post_id:
+              print("✅ Main post successful. Waiting 10 seconds for Facebook servers to sync...")
+              time.sleep(10)
+              
+              print("💬 Adding link to the comment section...")
+              comment_url = f"https://graph.facebook.com/v24.0/{post_id}/comments"
+              comment_msg = f"Read the full story here: {article_url}"
+              comment_payload = {'message': comment_msg, 'access_token': fb_token}
+              comment_res = requests.post(comment_url, data=comment_payload).json()
+              
+              if 'error' in comment_res:
+                  print(f"❌ Failed to add comment: {comment_res}")
+              else:
+                  print("✅ Successfully published post and link comment!")
+          else:
+              print("❌ Failed to retrieve Post ID. Could not add comment.")
+              exit(1)
 
-          echo "Facebook API Response: $FB_RESPONSE"
-
-          # 4. Extract Post ID and Add Comment with Link
-          # The photos endpoint returns 'post_id', the feed endpoint returns 'id'
-          POST_ID=$(echo "$FB_RESPONSE" | jq -r '.post_id // .id')
-
-          if [ "$POST_ID" != "null" ] && [ -n "$POST_ID" ]; then
-            echo "Main post successful. Waiting 10 seconds for Facebook servers to sync..."
-            sleep 10
-            
-            echo "Adding link to the comment section..."
-            COMMENT_RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v24.0/$POST_ID/comments" \
-              -d "message=Read the full story here: $LINK" \
-              -d "access_token=$FB_TOKEN")
-            
-            echo "Comment API Response: $COMMENT_RESPONSE"
-            echo "✅ Successfully published post and link comment!"
-          else
-            echo "❌ Failed to retrieve Post ID. Could not add comment."
-            exit 1
-          fi
+          if os.path.exists(img_path):
+              os.remove(img_path)
+          EOF
