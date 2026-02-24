@@ -1,10 +1,12 @@
-name: "Instant Post to X on Publish"
+name: Social Blast (With AI & Hashtags)
 
 on:
   push:
     paths:
       - 'src/content/posts/**.md'
       - 'src/content/posts/**.mdx'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       specific_slug:
@@ -13,7 +15,7 @@ on:
         type: string
 
 jobs:
-  tweet:
+  tweet-with-ai:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -29,155 +31,188 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tweepy requests
+          pip install tweepy requests google-genai
 
-      - name: Wait for Deployment
+      - name: Wait for Deployment (Auto-Push Only)
         if: github.event_name == 'push'
         run: |
           echo "Waiting 30 seconds for site to build..."
           sleep 30
 
-      - name: Detect and Tweet
+      - name: Detect and Tweet via AI
         env:
           APP_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           APP_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INPUT_SLUG: ${{ inputs.specific_slug }}
         run: |
-          # Disable GitHub's strict crash rule
-          set +e 
-
           if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "Warning: Twitter credentials not set, skipping"
+            echo "⚠️ Twitter credentials not set, skipping"
+            exit 0
+          fi
+          
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "⚠️ GEMINI_API_KEY not set, skipping"
             exit 0
           fi
 
-          SITE_URL="https://www.jonathanmwaniki.co.ke"
-
-          # 1. Determine which file to process based on manual input or git diff
+          # 1. Determine which files to process (Preserving your excellent fallback logic)
+          FILES_TO_PROCESS=""
           if [ -n "$INPUT_SLUG" ]; then
             FILE=$(find src/content/posts -name "${INPUT_SLUG}.md*" | head -n 1)
-            CHANGED="$FILE"
+            FILES_TO_PROCESS="$FILE"
           else
-            CHANGED=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep '^src/content/posts/' || true)
+            FILES_TO_PROCESS=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep '^src/content/posts/' || true)
             
             # Fallback for manual runs without an input slug
-            if [ -z "$CHANGED" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-              CHANGED=$(find src/content/posts -type f \( -name "*.md" -o -name "*.mdx" \) -exec stat -c "%Y %n" {} + | sort -nr | head -n 1 | cut -d' ' -f2- || true)
+            if [ -z "$FILES_TO_PROCESS" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              FILE=$(find src/content/posts -type f \( -name "*.md" -o -name "*.mdx" \) -exec stat -c "%Y %n" {} + | sort -nr | head -n 1 | cut -d' ' -f2- || true)
               echo "Manual run detected. Defaulting to most recent file."
+              FILES_TO_PROCESS="$FILE"
             fi
           fi
 
-          if [ -z "$CHANGED" ]; then
-            echo "No post changes detected"
+          if [ -z "$FILES_TO_PROCESS" ]; then
+            echo "📝 No post changes detected"
             exit 0
           fi
 
-          # --- 2. PREPARE PYTHON SCRIPT ---
-          cat << 'EOF' > tweet.py
-          import os, sys, tweepy
+          export CHANGED_FILES="$FILES_TO_PROCESS"
 
+          # 2. Python block to handle AI Generation and Tweepy API
+          python3 << 'EOF'
+          import os, sys, re, requests, time
+          import tweepy
+          from google import genai
+          from google.genai import types
+
+          changed_files = os.environ.get('CHANGED_FILES', '').strip().split('\n')
           api_key = os.environ.get("APP_KEY")
           api_secret = os.environ.get("APP_SECRET")
           access_token = os.environ.get("ACCESS_TOKEN")
           access_secret = os.environ.get("ACCESS_SECRET")
+          gemini_key = os.environ.get("GEMINI_API_KEY")
+          site_url = "https://www.jonathanmwaniki.co.ke"
 
-          title = os.environ.get("TWEET_TITLE", "").strip()
-          description = os.environ.get("TWEET_DESCRIPTION", "").strip()
-          url = os.environ.get("TWEET_URL")
-          image_path = os.environ.get("TWEET_IMAGE")
+          # Initialize Gemini
+          ai_client = genai.Client(api_key=gemini_key)
 
-          # Safely calculate Twitter 280 character limit
-          available_space = 280 - len(title) - 2 # 2 characters for the double newline
+          # Initialize Tweepy (v1.1 for media upload, v2 for tweeting)
+          auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
+          v1_api = tweepy.API(auth)
+          v2_client = tweepy.Client(
+              consumer_key=api_key, consumer_secret=api_secret,
+              access_token=access_token, access_token_secret=access_secret
+          )
 
-          if available_space > 0:
-              if len(description) > available_space:
-                  # Truncate to available space, break at the last full word, and add ellipsis
-                  description = description[:available_space - 3].rsplit(" ", 1)[0] + "..."
-              tweet_text = f"{title}\n\n{description}"
-          else:
-              if len(title) > 280:
-                  tweet_text = title[:277] + "..."
-              else:
-                  tweet_text = title
-
-          try:
-              auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
-              api = tweepy.API(auth)
+          for file_path in changed_files:
+              if not file_path or not os.path.exists(file_path):
+                  continue
               
-              client = tweepy.Client(
-                  consumer_key=api_key, consumer_secret=api_secret,
-                  access_token=access_token, access_token_secret=access_secret
-              )
+              print(f"🚀 Processing File: {file_path}")
+              filename = os.path.basename(file_path)
+              slug = os.path.splitext(filename)[0]
+              article_url = f"{site_url}/posts/{slug}/"
 
+              with open(file_path, 'r', encoding='utf-8') as f:
+                  content = f.read()
+
+              # Extract metadata
+              title_match = re.search(r'^title:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+              tags_match = re.search(r'^tags:\s*\[?(.*?)\]?$', content, re.MULTILINE)
+              image_match = re.search(r'^image:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+
+              title = title_match.group(1) if title_match else "New Article"
+              raw_tags = tags_match.group(1) if tags_match else ""
+              image_url = image_match.group(1) if image_match else ""
+
+              # Grab snippet for AI context
+              parts = re.split(r'^---$', content, flags=re.MULTILINE)
+              body_text = parts[2][:800] if len(parts) > 2 else content[:800]
+              clean_body = re.sub(r'<[^>]+>', '', body_text).strip()
+
+              print(f"📝 Asking Gemini to write tweet for: {title}")
+
+              prompt = f"""
+              You are the expert Social Media Manager for 'The Mwaniki Report', a top Kenyan news platform. 
+              Write a highly engaging, punchy Twitter (X) post to drive traffic to this new article.
+
+              Article Title: {title}
+              Article Snippet: {clean_body}
+              Tags to use as Hashtags: {raw_tags}
+
+              STRICT RULES:
+              - You MUST keep the entire text UNDER 240 CHARACTERS. This is a strict platform limit.
+              - Incorporate 2 relevant hashtags at the end.
+              - Tell the reader to check the reply for the link (e.g., "Link below! 👇").
+              - Do NOT include the actual URL.
+              - Use 1 or 2 relevant emojis.
+              - NEVER use em dashes or en dashes. Only use regular single hyphens (-).
+              """
+
+              try:
+                  response = ai_client.models.generate_content(
+                      model='gemini-2.5-flash',
+                      contents=prompt,
+                      config=types.GenerateContentConfig(temperature=0.8)
+                  )
+                  ai_tweet = response.text.strip()
+              except Exception as e:
+                  print(f"⚠️ AI Generation failed: {e}")
+                  ai_tweet = f"📰 {title}\n\n👇 Read the full story in the thread below!"
+
+              # Scrub dashes per your rules
+              ai_tweet = ai_tweet.replace('\u2014', '-').replace('\u2013', '-')
+
+              # Failsafe: Mathematically guarantee it fits Twitter's 280 limit
+              if len(ai_tweet) > 275:
+                  print("⚠️ AI generated a tweet that was too long. Truncating to fit Twitter limits...")
+                  ai_tweet = ai_tweet[:270].rsplit(" ", 1)[0] + "..."
+
+              img_path = "tw_preview_image.jpg"
               media_id = None
-              if image_path and os.path.exists(image_path):
-                  print("Uploading media to Twitter...")
-                  media = api.media_upload(image_path)
-                  media_id = media.media_id
+              
+              if image_url and image_url.startswith("http"):
+                  print(f"📥 Disguising as a web browser to download image: {image_url}")
+                  headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                  try:
+                      res = requests.get(image_url, headers=headers, timeout=15)
+                      content_type = res.headers.get('Content-Type', '')
+                      print(f"Downloaded file type detected as: {content_type}")
+                      
+                      if 'image' in content_type:
+                          with open(img_path, 'wb') as img_file:
+                              img_file.write(res.content)
+                          
+                          print("📸 Uploading media to Twitter...")
+                          media = v1_api.media_upload(img_path)
+                          media_id = media.media_id
+                      else:
+                          print("⚠️ Download returned an invalid file. Proceeding text-only.")
+                  except Exception as e:
+                      print(f"⚠️ Failed to process image: {e}")
 
-              print("Sending main tweet...")
-              if media_id:
-                  response = client.create_tweet(text=tweet_text, media_ids=[media_id])
-              else:
-                  response = client.create_tweet(text=tweet_text)
+              try:
+                  print(f"🐦 Sending main tweet (Length: {len(ai_tweet)} chars)...")
+                  if media_id:
+                      response = v2_client.create_tweet(text=ai_tweet, media_ids=[media_id])
+                  else:
+                      response = v2_client.create_tweet(text=ai_tweet)
                   
-              tweet_id = response.data["id"]
-              print(f"Main tweet posted successfully! Tweet ID: {tweet_id}")
-              
-              print("Adding reply with the article link...")
-              reply_text = f"Read the full story here: {url}"
-              client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
-              print("Link reply posted successfully!")
-              
-          except Exception as e:
-              print(f"Twitter API Error: {e}")
-              sys.exit(1)
+                  tweet_id = response.data["id"]
+                  print(f"✅ Main tweet posted successfully! Tweet ID: {tweet_id}")
+                  
+                  print("💬 Adding reply with the article link...")
+                  reply_text = f"Read the full story here: {article_url}"
+                  v2_client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
+                  print("✅ Link reply posted successfully!")
+                  
+              except Exception as e:
+                  print(f"❌ Twitter API Error: {e}")
+                  sys.exit(1)
+
+              if os.path.exists(img_path):
+                  os.remove(img_path)
           EOF
-          # --------------------------------
-
-          # 3. Process and post each changed file sequentially
-          while IFS= read -r file; do
-            if [ ! -f "$file" ]; then continue; fi
-            
-            FILENAME=$(basename "$file")
-            SLUG="${FILENAME%.*}"
-            URL="${SITE_URL}/posts/${SLUG}/"
-            
-            echo "Processing File: $file"
-            
-            TITLE=$(grep -m 1 "^title:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
-            DESCRIPTION=$(grep -m 1 "^description:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
-            IMAGE_URL=$(grep -m 1 "^image:" "$file" | cut -d: -f2- | tr -d '"' | tr -d "'" | sed 's/^ *//' || true)
-            
-            if [ -z "$TITLE" ]; then TITLE="New Article"; fi
-            if [ -z "$DESCRIPTION" ]; then DESCRIPTION="Read the latest updates on our website."; fi
-            
-            IMAGE_PATH=""
-            if [ -n "$IMAGE_URL" ]; then
-              echo "Image found. Downloading locally to bypass blocks..."
-              curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o tw_preview_image.jpg "$IMAGE_URL" || true
-              
-              MIME_TYPE=$(file --mime-type -b tw_preview_image.jpg 2>/dev/null || echo "unknown")
-              echo "Downloaded file type detected as: $MIME_TYPE"
-              
-              if [ -s "tw_preview_image.jpg" ] && [[ "$MIME_TYPE" == image/* ]]; then
-                IMAGE_PATH="tw_preview_image.jpg"
-                echo "Valid image confirmed."
-              else
-                echo "Invalid image downloaded. Proceeding with text only."
-              fi
-            fi
-
-            export TWEET_TITLE="$TITLE"
-            export TWEET_DESCRIPTION="$DESCRIPTION"
-            export TWEET_URL="$URL"
-            export TWEET_IMAGE="$IMAGE_PATH"
-
-            # Run the Python script
-            python tweet.py
-            
-            rm -f tw_preview_image.jpg
-            
-          done <<< "$CHANGED"
