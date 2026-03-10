@@ -2,12 +2,12 @@ name: Global Scandal Hunter (Deep Read Edition)
 
 on:
   schedule:
-    - cron: '15 2 * * *'   
-    - cron: '15 5 * * *'   
-    - cron: '15 8 * * *'   
-    - cron: '15 11 * * *'  
-    - cron: '15 14 * * *'  
-    - cron: '15 18 * * *'  
+    - cron: '15 2 * * *'
+    - cron: '15 5 * * *'
+    - cron: '15 8 * * *'
+    - cron: '15 11 * * *'
+    - cron: '15 14 * * *'
+    - cron: '15 18 * * *'
   workflow_dispatch:
     inputs:
       manual_topic:
@@ -67,47 +67,47 @@ jobs:
           import textwrap
 
           # --- 1. SETUP ---
-          def get_clean_pool(v): return [k.strip() for k in v.split(",") if k.strip()]
-          gem_pool = get_clean_pool(os.environ.get("GEMINI_POOL", ""))
-          apify_pool = get_clean_pool(os.environ.get("APIFY_POOL", ""))
+          def get_clean_pool(v): return [k.strip() for k in v.split(',') if k.strip()]
+          gem_pool = get_clean_pool(os.environ.get('GEMINI_POOL', ''))
+          apify_pool = get_clean_pool(os.environ.get('APIFY_POOL', ''))
 
           def clean_dashes(text):
-              if not text: return ""
+              if not text: return ''
               text = text.replace('\u2014', '-').replace('\u2013', '-')
-              text = text.replace('—', '-').replace('–', '-')
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
               return text
 
           def get_internal_context():
-              posts_dir = os.environ.get("POSTS_DIR")
-              if not os.path.exists(posts_dir): return ""
+              posts_dir = os.environ.get('POSTS_DIR')
+              if not os.path.exists(posts_dir): return ''
               files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
-              if not files: return ""
+              if not files: return ''
               sample = random.sample(files, min(len(files), 4))
-              context = "PAST STORIES (LINK 1 OF THESE):\n"
+              context = 'PAST STORIES (LINK 1 OF THESE):\n'
               for f in sample:
                   try:
                       with open(os.path.join(posts_dir, f), 'r') as c:
                           txt = c.read()
                           t_match = re.search(r'title:\s*"(.*?)"', txt)
                           t = t_match.group(1) if t_match else f
-                          context += f"- {t}: /posts/{f.replace('.md', '')}\n"
+                          context += f'- {t}: /posts/{f.replace(".md", "")}\n'
                   except: continue
               return context
 
           def run_gemini(p):
               random.shuffle(gem_pool)
-              models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
+              models_to_try = ['gemini-2.5-flash-preview', 'gemini-2.0-flash']
               for model_name in models_to_try:
                   for k in gem_pool:
                       try:
                           client = genai.Client(api_key=k)
                           return client.models.generate_content(
-                              model=model_name, 
+                              model=model_name,
                               contents=p,
                               config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
                           ).text.strip()
                       except Exception as e:
-                          print(f"Gemini Error ({model_name}): {e}")
+                          print(f'Gemini Error ({model_name}): {e}')
                           time.sleep(2)
                           continue
               return None
@@ -125,7 +125,7 @@ jobs:
           query_map = {
               'politics': 'scandal OR corruption OR exposed OR secret',
               'relationships': 'drama OR cheating OR divorce OR scandal',
-              'technology': 'hack OR leak OR lawsuit OR danger', 
+              'technology': 'hack OR leak OR lawsuit OR danger',
               'crime': 'heist OR fraud OR scam OR cartel',
               'entertainment': 'feud OR viral OR exposed OR controversy',
               'confessions': 'shocking OR mystery OR secret'
@@ -135,8 +135,8 @@ jobs:
           memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
 
           # --- 3. DISCOVERY ---
-          news_api = os.environ.get("NEWSAPI_KEY")
-          news_url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=relevancy&apiKey={news_api}"
+          news_api = os.environ.get('NEWSAPI_KEY')
+          news_url = f'https://newsapi.org/v2/everything?q={query}&language=en&sortBy=relevancy&apiKey={news_api}'
           try: articles = requests.get(news_url).json().get('articles', [])
           except: exit(0)
 
@@ -144,73 +144,89 @@ jobs:
           for a in articles:
               url = a.get('url', '')
               u_hash = hashlib.md5(url.encode()).hexdigest()
-              if u_hash in memory or not url.startswith("http"): continue
-              
-              print(f"🕷️ Found Global Link: {url}")
+              if u_hash in memory or not url.startswith('http'): continue
+
+              print(f'Found Global Link: {url}')
               random.shuffle(apify_pool)
               scrape_success = False
-              
+
               for api_key in apify_pool:
                   try:
                       client_apify = ApifyClient(api_key)
-                      run = client_apify.actor("apify/website-content-crawler").call(
-                          run_input={"startUrls": [{"url": url}], "maxCrawlPages": 1, "crawlerType": "playwright:firefox"}
+                      run = client_apify.actor('apify/website-content-crawler').call(
+                          run_input={'startUrls': [{'url': url}], 'maxCrawlPages': 1, 'crawlerType': 'playwright:firefox'}
                       )
-                      dataset = client_apify.dataset(run["defaultDatasetId"])
+                      dataset = client_apify.dataset(run['defaultDatasetId'])
                       data = list(dataset.iterate_items())
                       if data:
                           item = data[0]
                           text = item.get('markdown', item.get('text', ''))
-                          
-                          # Extract image from Apify metadata
                           metadata = item.get('metadata', {})
                           if isinstance(metadata, dict):
                               target_image = metadata.get('ogImage') or metadata.get('image')
-
                           if len(text) > 600:
                               full_raw_text = text
                               final_hash = u_hash
-                              target_title = a.get('title')
+                              # Capture original NewsAPI headline for keyword anchoring
+                              target_title = a.get('title', '')
                               scrape_success = True
-                              break 
+                              break
                   except: continue
               if scrape_success: break
 
-          if not full_raw_text: print("❌ No valid content found."); exit(0)
+          if not full_raw_text: print('No valid content found.'); exit(0)
+
+          # Strip source attribution e.g. '- BBC News' or '| Reuters'
+          clean_headline = re.sub(r'[\|\-]\s*[A-Z][^\|\-]{3,}$', '', target_title or '').strip()
+          print(f'Original Headline: {clean_headline}')
 
           # --- 4. PROMPT ---
           internal_linking = get_internal_context()
-          prompt = f"""OPERATE AS A CYNICAL GLOBAL REALIST.
-          SOURCE MATERIAL: {full_raw_text[:12000]}
-          {internal_linking}
-          MANDATE: Point out the bad side. Analytical tone. Negative headline. Answer-First.
-          STRICT LANGUAGE MANDATE: NEVER use em dashes or en dashes. Only use regular hyphens.
-          OUTPUT FORMAT:
-          TITLE: [Headline]
-          DESCRIPTION: [Summary]
-          IMAGE_CAPTION: [Caption]
-          CATEGORY: [{topic.title()}]
-          TAGS: [3 tags]
-          IMAGE_KEYWORD: [2 metaphorical words]
-          BODY: [Full Article]"""
+          title_rule = (
+              '*** TITLE RULE (NON-NEGOTIABLE) ***\n'
+              '- The TITLE must be built around the EXACT same main keywords, proper nouns, names, places,\n'
+              '  and subjects found in the ORIGINAL HEADLINE above.\n'
+              '- You are NOT allowed to introduce new topics, people, or subjects not in the original.\n'
+              '- Your ONLY job with the title is to reframe the phrasing to match the cynical, analytical tone.\n'
+              '- Example: If original is "US Senator Indicted for Bribery", acceptable title is\n'
+              '  "US Senator Indicted for Bribery - The Rot Runs Deeper Than You Think".\n'
+              '  UNACCEPTABLE: "Another Corrupt Official Falls" (drops all core keywords).'
+          )
+          prompt = (
+              f'OPERATE AS A CYNICAL GLOBAL REALIST.\n'
+              f'SOURCE MATERIAL: {full_raw_text[:12000]}\n\n'
+              f'ORIGINAL HEADLINE: "{clean_headline}"\n\n'
+              f'{internal_linking}\n'
+              f'MANDATE: Point out the bad side. Analytical tone. Negative headline. Answer-First.\n'
+              f'STRICT LANGUAGE MANDATE: NEVER use em dashes or en dashes. Only use regular hyphens.\n\n'
+              f'{title_rule}\n\n'
+              f'OUTPUT FORMAT:\n'
+              f'TITLE: [Headline using original keywords]\n'
+              f'DESCRIPTION: [Summary]\n'
+              f'IMAGE_CAPTION: [Caption]\n'
+              f'CATEGORY: [{topic.title()}]\n'
+              f'TAGS: [3 tags]\n'
+              f'IMAGE_KEYWORD: [2 metaphorical words]\n'
+              f'BODY: [Full Article]'
+          )
 
           output = run_gemini(prompt)
           if not output: exit(1)
 
           # --- 5. PARSE & CLEAN ---
           def extract(key, text):
-              m = re.search(rf"^{key}:\s*(.*)", text, re.M | re.I)
+              m = re.search(rf'^{key}:\s*(.*)', text, re.M | re.I)
               return m.group(1).strip() if m else None
 
           parsed = {
-              "TITLE": extract("TITLE", output) or target_title,
-              "DESC": extract("DESCRIPTION", output) or "Full story inside.",
-              "CAPTION": extract("IMAGE_CAPTION", output) or "Developing story.",
-              "IMG": extract("IMAGE_KEYWORD", output) or topic,
-              "BODY": output.split("BODY:")[-1].strip()
+              'TITLE': extract('TITLE', output) or clean_headline or target_title,
+              'DESC': extract('DESCRIPTION', output) or 'Full story inside.',
+              'CAPTION': extract('IMAGE_CAPTION', output) or 'Developing story.',
+              'IMG': extract('IMAGE_KEYWORD', output) or topic,
+              'BODY': output.split('BODY:')[-1].strip()
           }
-          if re.search(r"BODY:\s*(.*)", output, re.S | re.I):
-              parsed["BODY"] = re.search(r"BODY:\s*(.*)", output, re.S | re.I).group(1).strip()
+          if re.search(r'BODY:\s*(.*)', output, re.S | re.I):
+              parsed['BODY'] = re.search(r'BODY:\s*(.*)', output, re.S | re.I).group(1).strip()
 
           for k in parsed:
               parsed[k] = clean_dashes(parsed[k])
@@ -218,39 +234,38 @@ jobs:
 
           # --- 6. ROBUST IMAGE FETCHING ---
           date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed["TITLE"].lower()).strip('-')
-          u_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-          
+          slug = re.sub(r'[^a-z0-9-]', '-', parsed['TITLE'].lower()).strip('-')
+          u_key = os.environ.get('UNSPLASH_ACCESS_KEY')
+
           def get_img(q):
-              # Generic robust fallbacks (Abstract, City, News, Tech)
               fallback_pool = [
-                  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1444653614773-8b83df53fe79?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80"
+                  'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80',
+                  'https://images.unsplash.com/photo-1444653614773-8b83df53fe79?auto=format&fit=crop&q=80',
+                  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80',
+                  'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80'
               ]
               try:
-                  url = f"https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}"
+                  url = f'https://api.unsplash.com/photos/random?query={q}&orientation=landscape&client_id={u_key}'
                   r = requests.get(url, timeout=10)
                   if r.status_code == 200:
                       return r.json()['urls']['regular']
                   else:
-                      print(f"⚠️ Unsplash Status: {r.status_code}. Using fallback.")
+                      print(f'Unsplash Status: {r.status_code}. Using fallback.')
                       return random.choice(fallback_pool)
-              except Exception as e: 
-                  print(f"⚠️ Unsplash Error: {e}")
+              except Exception as e:
+                  print(f'Unsplash Error: {e}')
                   return random.choice(fallback_pool)
-          
+
           final_image_url = target_image if target_image else get_img(parsed['IMG'])
 
           schema_json = {
-              "@context": "https://schema.org",
-              "@type": "AnalysisNewsArticle",
-              "headline": parsed['TITLE'],
-              "description": parsed['DESC'],
-              "datePublished": date_now,
-              "author": {"@type": "Person", "name": "Jonathan Mwaniki", "url": "https://jonathanmwaniki.co.ke"},
-              "image": [final_image_url]
+              '@context': 'https://schema.org',
+              '@type': 'AnalysisNewsArticle',
+              'headline': parsed['TITLE'],
+              'description': parsed['DESC'],
+              'datePublished': date_now,
+              'author': {'@type': 'Person', 'name': 'Jonathan Mwaniki', 'url': 'https://jonathanmwaniki.co.ke'},
+              'image': [final_image_url]
           }
 
           final_md = textwrap.dedent(f"""\
@@ -267,18 +282,18 @@ jobs:
 
           {parsed['BODY']}
 
-          <script type="application/ld+json">
+          <script type=\"application/ld+json\">
           {json.dumps(schema_json, indent=2)}
           </script>
           """).strip()
 
-          out_dir = os.environ.get("POSTS_DIR")
+          out_dir = os.environ.get('POSTS_DIR')
           os.makedirs(out_dir, exist_ok=True)
-          with open(os.path.join(out_dir, f"{slug}.md"), "w", encoding="utf-8") as f: f.write(final_md)
-          
+          with open(os.path.join(out_dir, f'{slug}.md'), 'w', encoding='utf-8') as f: f.write(final_md)
+
           memory.append(final_hash)
           with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f"✅ Published: {slug}")
+          print(f'Published: {slug}')
           EOF
 
       - name: Git Safety Pull
