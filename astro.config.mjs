@@ -1,15 +1,16 @@
+
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel/serverless';  // ← ISR requires serverless
+import vercel from '@astrojs/vercel/serverless';
 import indexJumpIntegration from './integrations/indexjump.js';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
-  output: 'hybrid',  // ← Enables ISR (static + dynamic)
+  output: 'hybrid',
   adapter: vercel({
     webAnalytics: { enabled: true },
-    isr: true  // ← Vercel ISR
+    isr: true
   }),
 
   trailingSlash: 'never',
@@ -17,7 +18,10 @@ export default defineConfig({
 
   image: {
     domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com'],
-    remotePatterns: [{ protocol: 'https://' }]
+    remotePatterns: [{ protocol: 'https://' }],
+    // FIX 403 ERRORS - Skip broken images
+    serviceEntryPoint: '@astrojs/image/sharp',
+    errorImage: '/default-image.jpg'  // ← Fallback for 403s
   },
 
   integrations: [
