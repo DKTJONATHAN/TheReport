@@ -11,6 +11,7 @@ export interface Props {
   type?: 'website' | 'article';
   publishDate?: Date;
   keywords?: string;
+  noindex?: boolean;
 }
 
 const { 
@@ -20,11 +21,12 @@ const {
   canonical,
   type = 'website',
   publishDate,
-  keywords = "Kenya breaking news today, latest news in Kenya, Nairobi trending news, jobs in Kenya, celebrity gossip Kenya, William Ruto news, Raila Odinga, Gachagua latest, SHA registration Kenya, KeNHA updates, KRA news, education news Kenya, entertainment news Kenya"
+  keywords = "Kenya breaking news today, latest news in Kenya, Nairobi trending news, jobs in Kenya, celebrity gossip Kenya, William Ruto news, Raila Odinga, Gachagua latest, SHA registration Kenya, KeNHA updates, KRA news, education news Kenya, entertainment news Kenya",
+  noindex = false
 } = Astro.props;
 
 // 1. ROBUST URL CONSTRUCTION
-const siteUrl = Astro.site ? Astro.site.href : "https://zandani.co.ke";
+const siteUrl = Astro.site ? Astro.site.href : "https://jonathanmwaniki.co.ke";
 
 const canonicalURL = canonical 
   ? new URL(canonical, siteUrl).href 
@@ -53,7 +55,7 @@ const schema = type === 'article' ? {
   }],
   "publisher": {
     "@type": "Organization",
-    "name": "Zandani",
+    "name": "Jonathan Mwaniki",
     "logo": {
       "@type": "ImageObject",
       "url": new URL("/favicon.svg", siteUrl).href
@@ -63,7 +65,7 @@ const schema = type === 'article' ? {
 } : {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "Zandani",
+  "name": "Jonathan Mwaniki",
   "url": siteUrl,
   "potentialAction": {
     "@type": "SearchAction",
@@ -93,6 +95,9 @@ const schema = type === 'article' ? {
     <link rel="canonical" href={canonicalURL} />
     <meta name="author" content="Jonathan Mwaniki" />
 
+    {/* CONDITIONAL NOINDEX FOR TAGS/ARCHIVE PAGES */}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
     {/* OPEN GRAPH (Facebook/WhatsApp/LinkedIn) */}
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalURL} />
@@ -102,7 +107,7 @@ const schema = type === 'article' ? {
     <meta property="og:image:secure_url" content={socialImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Zandani" />
+    <meta property="og:site_name" content="Jonathan Mwaniki" />
 
     {/* TWITTER CARD (X) */}
     <meta name="twitter:card" content="summary_large_image" />
@@ -111,7 +116,7 @@ const schema = type === 'article' ? {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
-    <meta name="twitter:domain" content="zandani.co.ke" />
+    <meta name="twitter:domain" content="jonathanmwaniki.co.ke" />
 
     {/* JSON-LD STRUCTURED DATA */}
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
