@@ -7,7 +7,7 @@
   ],
   "headers": [
     {
-      "source": "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|ico|svg)",
+      "source": "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|ico|svg|woff2|woff)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -17,4 +17,20 @@
     },
     {
       "source": "/(.*)\\.(css|js)",
-      "headers
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/.*",
+      "headers": {
+        "X-Content-Type-Options": "nosniff"
+      }
+    }
+  ]
+}
