@@ -1,45 +1,35 @@
 ---
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-// 1. GENERATE PATHS (Build Time)
-export async function getStaticPaths() {
-  const allPosts = await getCollection('posts');
+// 1. GET PARAMS & FETCH DATA DYNAMICALLY
+const { tag: tagSlug } = Astro.params;
 
-  // Helper: Normalize tags (slugify)
-  const createSlug = (str: string) => str
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+// Helper: Normalize tags (slugify) to match the URL parameter
+const createSlug = (str: string) => str
+  .toLowerCase()
+  .trim()
+  .replace(/[^\w\s-]/g, '')
+  .replace(/[\s_-]+/g, '-')
+  .replace(/^-+|-+$/g, '');
 
-  // Get unique tags (Safe access with empty array fallback)
-  const uniqueTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))];
+const allPosts = await getCollection('posts');
 
-  return uniqueTags.map(tag => {
-    const tagSlug = createSlug(tag);
+// 2. FILTER POSTS & EXTRACT ORIGINAL TAG
+let originalTag = String(tagSlug); // Fallback to slug if original isn't found
+const posts = allPosts.filter(post => {
+  const postTags = post.data.tags || [];
+  const matchingTag = postTags.find(t => createSlug(t) === tagSlug);
+  if (matchingTag) {
+    originalTag = matchingTag; // Recover the properly formatted original tag
+    return true;
+  }
+  return false;
+});
 
-    // Filter posts for this specific tag
-    // Note: We filter by the original tag string to match exact entries
-    const filteredPosts = allPosts.filter(post => 
-      post.data.tags?.includes(tag)
-    );
-
-    return {
-      params: { tag: tagSlug },
-      props: { tag, posts: filteredPosts },
-    };
-  });
-}
-
-// 2. DEFINE PROPS
-interface Props {
-  tag: string;
-  posts: CollectionEntry<'posts'>[];
-}
-
-const { tag, posts } = Astro.props;
+const tag = originalTag;
 
 // 3. DATA PROCESSING
 // Sort by Date (Newest First)
@@ -54,9 +44,8 @@ const storyPosts = sortedPosts.slice(0, 10);
 const feedPosts = sortedPosts; 
 
 // 4. SIDEBAR DATA (Global Trending)
-// We fetch this again because 'posts' prop is filtered, but sidebar needs GLOBAL data
-const globalData = await getCollection('posts');
-const globalTrending = globalData
+// Reuse allPosts to get global trending data
+const globalTrending = allPosts
   .filter(p => !p.data.draft) // Ensure no drafts in sidebar
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 5);
