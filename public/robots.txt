@@ -6,6 +6,8 @@ Allow: /
 # Block internal search results (Prevents SEO spam/bloat)
 Disallow: /search
 Disallow: /search?q=*
+Disallow: /tags/
+Disallow: /tag/
 
 # Block admin and system files
 Disallow: /admin
