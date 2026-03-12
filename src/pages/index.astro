@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
 
 // --- 1. DATA LOGIC ---
 const allPosts = (await getCollection('posts'))
@@ -21,7 +22,30 @@ const storyCircles = allPosts.slice(0, 10).map(post => ({
 
 const [heroMain, ...heroGrid] = allPosts.slice(0, 5);
 const initialFeed = allPosts.slice(5, 13);
-const hiddenFeed = allPosts.slice(13, 100); 
+const rawHiddenFeed = allPosts.slice(13, 100); 
+
+// 2. PRE-PROCESS HIDDEN FEED
+// Pre-generate WebP URLs so the client-side script has optimized images ready
+const hiddenFeed = await Promise.all(
+  rawHiddenFeed.map(async (post) => {
+    const optimizedImage = await getImage({
+      src: post.data.image,
+      format: 'webp',
+      inferSize: true // Automatically infer dimensions for remote image URLs
+    });
+
+    return {
+      slug: post.slug,
+      data: {
+        title: post.data.title,
+        category: post.data.category,
+        date: post.data.date,
+        description: post.data.description,
+        image: optimizedImage.src // Replaced original string with WebP src
+      }
+    };
+  })
+);
 ---
 
 <Layout>
@@ -34,7 +58,7 @@ const hiddenFeed = allPosts.slice(13, 100);
           {storyCircles.map(item => (
             <a href={item.link} class="pulse-node">
               <div class={`ring-wrap ${item.live ? 'live' : ''}`}>
-                <img src={item.image} alt={item.label} loading="eager" />
+                <Image src={item.image} alt={item.label} format="webp" inferSize={true} loading="eager" />
                 {item.live && <span class="live-badge">LIVE</span>}
               </div>
               <span class="pulse-label">{item.label}</span>
@@ -48,12 +72,12 @@ const hiddenFeed = allPosts.slice(13, 100);
 
       {/* --- 2. HERO SECTION --- */}
       <section class="bento-grid no-ad-injection">
-        
+
         {/* Main Hero: VERTICAL (Image Top, Text Bottom) */}
         <article class="bento-feature glass-panel vertical-card">
           <a href={`/posts/${heroMain.slug}`} class="card-link">
             <div class="hero-img-wrap">
-              <img src={heroMain.data.image} alt={heroMain.data.title} loading="eager" />
+              <Image src={heroMain.data.image} alt={heroMain.data.title} format="webp" inferSize={true} loading="eager" />
             </div>
             <div class="hero-content">
               <span class="cat-tag">{heroMain.data.category}</span>
@@ -68,7 +92,7 @@ const hiddenFeed = allPosts.slice(13, 100);
           {heroGrid.map(post => (
             <a href={`/posts/${post.slug}`} class="mini-card glass-panel horizontal-card">
               <div class="mini-img">
-                <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                <Image src={post.data.image} alt={post.data.title} format="webp" inferSize={true} loading="lazy" />
               </div>
               <div class="mini-text">
                 <span class="tiny-cat">{post.data.category}</span>
@@ -81,7 +105,7 @@ const hiddenFeed = allPosts.slice(13, 100);
 
       {/* --- 3. NEWS FEED --- */}
       <div class="content-split">
-        
+
         <div class="feed-col">
           <div class="feed-header">
             <h2>Latest Updates</h2>
@@ -93,7 +117,7 @@ const hiddenFeed = allPosts.slice(13, 100);
               <article class="feed-card glass-panel vertical-card">
                 <a href={`/posts/${post.slug}`} class="card-link">
                   <div class="feed-img">
-                    <img src={post.data.image} alt={post.data.title} loading="lazy" />
+                    <Image src={post.data.image} alt={post.data.title} format="webp" inferSize={true} loading="lazy" />
                   </div>
                   <div class="feed-info">
                     <div class="meta">
@@ -146,7 +170,7 @@ const hiddenFeed = allPosts.slice(13, 100);
   if(loadBtn) {
     loadBtn.addEventListener('click', () => {
       const nextBatch = allHidden.slice(loadedCount, loadedCount + BATCH_SIZE);
-      
+
       nextBatch.forEach(post => {
         const dateStr = new Date(post.data.date).toLocaleDateString();
         const html = `
@@ -179,7 +203,6 @@ const hiddenFeed = allPosts.slice(13, 100);
 
 <style is:global>
   :root {
-    /* SWAPPED TO LIGHT MODE */
     --jm-bg: #f8fafc; 
     --jm-card: rgba(255, 255, 255, 0.9);
     --jm-border: rgba(0, 0, 0, 0.08);
@@ -189,23 +212,22 @@ const hiddenFeed = allPosts.slice(13, 100);
     --jm-font-head: 'Inter', sans-serif;
     --jm-font-body: 'Merriweather', serif;
   }
-  
+
   *, *::before, *::after { box-sizing: border-box; }
-  
+
   .jm-home-wrapper { background-color: var(--jm-bg); color: var(--jm-text-main); font-family: var(--jm-font-body); width: 100%; padding-bottom: 4rem; min-height: 100vh; }
   .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
-  
+
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
   a { text-decoration: none; color: inherit; transition: 0.2s ease; }
 
-  /* Glass Card Base */
   .glass-panel {
     background: var(--jm-card);
     backdrop-filter: blur(12px);
     border: 1px solid var(--jm-border);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02); /* Added slight shadow for light mode */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .glass-panel:hover { 
@@ -214,38 +236,31 @@ const hiddenFeed = allPosts.slice(13, 100);
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
   }
 
-  /* --- CARD VARIANTS --- */
-  
-  /* Vertical Card (Hero & Feed) */
   .vertical-card { display: flex; flex-direction: column; height: 100%; }
   .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
-  
-  /* Horizontal Card (Small Cards) */
+
   .horizontal-card { 
     display: flex; 
-    flex-direction: row; /* Image Left, Text Right */
+    flex-direction: row; 
     align-items: center; 
     padding: 0.8rem; 
     gap: 1rem; 
   }
 
-  /* --- HERO SECTION --- */
   .bento-grid { display: grid; gap: 2rem; margin-bottom: 4rem; }
-  
+
   @media (min-width: 1024px) {
     .bento-grid { grid-template-columns: 2fr 1fr; }
   }
 
-  /* Hero Main Content */
   .hero-img-wrap { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
   .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
   .cat-tag { background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 0.8rem; align-self: flex-start; }
   .hero-content h1 { font-family: var(--jm-font-head); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 1rem 0; color: var(--jm-text-main); }
   .excerpt { color: var(--jm-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
 
-  /* Bento Stack (Small Cards) */
   .bento-stack { display: grid; gap: 1rem; align-content: start; }
-  
+
   .mini-img { 
     width: 90px; 
     height: 80px; 
@@ -255,34 +270,30 @@ const hiddenFeed = allPosts.slice(13, 100);
   }
   .mini-text { 
     flex: 1; 
-    min-width: 0; /* Prevents text overflow */
+    min-width: 0; 
   }
   .mini-text h3 { font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600; margin: 0; line-height: 1.35; color: var(--jm-text-main); }
   .tiny-cat { font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
 
-  /* --- FEED SECTION --- */
   @media (min-width: 1024px) { .content-split { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; } }
   .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
   .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; color: var(--jm-text-main); }
   .line { flex: 1; height: 1px; background: var(--jm-border); }
 
   .feed-grid { display: grid; gap: 2rem; }
-  
-  /* Feed Card Content */
+
   .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
   .feed-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-  
+
   .meta { font-family: var(--jm-font-head); font-size: 0.7rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; display: flex; gap: 0.8rem; align-items: center; }
   .meta-cat { color: var(--jm-accent); }
   .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.3rem; font-weight: 700; margin: 0; line-height: 1.3; color: var(--jm-text-main); }
   .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-  /* Load More */
   .load-more-wrap { text-align: center; margin-top: 2rem; }
   .btn-load-more { background: transparent; border: 1px solid var(--jm-border); color: var(--jm-text-main); padding: 1rem 3rem; border-radius: 50px; font-family: var(--jm-font-head); font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; transition: 0.3s ease; }
   .btn-load-more:hover { background: var(--jm-accent); border-color: var(--jm-accent); color: white; }
 
-  /* Sidebar */
   .sticky-box { position: sticky; top: 2rem; }
   .widget { padding: 1.5rem; }
   .widget-title { font-family: var(--jm-font-head); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--jm-text-muted); margin: 0 0 1.5rem 0; border-bottom: 1px solid var(--jm-border); padding-bottom: 0.5rem; }
@@ -290,32 +301,30 @@ const hiddenFeed = allPosts.slice(13, 100);
   .tag-pill { background: rgba(0,0,0,0.04); border: 1px solid var(--jm-border); padding: 8px 16px; border-radius: 30px; font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600; color: var(--jm-text-main); }
   .tag-pill:hover { background: var(--jm-accent); border-color: var(--jm-accent); color: white; }
 
-  /* Pulse Bar */
   .pulse-bar { padding: 1.5rem 0; border-bottom: 1px solid var(--jm-border); margin-bottom: 2.5rem; }
   .pulse-track { display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
   .pulse-track::-webkit-scrollbar { display: none; }
   .pulse-node { display: flex; flex-direction: column; align-items: center; width: 80px; flex-shrink: 0; }
-  
-  /* STRICT CIRCLE FIX */
+
   .ring-wrap { 
     width: 80px; 
     height: 80px; 
-    min-width: 80px; /* Stops flexbox from squishing it */
+    min-width: 80px; 
     min-height: 80px;
     border-radius: 50%; 
     padding: 3px; 
-    border: 2px solid var(--jm-accent); /* Red stroke added for all */
+    border: 2px solid var(--jm-accent); 
     position: relative; 
     margin-bottom: 0.5rem; 
   }
   .ring-wrap img { 
     width: 100%; 
     height: 100%; 
-    border-radius: 50%; /* Enforces the circle on the actual image */
+    border-radius: 50%; 
     border: 2px solid var(--jm-bg); 
-    object-fit: cover; /* Crops rather than stretching */
+    object-fit: cover; 
   }
-  
+
   .live-badge { position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 2px solid var(--jm-bg); z-index: 2; }
   .pulse-label { font-family: var(--jm-font-head); font-size: 0.75rem; font-weight: 600; color: var(--jm-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
