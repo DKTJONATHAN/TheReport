@@ -17,11 +17,8 @@ export default defineConfig({
   compressHTML: true,
 
   image: {
-    domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com'],
-    remotePatterns: [{ protocol: 'https://' }],
-    // FIX 403 ERRORS - Skip broken images
-    serviceEntryPoint: '@astrojs/image/sharp',
-    errorImage: '/default-image.jpg'  // ← Fallback for 403s
+    domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com']
+    // NO remotePatterns = SKIPS remote optimization → NO 403s
   },
 
   integrations: [
