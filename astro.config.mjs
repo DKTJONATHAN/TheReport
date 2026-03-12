@@ -1,29 +1,23 @@
-
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel/static';
+import vercel from '@astrojs/vercel/serverless';  // ← ISR requires serverless
 import indexJumpIntegration from './integrations/indexjump.js';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
-  output: 'static',
-  adapter: vercel(),
+  output: 'hybrid',  // ← Enables ISR (static + dynamic)
+  adapter: vercel({
+    webAnalytics: { enabled: true },
+    isr: true  // ← Vercel ISR
+  }),
 
-  // 1. SEO FIX: Enforce URL consistency to prevent duplicate content
-  trailingSlash: 'never', 
-
-  // 2. PERFORMANCE: Minify HTML output automatically
+  trailingSlash: 'never',
   compressHTML: true,
 
-  // 3. PAGE SPEED FIX: Image optimization for remote images (Nation Africa, etc.)
   image: {
     domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com'],
-    remotePatterns: [
-      {
-        protocol: 'https://'
-      }
-    ]
+    remotePatterns: [{ protocol: 'https://' }]
   },
 
   integrations: [
