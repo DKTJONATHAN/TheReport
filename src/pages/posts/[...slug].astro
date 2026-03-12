@@ -1,10 +1,9 @@
 ---
-// src/pages/posts/[slug].astro
 import Layout from '../../layouts/Layout.astro';
-import Article from '../../components/Article.astro'; // Ensure this component exists
+import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
 
-// 1. STATIC PATHS (Build Time)
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
   return posts.map(post => ({
@@ -16,7 +15,6 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await post.render();
 
-// 2. HELPER FUNCTIONS
 function createSlug(text) {
   return text
     .toLowerCase()
@@ -27,7 +25,6 @@ function createSlug(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-// 3. DATA LOGIC
 const allPosts = await getCollection('posts');
 
 const relatedPosts = allPosts
@@ -40,22 +37,35 @@ const storyPosts = allPosts
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 10);
 
-// 4. METADATA & SEO
 const siteUrl = 'https://jonathanmwaniki.co.ke';
 const postUrl = new URL(`/posts/${post.slug}`, siteUrl).href;
 
 const categorySlug = createSlug(post.data.category || 'news');
 const categoryUrl = new URL(`/category/${categorySlug}`, siteUrl).href;
 
-// AUTHOR LOGIC (New)
 const authorName = post.data.author || 'Jonathan Mwaniki';
 const authorSlug = createSlug(authorName);
 const authorUrl = new URL(`/author/${authorSlug}`, siteUrl).href;
 
-// Handle Image Pathing
-const imageUrl = post.data.image?.startsWith('http') 
-  ? post.data.image 
-  : new URL(post.data.image || '/default-image.jpg', siteUrl).href;
+let imageUrl;
+let imageWidth = 1200;
+let imageHeight = 675;
+
+if (post.data.image) {
+  if (post.data.image.startsWith('http')) {
+    const optimizedImage = await getImage({
+      src: post.data.image,
+      format: 'webp',
+      width: imageWidth,
+      height: imageHeight
+    });
+    imageUrl = optimizedImage.src;
+  } else {
+    imageUrl = new URL(post.data.image, siteUrl).href;
+  }
+} else {
+  imageUrl = `${siteUrl}/default-image.jpg`;
+}
 
 const title = `${post.data.title} - Jonathan Mwaniki`;
 const description = post.data.description || `Latest news and updates about ${post.data.title}`;
@@ -63,7 +73,7 @@ const publishedDate = new Date(post.data.date).toISOString();
 const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
 const tagsList = post.data.tags ? post.data.tags.join(', ') : categorySlug;
 
-const readingTime = Math.ceil(post.body.split(/\s+/).length / 200);
+const readingTime = Math.ceil(post.body.split(/\\s+/).length / 200);
 
 const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
   year: 'numeric', month: 'long', day: 'numeric'
@@ -72,12 +82,10 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
 
 <Layout title={title} description={description} image={imageUrl} canonical={postUrl} type="article">
 
-  {/* FONTS */}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
 
-  {/* ARTICLE META TAGS (SEO Boost) */}
   <meta property="article:published_time" content={publishedDate} />
   <meta property="article:modified_time" content={modifiedDate} />
   <meta property="article:author" content={authorUrl} />
@@ -87,7 +95,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
     <meta property="article:tag" content={tag} />
   ))}
 
-  {/* ENHANCED SCHEMA JSON-LD */}
   <script type="application/ld+json" set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -117,19 +124,17 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
     }
   })} />
 
-  {/* PROGRESS BAR */}
   <div id="progress-container"><div id="progress-bar"></div></div>
 
   <div class="page-wrapper">
 
-    {/* STORIES CAROUSEL */}
     <section class="stories-section">
       <div class="main-container">
         <div class="stories-scroll">
           {storyPosts.map(story => (
             <a href={`/posts/${story.slug}`} class="story-item" aria-label={`Read story: ${story.data.title}`}>
               <div class="story-img-ring">
-                <img src={story.data.image || '/default-image.jpg'} alt={story.data.title} loading="eager" width="60" height="60" />
+                <Image src={story.data.image || '/default-image.jpg'} alt={story.data.title} format="webp" width={60} height={60} loading="lazy" />
               </div>
               <span class="story-label">{story.data.title}</span>
             </a>
@@ -167,7 +172,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
                             </span>
                             <span class="date-read">
                                 <time datetime={publishedDate}>{displayDate}</time> 
-                                <span class="dot">·</span> 
+                                <span class="dot">Â·</span> 
                                 {readingTime} min read
                             </span>
                         </div>
@@ -187,7 +192,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
 
             {post.data.image && (
               <figure class="featured-image">
-                <img src={imageUrl} alt={post.data.imageAlt || post.data.title} loading="eager" />
+                <Image src={imageUrl} alt={post.data.imageAlt || post.data.title} format="webp" width={imageWidth} height={imageHeight} loading="eager" />
                 {post.data.status && (
                   <span class={`status-badge ${post.data.status.toLowerCase()}`}>
                     {post.data.status}
@@ -212,7 +217,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
                 ))}
               </div>
 
-              {/* UPDATED AUTHOR BOX */}
               <div class="author-box">
                  <div class="author-avatar-large">
                    <a href={`/author/${authorSlug}`}>
@@ -222,7 +226,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
                  <div class="author-info">
                    <h3>About {authorName}</h3>
                    <p>Investigative journalist and developer covering the stories that matter in Kenya. Founder of The Mwaniki Report.</p>
-                   <a href={`/author/${authorSlug}`} class="author-link">View all posts by {authorName} →</a>
+                   <a href={`/author/${authorSlug}`} class="author-link">View all posts by {authorName} â†’</a>
                  </div>
               </div>
             </footer>
@@ -239,7 +243,7 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
                   {relatedPosts.map(related => (
                     <a href={`/posts/${related.slug}`} class="widget-item">
                       <div class="widget-img">
-                        <img src={related.data.image || '/default-image.jpg'} alt={related.data.title} />
+                        <Image src={related.data.image || '/default-image.jpg'} alt={related.data.title} format="webp" width={160} height={90} loading="lazy" />
                       </div>
                       <div class="widget-content">
                         <h4>{related.data.title}</h4>
@@ -257,7 +261,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
   </div>
 
   <script>
-    // Simple Progress Bar
     window.addEventListener('scroll', () => {
       const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
       const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -268,7 +271,6 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
   </script>
 
   <style>
-    /* VARIABLES */
     :root {
       --bg: #f8fafc; 
       --card: #fff; 
@@ -293,208 +295,86 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
     a { text-decoration: none; color: inherit; transition: all 0.2s ease; }
 
-    /* PROGRESS BAR */
     #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 9999; }
     #progress-bar { height: 3px; background: var(--accent); width: 0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent); }
 
-    /* STORIES CAROUSEL */
-    .stories-section { 
-      background: var(--card); 
-      border-bottom: 1px solid var(--border); 
-      padding: 0.8rem 0; 
-      margin-bottom: 0;
-    }
+    .stories-section { background: var(--card); border-bottom: 1px solid var(--border); padding: 0.8rem 0; margin-bottom: 0; }
     .main-container { max-width: 1200px; margin: 0 auto; padding: 0 0.8rem; }
     .stories-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
     .stories-scroll::-webkit-scrollbar { display: none; }
-
     .story-item { flex: 0 0 auto; width: 64px; text-align: center; }
-    .story-img-ring { 
-      width: 60px; height: 60px; border-radius: 50%; padding: 2px; 
-      border: 2px solid var(--accent); margin-bottom: 0.3rem; 
-    }
+    .story-img-ring { width: 60px; height: 60px; border-radius: 50%; padding: 2px; border: 2px solid var(--accent); margin-bottom: 0.3rem; }
     .story-img-ring img { border-radius: 50%; border: 2px solid var(--card); }
     .story-label { font-family: var(--font-head); font-size: 0.65rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text); }
 
-    /* PAGE LAYOUT */
-    .page-container { 
-      width: 100%; max-width: 1180px; margin: 0 auto; 
-      padding: 1.5rem 1.5rem 3rem 1.5rem; 
-    }
-
+    .page-container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem 1.5rem; }
     .article-grid { display: flex; flex-direction: column; gap: 2rem; width: 100%; }
-    @media (min-width: 1024px) { 
-      .article-grid { 
-        display: grid; grid-template-columns: minmax(0, 1fr) 340px; 
-        gap: 4rem; align-items: start;
-      }
-    }
+    @media (min-width: 1024px) { .article-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 4rem; align-items: start; } }
 
-    /* BREADCRUMB */
-    .breadcrumb { 
-      display: flex; align-items: center; gap: 0.5rem; 
-      font-family: var(--font-head); font-size: 0.85rem; color: var(--muted); 
-      margin: 0 0 0.75rem 0; 
-    }
+    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-head); font-size: 0.85rem; color: var(--muted); margin: 0 0 0.75rem 0; }
     .sep-icon { width: 14px; height: 14px; opacity: 0.5; }
     .bread-cat { font-weight: 600; color: var(--accent); }
     .breadcrumb a:hover { text-decoration: underline; }
 
-    /* HEADER */
     .article-header { margin-bottom: 1.75rem; font-family: var(--font-head); text-align: left; }
-    .category-pill { 
-      display: inline-block; background: var(--accent); color: white; 
-      font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.75rem; 
-      border-radius: 4px; text-transform: uppercase; margin-bottom: 0.8rem; 
-      letter-spacing: 0.5px; 
-    }
-
-    .article-title { 
-      font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; 
-      margin-bottom: 1.2rem; color: var(--text); letter-spacing: -0.02em;
-    }
-
-    .article-meta { 
-      display: flex; justify-content: space-between; align-items: flex-end; 
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); 
-      padding: 0.9rem 0; flex-wrap: wrap; gap: 1rem; 
-    }
-
+    .category-pill { display: inline-block; background: var(--accent); color: white; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 4px; text-transform: uppercase; margin-bottom: 0.8rem; letter-spacing: 0.5px; }
+    .article-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; margin-bottom: 1.2rem; color: var(--text); letter-spacing: -0.02em; }
+    .article-meta { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.9rem 0; flex-wrap: wrap; gap: 1rem; }
     .author-mini { display: flex; align-items: center; gap: 0.75rem; }
     .mini-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
     .meta-text { display: flex; flex-direction: column; font-size: 0.85rem; line-height: 1.3; }
-
-    /* NEW AUTHOR LINK CSS */
     .author-name strong { font-weight: 700; }
     .author-name-link { color: var(--text); transition: color 0.2s; }
     .author-name-link:hover { color: var(--accent); text-decoration: underline; }
-
     .date-read { color: var(--muted); }
     .dot { font-weight: bold; margin: 0 4px; }
-
     .share-row { display: flex; gap: 0.5rem; }
-    .share-icon { 
-      width: 36px; height: 36px; display: flex; align-items: center; 
-      justify-content: center; border-radius: 50%; border: 1px solid var(--border); 
-      color: var(--muted); transition: all 0.2s; background: var(--card); 
-    }
+    .share-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); transition: all 0.2s; background: var(--card); }
     .share-icon svg { width: 18px; height: 18px; }
     .share-icon:hover { border-color: var(--text); color: var(--text); transform: translateY(-2px); }
     .x-share:hover { background: #000; color: #fff; border-color: #000; }
     .fb-share:hover { background: #1877F2; color: #fff; border-color: #1877F2; }
 
-    /* FEATURED IMAGE */
-    .featured-image { 
-      margin: 1.5rem 0 2rem 0; width: 100%; position: relative; 
-      border-radius: 8px; overflow: hidden; border: 1px solid var(--border); 
-      aspect-ratio: 16/9;
-    }
-    .featured-image figcaption { 
-      font-size: 0.8rem; color: var(--muted); padding: 0.5rem 0; 
-      text-align: right; font-family: var(--font-head); font-style: italic; 
-    }
+    .featured-image { margin: 1.5rem 0 2rem 0; width: 100%; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 16/9; }
+    .featured-image figcaption { font-size: 0.8rem; color: var(--muted); padding: 0.5rem 0; text-align: right; font-family: var(--font-head); font-style: italic; }
+    .status-badge { position: absolute; top: 15px; left: 15px; background: var(--accent); color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-family: var(--font-head); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
-    .status-badge {
-      position: absolute; top: 15px; left: 15px; background: var(--accent); 
-      color: white; padding: 0.3rem 0.8rem; border-radius: 4px;
-      font-family: var(--font-head); font-weight: 700; font-size: 0.75rem;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-
-    /* CONTENT BODY */
     .article-body-wrapper { width: 100%; display: flex; flex-direction: column; }
-    .article-body { 
-      font-size: 1.18rem; line-height: 1.85; color: var(--text); 
-      max-width: 68ch; margin: 0 auto 0 0; width: 100%;
-    }
-
+    .article-body { font-size: 1.18rem; line-height: 1.85; color: var(--text); max-width: 68ch; margin: 0 auto 0 0; width: 100%; }
     .article-body :global(p) { margin-bottom: 1.2rem; }
-    .article-body :global(p:first-of-type::first-letter) {
-      float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; 
-      padding-right: 0.5rem; color: var(--text); font-family: var(--font-head);
-    }
-
-    .article-body :global(h2) { 
-      font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; 
-      margin: 1.8rem 0 0.8rem; color: var(--text); letter-spacing: -0.01em; 
-    }
-    .article-body :global(h3) { 
-      font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; 
-      margin: 1.5rem 0 0.8rem; color: var(--text); 
-    }
-
+    .article-body :global(p:first-of-type::first-letter) { float: left; font-size: 3.8rem; line-height: 0.85; font-weight: 800; padding-right: 0.5rem; color: var(--text); font-family: var(--font-head); }
+    .article-body :global(h2) { font-family: var(--font-head); font-weight: 800; font-size: 1.75rem; margin: 1.8rem 0 0.8rem; color: var(--text); letter-spacing: -0.01em; }
+    .article-body :global(h3) { font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; margin: 1.5rem 0 0.8rem; color: var(--text); }
     .article-body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .article-body :global(a:hover) { text-decoration-thickness: 2px; }
-
-    .article-body :global(blockquote) { 
-      border-left: 3px solid var(--accent); padding-left: 1.5rem; 
-      margin: 2rem 0; font-style: italic; color: var(--text); font-size: 1.35rem; 
-      font-family: var(--font-body); line-height: 1.5;
-    }
-
-    .article-body :global(img) {
-      display: block; margin: 2rem auto; width: 100%; height: auto; 
-      max-width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-sm);
-    }
-
+    .article-body :global(blockquote) { border-left: 3px solid var(--accent); padding-left: 1.5rem; margin: 2rem 0; font-style: italic; color: var(--text); font-size: 1.35rem; font-family: var(--font-body); line-height: 1.5; }
+    .article-body :global(img) { display: block; margin: 2rem auto; width: 100%; height: auto; max-width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
     .article-body :global(ul), .article-body :global(ol) { margin: 1.5rem 0; padding-left: 2rem; }
     .article-body :global(li) { margin-bottom: 0.6rem; }
 
-    /* FOOTER */
-    .article-footer { 
-      margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); 
-      max-width: 68ch; 
-    }
+    .article-footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); max-width: 68ch; }
     .tags { margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 0.8rem; }
-    .tag { 
-      display: inline-block; background: var(--bg); padding: 0.4rem 1rem; 
-      border-radius: 100px; font-size: 0.85rem; font-family: var(--font-head); 
-      color: var(--muted); font-weight: 500; 
-    }
+    .tag { display: inline-block; background: var(--bg); padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.85rem; font-family: var(--font-head); color: var(--muted); font-weight: 500; }
     .tag:hover { background: var(--accent); color: white; }
 
-    .author-box { 
-      display: grid; grid-template-columns: 80px 1fr; gap: 1.5rem; 
-      padding: 1.5rem; background: rgba(220, 38, 38, 0.05); 
-      border-radius: 8px; border: 1px solid var(--border);
-    }
+    .author-box { display: grid; grid-template-columns: 80px 1fr; gap: 1.5rem; padding: 1.5rem; background: rgba(220, 38, 38, 0.05); border-radius: 8px; border: 1px solid var(--border); }
     .author-avatar-large { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
     .author-info h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
     .author-info p { margin: 0 0 0.8rem 0; font-size: 0.95rem; color: var(--muted); }
     .author-link { color: var(--accent); font-weight: 600; font-family: var(--font-head); transition: opacity 0.2s; text-decoration: none; }
     .author-link:hover { opacity: 0.8; text-decoration: underline; }
 
-    /* SIDEBAR */
     .sidebar-column { display: none; }
-    @media (min-width: 1024px) {
-      .sidebar-column { display: block; }
-      .sticky-wrapper { position: sticky; top: 20px; }
-    }
+    @media (min-width: 1024px) { .sidebar-column { display: block; } .sticky-wrapper { position: sticky; top: 20px; } }
 
-    .sidebar-widget { 
-      background: var(--card); border: 1px solid var(--border); 
-      border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; 
-    }
-    .widget-title { 
-      margin: 0 0 1.2rem 0; font-family: var(--font-head); 
-      font-size: 1.1rem; font-weight: 700; color: var(--text); 
-    }
-
+    .sidebar-widget { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .widget-title { margin: 0 0 1.2rem 0; font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--text); }
     .widget-list { display: flex; flex-direction: column; gap: 1rem; }
-    .widget-item { 
-      display: grid; grid-template-columns: 80px 1fr; gap: 0.75rem; 
-      padding: 0.8rem; background: rgba(100, 116, 139, 0.05); 
-      border-radius: 6px; transition: all 0.2s; 
-    }
+    .widget-item { display: grid; grid-template-columns: 80px 1fr; gap: 0.75rem; padding: 0.8rem; background: rgba(100, 116, 139, 0.05); border-radius: 6px; transition: all 0.2s; }
     .widget-item:hover { background: rgba(220, 38, 38, 0.08); }
-
     .widget-img { width: 80px; height: 80px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-    .widget-content h4 { 
-      margin: 0; font-size: 0.9rem; font-weight: 600; line-height: 1.4; 
-      color: var(--text); font-family: var(--font-head); 
-    }
+    .widget-content h4 { margin: 0; font-size: 0.9rem; font-weight: 600; line-height: 1.4; color: var(--text); font-family: var(--font-head); }
 
-    /* MOBILE */
     @media (max-width: 768px) {
       .page-container { padding: 1rem 1.2rem 2rem 1.2rem; }
       .article-title { font-size: clamp(1.8rem, 4vw, 2.4rem); }
@@ -511,3 +391,4 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
     }
   </style>
 </Layout>
+
