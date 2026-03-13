@@ -1,51 +1,38 @@
 ---
 // src/pages/posts/[...slug].astro
-
 import { getEntry } from 'astro:content';
-// import Layout from '../../layouts/Layout.astro'; // <-- Import your actual layout here
 
-// 1. Tell Astro NOT to build this page statically.
-// This enables Server-Side Rendering (SSR) to handle millions of posts without crashing Vercel.
+// This tells Astro to render this specific page on-demand (SSR) instead of at build time.
+// It prevents the Vercel crash when dealing with thousands/millions of posts.
 export const prerender = false;
 
-// 2. Get the requested slug directly from the URL
 const { slug } = Astro.params;
 
 if (!slug) {
-  return new Response(null, {
-    status: 404,
-    statusText: 'Not found'
-  });
+  return new Response('Post not found', { status: 404 });
 }
 
-// 3. Fetch ONLY the requested post from the "posts" collection dynamically
+// Fetch the specific post dynamically
 const post = await getEntry('posts', slug);
 
-// 4. If the post doesn't exist, return a 404
 if (!post) {
-  return new Response(null, {
-    status: 404,
-    statusText: 'Not found'
-  });
+  return new Response('Post not found', { status: 404 });
 }
 
-// 5. Render the markdown/MDX content
+// Render the markdown content
 const { Content } = await post.render();
 ---
 
-<!-- Wrap this in your site's existing Layout component -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{post.data.title}</title>
-    <!-- Add your other meta tags/SEO here -->
   </head>
   <body>
-    <main>
+    <main style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: sans-serif;">
       <article>
         <h1>{post.data.title}</h1>
-
-        <!-- Render the actual post content -->
         <Content />
       </article>
     </main>
