@@ -1,41 +1,45 @@
 ---
-export const prerender = false;
-
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. GET PARAMS & FETCH DATA DYNAMICALLY
-const { category: catSlug } = Astro.params;
-const allPosts = await getCollection('posts');
+// 1. GENERATE PATHS FOR STATIC BUILD
+export async function getStaticPaths() {
+  const allPosts = await getCollection('posts');
+  const publicPosts = allPosts.filter(p => !p.data.draft && p.data.category);
 
-// Helper to match the slug format used in the URLs
-const slugify = (str) => str?.toLowerCase().trim().replace(/\s+/g, '-');
+  // Helper to match the slug format used in the URLs
+  const slugify = (str) => str?.toLowerCase().trim().replace(/\s+/g, '-');
 
-// 2. FILTER POSTS & EXTRACT ORIGINAL CATEGORY NAME
-let categoryName = String(catSlug).replace(/-/g, ' '); // Fallback
-const posts = allPosts.filter(p => {
-  if (!p.data.category || p.data.draft) return false;
-  const isMatch = slugify(p.data.category) === catSlug;
-  if (isMatch) {
-    categoryName = p.data.category; // Recover exact capitalization
-  }
-  return isMatch;
-});
+  // Extract all unique categories
+  const uniqueCategories = [...new Set(publicPosts.map(post => post.data.category))];
 
-// 3. SORT & SLICE DATA
-const sortedPosts = posts.sort((a, b) => 
-  new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf()
-);
+  return uniqueCategories.map(category => {
+    const catSlug = slugify(category);
+
+    // Filter posts for this specific category
+    const catPosts = publicPosts.filter(post => {
+      return slugify(post.data.category) === catSlug;
+    }).sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+
+    return {
+      params: { category: catSlug },
+      props: { categoryName: category, posts: catPosts, allPosts: publicPosts }
+    };
+  });
+}
+
+// 2. PAGE DATA
+const { categoryName, posts, allPosts } = Astro.props;
 
 // Story Circles (Top 10 latest in this category)
-const storyPosts = sortedPosts.slice(0, 10);
+const storyPosts = posts.slice(0, 10);
 
 // Main Feed
-const feedPosts = sortedPosts; 
+const feedPosts = posts; 
 
 // Sidebar Data (Site-wide Trending, excluding current category)
 const globalTrending = allPosts
-  .filter(p => !p.data.draft && p.data.category !== categoryName)
+  .filter(p => p.data.category !== categoryName)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 5);
 
