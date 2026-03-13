@@ -1,13 +1,21 @@
-
 ---
 import Layout from '../../layouts/Layout.astro';
 import Article from '../../components/Article.astro';
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 
-export const prerender = false;  // ← ISR: On-demand regeneration
+// 1. GENERATE STATIC PATHS FOR ALL POSTS
+export async function getStaticPaths() {
+  const allPosts = await getCollection('posts', { filter: 'data.draft !== true' });
 
-const { post } = Astro.props;
+  return allPosts.map(post => ({
+    params: { slug: post.slug },
+    props: { post, allPosts },
+  }));
+}
+
+// 2. PAGE DATA
+const { post, allPosts } = Astro.props;
 const { Content } = await post.render();
 
 function createSlug(text) {
@@ -19,9 +27,6 @@ function createSlug(text) {
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
-
-// ISR: Cache collections for 24h (revalidate in background)
-const { data: allPosts } = await getCollection('posts', { filter: 'data.published !== false' });
 
 const relatedPosts = allPosts
   .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
@@ -297,4 +302,3 @@ const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
     /* ... rest of your CSS unchanged ... */
   </style>
 </Layout>
-
