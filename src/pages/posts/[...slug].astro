@@ -1,304 +1,53 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import Article from '../../components/Article.astro';
-import { getCollection } from 'astro:content';
-import { Image } from 'astro:assets';
+// src/pages/posts/[...slug].astro
 
-// 1. GENERATE STATIC PATHS FOR ALL POSTS
-export async function getStaticPaths() {
-  const allPosts = await getCollection('posts', { filter: 'data.draft !== true' });
+import { getEntry } from 'astro:content';
+// import Layout from '../../layouts/Layout.astro'; // <-- Import your actual layout here
 
-  return allPosts.map(post => ({
-    params: { slug: post.slug },
-    props: { post, allPosts },
-  }));
+// 1. Tell Astro NOT to build this page statically.
+// This enables Server-Side Rendering (SSR) to handle millions of posts without crashing Vercel.
+export const prerender = false;
+
+// 2. Get the requested slug directly from the URL
+const { slug } = Astro.params;
+
+if (!slug) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found'
+  });
 }
 
-// 2. PAGE DATA
-const { post, allPosts } = Astro.props;
+// 3. Fetch ONLY the requested post from the "posts" collection dynamically
+const post = await getEntry('posts', slug);
+
+// 4. If the post doesn't exist, return a 404
+if (!post) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found'
+  });
+}
+
+// 5. Render the markdown/MDX content
 const { Content } = await post.render();
-
-function createSlug(text) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')  
-    .replace(/\s+/g, '-')      
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-const relatedPosts = allPosts
-  .filter(p => p.slug !== post.slug && p.data.category === post.data.category)
-  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
-  .slice(0, 5); 
-
-const storyPosts = allPosts
-  .filter(p => p.data.category === post.data.category)
-  .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
-  .slice(0, 10);
-
-const siteUrl = 'https://jonathanmwaniki.co.ke';
-const postUrl = new URL(`/posts/${post.slug}`, siteUrl).href;
-
-const categorySlug = createSlug(post.data.category || 'news');
-const categoryUrl = new URL(`/category/${categorySlug}`, siteUrl).href;
-
-const authorName = post.data.author || 'Jonathan Mwaniki';
-const authorSlug = createSlug(authorName);
-const authorUrl = new URL(`/author/${authorSlug}`, siteUrl).href;
-
-// Optimized image with fetchpriority for LCP
-const imageUrl = post.data.image 
-  ? post.data.image.startsWith('http') 
-    ? post.data.image 
-    : new URL(post.data.image, siteUrl).href
-  : `${siteUrl}/default-image.jpg`;
-
-const title = `${post.data.title} - Jonathan Mwaniki`;
-const description = post.data.description || `Latest news and updates about ${post.data.title}`;
-const publishedDate = new Date(post.data.date).toISOString();
-const modifiedDate = new Date(post.data.updatedDate || post.data.date).toISOString();
-const tagsList = post.data.tags ? post.data.tags.join(', ') : categorySlug;
-
-const readingTime = Math.ceil(post.body.split(/\\s+/).length / 200);
-const displayDate = new Date(post.data.date).toLocaleDateString('en-GB', {
-  year: 'numeric', month: 'long', day: 'numeric'
-});
 ---
 
-<Layout title={title} description={description} image={imageUrl} canonical={postUrl} type="article">
+<!-- Wrap this in your site's existing Layout component -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{post.data.title}</title>
+    <!-- Add your other meta tags/SEO here -->
+  </head>
+  <body>
+    <main>
+      <article>
+        <h1>{post.data.title}</h1>
 
-  <!-- ASYNC FONTS (No render blocking) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap">
-  </noscript>
-
-  <!-- Article Meta -->
-  <meta property="article:published_time" content={publishedDate} />
-  <meta property="article:modified_time" content={modifiedDate} />
-  <meta property="article:author" content={authorUrl} />
-  <meta property="article:section" content={post.data.category || 'News'} />
-  <meta name="keywords" content={tagsList} />
-  {post.data.tags?.map(tag => (
-    <Fragment set:html={`<meta property="article:tag" content="${tag}" />`} />
-  ))}
-
-  <!-- Schema -->
-  <script type="application/ld+json" set:html={JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
-    'headline': post.data.title,
-    'image': [imageUrl],
-    'datePublished': publishedDate,
-    'dateModified': modifiedDate,
-    'keywords': tagsList,
-    'author': { '@type': 'Person', 'name': authorName, 'url': authorUrl },
-    'publisher': {
-      '@type': 'Organization',
-      'name': 'The Mwaniki Report',
-      'url': siteUrl,
-      'logo': { '@type': 'ImageObject', 'url': `${siteUrl}/logo.png` }
-    },
-    'description': description,
-    'mainEntityOfPage': { '@type': 'WebPage', '@id': postUrl }
-  })} />
-
-  <!-- Optimized Progress Bar -->
-  <div id="progress-container"><div id="progress-bar"></div></div>
-
-  <div class="page-wrapper">
-    <!-- Stories Carousel -->
-    <section class="stories-section">
-      <div class="main-container">
-        <div class="stories-scroll">
-          {storyPosts.map(story => (
-            <a href={`/posts/${story.slug}`} class="story-item" aria-label={`Read: ${story.data.title}`}>
-              <div class="story-img-ring">
-                <Image 
-                  src={story.data.image || '/default-image.jpg'} 
-                  alt={story.data.title} 
-                  width={60} 
-                  height={60} 
-                  format="webp" 
-                />
-              </div>
-              <span class="story-label">{story.data.title}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <div class="page-container">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Home</a>
-        <svg class="sep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-        <a href={categoryUrl} class="bread-cat">{post.data.category || 'News'}</a>
-      </nav>
-
-      <div class="article-grid">
-        <main id="maincontent" class="main-column">
-          <article class="article">
-            <header class="article-header">
-              <a href={categoryUrl} class="category-pill">{post.data.category || 'News'}</a>
-              <h1 class="article-title">{post.data.title}</h1>
-              <div class="article-meta">
-                <div class="meta-left">
-                  <div class="author-mini">
-                    <a href={`/author/${authorSlug}`} aria-label={`Posts by ${authorName}`}>
-                      <img src="/Jonathan-Mwaniki-logo.png" alt={authorName} class="mini-avatar" width="44" height="44" />
-                    </a>
-                    <div class="meta-text">
-                      <span class="author-name">
-                        By <a href={`/author/${authorSlug}`} class="author-name-link"><strong>{authorName}</strong></a>
-                      </span>
-                      <span class="date-read">
-                        <time datetime={publishedDate}>{displayDate}</time> 
-                        <span class="dot">·</span> 
-                        {readingTime} min read
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div class="share-row">
-                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`} 
-                     target="_blank" rel="noopener noreferrer" class="share-icon x-share" aria-label="Share on X">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                  </a>
-                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`} 
-                     target="_blank" rel="noopener noreferrer" class="share-icon fb-share" aria-label="Share on Facebook">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            </header>
-
-            {post.data.image && (
-              <figure class="featured-image">
-                <Image 
-                  src={imageUrl} 
-                  alt={post.data.imageAlt || post.data.title} 
-                  width={1200} 
-                  height={675} 
-                  format="webp" 
-                  sizes="100vw"
-                  fetchpriority="high"
-                  decoding="sync"
-                />
-                {post.data.status && (
-                  <span class={`status-badge ${post.data.status.toLowerCase()}`}>
-                    {post.data.status}
-                  </span>
-                )}
-                {post.data.imageCaption && <figcaption>{post.data.imageCaption}</figcaption>}
-              </figure>
-            )}
-
-            <div class="article-body-wrapper">
-              <div class="article-body">
-                <Article>
-                  <Content />
-                </Article>
-              </div>
-            </div>
-
-            <footer class="article-footer">
-              <div class="tags">
-                {post.data.tags?.map(tag => (
-                  <a href={`/tags/${createSlug(tag)}`} class="tag">#{tag}</a>
-                ))}
-              </div>
-              <div class="author-box">
-                <div class="author-avatar-large">
-                  <a href={`/author/${authorSlug}`}>
-                    <img src="/Jonathan-Mwaniki-logo.png" alt={authorName} width="80" height="80" />
-                  </a>
-                </div>
-                <div class="author-info">
-                  <h3>About {authorName}</h3>
-                  <p>Investigative journalist and developer covering the stories that matter in Kenya. Founder of The Mwaniki Report.</p>
-                  <a href={`/author/${authorSlug}`} class="author-link">View all posts →</a>
-                </div>
-              </div>
-            </footer>
-          </article>
-        </main>
-
-        <aside class="sidebar-column">
-          <div class="sticky-wrapper">
-            {relatedPosts.length > 0 && (
-              <div class="sidebar-widget">
-                <h3 class="widget-title">Read Next</h3>
-                <div class="widget-list">
-                  {relatedPosts.map(related => (
-                    <a href={`/posts/${related.slug}`} class="widget-item">
-                      <div class="widget-img">
-                        <Image 
-                          src={related.data.image || '/default-image.jpg'} 
-                          alt={related.data.title} 
-                          width={80} 
-                          height={80} 
-                          format="webp" 
-                        />
-                      </div>
-                      <div class="widget-content">
-                        <h4>{related.data.title}</h4>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-      </div>
-    </div>
-  </div>
-
-  <!-- THROTTLED PROGRESS BAR (Fixes forced reflow) -->
-  <script is:inline>
-    let ticking = false;
-    const bar = document.getElementById("progress-bar");
-    window.addEventListener('scroll', () => {
-      if (!ticking && bar) {
-        requestAnimationFrame(() => {
-          const winScroll = window.scrollY || document.documentElement.scrollTop;
-          const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-          bar.style.width = (winScroll / height) * 100 + "%";
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }, { passive: true });
-  </script>
-
-  <!-- Your existing CSS stays the same -->
-  <style>
-    /* Your existing styles unchanged */
-    :root {
-      --bg: #f8fafc; 
-      --card: #fff; 
-      --text: #1e293b; 
-      --muted: #64748b; 
-      --accent: #dc2626; 
-      --border: #e2e8f0;
-      --font-body: 'Merriweather', Georgia, serif;
-      --font-head: 'Inter', system-ui, sans-serif;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-      --radius: 8px;
-    }
-    /* ... rest of your CSS unchanged ... */
-  </style>
-</Layout>
+        <!-- Render the actual post content -->
+        <Content />
+      </article>
+    </main>
+  </body>
+</html>
