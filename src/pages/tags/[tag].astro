@@ -1,52 +1,50 @@
 ---
-export const prerender = false;
-
 import Layout from '../../layouts/Layout.astro';
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 
-// 1. GET PARAMS & FETCH DATA DYNAMICALLY
-const { tag: tagSlug } = Astro.params;
+// 1. GENERATE PATHS FOR STATIC BUILD
+export async function getStaticPaths() {
+  const allPosts = await getCollection('posts');
+  const publicPosts = allPosts.filter(p => !p.data.draft);
 
-// Helper: Normalize tags (slugify) to match the URL parameter
-const createSlug = (str: string) => str
-  .toLowerCase()
-  .trim()
-  .replace(/[^\w\s-]/g, '')
-  .replace(/[\s_-]+/g, '-')
-  .replace(/^-+|-+$/g, '');
+  // Extract all unique tags
+  const uniqueTags = [...new Set(publicPosts.flatMap(post => post.data.tags || []))];
 
-const allPosts = await getCollection('posts');
+  const createSlug = (str) => str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
-// 2. FILTER POSTS & EXTRACT ORIGINAL TAG
-let originalTag = String(tagSlug); // Fallback to slug if original isn't found
-const posts = allPosts.filter(post => {
-  const postTags = post.data.tags || [];
-  const matchingTag = postTags.find(t => createSlug(t) === tagSlug);
-  if (matchingTag) {
-    originalTag = matchingTag; // Recover the properly formatted original tag
-    return true;
-  }
-  return false;
-});
+  return uniqueTags.map(tag => {
+    const tagSlug = createSlug(tag);
 
+    // Filter posts for this specific tag
+    const tagPosts = publicPosts.filter(post => {
+      const postTags = post.data.tags || [];
+      return postTags.some(t => createSlug(t) === tagSlug);
+    }).sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+
+    return {
+      params: { tag: tagSlug },
+      props: { originalTag: tag, posts: tagPosts, allPosts: publicPosts }
+    };
+  });
+}
+
+// 2. PAGE DATA
+const { originalTag, posts, allPosts } = Astro.props;
 const tag = originalTag;
 
-// 3. DATA PROCESSING
-// Sort by Date (Newest First)
-const sortedPosts = posts.sort((a, b) => 
-  new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf()
-);
-
 // Story Circles (Top 10 latest in this TAG)
-const storyPosts = sortedPosts.slice(0, 10);
+const storyPosts = posts.slice(0, 10);
 
 // Main Feed (All posts in this tag)
-const feedPosts = sortedPosts; 
+const feedPosts = posts; 
 
 // 4. SIDEBAR DATA (Global Trending)
-// Reuse allPosts to get global trending data
 const globalTrending = allPosts
-  .filter(p => !p.data.draft) // Ensure no drafts in sidebar
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
   .slice(0, 5);
 
@@ -109,17 +107,6 @@ const socialStats = [
               <a href={`/posts/${post.slug}`} class="compact-card">
                 <div class="compact-img">
                   <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} loading="lazy" />
-
-                  {/* Optional Status Badge (e.g., Breaking) */}
-                  {/* Assuming 'status' isn't in your main schema, but if you add it later: */}
-                  {/* {post.data.status && (
-                      <span class={`status-badge ${post.data.status.toLowerCase()}`}>
-                        {post.data.status}
-                      </span>
-                    )} 
-                  */}
-
-                  {/* Category Overlay */}
                   <span class="cat-overlay">{post.data.category}</span>
                 </div>
 
