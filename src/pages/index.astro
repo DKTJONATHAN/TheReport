@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import { Image, getImage } from 'astro:assets';
@@ -27,12 +29,13 @@ const rawHiddenFeed = allPosts.slice(13, 100);
 // 2. PRE-PROCESS HIDDEN FEED - FIXED WITH EXPLICIT DIMENSIONS
 const hiddenFeed = await Promise.all(
   rawHiddenFeed.map(async (post) => {
-    const optimizedImage = await getImage({
+    // Only optimize if image exists, otherwise fallback to prevent crashes
+    const optimizedImage = post.data.image ? await getImage({
       src: post.data.image,
       format: 'webp',
       width: 800,
       height: 450  // Matches feed-img aspect-ratio 16/9
-    });
+    }) : { src: '/default-image.jpg' };
 
     return {
       slug: post.slug,
@@ -58,7 +61,7 @@ const hiddenFeed = await Promise.all(
           {storyCircles.map(item => (
             <a href={item.link} class="pulse-node">
               <div class={`ring-wrap ${item.live ? 'live' : ''}`}>
-                <Image src={item.image} alt={item.label} format="webp" width={320} height={320} loading="eager" />
+                <img src={item.image || '/default-image.jpg'} alt={item.label} width="320" height="320" loading="eager" />
                 {item.live && <span class="live-badge">LIVE</span>}
               </div>
               <span class="pulse-label">{item.label}</span>
@@ -77,7 +80,7 @@ const hiddenFeed = await Promise.all(
         <article class="bento-feature glass-panel vertical-card">
           <a href={`/posts/${heroMain.slug}`} class="card-link">
             <div class="hero-img-wrap">
-              <Image src={heroMain.data.image} alt={heroMain.data.title} format="webp" width={800} height={450} loading="eager" />
+              <img src={heroMain.data.image || '/default-image.jpg'} alt={heroMain.data.title} width="800" height="450" loading="eager" />
             </div>
             <div class="hero-content">
               <span class="cat-tag">{heroMain.data.category}</span>
@@ -92,7 +95,7 @@ const hiddenFeed = await Promise.all(
           {heroGrid.map(post => (
             <a href={`/posts/${post.slug}`} class="mini-card glass-panel horizontal-card">
               <div class="mini-img">
-                <Image src={post.data.image} alt={post.data.title} format="webp" width={320} height={180} loading="lazy" />
+                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="320" height="180" loading="lazy" />
               </div>
               <div class="mini-text">
                 <span class="tiny-cat">{post.data.category}</span>
@@ -117,7 +120,7 @@ const hiddenFeed = await Promise.all(
               <article class="feed-card glass-panel vertical-card">
                 <a href={`/posts/${post.slug}`} class="card-link">
                   <div class="feed-img">
-                    <Image src={post.data.image} alt={post.data.title} format="webp" width={800} height={450} loading="lazy" />
+                    <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="800" height="450" loading="lazy" />
                   </div>
                   <div class="feed-info">
                     <div class="meta">
