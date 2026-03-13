@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig, passthroughImageService } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/serverless';
@@ -14,8 +14,11 @@ export default defineConfig({
   trailingSlash: 'never',
   compressHTML: true,
 
+  // passthroughImageService tells Astro to SKIP downloading and optimizing
+  // remote images during build. This fixes the nation.africa 403 crash.
+  // Images will still display normally in the browser.
   image: {
-    domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com']
+    service: passthroughImageService()
   },
 
   integrations: [
