@@ -10,7 +10,7 @@ export default defineConfig({
   adapter: vercel({
     webAnalytics: { enabled: true },
     isr: true,
-    runtime: 'nodejs22.x'  // ← ADD THIS LINE
+    runtime: 'nodejs22.x'
   }),
 
   trailingSlash: 'never',
@@ -18,7 +18,6 @@ export default defineConfig({
 
   image: {
     domains: ['nation.africa', 'images.unsplash.com', 'via.placeholder.com', 'i.imgur.com']
-    // NO remotePatterns = SKIPS remote optimization → NO 403s
   },
 
   integrations: [
