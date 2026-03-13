@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
-import { Image, getImage } from 'astro:assets';
 
 // --- 1. DATA LOGIC ---
 const allPosts = (await getCollection('posts'))
@@ -22,44 +21,31 @@ const storyCircles = allPosts.slice(0, 10).map(post => ({
 
 const [heroMain, ...heroGrid] = allPosts.slice(0, 5);
 const initialFeed = allPosts.slice(5, 13);
-const rawHiddenFeed = allPosts.slice(13, 100); 
 
-// 2. PRE-PROCESS HIDDEN FEED - FIXED WITH EXPLICIT DIMENSIONS
-const hiddenFeed = await Promise.all(
-  rawHiddenFeed.map(async (post) => {
-    // Only optimize if image exists, otherwise fallback to prevent crashes
-    const optimizedImage = post.data.image ? await getImage({
-      src: post.data.image,
-      format: 'webp',
-      width: 800,
-      height: 450  // Matches feed-img aspect-ratio 16/9
-    }) : { src: '/default-image.jpg' };
-
-    return {
-      slug: post.slug,
-      data: {
-        title: post.data.title,
-        category: post.data.category,
-        date: post.data.date,
-        description: post.data.description,
-        image: optimizedImage.src 
-      }
-    };
-  })
-);
+// No getImage() needed â€” passthroughImageService passes URLs directly
+const hiddenFeed = allPosts.slice(13, 100).map(post => ({
+  slug: post.slug,
+  data: {
+    title: post.data.title,
+    category: post.data.category,
+    date: post.data.date,
+    description: post.data.description,
+    image: post.data.image || '/default-image.jpg'
+  }
+}));
 ---
 
 <Layout>
   <div class="jm-home-wrapper">
 
-    {/* --- 1. PULSE BAR --- */}
+    <!-- 1. PULSE BAR -->
     <section class="pulse-bar">
       <div class="jm-container">
         <div class="pulse-track">
           {storyCircles.map(item => (
             <a href={item.link} class="pulse-node">
               <div class={`ring-wrap ${item.live ? 'live' : ''}`}>
-                <img src={item.image || '/default-image.jpg'} alt={item.label} width="320" height="320" loading="eager" />
+                <img src={item.image || '/default-image.jpg'} alt={item.label} width="64" height="64" loading="eager" />
                 {item.live && <span class="live-badge">LIVE</span>}
               </div>
               <span class="pulse-label">{item.label}</span>
@@ -71,10 +57,10 @@ const hiddenFeed = await Promise.all(
 
     <main class="jm-container">
 
-      {/* --- 2. HERO SECTION --- */}
+      <!-- 2. HERO SECTION -->
       <section class="bento-grid no-ad-injection">
 
-        {/* Main Hero */}
+        <!-- Main Hero -->
         <article class="bento-feature glass-panel vertical-card">
           <a href={`/posts/${heroMain.slug}`} class="card-link">
             <div class="hero-img-wrap">
@@ -88,12 +74,12 @@ const hiddenFeed = await Promise.all(
           </a>
         </article>
 
-        {/* Small Cards */}
+        <!-- Small Cards -->
         <div class="bento-stack">
           {heroGrid.map(post => (
             <a href={`/posts/${post.slug}`} class="mini-card glass-panel horizontal-card">
               <div class="mini-img">
-                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="320" height="180" loading="lazy" />
+                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="90" height="80" loading="lazy" />
               </div>
               <div class="mini-text">
                 <span class="tiny-cat">{post.data.category}</span>
@@ -104,7 +90,7 @@ const hiddenFeed = await Promise.all(
         </div>
       </section>
 
-      {/* --- 3. NEWS FEED --- */}
+      <!-- 3. NEWS FEED -->
       <div class="content-split">
 
         <div class="feed-col">
@@ -168,7 +154,7 @@ const hiddenFeed = await Promise.all(
   const BATCH_SIZE = 6;
   const allHidden = hiddenFeed;
 
-  if(loadBtn) {
+  if (loadBtn) {
     loadBtn.addEventListener('click', () => {
       const nextBatch = allHidden.slice(loadedCount, loadedCount + BATCH_SIZE);
 
@@ -204,7 +190,7 @@ const hiddenFeed = await Promise.all(
 
 <style is:global>
   :root {
-    --jm-bg: #f8fafc; 
+    --jm-bg: #f8fafc;
     --jm-card: rgba(255, 255, 255, 0.9);
     --jm-border: rgba(0, 0, 0, 0.08);
     --jm-text-main: #0f172a;
@@ -216,12 +202,36 @@ const hiddenFeed = await Promise.all(
 
   *, *::before, *::after { box-sizing: border-box; }
 
-  .jm-home-wrapper { background-color: var(--jm-bg); color: var(--jm-text-main); font-family: var(--jm-font-body); width: 100%; padding-bottom: 4rem; min-height: 100vh; }
-  .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+  .jm-home-wrapper {
+    background-color: var(--jm-bg);
+    color: var(--jm-text-main);
+    font-family: var(--jm-font-body);
+    width: 100%;
+    padding-bottom: 4rem;
+    min-height: 100vh;
+  }
 
-  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .jm-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* IMPORTANT: scoped img rules to prevent global blowout */
+  .hero-img-wrap img,
+  .mini-img img,
+  .feed-img img,
+  .ring-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   a { text-decoration: none; color: inherit; transition: 0.2s ease; }
 
+  /* GLASS PANEL */
   .glass-panel {
     background: var(--jm-card);
     backdrop-filter: blur(12px);
@@ -231,51 +241,212 @@ const hiddenFeed = await Promise.all(
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .glass-panel:hover { 
-    border-color: rgba(0, 0, 0, 0.15); 
-    transform: translateY(-3px); 
+  .glass-panel:hover {
+    border-color: rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
   }
 
   .vertical-card { display: flex; flex-direction: column; height: 100%; }
   .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
 
-  .horizontal-card { 
-    display: flex; 
-    flex-direction: row; 
-    align-items: center; 
-    padding: 0.8rem; 
-    gap: 1rem; 
+  .horizontal-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.8rem;
+    gap: 1rem;
   }
 
-  .bento-grid { display: grid; gap: 2rem; margin-bottom: 4rem; }
-
-  @media (min-width: 1024px) {
-    .bento-grid { grid-template-columns: 2fr 1fr; }
+  /* PULSE BAR */
+  .pulse-bar { padding: 1.5rem 0; border-bottom: 1px solid var(--jm-border); margin-bottom: 2rem; }
+  .pulse-track { display: flex; gap: 1.2rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none; }
+  .pulse-track::-webkit-scrollbar { display: none; }
+  .pulse-node { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .ring-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--jm-border);
+    position: relative;
   }
+  .ring-wrap.live { border-color: var(--jm-accent); }
+  .live-badge {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--jm-accent);
+    color: white;
+    font-size: 0.5rem;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+  .pulse-label {
+    font-family: var(--jm-font-head);
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--jm-text-muted);
+    text-align: center;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* BENTO HERO */
+  .bento-grid { display: grid; gap: 1.5rem; margin-bottom: 4rem; }
+  @media (min-width: 1024px) { .bento-grid { grid-template-columns: 2fr 1fr; } }
 
   .hero-img-wrap { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
-  .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
-  .cat-tag { background: var(--jm-accent); color: white; font-family: var(--jm-font-head); font-weight: 800; text-transform: uppercase; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 0.8rem; align-self: flex-start; }
-  .hero-content h1 { font-family: var(--jm-font-head); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 1rem 0; color: var(--jm-text-main); }
+  .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+  .cat-tag {
+    background: var(--jm-accent);
+    color: white;
+    font-family: var(--jm-font-head);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 0.8rem;
+    align-self: flex-start;
+  }
+  .hero-content h1 {
+    font-family: var(--jm-font-head);
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 1rem 0;
+    color: var(--jm-text-main);
+  }
   .excerpt { color: var(--jm-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
 
   .bento-stack { display: grid; gap: 1rem; align-content: start; }
 
-  .mini-img { 
-    width: 90px; 
-    height: 80px; 
-    border-radius: 8px; 
-    overflow: hidden; 
-    flex-shrink: 0; 
+  .mini-img {
+    width: 90px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
   }
-  .mini-text { 
-    flex: 1; 
-    min-width: 0; 
+  .mini-text { flex: 1; min-width: 0; }
+  .mini-text h3 {
+    font-family: var(--jm-font-head);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.35;
+    color: var(--jm-text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  .mini-text h3 { font-family: var(--jm-font-head); font-size: 0.95rem; font-weight: 600; margin: 0; line-height: 1.35; color: var(--jm-text-main); }
-  .tiny-cat { font-family: var(--jm-font-head); font-size: 0.65rem; color: var(--jm-accent); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+  .tiny-cat {
+    font-family: var(--jm-font-head);
+    font-size: 0.65rem;
+    color: var(--jm-accent);
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+  }
 
-  @media (min-width: 1024px) { .content-split { display: grid; grid-template-columns: 1fr 340px; gap: 3rem; } }
+  /* CONTENT SPLIT */
+  .content-split { display: grid; gap: 3rem; }
+  @media (min-width: 1024px) { .content-split { grid-template-columns: 1fr 300px; } }
+
+  /* FEED */
   .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; color: var(--jm
+  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; color: var(--jm-text-main); white-space: nowrap; }
+  .feed-header .line { flex: 1; height: 2px; background: var(--jm-border); }
+
+  .feed-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .feed-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+  .feed-info { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+  .meta { display: flex; align-items: center; gap: 0.75rem; }
+  .meta-cat {
+    font-family: var(--jm-font-head);
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--jm-accent);
+  }
+  .meta time { font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted); }
+  .feed-info h3 {
+    font-family: var(--jm-font-head);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.4;
+    color: var(--jm-text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .feed-info p {
+    font-size: 0.875rem;
+    color: var(--jm-text-muted);
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* LOAD MORE */
+  .load-more-wrap { text-align: center; margin-top: 2.5rem; }
+  .btn-load-more {
+    background: var(--jm-accent);
+    color: white;
+    border: none;
+    padding: 0.85rem 2.5rem;
+    border-radius: 8px;
+    font-family: var(--jm-font-head);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .btn-load-more:hover { opacity: 0.9; transform: translateY(-2px); }
+
+  /* SIDEBAR */
+  .sticky-box { position: sticky; top: 1.5rem; }
+  .widget { padding: 1.25rem; }
+  .widget-title {
+    font-family: var(--jm-font-head);
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    color: var(--jm-text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag-pill {
+    background: var(--jm-bg);
+    border: 1px solid var(--jm-border);
+    color: var(--jm-text-muted);
+    font-family: var(--jm-font-head);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: 99px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .tag-pill:hover { background: var(--jm-accent); color: white; border-color: var(--jm-accent); }
+
+  /* FADE IN ANIMATION */
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
