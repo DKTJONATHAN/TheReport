@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
@@ -10,7 +9,8 @@ export default defineConfig({
   output: 'hybrid',
   adapter: vercel({
     webAnalytics: { enabled: true },
-    isr: true
+    isr: true,
+    runtime: 'nodejs22.x'  // ← ADD THIS LINE
   }),
 
   trailingSlash: 'never',
@@ -40,4 +40,3 @@ export default defineConfig({
     indexJumpIntegration()
   ]
 });
-
