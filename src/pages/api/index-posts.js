@@ -1,4 +1,6 @@
 // src/pages/api/index-posts.js
+export const prerender = false;
+
 import { execSync } from 'child_process';
 import path from 'path';
 
@@ -10,7 +12,7 @@ function getNewPostsFromCommit() {
   try {
     // Get files changed in the last commit (try multiple approaches)
     let gitOutput;
-    
+
     try {
       // Try getting files from HEAD vs HEAD~1
       gitOutput = execSync('git diff --name-only HEAD~1 HEAD', { 
@@ -24,24 +26,24 @@ function getNewPostsFromCommit() {
         cwd: process.cwd() 
       }).trim();
     }
-    
+
     if (!gitOutput) {
       return [];
     }
-    
+
     const changedFiles = gitOutput.split('\n');
-    
+
     // Filter for new markdown files in posts directory
     const newPostFiles = changedFiles.filter(file => 
       file.includes('src/content/posts/') && 
       file.endsWith('.md')
     );
-    
+
     return newPostFiles.map(file => {
       const filename = path.basename(file, '.md');
       return { slug: filename };
     });
-    
+
   } catch (error) {
     console.error('Error getting posts from git:', error);
     return [];
@@ -51,10 +53,10 @@ function getNewPostsFromCommit() {
 async function submitUrlToIndexJump(url) {
   try {
     const indexUrl = `https://api.indexjump.com/index?url=${encodeURIComponent(url)}&token=${INDEXJUMP_TOKEN}`;
-    
+
     const response = await fetch(indexUrl);
     const result = await response.text();
-    
+
     return {
       url,
       success: response.ok,
@@ -83,7 +85,7 @@ export async function POST() {
   try {
     // Get posts from the latest commit
     const newPosts = getNewPostsFromCommit();
-    
+
     if (newPosts.length === 0) {
       return new Response(JSON.stringify({ 
         message: 'No new posts in this commit',
@@ -96,12 +98,12 @@ export async function POST() {
 
     // Submit each URL to IndexJump
     const results = [];
-    
+
     for (const post of newPosts) {
       const url = `${SITE_URL}/posts/${post.slug}`;
       const result = await submitUrlToIndexJump(url);
       results.push(result);
-      
+
       // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 200));
     }
@@ -122,7 +124,7 @@ export async function POST() {
 
   } catch (error) {
     console.error('Error in index-posts API:', error);
-    
+
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
       details: error.message
