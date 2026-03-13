@@ -1,35 +1,26 @@
 ---
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. GENERATE PATHS
-export async function getStaticPaths() {
-  const allPosts = await getCollection('posts');
-  
-  // Get unique categories (e.g., "Politics", "World News")
-  const uniqueCategories = [...new Set(allPosts.map(post => post.data.category).filter(Boolean))];
+// 1. GET PARAMS & FETCH DATA DYNAMICALLY
+const { category: catSlug } = Astro.params;
+const allPosts = await getCollection('posts');
 
-  return uniqueCategories.map(catName => {
-    // Slugify: "World News" -> "world-news"
-    const catSlug = catName.toLowerCase().trim().replace(/\s+/g, '-');
+// Helper to match the slug format used in the URLs
+const slugify = (str) => str?.toLowerCase().trim().replace(/\s+/g, '-');
 
-    // Filter posts: Match category AND exclude drafts
-    const filteredPosts = allPosts.filter(p => 
-      p.data.category === catName && !p.data.draft
-    );
-
-    return {
-      params: { category: catSlug },
-      props: { 
-        categoryName: catName, 
-        posts: filteredPosts 
-      }
-    };
-  });
-}
-
-// 2. PROPS
-const { categoryName, posts } = Astro.props;
+// 2. FILTER POSTS & EXTRACT ORIGINAL CATEGORY NAME
+let categoryName = String(catSlug).replace(/-/g, ' '); // Fallback
+const posts = allPosts.filter(p => {
+  if (!p.data.category || p.data.draft) return false;
+  const isMatch = slugify(p.data.category) === catSlug;
+  if (isMatch) {
+    categoryName = p.data.category; // Recover exact capitalization
+  }
+  return isMatch;
+});
 
 // 3. SORT & SLICE DATA
 const sortedPosts = posts.sort((a, b) => 
@@ -43,7 +34,6 @@ const storyPosts = sortedPosts.slice(0, 10);
 const feedPosts = sortedPosts; 
 
 // Sidebar Data (Site-wide Trending, excluding current category)
-const allPosts = await getCollection('posts');
 const globalTrending = allPosts
   .filter(p => !p.data.draft && p.data.category !== categoryName)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf())
@@ -105,7 +95,7 @@ const socialStats = [
               <a href={`/posts/${post.slug}`} class="compact-card">
                 <div class="compact-img">
                   <img src={post.data.image} alt={post.data.title} loading="lazy" />
-                  
+
                   {/* Optional: Show status only if it's 'Breaking' or 'Exclusive' */}
                   {post.data.status && (
                     <span class="status-badge">{post.data.status}</span>
@@ -220,7 +210,7 @@ const socialStats = [
 
     .compact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; transition: transform 0.2s; }
     .compact-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    
+
     .compact-img { height: 180px; position: relative; overflow: hidden; }
     .status-badge { position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
