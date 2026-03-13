@@ -5,6 +5,14 @@
       "schedule": "0 2 * * *"
     }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    },
+    "render.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)\\.(jpg|jpeg|png|gif|webp|avif|ico|svg|woff2|woff)",
