@@ -1,47 +1,39 @@
 ---
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// 1. STATIC PATHS GENERATION
-export async function getStaticPaths() {
-  const allPosts = await getCollection('posts');
-  
-  // Filter out drafts
-  const publicPosts = allPosts.filter(p => !p.data.draft);
+// 1. GET PARAMS & FETCH DATA DYNAMICALLY
+const { author: authorSlug } = Astro.params;
+const allPosts = await getCollection('posts');
+const publicPosts = allPosts.filter(p => !p.data.draft);
 
-  // Extract all unique authors
-  const uniqueAuthors = [...new Set(publicPosts.map(post => post.data.author || 'Jonathan Mwaniki'))];
-
-  // HELPER: Moved INSIDE getStaticPaths so Astro can access it during build
-  function createSlug(text) {
-    if (!text) return 'editorial-desk';
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')  
-      .replace(/\s+/g, '-')      
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  // Map each author to a dynamic route
-  return uniqueAuthors.map(author => {
-    const authorSlug = createSlug(author);
-    
-    // Filter posts belonging specifically to this author and sort newest first
-    const authorPosts = publicPosts
-      .filter(post => (post.data.author || 'Jonathan Mwaniki') === author)
-      .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
-
-    return {
-      params: { author: authorSlug },
-      props: { authorName: author, posts: authorPosts },
-    };
-  });
+// HELPER: Format slug to match exactly how you created them
+function createSlug(text) {
+  if (!text) return 'editorial-desk';
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')  
+    .replace(/\s+/g, '-')      
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-// 2. PAGE DATA
-const { authorName, posts } = Astro.props;
+// 2. FILTER POSTS & EXTRACT ORIGINAL AUTHOR NAME
+let authorName = String(authorSlug).replace(/-/g, ' '); // Fallback
+const posts = publicPosts.filter(post => {
+  const currentAuthor = post.data.author || 'Jonathan Mwaniki';
+  const isMatch = createSlug(currentAuthor) === authorSlug;
+
+  if (isMatch) {
+    authorName = currentAuthor; // Recover exact capitalization
+  }
+  return isMatch;
+}).sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+
+// PAGE DATA
 const siteUrl = 'https://jonathanmwaniki.co.ke';
 const currentUrl = new URL(Astro.url.pathname, siteUrl).href;
 
@@ -51,7 +43,7 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
 
 <Layout title={title} description={description} canonical={currentUrl}>
   <div class="author-page-wrapper">
-    
+
     {/* --- AUTHOR PROFILE HEADER --- */}
     <header class="author-hero">
       <div class="jm-container author-header-inner">
@@ -133,7 +125,7 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
       overflow-x: hidden; /* Clips horizontal overflow */
     }
     .jm-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
-    
+
     img { width: 100%; height: 100%; object-fit: cover; display: block; }
     a { text-decoration: none; color: inherit; transition: 0.2s ease; }
 
@@ -231,15 +223,15 @@ const description = `Read all ${posts.length} articles written by ${authorName} 
       transform: translateY(-4px); 
       box-shadow: 0 12px 20px rgba(0, 0, 0, 0.06);
     }
-    
+
     .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
     .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
     .feed-info { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-    
+
     .meta { font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted); font-weight: 700; text-transform: uppercase; display: flex; gap: 0.5rem; align-items: center; }
     .meta-cat { color: var(--jm-accent); }
     .meta-dot { opacity: 0.5; }
-    
+
     .feed-info h3 { font-family: var(--jm-font-head); font-size: 1.3rem; font-weight: 800; margin: 0; line-height: 1.3; color: var(--jm-text-main); }
     .feed-info p { font-family: var(--jm-font-body); font-size: 0.95rem; line-height: 1.6; color: var(--jm-text-muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
