@@ -1,26 +1,25 @@
 // src/pages/rss.xml.js - Automatically proxies your rss.app feed
-export async function get() {
+export async function GET() {
   try {
     const response = await fetch('https://rss.app/feeds/QcLNMreXGcRH8ykn.xml', {
       headers: {
         'User-Agent': 'JonathanMwanikiBot/1.0 (https://www.jonathanmwaniki.co.ke)'
       }
     });
-    
+
     if (!response.ok) {
       throw new Error('RSS feed unavailable');
     }
-    
+
     const rssContent = await response.text();
-    
-    return {
-      body: rssContent,
+
+    return new Response(rssContent, {
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8',
         'Cache-Control': 'public, max-age=1800, stale-while-revalidate=3600', // 30min cache
         'Access-Control-Allow-Origin': '*'
       }
-    };
+    });
   } catch (error) {
     // Fallback RSS with error message
     const fallbackRss = `<?xml version="1.0" encoding="UTF-8"?>
@@ -37,12 +36,11 @@ export async function get() {
     </item>
   </channel>
 </rss>`;
-    
-    return {
-      body: fallbackRss,
+
+    return new Response(fallbackRss, {
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8'
       }
-    };
+    });
   }
 }
