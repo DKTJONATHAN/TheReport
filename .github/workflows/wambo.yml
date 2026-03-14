@@ -22,10 +22,11 @@ env:
   DEFAULT_BRANCH: main
   POSTS_DIR: src/content/posts
   MEMORY_FILE: .github/scrape_memory_mercy.json
+  SITE_BASE_URL: https://jonathanmwaniki.co.ke   # <-- update this to your domain
 
 jobs:
   generate-and-publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -40,28 +41,64 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install system dependencies and Python packages
         run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libnss3 libatk-bridge2.0-0 libdrm2 libxcomposite1 libxdamage1 \
+            libxrandr2 libgbm1 libasound2 fonts-liberation libatk1.0-0 \
+            libatspi2.0-0 libcairo2 libcups2 libdbus-1-3 libexpat1 \
+            libfontconfig1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 \
+            libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 \
+            libx11-xcb1 libxcb1 libxext6 libxfixes3 libxi6 libxrender1 \
+            libxtst6 lsb-release wget xdg-utils
           python -m pip install --upgrade pip
-          pip install requests google-genai beautifulsoup4 lxml playwright
-          playwright install chromium
+          pip install \
+            requests \
+            google-genai \
+            beautifulsoup4 \
+            lxml \
+            playwright \
+            playwright-stealth==1.0.6 \
+            Pillow
+          playwright install chromium --with-deps
 
       - name: Run Mercy Engine
         env:
           GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           MANUAL_TOPIC: ${{ inputs.manual_topic }}
           MEMORY_FILE: ${{ env.MEMORY_FILE }}
-          CRON_SCHEDULE: ${{ github.event.schedule }}
+          POSTS_DIR: ${{ env.POSTS_DIR }}
+          SITE_BASE_URL: ${{ env.SITE_BASE_URL }}
         run: |
           python << 'EOF'
-          import os, json, datetime, requests, re, random, time, hashlib, textwrap
+          import os, json, datetime, requests, re, random, time, hashlib, io
           from google import genai
           from google.genai import types
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
+          from playwright_stealth import stealth_sync
+          from PIL import Image
+          import base64
 
-          # --- 1. CONFIGURATION ---
+          # ── Config ────────────────────────────────────────────────────────
+          SITE_BASE_URL     = os.environ.get("SITE_BASE_URL", "https://jonathanmwaniki.co.ke")
+          publish_timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+          today_str         = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+          full_date_str     = datetime.datetime.utcnow().strftime("%A, %B %d, %Y")
+          current_year      = datetime.datetime.utcnow().strftime("%Y")
+          MODELS_TO_TRY     = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+
           def get_clean_pool(v): return [k.strip() for k in v.split(',') if k.strip()]
           gem_pool = get_clean_pool(os.environ.get('GEMINI_POOL', ''))
 
@@ -78,193 +115,74 @@ jobs:
               if not files: return ''
               sample = random.sample(files, min(len(files), 4))
               context = 'PAST STORIES (For internal linking):\n'
-              for f in sample:
+              for fn in sample:
                   try:
-                      with open(os.path.join(posts_dir, f), 'r', encoding='utf-8') as c:
+                      with open(os.path.join(posts_dir, fn), 'r', encoding='utf-8') as c:
                           txt = c.read()
-                          t_match = re.search(r'title:\s*"(.*?)"', txt)
-                          t = t_match.group(1) if t_match else f
-                          context += f'- Title: {t} | URL: /posts/{f.replace(".md", "")}\n'
+                          t_m = re.search(r'title:\s*"(.*?)"', txt)
+                          t   = t_m.group(1) if t_m else fn
+                          context += f'- Title: {t} | URL: /posts/{fn.replace(".md", "")}\n'
                   except: continue
               return context
 
-          def run_gemini(p):
+          # ── Gemini with grounding support ─────────────────────────────────
+          def run_gemini(prompt, use_search=False):
               random.shuffle(gem_pool)
-              models_to_try = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro']
-              for model_name in models_to_try:
+              for model_name in MODELS_TO_TRY:
                   for k in gem_pool:
                       try:
                           client = genai.Client(api_key=k)
-                          return client.models.generate_content(
-                              model=model_name,
-                              contents=p,
-                              config=types.GenerateContentConfig(temperature=0.9, max_output_tokens=8192)
-                          ).text.strip()
+                          config = types.GenerateContentConfig(
+                              temperature=0.9,
+                              max_output_tokens=8192,
+                              tools=[types.Tool(google_search=types.GoogleSearch())] if use_search else None
+                          )
+                          resp      = client.models.generate_content(model=model_name, contents=prompt, config=config)
+                          candidate = resp.candidates[0] if resp.candidates else None
+                          if candidate and candidate.content and candidate.content.parts:
+                              return "".join(
+                                  p.text for p in candidate.content.parts
+                                  if hasattr(p, "text") and p.text
+                              ).strip()
+                          return (resp.text or "").strip()
                       except Exception as e:
-                          time.sleep(1)
+                          err = str(e).lower()
+                          if "429" in err or "quota" in err or "resource_exhausted" in err:
+                              time.sleep(random.uniform(15, 30))
+                          else:
+                              time.sleep(1)
                           continue
               return None
 
-          # --- 2. TOPIC & DISCOVERY ---
-          hour = (datetime.datetime.utcnow().hour + 3) % 24
-          topics_pool = ['kenya_gossip', 'east_africa', 'africa_music', 'world_entertainment', 'kenya_gossip', 'social_media']
-          auto_topic = topics_pool[hour % len(topics_pool)]
-          used_topic = os.environ.get('MANUAL_TOPIC', '').lower() or auto_topic
+          # ── WebP conversion + ImgBB upload ────────────────────────────────
+          def upload_to_imgbb(image_url):
+              api_key = os.environ.get("IMGBB_API_KEY")
+              if not api_key or not image_url: return image_url
+              try:
+                  img_data = requests.get(image_url, timeout=15).content
+                  img = Image.open(io.BytesIO(img_data))
+                  if img.mode in ('RGBA', 'LA', 'P'):
+                      img = img.convert('RGB')
+                  webp_buf = io.BytesIO()
+                  img.save(webp_buf, format='WEBP', quality=82)
+                  webp_buf.seek(0)
+                  b64 = base64.b64encode(webp_buf.read()).decode('utf-8')
+                  res = requests.post("https://api.imgbb.com/1/upload",
+                                      data={"key": api_key, "image": b64}, timeout=20)
+                  if res.status_code == 200:
+                      new_url = res.json()['data']['url']
+                      print(f"Re-hosted as WebP: {new_url}")
+                      return new_url
+                  print(f"ImgBB failed: {res.status_code}")
+                  return image_url
+              except Exception as e:
+                  print(f"ImgBB/WebP error: {e}")
+                  return image_url
 
-          query_map = {
-              'kenya_gossip': '"Kenya" (celebrity OR gossip OR scandal OR "social media" OR influencer)',
-              'east_africa': '("Uganda" OR "Tanzania") (celebrity OR gossip OR "diamond platnumz" OR scandal OR zari)',
-              'africa_music': '("Afrobeats" OR "Amapiano" OR "Naija" OR "South Africa") (music OR drama OR celebrity OR scandal)',
-              'world_entertainment': '(Hollywood OR "pop culture" OR "music industry" OR celebrity) (scandal OR gossip OR drama)',
-              'social_media': '(TikTok OR Instagram OR viral) (drama OR exposed OR backlash)'
-          }
-          query = query_map.get(used_topic, 'Kenya celebrity gossip')
-          rss_url = f'https://news.google.com/rss/search?q={query}+when:12h&hl=en-KE&gl=KE&ceid=KE:en'
-
-          memory_path = os.environ.get('MEMORY_FILE')
-          memory = json.load(open(memory_path)) if os.path.exists(memory_path) else []
-
-          print(f'Topic: {used_topic.replace("_", " ").upper()}')
-
-          try:
-              res = requests.get(rss_url, timeout=15)
-              soup = BeautifulSoup(res.content, 'xml')
-              items = soup.find_all('item')
-          except: items = []
-
-          # --- 3. FREE SCRAPER ---
-          def scrape_article_free(url):
-              print(f'Stealth-Loading: {url}')
-              with sync_playwright() as p:
-                  browser = p.chromium.launch(headless=True, args=['--disable-blink-features=AutomationControlled', '--no-sandbox'])
-                  context = browser.new_context(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-                  page = context.new_page()
-                  page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-                  try:
-                      page.goto(url, timeout=60000)
-                      try: page.wait_for_load_state('networkidle', timeout=10000)
-                      except: pass
-                      content = page.content()
-                      soup = BeautifulSoup(content, 'html.parser')
-                      img_url = ''
-                      og_image = soup.find('meta', property='og:image')
-                      if og_image and og_image.get('content'):
-                          img_url = og_image['content']
-                      if not img_url:
-                          twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
-                          if twitter_image and twitter_image.get('content'):
-                              img_url = twitter_image['content']
-                      article_text = ''
-                      containers = soup.find_all(['article', 'main', 'div'], class_=re.compile(r'(body|content|entry|post|story)', re.I))
-                      if containers:
-                          largest_container = max(containers, key=lambda c: len(c.get_text(separator=' ', strip=True)))
-                          paras = largest_container.find_all('p')
-                          article_text = '\n\n'.join([p.text.strip() for p in paras if len(p.text.strip()) > 50])
-                      if len(article_text) < 500:
-                          all_paras = soup.find_all('p')
-                          article_text = '\n\n'.join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
-                      return article_text, img_url
-                  except: return None, None
-                  finally: browser.close()
-
-          # --- 4. FIND & SCRAPE ---
-          # Capture original RSS headline for keyword anchoring
-          full_raw_text, final_hash, target_image, original_headline = None, None, None, ''
-          for item in items:
-              url = item.link.text
-              u_hash = hashlib.md5(url.encode()).hexdigest()
-              if u_hash in memory: continue
-
-              # Grab the raw RSS title so we always have the original keywords
-              original_headline = item.title.text.strip() if item.title else ''
-
-              result = scrape_article_free(url)
-              if not result: continue
-              text, img = result
-
-              if text and len(text) > 600:
-                  full_raw_text = text
-                  final_hash = u_hash
-                  target_image = img
-                  break
-
-          if not full_raw_text: print('No new content.'); exit(0)
-
-          # Strip source attribution e.g. '- Pulse Kenya' or '| Ghafla'
-          clean_headline = re.sub(r'[\|\-]\s*[A-Z][^\|\-]{3,}$', '', original_headline).strip()
-          print(f'Original Headline: {clean_headline}')
-
-          # --- 5. THE PROMPT (Mercy Wambui Persona) ---
-          internal_linking = get_internal_context()
-          title_rule = (
-              '*** TITLE RULE (NON-NEGOTIABLE) ***\n'
-              '- The TITLE must be built around the EXACT same main keywords, proper nouns, celebrity names,\n'
-              '  and subjects found in the ORIGINAL HEADLINE above.\n'
-              '- You are NOT allowed to introduce new people, shows, or topics not in the original.\n'
-              '- Your ONLY job with the title is to reframe the phrasing to match Mercy sassy, gossipy tone.\n'
-              '- Example: If original is "Diamond Platnumz and Zari Spotted Together", acceptable title is\n'
-              '  "Diamond Platnumz and Zari Spotted Together - So What Are They Hiding?".\n'
-              '  UNACCEPTABLE: "East Africa Celebrity Drama Heats Up" (drops all core names).'
-          )
-          prompt = (
-              f"OPERATE AS 'MERCY WAMBUI', A CYNICAL ENTERTAINMENT GOSSIPER AND POP CULTURE CRITIC.\n"
-              f"SOURCE MATERIAL: {full_raw_text[:12000]}\n\n"
-              f'ORIGINAL HEADLINE: "{clean_headline}"\n\n'
-              f"{internal_linking}\n"
-              f"MANDATE:\n"
-              f"- Focus on celebrity gossip, music industry drama, and social media buzz.\n"
-              f"- Tone: Cynical, sassy, exposing the messy truth behind the glamor. Point out the hypocrisy.\n"
-              f"- STRICT FORMATTING: Use Markdown. Break the story into 4-6 paragraphs. Use a double newline between paragraphs.\n"
-              f"- IMPORTANT: Output each metadata field on a NEW LINE.\n"
-              f"- NEVER use em dashes or en dashes. Only use regular hyphens.\n\n"
-              f"{title_rule}\n\n"
-              f"*** INTERNAL LINKING RULE (STRICT) ***\n"
-              f"- You MUST naturally embed at least one link from the PAST STORIES above directly into the article paragraphs.\n"
-              f"- Format: [Relevant Anchor Text](/posts/the-slug-url)\n"
-              f"- Do NOT create a Read More list at the bottom. Weave the link seamlessly into the text.\n\n"
-              f"OUTPUT:\n"
-              f"TITLE: [Cynical Gossip Headline using original keywords]\n"
-              f"DESCRIPTION: [Spicy Summary]\n"
-              f"IMAGE_CAPTION: [Sassy Caption]\n"
-              f"CATEGORY: [{used_topic.replace('_', ' ').title()}]\n"
-              f"TAGS: [3 tags, e.g., Gossip, Drama, Trending]\n"
-              f"IMAGE_KEYWORD: [Single Concrete Noun]\n"
-              f"BODY:\n"
-              f"[Article text here with paragraphs]"
-          )
-
-          output = run_gemini(prompt)
-          if not output: exit(1)
-
-          # --- 6. PARSE & CLEAN ---
-          def extract(key, text):
-              m = re.search(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)', text, re.M | re.I)
-              return m.group(1).strip() if m else None
-
-          parsed = {
-              'TITLE': extract('TITLE', output) or clean_headline or 'Entertainment Updates',
-              'DESC': extract('DESCRIPTION', output) or 'Full story.',
-              'CAPTION': extract('IMAGE_CAPTION', output) or 'Spilling the tea.',
-              'IMG': extract('IMAGE_KEYWORD', output) or 'celebrity',
-          }
-
-          body_text = output
-          metadata_keys = ['TITLE', 'DESCRIPTION', 'IMAGE_CAPTION', 'CATEGORY', 'TAGS', 'IMAGE_KEYWORD']
-          for key in metadata_keys:
-              body_text = re.sub(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$', '', body_text, flags=re.M | re.I)
-          body_text = re.sub(r'^(?:\*\*?)?BODY(?:\*\*?)?:\s*', '', body_text, flags=re.M | re.I)
-          parsed['BODY'] = body_text.strip()
-          parsed['TITLE'] = clean_dashes(parsed['TITLE'])
-          parsed['DESC'] = clean_dashes(parsed['DESC'])
-          parsed['BODY'] = parsed['BODY'].replace('\u2014', '-').replace('\u2013', '-')
-
-          # --- 7. IMAGE & SAVE ---
-          date_now = datetime.datetime.utcnow().date().strftime('%Y-%m-%d')
-          slug = re.sub(r'[^a-z0-9-]', '-', parsed['TITLE'].lower()).strip('-')
-          u_key = os.environ.get('UNSPLASH_ACCESS_KEY')
-
-          def get_img(q):
+          # ── Unsplash fallback ──────────────────────────────────────────────
+          def get_unsplash_img(q):
               fallback = 'https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=1200'
+              u_key = os.environ.get('UNSPLASH_ACCESS_KEY')
               if not u_key: return fallback
               for term in [q, 'celebrity', 'red carpet', 'concert']:
                   try:
@@ -274,46 +192,260 @@ jobs:
                   except: continue
               return fallback
 
-          final_image_url = target_image if target_image else get_img(parsed['IMG'])
+          # ── Topic routing ─────────────────────────────────────────────────
+          hour        = (datetime.datetime.utcnow().hour + 3) % 24
+          topics_pool = ['kenya_gossip', 'east_africa', 'africa_music', 'world_entertainment', 'kenya_gossip', 'social_media']
+          auto_topic  = topics_pool[hour % len(topics_pool)]
+          used_topic  = os.environ.get('MANUAL_TOPIC', '').lower().strip() or auto_topic
 
-          final_md = textwrap.dedent(f"""\
-          ---
-          title: "{parsed['TITLE'].replace('"', "'")}"
-          description: "{parsed['DESC'].replace('"', "'")}"
-          date: "{date_now}"
-          author: "Mercy Wambui"
-          image: "{final_image_url}"
-          imageCaption: "{parsed['CAPTION'].replace('"', "'")}"
-          category: "{used_topic.replace('_', ' ').title()}"
-          slug: "{slug}"
-          ---
+          query_map = {
+              'kenya_gossip':      '"Kenya" (celebrity OR gossip OR scandal OR "social media" OR influencer)',
+              'east_africa':       '("Uganda" OR "Tanzania") (celebrity OR gossip OR "diamond platnumz" OR scandal OR zari)',
+              'africa_music':      '("Afrobeats" OR "Amapiano" OR "Naija" OR "South Africa") (music OR drama OR celebrity OR scandal)',
+              'world_entertainment': '(Hollywood OR "pop culture" OR "music industry" OR celebrity) (scandal OR gossip OR drama)',
+              'social_media':      '(TikTok OR Instagram OR viral) (drama OR exposed OR backlash)'
+          }
+          query   = query_map.get(used_topic, 'Kenya celebrity gossip')
+          rss_url = f'https://news.google.com/rss/search?q={query}+when:12h&hl=en-KE&gl=KE&ceid=KE:en'
 
-          {parsed['BODY']}
+          memory_path = os.environ.get('MEMORY_FILE')
+          memory      = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+          print(f'Topic: {used_topic.replace("_", " ").upper()} | Date: {full_date_str}')
 
-          <script type=\"application/ld+json\">
-          {{
-            \"@context\": \"https://schema.org\",
-            \"@type\": \"AnalysisNewsArticle\",
-            \"headline\": \"{parsed['TITLE'].replace('"', "'")}\",
-            \"datePublished\": \"{date_now}\",
-            \"author\": {{\"@type\": \"Person\", \"name\": \"Mercy Wambui\"}}
-          }}
-          </script>
-          """).strip()
+          try:
+              res   = requests.get(rss_url, timeout=15)
+              soup  = BeautifulSoup(res.content, 'xml')
+              items = soup.find_all('item')
+          except: items = []
 
+          # ── Stealth scraper ───────────────────────────────────────────────
+          def scrape_article_free(url):
+              print(f'Scraping: {url}')
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(
+                      headless=True,
+                      args=['--disable-blink-features=AutomationControlled', '--no-sandbox',
+                            '--disable-dev-shm-usage', '--window-size=1920,1080']
+                  )
+                  context = browser.new_context(
+                      user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+                      viewport={"width": 1920, "height": 1080}
+                  )
+                  page = context.new_page()
+                  stealth_sync(page)
+                  try:
+                      page.goto(url, timeout=60000)
+                      try: page.wait_for_load_state('networkidle', timeout=10000)
+                      except: pass
+                      soup = BeautifulSoup(page.content(), 'html.parser')
+                      img_url = ''
+                      og_image = soup.find('meta', property='og:image')
+                      if og_image and og_image.get('content'):
+                          img_url = og_image['content']
+                      if not img_url:
+                          tw = soup.find('meta', attrs={'name': 'twitter:image'})
+                          if tw and tw.get('content'): img_url = tw['content']
+                      article_text = ''
+                      containers = soup.find_all(['article', 'main', 'div'],
+                                                  class_=re.compile(r'(body|content|entry|post|story)', re.I))
+                      if containers:
+                          largest = max(containers, key=lambda c: len(c.get_text(separator=' ', strip=True)))
+                          paras   = largest.find_all('p')
+                          article_text = '\n\n'.join([p.text.strip() for p in paras if len(p.text.strip()) > 50])
+                      if len(article_text) < 500:
+                          all_paras    = soup.find_all('p')
+                          article_text = '\n\n'.join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
+                      return article_text, img_url
+                  except Exception as e:
+                      print(f"Scrape error: {e}")
+                      return None, None
+                  finally: browser.close()
+
+          # ── Find & scrape ─────────────────────────────────────────────────
+          full_raw_text, final_hash, target_image, original_headline = None, None, None, ''
+          for item in items:
+              url    = item.link.text
+              u_hash = hashlib.md5(url.encode()).hexdigest()
+              if u_hash in memory: continue
+              original_headline = item.title.text.strip() if item.title else ''
+              result = scrape_article_free(url)
+              if not result: continue
+              text, img = result
+              if text and len(text) > 600:
+                  full_raw_text = text
+                  final_hash    = u_hash
+                  target_image  = img
+                  break
+
+          if not full_raw_text:
+              print('No new content.'); exit(0)
+
+          clean_headline = re.sub(r'[\|\-]\s*[A-Z][^\|\-]{3,}$', '', original_headline).strip()
+          print(f'Headline: {clean_headline}')
+
+          # ── Gemini prompts ────────────────────────────────────────────────
+          internal_linking = get_internal_context()
+          banned_str       = "sasa basi, melting the pot, spill the tea, grab your popcorn, buckle up, dive in, delve into, moreover, furthermore, in conclusion, it's worth noting, a testament to, navigating the landscape, in today's digital age, tapestry"
+
+          title_rule = (
+              '*** TITLE RULE (NON-NEGOTIABLE) ***\n'
+              '- The TITLE must be built around the EXACT same main keywords, proper nouns, celebrity names\n'
+              '  and subjects found in the ORIGINAL HEADLINE above.\n'
+              '- You are NOT allowed to introduce new people, shows, or topics not in the original.\n'
+              '- Your ONLY job is to reframe the phrasing to match the sassy, gossipy tone.\n'
+              '- Example: If original is "Diamond Platnumz and Zari Spotted Together", acceptable title is\n'
+              '  "Diamond Platnumz and Zari Spotted Together - So What Are They Hiding?"\n'
+              '  UNACCEPTABLE: "East Africa Celebrity Drama Heats Up" (drops all core names).\n'
+              '- Keep under 65 characters. Build SLUG from primary keywords only.'
+          )
+
+          author_rule = (
+              '*** CRITICAL AUTHOR RULE ***\n'
+              'Write in third-person news style throughout.\n'
+              'NEVER write phrases like "I am Mercy Wambui", "This is Mercy Wambui reporting",\n'
+              '"Mercy Wambui can confirm", "as your gossip queen", "I report", "we at this publication",\n'
+              'or any first-person self-identification. The author name is a byline only - it NEVER\n'
+              'appears inside the article body.'
+          )
+
+          structure_rule = (
+              '*** STRUCTURE (follow exactly in this order) ***\n'
+              '1. A 35-45 word lede paragraph - NO heading above it. Names the people, the drama, and the stakes immediately.\n'
+              '   This paragraph will be used as a Google Featured Snippet - make it count.\n'
+              '2. ## H2 subheading containing the primary celebrity/topic name.\n'
+              '3. 3-5 supporting paragraphs with ### subheadings reusing primary keywords.\n'
+              '4. Close with a sharp forward-looking line about what to watch for next.'
+          )
+
+          prompt = (
+              f"Current Date: {full_date_str}. Current Year: {current_year}.\n"
+              f"SOURCE MATERIAL:\n{full_raw_text[:12000]}\n\n"
+              f'ORIGINAL HEADLINE: "{clean_headline}"\n\n'
+              f"{internal_linking}\n\n"
+              f"AUTHOR VOICE: a sharp, cynical Kenyan entertainment gossiper and pop culture critic who\n"
+              f"exposes the messy truth behind the glamor and calls out hypocrisy without mercy.\n\n"
+              f"{author_rule}\n\n"
+              f"{title_rule}\n\n"
+              f"{structure_rule}\n\n"
+              f"LANGUAGE RULES:\n"
+              f"- BANNED PHRASES (never use): {banned_str}\n"
+              f"- NEVER use em-dashes or en-dashes. Single hyphens only.\n"
+              f"- Professional English only. No Sheng.\n"
+              f"- All dates and references must reflect {current_year}.\n"
+              f"- Use specific names, dates, and facts from the source material - no vague generalisations.\n\n"
+              f"*** INTERNAL LINKING RULE (STRICT) ***\n"
+              f"- You MUST naturally embed at least one link from PAST STORIES directly into the article paragraphs.\n"
+              f"- Format: [Relevant Anchor Text](/posts/the-slug-url)\n"
+              f"- Do NOT create a Read More list at the bottom. Weave the link into the text seamlessly.\n\n"
+              f"STRICT OUTPUT FORMAT (no markdown fences, no extra text outside this format):\n"
+              f"TITLE: [Cynical gossip headline using original keywords]\n"
+              f"DESCRIPTION: [140-155 char meta description starting with subject or verb, includes key fact]\n"
+              f"IMAGE_CAPTION: [Sassy one-liner caption]\n"
+              f"CATEGORY: [{used_topic.replace('_', ' ').title()}]\n"
+              f"TAGS: [tag-one, tag-two, tag-three, tag-four]\n"
+              f"IMAGE_KEYWORD: [Single concrete noun for image search]\n"
+              f"BODY:\n"
+              f"[Full article body. No title, no author name, no date in the body.]"
+          )
+
+          output = run_gemini(prompt, use_search=True)
+          if not output: exit(1)
+
+          # ── Parse output ──────────────────────────────────────────────────
+          def extract(key, text):
+              m = re.search(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)', text, re.M | re.I)
+              return m.group(1).strip() if m else None
+
+          parsed_title    = extract('TITLE', output)        or clean_headline or 'Entertainment Update'
+          parsed_desc     = extract('DESCRIPTION', output)  or ''
+          parsed_caption  = extract('IMAGE_CAPTION', output) or ''
+          parsed_img_kw   = extract('IMAGE_KEYWORD', output) or 'celebrity'
+          parsed_category = extract('CATEGORY', output)     or used_topic.replace('_', ' ').title()
+          parsed_tags_raw = extract('TAGS', output)         or ''
+
+          tags_list = [t.strip().lower().replace(' ', '-') for t in parsed_tags_raw.split(',') if t.strip()][:5]
+          tags_json = json.dumps(tags_list) if tags_list else '["gossip", "celebrity", "entertainment"]'
+
+          body_text = output
+          for key in ['TITLE', 'DESCRIPTION', 'IMAGE_CAPTION', 'CATEGORY', 'TAGS', 'IMAGE_KEYWORD']:
+              body_text = re.sub(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$', '', body_text, flags=re.M | re.I)
+          body_text = re.sub(r'^(?:\*\*?)?BODY(?:\*\*?)?:\s*', '', body_text, flags=re.M | re.I)
+          body_text = re.sub(r'^(?:\*\*)?(?:By|Author):?.*?\n+', '', body_text, flags=re.I)
+          body_text = body_text.strip()
+          body_text = body_text.replace('\u2014', '-').replace('\u2013', '-')
+
+          parsed_title   = clean_dashes(parsed_title)
+          parsed_desc    = clean_dashes(parsed_desc)[:160].replace('"', "'")
+          parsed_caption = clean_dashes(parsed_caption).replace('"', "'")
+
+          # ── Slug + canonical ──────────────────────────────────────────────
+          slug          = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')[:68]
+          canonical_url = f"{SITE_BASE_URL}/posts/{slug}"
+          author_url    = f"{SITE_BASE_URL}/author/mercy-wambui"
+
+          # ── Image: scraped -> WebP+ImgBB, else Unsplash ───────────────────
+          if target_image:
+              final_image_url = upload_to_imgbb(target_image)
+          else:
+              final_image_url = get_unsplash_img(parsed_img_kw)
+
+          # ── Write markdown ────────────────────────────────────────────────
           o_dir = os.environ.get('POSTS_DIR')
           os.makedirs(o_dir, exist_ok=True)
-          with open(os.path.join(o_dir, f'{slug}.md'), 'w', encoding='utf-8') as f: f.write(final_md)
+
+          schema_json = json.dumps({
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": parsed_title.replace('"', "'"),
+              "description": parsed_desc,
+              "datePublished": publish_timestamp,
+              "dateModified": publish_timestamp,
+              "author": {"@type": "Person", "name": "Mercy Wambui", "url": author_url},
+              "publisher": {"@type": "Organization", "name": "The Gossip"},
+              "image": final_image_url,
+              "url": canonical_url
+          }, indent=2)
+
+          lines = [
+              "---",
+              f'title: "{parsed_title.replace(chr(34), chr(39))}"',
+              f'description: "{parsed_desc}"',
+              f'author: "Mercy Wambui"',
+              f'author_url: "{author_url}"',
+              f'date: "{publish_timestamp}"',
+              f'image: "{final_image_url}"',
+              f'imageCaption: "{parsed_caption}"',
+              f'category: "{parsed_category}"',
+              f'tags: {tags_json}',
+              f'slug: "{slug}"',
+              f'canonical: "{canonical_url}"',
+              "---",
+              "",
+              body_text,
+              "",
+              f'<script type="application/ld+json">',
+              schema_json,
+              f'</script>',
+              ""
+          ]
+
+          filepath = os.path.join(o_dir, f'{slug}.md')
+          with open(filepath, 'w', encoding='utf-8') as f:
+              f.write('\n'.join(lines))
 
           memory.append(final_hash)
-          with open(memory_path, 'w') as f: json.dump(memory[-200:], f)
-          print(f'Published: {slug}')
+          with open(memory_path, 'w') as f:
+              json.dump(memory[-200:], f)
+
+          print(f'Published : {slug}')
+          print(f'Canonical : {canonical_url}')
+          print(f'Tags      : {tags_list}')
           EOF
 
       - name: Git Safety Pull
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "Mercy Wambui"
+          git config --global user.email "bot@your-site-domain.co.ke"
           git add .
           git stash -u
           git fetch origin main
@@ -323,6 +455,13 @@ jobs:
       - name: Commit and push article
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "content: mercy-gossip publish"
+          commit_author: "Mercy Wambui <bot@your-site-domain.co.ke>"
+          commit_message: "content: gossip post by Mercy Wambui"
           branch: ${{ env.DEFAULT_BRANCH }}
           file_pattern: 'src/content/posts/*.md .github/scrape_memory_mercy.json'
+
+      - name: Ping Google Sitemap
+        run: |
+          SITE="${{ env.SITE_BASE_URL }}"
+          curl -s "https://www.google.com/ping?sitemap=${SITE}/sitemap.xml" || true
+          echo "Google sitemap pinged for ${SITE}"
