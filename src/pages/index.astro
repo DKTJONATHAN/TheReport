@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// --- 1. DATA LOGIC ---
+// --- DATA LOGIC (unchanged from original) ---
 const allPosts = (await getCollection('posts'))
   .filter(p => !p.data.draft)
   .sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
@@ -19,11 +19,15 @@ const storyCircles = allPosts.slice(0, 10).map(post => ({
   live: isLive(post.data.date)
 }));
 
-const [heroMain, ...heroGrid] = allPosts.slice(0, 5);
-const initialFeed = allPosts.slice(5, 13);
+// Hero: 1 main + 4 side stories
+const [heroMain, ...heroRest] = allPosts;
+const heroSide = heroRest.slice(0, 4);
 
-// No getImage() needed â€” passthroughImageService passes URLs directly
-const hiddenFeed = allPosts.slice(13, 100).map(post => ({
+// Feed
+const initialFeed = allPosts.slice(5, 14);
+const mostRead = allPosts.slice(0, 6);
+
+const hiddenFeed = allPosts.slice(14, 100).map(post => ({
   slug: post.slug,
   data: {
     title: post.data.title,
@@ -33,12 +37,20 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
     image: post.data.image || '/default-image.jpg'
   }
 }));
+
+// Relative time helper
+const timeAgo = (date) => {
+  const diff = Math.floor((new Date() - new Date(date)) / 1000);
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 ---
 
 <Layout>
   <div class="jm-home-wrapper">
 
-    <!-- 1. PULSE BAR -->
+    <!-- ===== STORY CIRCLES (kept as-is from original) ===== -->
     <section class="pulse-bar">
       <div class="jm-container">
         <div class="pulse-track">
@@ -55,64 +67,100 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
       </div>
     </section>
 
+    <!-- ===== CATEGORY NAV STRIP ===== -->
+    <nav class="cat-nav-strip">
+      <div class="jm-container">
+        <div class="cat-nav-inner">
+          {majorCategories.map(cat => (
+            <a href={`/category/${cat.toLowerCase()}`} class="cat-nav-link">{cat}</a>
+          ))}
+        </div>
+      </div>
+    </nav>
+
     <main class="jm-container">
 
-      <!-- 2. HERO SECTION -->
-      <section class="bento-grid no-ad-injection">
+      <!-- ===== HERO SECTION: Newspaper 3-column layout ===== -->
+      <section class="hero-section no-ad-injection">
 
-        <!-- Main Hero -->
-        <article class="bento-feature glass-panel vertical-card">
-          <a href={`/posts/${heroMain.slug}`} class="card-link">
-            <div class="hero-img-wrap">
-              <img src={heroMain.data.image || '/default-image.jpg'} alt={heroMain.data.title} width="800" height="450" loading="eager" />
+        <!-- Left Side Stories (2 stacked) -->
+        <div class="hero-side-col left-col">
+          {heroSide.slice(0, 2).map(post => (
+            <article class="side-story">
+              <a href={`/posts/${post.slug}`}>
+                <div class="side-story-img">
+                  <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="320" height="200" loading="eager" />
+                </div>
+                <div class="side-story-text">
+                  <span class="cat-tag">{post.data.category}</span>
+                  <h3>{post.data.title}</h3>
+                  <time class="story-time">{timeAgo(post.data.date)}</time>
+                </div>
+              </a>
+            </article>
+          ))}
+        </div>
+
+        <!-- Center Main Hero -->
+        <article class="hero-main">
+          <a href={`/posts/${heroMain.slug}`}>
+            <div class="hero-main-img-wrap">
+              <img src={heroMain.data.image || '/default-image.jpg'} alt={heroMain.data.title} width="800" height="500" loading="eager" />
+              {isLive(heroMain.data.date) && <span class="breaking-banner">● BREAKING</span>}
             </div>
-            <div class="hero-content">
-              <span class="cat-tag">{heroMain.data.category}</span>
-              <h1>{heroMain.data.title}</h1>
-              <p class="excerpt">{heroMain.data.description}</p>
+            <div class="hero-main-body">
+              <span class="cat-tag accent">{heroMain.data.category}</span>
+              <h1 class="hero-headline">{heroMain.data.title}</h1>
+              <p class="hero-excerpt">{heroMain.data.description}</p>
+              <time class="story-time">{timeAgo(heroMain.data.date)}</time>
             </div>
           </a>
         </article>
 
-        <!-- Small Cards -->
-        <div class="bento-stack">
-          {heroGrid.map(post => (
-            <a href={`/posts/${post.slug}`} class="mini-card glass-panel horizontal-card">
-              <div class="mini-img">
-                <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="90" height="80" loading="lazy" />
-              </div>
-              <div class="mini-text">
-                <span class="tiny-cat">{post.data.category}</span>
-                <h3>{post.data.title}</h3>
-              </div>
-            </a>
+        <!-- Right Side Stories (2 stacked) -->
+        <div class="hero-side-col right-col">
+          {heroSide.slice(2, 4).map(post => (
+            <article class="side-story">
+              <a href={`/posts/${post.slug}`}>
+                <div class="side-story-img">
+                  <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="320" height="200" loading="eager" />
+                </div>
+                <div class="side-story-text">
+                  <span class="cat-tag">{post.data.category}</span>
+                  <h3>{post.data.title}</h3>
+                  <time class="story-time">{timeAgo(post.data.date)}</time>
+                </div>
+              </a>
+            </article>
           ))}
         </div>
+
       </section>
 
-      <!-- 3. NEWS FEED -->
+      <!-- ===== MAIN CONTENT + SIDEBAR ===== -->
       <div class="content-split">
 
+        <!-- FEED COLUMN -->
         <div class="feed-col">
-          <div class="feed-header">
-            <h2>Latest Updates</h2>
-            <div class="line"></div>
+
+          <!-- Section Header -->
+          <div class="section-header">
+            <h2>Latest News</h2>
           </div>
 
+          <!-- 3-Column Feed Grid -->
           <div id="feed-container" class="feed-grid">
             {initialFeed.map(post => (
-              <article class="feed-card glass-panel vertical-card">
-                <a href={`/posts/${post.slug}`} class="card-link">
-                  <div class="feed-img">
-                    <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="800" height="450" loading="lazy" />
+              <article class="feed-card">
+                <a href={`/posts/${post.slug}`} class="feed-card-link">
+                  <div class="feed-card-img">
+                    <img src={post.data.image || '/default-image.jpg'} alt={post.data.title} width="400" height="225" loading="lazy" />
+                    <span class="img-cat-overlay">{post.data.category}</span>
                   </div>
-                  <div class="feed-info">
-                    <div class="meta">
-                      <span class="meta-cat">{post.data.category}</span>
-                      <time>{new Date(post.data.date).toLocaleDateString()}</time>
-                    </div>
-                    <h3>{post.data.title}</h3>
-                    <p>{post.data.description}</p>
+                  <div class="feed-card-body">
+                    <h3 class="feed-card-title">{post.data.title}</h3>
+                    <p class="feed-card-desc">{post.data.description}</p>
+                    <time class="story-time">{timeAgo(post.data.date)}</time>
                   </div>
                 </a>
               </article>
@@ -122,22 +170,50 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
           {hiddenFeed.length > 0 && (
             <div class="load-more-wrap">
               <button id="btn-load-more" class="btn-load-more">
-                <span>Unroll More Stories</span>
+                Load More Stories
               </button>
             </div>
           )}
         </div>
 
+        <!-- SIDEBAR -->
         <aside class="sidebar-col">
           <div class="sticky-box">
-            <div class="widget glass-panel">
-              <h4 class="widget-title">Trending Topics</h4>
-              <div class="tag-cloud">
-                {majorCategories.map(cat => (
-                  <a href={`/category/${cat.toLowerCase()}`} class="tag-pill">{cat}</a>
-                ))}
+
+            <!-- Most Read Widget -->
+            <div class="widget">
+              <div class="widget-header">
+                <h4>Most Read</h4>
               </div>
+              <ol class="most-read-list">
+                {mostRead.map((post, i) => (
+                  <li class="most-read-item">
+                    <a href={`/posts/${post.slug}`}>
+                      <span class="read-number">{i + 1}</span>
+                      <span class="read-title">{post.data.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
             </div>
+
+            <!-- Browse Topics Widget -->
+            <div class="widget">
+              <div class="widget-header">
+                <h4>Browse Topics</h4>
+              </div>
+              <nav class="topic-nav">
+                {majorCategories.map(cat => (
+                  <a href={`/category/${cat.toLowerCase()}`} class="topic-link">
+                    <span>{cat}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </a>
+                ))}
+              </nav>
+            </div>
+
           </div>
         </aside>
 
@@ -152,27 +228,30 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
   const feedContainer = document.getElementById('feed-container');
   let loadedCount = 0;
   const BATCH_SIZE = 6;
-  const allHidden = hiddenFeed;
+
+  const timeAgo = (dateStr) => {
+    const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   if (loadBtn) {
     loadBtn.addEventListener('click', () => {
-      const nextBatch = allHidden.slice(loadedCount, loadedCount + BATCH_SIZE);
+      const nextBatch = hiddenFeed.slice(loadedCount, loadedCount + BATCH_SIZE);
 
       nextBatch.forEach(post => {
-        const dateStr = new Date(post.data.date).toLocaleDateString();
         const html = `
-          <article class="feed-card glass-panel vertical-card fade-in">
-            <a href="/posts/${post.slug}" class="card-link">
-              <div class="feed-img">
-                <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" width="800" height="450" />
+          <article class="feed-card fade-in">
+            <a href="/posts/${post.slug}" class="feed-card-link">
+              <div class="feed-card-img">
+                <img src="${post.data.image}" alt="${post.data.title}" loading="lazy" width="400" height="225" />
+                <span class="img-cat-overlay">${post.data.category || 'News'}</span>
               </div>
-              <div class="feed-info">
-                <div class="meta">
-                  <span class="meta-cat">${post.data.category || 'News'}</span>
-                  <time>${dateStr}</time>
-                </div>
-                <h3>${post.data.title}</h3>
-                <p>${post.data.description}</p>
+              <div class="feed-card-body">
+                <h3 class="feed-card-title">${post.data.title}</h3>
+                <p class="feed-card-desc">${post.data.description}</p>
+                <time class="story-time">${timeAgo(post.data.date)}</time>
               </div>
             </a>
           </article>
@@ -181,165 +260,188 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
       });
 
       loadedCount += BATCH_SIZE;
-      if (loadedCount >= allHidden.length) {
-        loadBtn.style.display = 'none';
-      }
+      if (loadedCount >= hiddenFeed.length) loadBtn.style.display = 'none';
     });
   }
 </script>
 
 <style is:global>
+  /* ============================================================
+     DESIGN TOKENS
+  ============================================================ */
   :root {
-    --jm-bg: #f8fafc;
-    --jm-card: rgba(255, 255, 255, 0.9);
-    --jm-border: rgba(0, 0, 0, 0.08);
-    --jm-text-main: #0f172a;
-    --jm-text-muted: #64748b;
-    --jm-accent: #ef4444;
-    --jm-font-head: 'Inter', sans-serif;
-    --jm-font-body: 'Merriweather', serif;
+    --jm-bg: #f4f4f4;
+    --jm-surface: #ffffff;
+    --jm-border: #e0e0e0;
+    --jm-text-main: #0d0d0d;
+    --jm-text-muted: #6b7280;
+    --jm-accent: #cc0000;
+    --jm-accent-hover: #aa0000;
+    --jm-section-bar: 3px solid var(--jm-accent);
+    --jm-font-head: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --jm-font-body: 'Georgia', 'Times New Roman', serif;
+    --jm-radius: 4px;
+    --jm-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
 
-  *, *::before, *::after { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   .jm-home-wrapper {
-    background-color: var(--jm-bg);
+    background: var(--jm-bg);
     color: var(--jm-text-main);
     font-family: var(--jm-font-body);
-    width: 100%;
-    padding-bottom: 4rem;
     min-height: 100vh;
+    padding-bottom: 4rem;
   }
 
   .jm-container {
-    width: 100%;
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-
-  /* IMPORTANT: scoped img rules to prevent global blowout */
-  .hero-img-wrap img,
-  .mini-img img,
-  .feed-img img,
-  .ring-wrap img {
+    padding: 0 1.25rem;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
   }
 
-  a { text-decoration: none; color: inherit; transition: 0.2s ease; }
+  a { text-decoration: none; color: inherit; }
 
-  /* GLASS PANEL */
-  .glass-panel {
-    background: var(--jm-card);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--jm-border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* ============================================================
+     STORY CIRCLES (Pulse Bar)
+  ============================================================ */
+  .pulse-bar {
+    background: var(--jm-surface);
+    border-bottom: 1px solid var(--jm-border);
+    padding: 1rem 0;
+    margin-bottom: 0;
   }
-  .glass-panel:hover {
-    border-color: rgba(0, 0, 0, 0.15);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
-  }
-
-  .vertical-card { display: flex; flex-direction: column; height: 100%; }
-  .card-link { display: flex; flex-direction: column; height: 100%; width: 100%; }
-
-  .horizontal-card {
+  .pulse-track {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 0.8rem;
     gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
   }
-
-  /* PULSE BAR */
-  .pulse-bar { padding: 1.5rem 0; border-bottom: 1px solid var(--jm-border); margin-bottom: 2rem; }
-  .pulse-track { display: flex; gap: 1.2rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none; }
   .pulse-track::-webkit-scrollbar { display: none; }
-  .pulse-node { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .pulse-node { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; flex-shrink: 0; }
   .ring-wrap {
-    width: 64px;
-    height: 64px;
+    width: 60px; height: 60px;
     border-radius: 50%;
     overflow: hidden;
-    border: 3px solid var(--jm-border);
+    border: 2.5px solid var(--jm-border);
     position: relative;
   }
   .ring-wrap.live { border-color: var(--jm-accent); }
   .live-badge {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--jm-accent);
-    color: white;
-    font-size: 0.5rem;
-    font-weight: 800;
-    padding: 1px 4px;
-    border-radius: 2px;
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    background: var(--jm-accent); color: #fff;
+    font-size: 0.45rem; font-weight: 800;
+    padding: 1px 4px; font-family: var(--jm-font-head);
   }
   .pulse-label {
     font-family: var(--jm-font-head);
-    font-size: 0.65rem;
-    font-weight: 600;
+    font-size: 0.6rem; font-weight: 600;
     color: var(--jm-text-muted);
-    text-align: center;
-    max-width: 64px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width: 60px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
   }
 
-  /* BENTO HERO */
-  .bento-grid { display: grid; gap: 1.5rem; margin-bottom: 4rem; }
-  @media (min-width: 1024px) { .bento-grid { grid-template-columns: 2fr 1fr; } }
-
-  .hero-img-wrap { width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--jm-border); }
-  .hero-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
-  .cat-tag {
-    background: var(--jm-accent);
-    color: white;
+  /* ============================================================
+     CATEGORY NAV STRIP
+  ============================================================ */
+  .cat-nav-strip {
+    background: var(--jm-text-main);
+    border-bottom: 3px solid var(--jm-accent);
+    margin-bottom: 2rem;
+  }
+  .cat-nav-inner {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cat-nav-inner::-webkit-scrollbar { display: none; }
+  .cat-nav-link {
     font-family: var(--jm-font-head);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #d1d5db;
+    padding: 0.7rem 1.1rem;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.15s, color 0.15s;
+  }
+  .cat-nav-link:hover { background: var(--jm-accent); color: #fff; }
+
+  /* ============================================================
+     CATEGORY TAGS & UTILITY
+  ============================================================ */
+  .cat-tag {
+    display: inline-block;
+    font-family: var(--jm-font-head);
+    font-size: 0.65rem;
     font-weight: 800;
     text-transform: uppercase;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-bottom: 0.8rem;
-    align-self: flex-start;
+    letter-spacing: 0.07em;
+    color: var(--jm-accent);
+    margin-bottom: 0.4rem;
   }
-  .hero-content h1 {
+  .cat-tag.accent {
+    background: var(--jm-accent);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: var(--jm-radius);
+  }
+  .story-time {
     font-family: var(--jm-font-head);
-    font-size: clamp(1.4rem, 3vw, 2.2rem);
-    font-weight: 800;
-    line-height: 1.2;
-    margin: 0 0 1rem 0;
-    color: var(--jm-text-main);
+    font-size: 0.7rem;
+    color: var(--jm-text-muted);
+    display: block;
+    margin-top: 0.4rem;
   }
-  .excerpt { color: var(--jm-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
 
-  .bento-stack { display: grid; gap: 1rem; align-content: start; }
+  /* ============================================================
+     HERO SECTION — 3-Column Newspaper Layout
+  ============================================================ */
+  .hero-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    padding-top: 0.5rem;
+    border-top: var(--jm-section-bar);
+  }
 
-  .mini-img {
-    width: 90px;
-    height: 80px;
-    border-radius: 8px;
+  @media (min-width: 1024px) {
+    .hero-section {
+      grid-template-columns: 260px 1fr 260px;
+      gap: 1.5rem;
+    }
+  }
+
+  /* Side columns */
+  .hero-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .side-story {
+    background: var(--jm-surface);
+    border: 1px solid var(--jm-border);
+    border-radius: var(--jm-radius);
     overflow: hidden;
-    flex-shrink: 0;
+    box-shadow: var(--jm-shadow);
+    transition: box-shadow 0.2s;
   }
-  .mini-text { flex: 1; min-width: 0; }
-  .mini-text h3 {
+  .side-story:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+  .side-story a { display: flex; flex-direction: column; height: 100%; }
+  .side-story-img { width: 100%; aspect-ratio: 16/10; overflow: hidden; }
+  .side-story-text { padding: 0.75rem; flex: 1; }
+  .side-story-text h3 {
     font-family: var(--jm-font-head);
     font-size: 0.9rem;
-    font-weight: 600;
-    margin: 0;
+    font-weight: 700;
     line-height: 1.35;
     color: var(--jm-text-main);
     display: -webkit-box;
@@ -347,106 +449,274 @@ const hiddenFeed = allPosts.slice(13, 100).map(post => ({
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .tiny-cat {
+  .side-story:hover h3 { color: var(--jm-accent); }
+
+  /* Main Hero */
+  .hero-main {
+    background: var(--jm-surface);
+    border: 1px solid var(--jm-border);
+    border-radius: var(--jm-radius);
+    overflow: hidden;
+    box-shadow: var(--jm-shadow);
+  }
+  .hero-main a { display: flex; flex-direction: column; height: 100%; }
+  .hero-main-img-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+  }
+  .breaking-banner {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    background: var(--jm-accent);
+    color: #fff;
     font-family: var(--jm-font-head);
-    font-size: 0.65rem;
-    color: var(--jm-accent);
+    font-size: 0.75rem;
     font-weight: 800;
+    padding: 0.35rem 0.75rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    margin-bottom: 4px;
-    display: block;
+  }
+  .hero-main-body { padding: 1.25rem 1.5rem 1.5rem; }
+  .hero-headline {
+    font-family: var(--jm-font-head);
+    font-size: clamp(1.35rem, 2.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0.4rem 0 0.75rem;
+    color: var(--jm-text-main);
+  }
+  .hero-main:hover .hero-headline { color: var(--jm-accent); }
+  .hero-excerpt {
+    font-family: var(--jm-font-body);
+    font-size: 0.975rem;
+    color: var(--jm-text-muted);
+    line-height: 1.65;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  /* CONTENT SPLIT */
-  .content-split { display: grid; gap: 3rem; }
-  @media (min-width: 1024px) { .content-split { grid-template-columns: 1fr 300px; } }
+  /* ============================================================
+     CONTENT SPLIT: Feed + Sidebar
+  ============================================================ */
+  .content-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 1024px) {
+    .content-split { grid-template-columns: 1fr 280px; }
+  }
 
-  /* FEED */
-  .feed-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-  .feed-header h2 { font-family: var(--jm-font-head); font-size: 1.5rem; margin: 0; color: var(--jm-text-main); white-space: nowrap; }
-  .feed-header .line { flex: 1; height: 2px; background: var(--jm-border); }
-
-  .feed-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
-  @media (min-width: 640px) { .feed-grid { grid-template-columns: repeat(2, 1fr); } }
-
-  .feed-img { width: 100%; aspect-ratio: 16/9; overflow: hidden; }
-  .feed-info { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-  .meta { display: flex; align-items: center; gap: 0.75rem; }
-  .meta-cat {
+  /* ============================================================
+     SECTION HEADER
+  ============================================================ */
+  .section-header {
+    border-top: var(--jm-section-bar);
+    padding-top: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-header h2 {
     font-family: var(--jm-font-head);
-    font-size: 0.65rem;
+    font-size: 1.1rem;
     font-weight: 800;
     text-transform: uppercase;
-    color: var(--jm-accent);
+    letter-spacing: 0.06em;
+    color: var(--jm-text-main);
   }
-  .meta time { font-family: var(--jm-font-head); font-size: 0.75rem; color: var(--jm-text-muted); }
-  .feed-info h3 {
+
+  /* ============================================================
+     FEED GRID — 3 columns
+  ============================================================ */
+  .feed-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  @media (min-width: 600px) {
+    .feed-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .feed-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .feed-card {
+    background: var(--jm-surface);
+    border: 1px solid var(--jm-border);
+    border-radius: var(--jm-radius);
+    overflow: hidden;
+    box-shadow: var(--jm-shadow);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .feed-card:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .feed-card-link { display: flex; flex-direction: column; height: 100%; }
+
+  .feed-card-img {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+  }
+  .img-cat-overlay {
+    position: absolute;
+    bottom: 0; left: 0;
+    background: var(--jm-accent);
+    color: #fff;
     font-family: var(--jm-font-head);
-    font-size: 1rem;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 3px 8px;
+  }
+
+  .feed-card-body {
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .feed-card-title {
+    font-family: var(--jm-font-head);
+    font-size: 0.95rem;
     font-weight: 700;
-    margin: 0;
+    line-height: 1.35;
+    color: var(--jm-text-main);
+    margin-bottom: 0.4rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .feed-card:hover .feed-card-title { color: var(--jm-accent); }
+  .feed-card-desc {
+    font-family: var(--jm-font-body);
+    font-size: 0.82rem;
+    color: var(--jm-text-muted);
+    line-height: 1.5;
+    margin-bottom: auto;
+    padding-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ============================================================
+     LOAD MORE
+  ============================================================ */
+  .load-more-wrap { text-align: center; margin-top: 2rem; }
+  .btn-load-more {
+    background: transparent;
+    color: var(--jm-accent);
+    border: 2px solid var(--jm-accent);
+    padding: 0.7rem 2.25rem;
+    border-radius: var(--jm-radius);
+    font-family: var(--jm-font-head);
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-load-more:hover { background: var(--jm-accent); color: #fff; }
+
+  /* ============================================================
+     SIDEBAR
+  ============================================================ */
+  .sticky-box { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .widget {
+    background: var(--jm-surface);
+    border: 1px solid var(--jm-border);
+    border-radius: var(--jm-radius);
+    overflow: hidden;
+    box-shadow: var(--jm-shadow);
+  }
+  .widget-header {
+    border-top: var(--jm-section-bar);
+    background: var(--jm-surface);
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--jm-border);
+  }
+  .widget-header h4 {
+    font-family: var(--jm-font-head);
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--jm-text-main);
+  }
+
+  /* Most Read */
+  .most-read-list {
+    list-style: none;
+    padding: 0.5rem 0;
+  }
+  .most-read-item a {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--jm-border);
+    transition: background 0.15s;
+  }
+  .most-read-item:last-child a { border-bottom: none; }
+  .most-read-item a:hover { background: #fafafa; }
+  .read-number {
+    font-family: var(--jm-font-head);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--jm-accent);
+    line-height: 1;
+    min-width: 1.5rem;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+  .read-title {
+    font-family: var(--jm-font-head);
+    font-size: 0.82rem;
+    font-weight: 600;
     line-height: 1.4;
     color: var(--jm-text-main);
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .feed-info p {
-    font-size: 0.875rem;
-    color: var(--jm-text-muted);
-    margin: 0;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+  .most-read-item a:hover .read-title { color: var(--jm-accent); }
 
-  /* LOAD MORE */
-  .load-more-wrap { text-align: center; margin-top: 2.5rem; }
-  .btn-load-more {
-    background: var(--jm-accent);
-    color: white;
-    border: none;
-    padding: 0.85rem 2.5rem;
-    border-radius: 8px;
+  /* Topics Nav */
+  .topic-nav { display: flex; flex-direction: column; }
+  .topic-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--jm-border);
     font-family: var(--jm-font-head);
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  }
-  .btn-load-more:hover { opacity: 0.9; transform: translateY(-2px); }
-
-  /* SIDEBAR */
-  .sticky-box { position: sticky; top: 1.5rem; }
-  .widget { padding: 1.25rem; }
-  .widget-title {
-    font-family: var(--jm-font-head);
-    font-size: 1rem;
-    font-weight: 800;
-    margin: 0 0 1rem 0;
-    color: var(--jm-text-main);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .tag-pill {
-    background: var(--jm-bg);
-    border: 1px solid var(--jm-border);
-    color: var(--jm-text-muted);
-    font-family: var(--jm-font-head);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 0.35rem 0.85rem;
-    border-radius: 99px;
-    transition: background 0.2s ease, color 0.2s ease;
+    color: var(--jm-text-main);
+    transition: background 0.15s, color 0.15s;
   }
-  .tag-pill:hover { background: var(--jm-accent); color: white; border-color: var(--jm-accent); }
+  .topic-link:last-child { border-bottom: none; }
+  .topic-link:hover { background: var(--jm-accent); color: #fff; }
+  .topic-link:hover svg { stroke: #fff; }
+  .topic-link svg { flex-shrink: 0; opacity: 0.5; transition: opacity 0.15s; }
+  .topic-link:hover svg { opacity: 1; }
 
-  /* FADE IN ANIMATION */
-  .fade-in { animation: fadeIn 0.4s ease forwards; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  /* ============================================================
+     ANIMATIONS
+  ============================================================ */
+  .fade-in { animation: fadeIn 0.35s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
-
