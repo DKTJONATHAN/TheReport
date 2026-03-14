@@ -1,218 +1,465 @@
-name: Social Blast (With AI & Hashtags)
+name: Auto Newser (Belinda - The Cynic)
 
 on:
-  push:
-    paths:
-      - 'src/content/posts/**.md'
-      - 'src/content/posts/**.mdx'
-    branches:
-      - main
+  schedule:
+    # Runs at minute 15 of every hour from 6 AM to 10 PM EAT
+    - cron: '15 3-19 * * *'
   workflow_dispatch:
     inputs:
-      specific_slug:
-        description: 'Slug of the post (e.g., "my-new-article")'
+      manual_topic:
+        description: 'Force topic'
         required: false
-        type: string
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_BRANCH: main
+  POSTS_DIR: src/content/posts
+  MEMORY_FILE: .github/scrape_memory.json
+  SITE_BASE_URL: https://jonathanmwaniki.co.ke
 
 jobs:
-  tweet-with-ai:
-    runs-on: ubuntu-latest
+  generate-and-publish:
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout Code
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+          ref: ${{ env.DEFAULT_BRANCH }}
+          token: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install system dependencies and Python packages
         run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libnss3 libatk-bridge2.0-0 libdrm2 libxcomposite1 libxdamage1 \
+            libxrandr2 libgbm1 libasound2 fonts-liberation libatk1.0-0 \
+            libatspi2.0-0 libcairo2 libcups2 libdbus-1-3 libexpat1 \
+            libfontconfig1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 \
+            libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 \
+            libx11-xcb1 libxcb1 libxext6 libxfixes3 libxi6 libxrender1 \
+            libxtst6 lsb-release wget xdg-utils
           python -m pip install --upgrade pip
-          pip install tweepy requests google-genai
+          pip install \
+            requests \
+            google-genai \
+            beautifulsoup4 \
+            lxml \
+            playwright \
+            playwright-stealth==1.0.6 \
+            Pillow
+          playwright install chromium --with-deps
 
-      - name: Wait for Deployment (Auto-Push Only)
-        if: github.event_name == 'push'
-        run: |
-          echo "Waiting 30 seconds for site to build..."
-          sleep 30
-
-      - name: Detect and Tweet via AI
+      - name: Run Belinda Engine
         env:
-          APP_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
-          APP_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
-          ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          INPUT_SLUG: ${{ inputs.specific_slug }}
+          GEMINI_POOL: "${{ secrets.GEMINI_API_KEY }},${{ secrets.GEMINI_API_KEY1 }},${{ secrets.GEMINI_API_KEY2 }},${{ secrets.GEMINI_WRITE_KEY }}"
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MANUAL_TOPIC: ${{ inputs.manual_topic }}
+          MEMORY_FILE: ${{ env.MEMORY_FILE }}
+          POSTS_DIR: ${{ env.POSTS_DIR }}
+          SITE_BASE_URL: ${{ env.SITE_BASE_URL }}
         run: |
-          if [ -z "$APP_KEY" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "⚠️ Twitter credentials not set, skipping"
-            exit 0
-          fi
-          
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "⚠️ GEMINI_API_KEY not set, skipping"
-            exit 0
-          fi
-
-          # 1. Determine which files to process (Preserving your excellent fallback logic)
-          FILES_TO_PROCESS=""
-          if [ -n "$INPUT_SLUG" ]; then
-            FILE=$(find src/content/posts -name "${INPUT_SLUG}.md*" | head -n 1)
-            FILES_TO_PROCESS="$FILE"
-          else
-            FILES_TO_PROCESS=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep '^src/content/posts/' || true)
-            
-            # Fallback for manual runs without an input slug
-            if [ -z "$FILES_TO_PROCESS" ] && [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-              FILE=$(find src/content/posts -type f \( -name "*.md" -o -name "*.mdx" \) -exec stat -c "%Y %n" {} + | sort -nr | head -n 1 | cut -d' ' -f2- || true)
-              echo "Manual run detected. Defaulting to most recent file."
-              FILES_TO_PROCESS="$FILE"
-            fi
-          fi
-
-          if [ -z "$FILES_TO_PROCESS" ]; then
-            echo "📝 No post changes detected"
-            exit 0
-          fi
-
-          export CHANGED_FILES="$FILES_TO_PROCESS"
-
-          # 2. Python block to handle AI Generation and Tweepy API
-          python3 << 'EOF'
-          import os, sys, re, requests, time
-          import tweepy
+          python << 'EOF'
+          import os, json, datetime, requests, re, random, time, hashlib, io, base64
           from google import genai
           from google.genai import types
+          from bs4 import BeautifulSoup
+          from playwright.sync_api import sync_playwright
+          from playwright_stealth import stealth_sync
+          from PIL import Image
 
-          changed_files = os.environ.get('CHANGED_FILES', '').strip().split('\n')
-          api_key = os.environ.get("APP_KEY")
-          api_secret = os.environ.get("APP_SECRET")
-          access_token = os.environ.get("ACCESS_TOKEN")
-          access_secret = os.environ.get("ACCESS_SECRET")
-          gemini_key = os.environ.get("GEMINI_API_KEY")
-          site_url = "https://www.jonathanmwaniki.co.ke"
+          # ── Config ────────────────────────────────────────────────────────
+          SITE_BASE_URL     = os.environ.get("SITE_BASE_URL", "https://jonathanmwaniki.co.ke")
+          publish_timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+          today_str         = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+          full_date_str     = datetime.datetime.utcnow().strftime("%A, %B %d, %Y")
+          current_year      = datetime.datetime.utcnow().strftime("%Y")
+          MODELS_TO_TRY     = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
 
-          # Initialize Gemini
-          ai_client = genai.Client(api_key=gemini_key)
+          def get_clean_pool(v): return [k.strip() for k in v.split(',') if k.strip()]
+          gem_pool = get_clean_pool(os.environ.get('GEMINI_POOL', ''))
 
-          # Initialize Tweepy (v1.1 for media upload, v2 for tweeting)
-          auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_secret)
-          v1_api = tweepy.API(auth)
-          v2_client = tweepy.Client(
-              consumer_key=api_key, consumer_secret=api_secret,
-              access_token=access_token, access_token_secret=access_secret
+          def clean_dashes(text):
+              if not text: return ''
+              text = text.replace('\u2014', '-').replace('\u2013', '-')
+              text = re.sub(r'[ \t]+', ' ', text)
+              return text.strip()
+
+          def get_internal_context():
+              posts_dir = os.environ.get('POSTS_DIR')
+              if not os.path.exists(posts_dir): return ''
+              files = [f for f in os.listdir(posts_dir) if f.endswith('.md')]
+              if not files: return ''
+              sample = random.sample(files, min(len(files), 4))
+              context = 'PAST STORIES (For internal linking):\n'
+              for fn in sample:
+                  try:
+                      with open(os.path.join(posts_dir, fn), 'r', encoding='utf-8') as c:
+                          txt = c.read()
+                          t_m = re.search(r'title:\s*"(.*?)"', txt)
+                          t   = t_m.group(1) if t_m else fn
+                          context += f'- Title: {t} | URL: /posts/{fn.replace(".md", "")}\n'
+                  except: continue
+              return context
+
+          # ── Gemini with grounding support ─────────────────────────────────
+          def run_gemini(prompt, use_search=False):
+              random.shuffle(gem_pool)
+              for model_name in MODELS_TO_TRY:
+                  for k in gem_pool:
+                      try:
+                          client = genai.Client(api_key=k)
+                          config = types.GenerateContentConfig(
+                              temperature=0.9,
+                              max_output_tokens=8192,
+                              tools=[types.Tool(google_search=types.GoogleSearch())] if use_search else None
+                          )
+                          resp      = client.models.generate_content(model=model_name, contents=prompt, config=config)
+                          candidate = resp.candidates[0] if resp.candidates else None
+                          if candidate and candidate.content and candidate.content.parts:
+                              return "".join(
+                                  p.text for p in candidate.content.parts
+                                  if hasattr(p, "text") and p.text
+                              ).strip()
+                          return (resp.text or "").strip()
+                      except Exception as e:
+                          err = str(e).lower()
+                          if "429" in err or "quota" in err or "resource_exhausted" in err:
+                              time.sleep(random.uniform(15, 30))
+                          else:
+                              time.sleep(1)
+                          continue
+              return None
+
+          # ── WebP conversion + ImgBB upload ────────────────────────────────
+          def upload_to_imgbb(image_url):
+              api_key = os.environ.get("IMGBB_API_KEY")
+              if not api_key or not image_url: return image_url
+              try:
+                  img_data = requests.get(image_url, timeout=15).content
+                  img = Image.open(io.BytesIO(img_data))
+                  if img.mode in ('RGBA', 'LA', 'P'):
+                      img = img.convert('RGB')
+                  webp_buf = io.BytesIO()
+                  img.save(webp_buf, format='WEBP', quality=82)
+                  webp_buf.seek(0)
+                  b64 = base64.b64encode(webp_buf.read()).decode('utf-8')
+                  res = requests.post("https://api.imgbb.com/1/upload",
+                                      data={"key": api_key, "image": b64}, timeout=20)
+                  if res.status_code == 200:
+                      new_url = res.json()['data']['url']
+                      print(f"Re-hosted as WebP: {new_url}")
+                      return new_url
+                  print(f"ImgBB failed: {res.status_code}")
+                  return image_url
+              except Exception as e:
+                  print(f"ImgBB/WebP error: {e}")
+                  return image_url
+
+          # ── Unsplash fallback ──────────────────────────────────────────────
+          def get_unsplash_img(q):
+              fallback = 'https://images.unsplash.com/photo-1499364615650-ec387c1470c5?w=1200'
+              u_key = os.environ.get('UNSPLASH_ACCESS_KEY')
+              if not u_key: return fallback
+              for term in [q, 'Nairobi', 'Kenya']:
+                  try:
+                      url = f'https://api.unsplash.com/photos/random?query={term}&orientation=landscape&client_id={u_key}'
+                      r = requests.get(url, timeout=5)
+                      if r.status_code == 200: return r.json()['urls']['regular']
+                  except: continue
+              return fallback
+
+          # ── Topic routing ─────────────────────────────────────────────────
+          hour        = (datetime.datetime.utcnow().hour + 3) % 24
+          topics_pool = ['politics', 'politics', 'crime', 'entertainment', 'gossip', 'lifestyle']
+          auto_topic  = topics_pool[hour % len(topics_pool)]
+          used_topic  = os.environ.get('MANUAL_TOPIC', '').lower().strip() or auto_topic
+
+          query_map = {
+              'politics':      'Kenya politics OR Ruto OR Raila OR Parliament',
+              'crime':         'Kenya crime OR DCI OR police OR scandal',
+              'entertainment': 'Kenya entertainment OR Eric Omondi OR Kenyan musician OR celebrity',
+              'gossip':        'Kenya gossip OR scandal OR exposed',
+              'lifestyle':     'Kenya lifestyle OR Nairobi nightlife OR economy'
+          }
+          query   = query_map.get(used_topic, 'Kenya News')
+          rss_url = f'https://news.google.com/rss/search?q={query}+when:6h&hl=en-KE&gl=KE&ceid=KE:en'
+
+          memory_path = os.environ.get('MEMORY_FILE')
+          memory      = json.load(open(memory_path)) if os.path.exists(memory_path) else []
+          print(f'Topic: {used_topic.upper()} | Date: {full_date_str}')
+
+          try:
+              res   = requests.get(rss_url, timeout=15)
+              soup  = BeautifulSoup(res.content, 'xml')
+              items = soup.find_all('item')
+          except: items = []
+
+          # ── Stealth scraper ───────────────────────────────────────────────
+          def scrape_article_free(url):
+              print(f'Scraping: {url}')
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(
+                      headless=True,
+                      args=['--disable-blink-features=AutomationControlled', '--no-sandbox',
+                            '--disable-dev-shm-usage', '--window-size=1920,1080']
+                  )
+                  context = browser.new_context(
+                      user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+                      viewport={"width": 1920, "height": 1080}
+                  )
+                  page = context.new_page()
+                  stealth_sync(page)
+                  try:
+                      page.goto(url, timeout=60000)
+                      try: page.wait_for_load_state('networkidle', timeout=10000)
+                      except: pass
+                      soup = BeautifulSoup(page.content(), 'html.parser')
+                      img_url = ''
+                      og_image = soup.find('meta', property='og:image')
+                      if og_image and og_image.get('content'):
+                          img_url = og_image['content']
+                      if not img_url:
+                          tw = soup.find('meta', attrs={'name': 'twitter:image'})
+                          if tw and tw.get('content'): img_url = tw['content']
+                      article_text = ''
+                      containers = soup.find_all(['article', 'main', 'div'],
+                                                  class_=re.compile(r'(body|content|entry|post|story)', re.I))
+                      if containers:
+                          largest = max(containers, key=lambda c: len(c.get_text(separator=' ', strip=True)))
+                          paras   = largest.find_all('p')
+                          article_text = '\n\n'.join([p.text.strip() for p in paras if len(p.text.strip()) > 50])
+                      if len(article_text) < 500:
+                          all_paras    = soup.find_all('p')
+                          article_text = '\n\n'.join([p.text.strip() for p in all_paras if len(p.text.strip()) > 60])
+                      return article_text, img_url
+                  except Exception as e:
+                      print(f"Scrape error: {e}")
+                      return None, None
+                  finally: browser.close()
+
+          # ── Find & scrape ─────────────────────────────────────────────────
+          full_raw_text, final_hash, target_image, original_headline = None, None, None, ''
+          for item in items:
+              url    = item.link.text
+              u_hash = hashlib.md5(url.encode()).hexdigest()
+              if u_hash in memory: continue
+              original_headline = item.title.text.strip() if item.title else ''
+              result = scrape_article_free(url)
+              if not result: continue
+              text, img = result
+              if text and len(text) > 600:
+                  full_raw_text = text
+                  final_hash    = u_hash
+                  target_image  = img
+                  break
+
+          if not full_raw_text:
+              print('No new content.'); exit(0)
+
+          clean_headline = re.sub(r'[\|\-]\s*[A-Z][^\|\-]{3,}$', '', original_headline).strip()
+          print(f'Headline: {clean_headline}')
+
+          # ── Prompts ───────────────────────────────────────────────────────
+          internal_linking = get_internal_context()
+          banned_str       = "sasa basi, melting the pot, buckle up, dive in, delve into, moreover, furthermore, in conclusion, it's worth noting, a testament to, navigating the landscape, in today's digital age, tapestry"
+
+          title_rule = (
+              '*** TITLE RULE (NON-NEGOTIABLE) ***\n'
+              '- The TITLE must be built around the EXACT same main keywords, proper nouns, names, places\n'
+              '  and subjects found in the ORIGINAL HEADLINE above.\n'
+              '- You are NOT allowed to introduce new topics, people, or subjects not in the original.\n'
+              '- Your ONLY job is to reframe the phrasing to match the cynical tone.\n'
+              '- Example: If original is "Ruto Signs New Tax Bill Into Law", acceptable title is\n'
+              '  "Ruto New Tax Bill Is Now Law - And Your Wallet Will Feel It".\n'
+              '  UNACCEPTABLE: "Kenya Leaders Strike Again" (too vague, drops core keywords).\n'
+              '- Keep under 65 characters. Build SLUG from primary keywords only.'
           )
 
-          for file_path in changed_files:
-              if not file_path or not os.path.exists(file_path):
-                  continue
-              
-              print(f"🚀 Processing File: {file_path}")
-              filename = os.path.basename(file_path)
-              slug = os.path.splitext(filename)[0]
-              article_url = f"{site_url}/posts/{slug}/"
+          author_rule = (
+              '*** CRITICAL AUTHOR RULE ***\n'
+              'Write in third-person news style throughout.\n'
+              'NEVER write phrases like "I am Belinda Achieng", "This is Belinda reporting",\n'
+              '"Belinda can confirm", "as your cynical guide", "I report", or any first-person\n'
+              'self-identification. The author name is a byline only - it NEVER appears inside\n'
+              'the article body.'
+          )
 
-              with open(file_path, 'r', encoding='utf-8') as f:
-                  content = f.read()
+          structure_rule = (
+              '*** STRUCTURE (follow exactly in this order) ***\n'
+              '1. A 35-45 word lede paragraph - NO heading above it. States the subject, the problem,\n'
+              '   and the stakes immediately. This feeds Google Featured Snippets.\n'
+              '2. ## H2 subheading containing the primary keyword (person, place, or issue).\n'
+              '3. 3-5 supporting paragraphs with ### subheadings reusing primary keywords.\n'
+              '4. Close with a sharp forward-looking line about consequences or what to watch next.'
+          )
 
-              # Extract metadata
-              title_match = re.search(r'^title:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
-              tags_match = re.search(r'^tags:\s*\[?(.*?)\]?$', content, re.MULTILINE)
-              image_match = re.search(r'^image:\s*["\']?(.*?)["\']?$', content, re.MULTILINE)
+          prompt = (
+              f"Current Date: {full_date_str}. Current Year: {current_year}.\n"
+              f"SOURCE MATERIAL:\n{full_raw_text[:12000]}\n\n"
+              f'ORIGINAL HEADLINE: "{clean_headline}"\n\n'
+              f"{internal_linking}\n\n"
+              f"AUTHOR VOICE: a disillusioned, punchy Nairobi realist who calls out government failures,\n"
+              f"social hypocrisy, and celebrity nonsense with zero patience for spin.\n\n"
+              f"{author_rule}\n\n"
+              f"{title_rule}\n\n"
+              f"{structure_rule}\n\n"
+              f"LANGUAGE RULES:\n"
+              f"- BANNED PHRASES (never use): {banned_str}\n"
+              f"- NEVER use em-dashes or en-dashes. Single hyphens only.\n"
+              f"- Professional English only. No Sheng.\n"
+              f"- All dates and references must reflect {current_year}.\n"
+              f"- Use specific names, figures, and facts from the source material - no vague generalisations.\n\n"
+              f"*** INTERNAL LINKING RULE (STRICT) ***\n"
+              f"- You MUST naturally embed at least one link from PAST STORIES into the article paragraphs.\n"
+              f"- Format: [Relevant Anchor Text](/posts/the-slug-url)\n"
+              f"- Do NOT create a Read More list at the bottom. Weave the link into the text.\n\n"
+              f"STRICT OUTPUT FORMAT (no markdown fences, no extra text outside this format):\n"
+              f"TITLE: [Cynical headline using original keywords]\n"
+              f"DESCRIPTION: [140-155 char meta description starting with subject or verb, includes key fact]\n"
+              f"IMAGE_CAPTION: [Sharp one-liner caption]\n"
+              f"CATEGORY: [{used_topic.title()}]\n"
+              f"TAGS: [tag-one, tag-two, tag-three, tag-four]\n"
+              f"IMAGE_KEYWORD: [Single concrete noun for image search]\n"
+              f"BODY:\n"
+              f"[Full article body. No title, no author name, no date in the body.]"
+          )
 
-              title = title_match.group(1) if title_match else "New Article"
-              raw_tags = tags_match.group(1) if tags_match else ""
-              image_url = image_match.group(1) if image_match else ""
+          output = run_gemini(prompt, use_search=True)
+          if not output: exit(1)
 
-              # Grab snippet for AI context
-              parts = re.split(r'^---$', content, flags=re.MULTILINE)
-              body_text = parts[2][:800] if len(parts) > 2 else content[:800]
-              clean_body = re.sub(r'<[^>]+>', '', body_text).strip()
+          # ── Parse output ──────────────────────────────────────────────────
+          def extract(key, text):
+              m = re.search(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*(.*)', text, re.M | re.I)
+              return m.group(1).strip() if m else None
 
-              print(f"📝 Asking Gemini to write tweet for: {title}")
+          parsed_title    = extract('TITLE', output)         or clean_headline or 'Kenya Updates'
+          parsed_desc     = extract('DESCRIPTION', output)   or ''
+          parsed_caption  = extract('IMAGE_CAPTION', output) or ''
+          parsed_img_kw   = extract('IMAGE_KEYWORD', output) or used_topic
+          parsed_category = extract('CATEGORY', output)      or used_topic.title()
+          parsed_tags_raw = extract('TAGS', output)          or ''
 
-              prompt = f"""
-              You are the expert Social Media Manager for 'The Mwaniki Report', a top Kenyan news platform. 
-              Write a highly engaging, punchy Twitter (X) post to drive traffic to this new article.
+          tags_list = [t.strip().lower().replace(' ', '-') for t in parsed_tags_raw.split(',') if t.strip()][:5]
+          tags_json = json.dumps(tags_list) if tags_list else '["kenya", "politics", "analysis"]'
 
-              Article Title: {title}
-              Article Snippet: {clean_body}
-              Tags to use as Hashtags: {raw_tags}
+          body_text = output
+          for key in ['TITLE', 'DESCRIPTION', 'IMAGE_CAPTION', 'CATEGORY', 'TAGS', 'IMAGE_KEYWORD']:
+              body_text = re.sub(rf'^(?:\*\*?)?{key}(?:\*\*?)?:\s*.*$', '', body_text, flags=re.M | re.I)
+          body_text = re.sub(r'^(?:\*\*?)?BODY(?:\*\*?)?:\s*', '', body_text, flags=re.M | re.I)
+          body_text = re.sub(r'^(?:\*\*)?(?:By|Author):?.*?\n+', '', body_text, flags=re.I)
+          body_text = body_text.strip()
+          body_text = body_text.replace('\u2014', '-').replace('\u2013', '-')
 
-              STRICT RULES:
-              - You MUST keep the entire text UNDER 240 CHARACTERS. This is a strict platform limit.
-              - Incorporate 2 relevant hashtags at the end.
-              - Tell the reader to check the reply for the link (e.g., "Link below! 👇").
-              - Do NOT include the actual URL.
-              - Use 1 or 2 relevant emojis.
-              - NEVER use em dashes or en dashes. Only use regular single hyphens (-).
-              """
+          parsed_title   = clean_dashes(parsed_title)
+          parsed_desc    = clean_dashes(parsed_desc)[:160].replace('"', "'")
+          parsed_caption = clean_dashes(parsed_caption).replace('"', "'")
 
-              try:
-                  response = ai_client.models.generate_content(
-                      model='gemini-2.5-flash',
-                      contents=prompt,
-                      config=types.GenerateContentConfig(temperature=0.8)
-                  )
-                  ai_tweet = response.text.strip()
-              except Exception as e:
-                  print(f"⚠️ AI Generation failed: {e}")
-                  ai_tweet = f"📰 {title}\n\n👇 Read the full story in the thread below!"
+          # ── Slug + canonical ──────────────────────────────────────────────
+          slug          = re.sub(r'[^a-z0-9-]', '-', parsed_title.lower()).strip('-')[:68]
+          canonical_url = f"{SITE_BASE_URL}/posts/{slug}"
+          author_url    = f"{SITE_BASE_URL}/author/belinda-achieng"
 
-              # Scrub dashes per your rules
-              ai_tweet = ai_tweet.replace('\u2014', '-').replace('\u2013', '-')
+          # ── Image: scraped -> WebP+ImgBB, else Unsplash ───────────────────
+          if target_image:
+              final_image_url = upload_to_imgbb(target_image)
+          else:
+              final_image_url = get_unsplash_img(parsed_img_kw)
 
-              # Failsafe: Mathematically guarantee it fits Twitter's 280 limit
-              if len(ai_tweet) > 275:
-                  print("⚠️ AI generated a tweet that was too long. Truncating to fit Twitter limits...")
-                  ai_tweet = ai_tweet[:270].rsplit(" ", 1)[0] + "..."
+          # ── Write markdown ────────────────────────────────────────────────
+          o_dir = os.environ.get('POSTS_DIR')
+          os.makedirs(o_dir, exist_ok=True)
 
-              img_path = "tw_preview_image.jpg"
-              media_id = None
-              
-              if image_url and image_url.startswith("http"):
-                  print(f"📥 Disguising as a web browser to download image: {image_url}")
-                  headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                  try:
-                      res = requests.get(image_url, headers=headers, timeout=15)
-                      content_type = res.headers.get('Content-Type', '')
-                      print(f"Downloaded file type detected as: {content_type}")
-                      
-                      if 'image' in content_type:
-                          with open(img_path, 'wb') as img_file:
-                              img_file.write(res.content)
-                          
-                          print("📸 Uploading media to Twitter...")
-                          media = v1_api.media_upload(img_path)
-                          media_id = media.media_id
-                      else:
-                          print("⚠️ Download returned an invalid file. Proceeding text-only.")
-                  except Exception as e:
-                      print(f"⚠️ Failed to process image: {e}")
+          schema_json = json.dumps({
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": parsed_title.replace('"', "'"),
+              "description": parsed_desc,
+              "datePublished": publish_timestamp,
+              "dateModified": publish_timestamp,
+              "author": {"@type": "Person", "name": "Belinda Achieng", "url": author_url},
+              "publisher": {"@type": "Organization", "name": "The Cynic"},
+              "image": final_image_url,
+              "url": canonical_url
+          }, indent=2)
 
-              try:
-                  print(f"🐦 Sending main tweet (Length: {len(ai_tweet)} chars)...")
-                  if media_id:
-                      response = v2_client.create_tweet(text=ai_tweet, media_ids=[media_id])
-                  else:
-                      response = v2_client.create_tweet(text=ai_tweet)
-                  
-                  tweet_id = response.data["id"]
-                  print(f"✅ Main tweet posted successfully! Tweet ID: {tweet_id}")
-                  
-                  print("💬 Adding reply with the article link...")
-                  reply_text = f"Read the full story here: {article_url}"
-                  v2_client.create_tweet(text=reply_text, in_reply_to_tweet_id=tweet_id)
-                  print("✅ Link reply posted successfully!")
-                  
-              except Exception as e:
-                  print(f"❌ Twitter API Error: {e}")
-                  sys.exit(1)
+          lines = [
+              "---",
+              f'title: "{parsed_title.replace(chr(34), chr(39))}"',
+              f'description: "{parsed_desc}"',
+              f'author: "Belinda Achieng"',
+              f'author_url: "{author_url}"',
+              f'date: "{publish_timestamp}"',
+              f'image: "{final_image_url}"',
+              f'imageCaption: "{parsed_caption}"',
+              f'category: "{parsed_category}"',
+              f'tags: {tags_json}',
+              f'slug: "{slug}"',
+              f'canonical: "{canonical_url}"',
+              "---",
+              "",
+              body_text,
+              "",
+              '<script type="application/ld+json">',
+              schema_json,
+              '</script>',
+              ""
+          ]
 
-              if os.path.exists(img_path):
-                  os.remove(img_path)
+          filepath = os.path.join(o_dir, f'{slug}.md')
+          with open(filepath, 'w', encoding='utf-8') as f:
+              f.write('\n'.join(lines))
+
+          memory.append(final_hash)
+          with open(memory_path, 'w') as f:
+              json.dump(memory[-200:], f)
+
+          print(f'Published : {slug}')
+          print(f'Canonical : {canonical_url}')
+          print(f'Tags      : {tags_list}')
           EOF
+
+      - name: Git Safety Pull
+        run: |
+          git config --global user.name "Belinda Achieng"
+          git config --global user.email "bot@jonathanmwaniki.co.ke"
+          git add .
+          git stash -u
+          git fetch origin main
+          git pull origin main --rebase
+          git stash pop || echo "Nothing to pop"
+
+      - name: Commit and push article
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_author: "Belinda Achieng <bot@jonathanmwaniki.co.ke>"
+          commit_message: "content: cynical post by Belinda Achieng"
+          branch: ${{ env.DEFAULT_BRANCH }}
+          file_pattern: 'src/content/posts/*.md .github/scrape_memory.json'
+
+      - name: Ping Google Sitemap
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=https://jonathanmwaniki.co.ke/sitemap.xml" || true
+          echo "Google sitemap pinged"
