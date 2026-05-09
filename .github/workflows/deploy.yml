@@ -1,4 +1,4 @@
-name: Deploy Changed Pages Only
+name: Incremental Deploy to Cloudflare
 on:
   push:
     branches: [main]
@@ -7,13 +7,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches full history so the site generator can detect changed files
+          
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run build
-      - uses: vercel/action@v1
+          
+      - name: Cache Build Artifacts
+        uses: actions/cache@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.ORG_ID }}
-          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          path: |
+            node_modules
+            node_modules/.astro
+            .astro
+            .next/cache
+            .cache
+          key: ${{ runner.os }}-build-cache-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-cache-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-build-cache-
+
+      - run: npm ci
+      
+      - name: Build website
+        env:
+          # Inject any needed secrets for your build here
+          # MY_API_KEY: ${{ secrets.MY_API_KEY }}
+        run: npm run build
+        
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'jonathanmwaniki'
+          directory: 'dist'
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
