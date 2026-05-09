@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build && npm run index-posts",
+    "build": "astro build",
     "build-only": "astro build",
     "preview": "astro preview",
     "astro": "astro",

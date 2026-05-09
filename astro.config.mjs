@@ -23,5 +23,8 @@ export default defineConfig({
       // Externalize child_process so Vite doesn't crash if it's imported in server routes
       external: ['child_process']
     }
+  },
+  experimental: {
+    contentCollectionCache: true
   }
 });
