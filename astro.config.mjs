@@ -1,9 +1,12 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 import mdx from '@astrojs/mdx';
-import indexJumpIntegration from './integrations/indexjump.js';
 
 export default defineConfig({
   site: 'https://jonathanmwaniki.co.ke',
+
+  output: 'hybrid',
+  adapter: cloudflare(),
 
   trailingSlash: 'never',
   compressHTML: true,
@@ -13,8 +16,12 @@ export default defineConfig({
   },
 
   integrations: [
-    mdx(),
-    // sitemap removed — replaced by src/pages/sitemap.xml.js below
-    indexJumpIntegration()
-  ]
+    mdx()
+  ],
+  vite: {
+    ssr: {
+      // Externalize child_process so Vite doesn't crash if it's imported in server routes
+      external: ['child_process']
+    }
+  }
 });
