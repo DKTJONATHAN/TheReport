@@ -1,0 +1,95 @@
+/* src/styles/About.css */
+.page-wrapper {
+    padding: 4rem 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-head); color: var(--text); font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+p { color: var(--muted); margin-bottom: 1rem; }
+img { width: 100%; height: 100%; object-fit: cover; display: block; }
+a { text-decoration: none; color: inherit; transition: 0.2s; }
+
+.main-container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+.card-box {
+    background: var(--card, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius, 8px);
+    padding: 2rem;
+}
+
+.section-label {
+    font-family: var(--font-head);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+    display: block;
+}
+
+.about-hero { text-align: center; max-width: 720px; margin: 0 auto 4rem auto; }
+.pill-label { 
+    display: inline-block; background: var(--accent); color: white; 
+    font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; 
+    padding: 0.25rem 0.75rem; border-radius: 100px; margin-bottom: 1rem; 
+}
+.page-title { font-size: clamp(2.5rem, 5vw, 3.5rem); line-height: 1.1; margin-bottom: 1.5rem; }
+.hero-lead { font-size: 1.25rem; line-height: 1.6; color: var(--muted); }
+
+.layout-grid { display: grid; gap: 3rem; }
+@media (min-width: 1024px) { 
+    .layout-grid { grid-template-columns: 1fr 320px; } 
+}
+
+.mission-card { margin-bottom: 3rem; text-align: center; border-left: 5px solid var(--accent); }
+.mission-card h2 { font-size: 1.8rem; margin-bottom: 1rem; }
+.mission-card p { font-size: 1.1rem; max-width: 60ch; margin: 0 auto; }
+
+.editor-section { margin-bottom: 3rem; }
+.editor-card { display: flex; flex-direction: column; gap: 2rem; align-items: center; }
+
+.editor-image-col { width: 140px; height: 140px; flex-shrink: 0; }
+.editor-image-col img { border-radius: 50%; border: 4px solid #f8fafc; }
+
+.editor-content-col { text-align: center; }
+.editor-content-col h3 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+.editor-content-col .role { font-family: var(--font-head); color: var(--accent); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 1rem; }
+
+.editor-actions { display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; }
+
+.btn-primary { background: var(--accent); color: white; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; font-family: var(--font-head); font-size: 0.9rem; }
+.btn-primary:hover { opacity: 0.9; }
+
+.btn-outline { border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; font-family: var(--font-head); font-size: 0.9rem; }
+.btn-outline:hover { border-color: var(--text); }
+
+@media (min-width: 768px) {
+    .editor-card { flex-direction: row; align-items: flex-start; text-align: left; }
+    .editor-content-col { text-align: left; }
+    .editor-actions { justify-content: flex-start; }
+}
+
+.values-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .values-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.value-item { padding: 1.5rem; text-align: center; }
+.icon-box { width: 48px; height: 48px; background: rgba(220, 38, 38, 0.1); color: var(--accent); border-radius: 50%; padding: 10px; margin: 0 auto 1rem auto; }
+.value-item h4 { font-size: 1rem; margin-bottom: 0.5rem; }
+.value-item p { font-size: 0.9rem; margin: 0; line-height: 1.4; }
+
+.sidebar-column { margin-top: 2rem; }
+@media (min-width: 1024px) { 
+    .sidebar-column { margin-top: 0; }
+    .sticky-wrapper { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+}
+
+.contact-widget h3 { font-size: 1.1rem; margin-bottom: 0.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+.contact-list { list-style: none; padding: 0; margin: 1.5rem 0 0 0; }
+.contact-list li { display: flex; flex-direction: column; margin-bottom: 1rem; }
+.contact-list .label { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.contact-list a { color: var(--accent); font-weight: 600; font-family: var(--font-head); }
