@@ -1,0 +1,39 @@
+{
+  "name": "the-mwanikis-report",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "bun run scripts/generate-manifest.js && vite",
+    "build": "bun run scripts/generate-manifest.js && vite build",
+    "preview": "vite preview",
+    "index-posts": "bun run scripts/index-posts.js",
+    "generate-manifest": "bun run scripts/generate-manifest.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1",
+    "gray-matter": "^4.0.3",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-slug": "^6.0.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "framer-motion": "^11.2.10",
+    "lucide-react": "^0.379.0",
+    "pino": "^8.15.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react-swc": "^4.3.1",
+    "vite": "^5.2.11",
+    "typescript": "^5.4.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/node": "^20.14.2"
+  }
+}
